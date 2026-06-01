@@ -376,7 +376,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── DELETE /:id — ปิดใช้งานเมนู (soft delete) ──────────
+// ─── DELETE /:id — ลบเมนูออกจากระบบ (hard delete) ───────
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -390,13 +390,23 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    await db.prepare(
-      "UPDATE menu_items SET active = 0, updated_at = datetime('now', 'localtime') WHERE id = ?"
-    ).run(Number(id));
+    // ลบข้อมูลที่เกี่ยวข้องทั้งหมดใน transaction
+    const deleteMenu = db.transaction(async () => {
+      // ตัดความเชื่อมโยงกับ order_items (เก็บประวัติออเดอร์ไว้ แต่เอา FK ออก)
+      await db.prepare('UPDATE order_items SET menu_item_id = NULL WHERE menu_item_id = ?').run(Number(id));
+      // ลบ stock_logs ที่เกี่ยวข้อง
+      await db.prepare('DELETE FROM stock_logs WHERE menu_item_id = ?').run(Number(id));
+      // ลบสต็อกสาขาที่เกี่ยวข้อง
+      await db.prepare('DELETE FROM branch_stocks WHERE menu_item_id = ?').run(Number(id));
+      // ลบเมนูออกจาก database
+      await db.prepare('DELETE FROM menu_items WHERE id = ?').run(Number(id));
+    });
+
+    await deleteMenu();
 
     res.json({
       success: true,
-      data: { message: 'ปิดใช้งานเมนูสำเร็จ' }
+      data: { message: 'ลบเมนูสำเร็จ' }
     });
   } catch (error) {
     console.error('❌ Delete menu item error:', error.message);

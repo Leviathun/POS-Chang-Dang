@@ -77,6 +77,9 @@ const menu = {
   async createCategory(data) {
     return request('POST', '/api/menu/categories', data);
   },
+  async deleteCategory(id) {
+    return request('DELETE', `/api/menu/categories/${id}`);
+  },
   async create(data) {
     return request('POST', '/api/menu', data);
   },
