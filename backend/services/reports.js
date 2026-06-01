@@ -60,6 +60,18 @@ async function getDailyReport(date, branchId = null) {
     ORDER BY hour
   `).all(params4);
 
+  // รายการบิลขายของวัน
+  const params5 = [date];
+  if (branchId) {
+    params5.push(branchId);
+  }
+  const orders = await db.prepare(`
+    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, created_at
+    FROM orders
+    WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
+    ORDER BY id DESC
+  `).all(params5);
+ 
   return {
     date,
     total_orders: totals.total_orders,
@@ -71,7 +83,8 @@ async function getDailyReport(date, branchId = null) {
       qr_count: qrStats.count,
       qr_total: qrStats.total
     },
-    hourly_breakdown: hourlyBreakdown
+    hourly_breakdown: hourlyBreakdown,
+    orders: orders
   };
 }
 
