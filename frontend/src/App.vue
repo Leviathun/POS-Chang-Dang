@@ -646,6 +646,74 @@ onMounted(() => {
   flex: 1;
 }
 
+/* --- Keypad --- */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.keypad-key {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.keypad-key:active {
+  transform: scale(0.95);
+  background: var(--card-bg-active);
+}
+
+.keypad-key.key-clear {
+  color: var(--danger-light);
+}
+
+.keypad-key.key-confirm {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+}
+
+.keypad-key.key-backspace {
+  color: var(--warning-light);
+}
+
+/* PIN Display */
+.pin-display {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-2xl);
+}
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color-light);
+  background: transparent;
+  transition: all var(--transition-base);
+}
+
+.pin-dot.filled {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow);
+  animation: pinDotFill 0.2s ease;
+}
+
 /* --- Responsive Layout for Desktop / Tablet --- */
 @media (min-width: 1024px) {
   /* Center toast relative to the content area on PC (sidebar takes 280px) */
