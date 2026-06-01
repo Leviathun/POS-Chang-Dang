@@ -164,8 +164,13 @@ const topItems = ref([]);
 const loadReportSummary = async () => {
   try {
     const res = await api.reports.summary();
-    if (res.success) {
-      summary.value = res.data;
+    if (res.success && res.data) {
+      summary.value = {
+        today_sales: res.data.today?.total_revenue || 0,
+        today_orders: res.data.today?.total_orders || 0,
+        month_sales: res.data.month?.total_revenue || 0,
+        month_orders: res.data.month?.total_orders || 0
+      };
     }
   } catch (e) {
     console.warn(e);
@@ -178,8 +183,18 @@ const loadDailyReport = async () => {
   try {
     const dateVal = selectedDate.value || getToday();
     const res = await api.reports.daily(dateVal);
-    if (res.success) {
-      dailyReport.value = res.data;
+    if (res.success && res.data) {
+      const data = res.data;
+      dailyReport.value = {
+        total_sales: data.total_revenue || 0,
+        total_orders: data.total_orders || 0,
+        average_bill: data.avg_order_value || 0,
+        cash_sales: data.payment_breakdown?.cash_total || 0,
+        cash_orders: data.payment_breakdown?.cash_count || 0,
+        qr_sales: data.payment_breakdown?.qr_total || 0,
+        qr_orders: data.payment_breakdown?.qr_count || 0,
+        orders: data.orders || []
+      };
     }
   } catch (e) {
     console.error(e);
@@ -193,8 +208,11 @@ const loadDailyReport = async () => {
 const loadTopItems = async () => {
   try {
     const res = await api.reports.topItems(7);
-    if (res.success) {
-      topItems.value = res.data;
+    if (res.success && Array.isArray(res.data)) {
+      topItems.value = res.data.map(item => ({
+        ...item,
+        total_sales: item.total_revenue || 0
+      }));
     }
   } catch (e) {
     console.warn(e);

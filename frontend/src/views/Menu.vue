@@ -7,8 +7,8 @@
         เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
       </div>
       <div class="flex gap-sm">
-        <button class="btn btn-secondary" @click="openCatModal">📂 +หมวดหมู่</button>
-        <button class="btn btn-primary" @click="openAddModal">🍗 +เพิ่มเมนู</button>
+        <button class="btn btn-secondary" @click="openCatModal">📂 จัดการหมวดหมู่</button>
+        <button class="btn btn-primary" @click="openAddModal">🍗 + เพิ่มเมนู</button>
       </div>
     </div>
 
@@ -90,24 +90,63 @@
       <div class="modal-overlay" @click="showCatModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
-          <h3>📂 เพิ่มหมวดหมู่สินค้า</h3>
+          <h3>📂 จัดการหมวดหมู่สินค้า</h3>
           <button class="modal-close" @click="showCatModal = false">✕</button>
         </div>
         <div class="modal-body">
+          <!-- Create Category Form -->
           <div class="form-group">
-            <label class="form-label">ชื่อหมวดหมู่</label>
-            <input 
-              type="text" 
-              class="form-input" 
-              v-model="catForm.name" 
-              placeholder="เช่น ของหวาน, เมนูจำกัดเวลา" 
-            />
+            <label class="form-label font-bold">➕ เพิ่มหมวดหมู่ใหม่</label>
+            <div class="flex gap-sm">
+              <input 
+                type="text" 
+                class="form-input" 
+                v-model="catForm.name" 
+                placeholder="เช่น ของหวาน, ทานเล่น" 
+                style="flex: 1;"
+              />
+              <button 
+                class="btn btn-primary btn-sm" 
+                :disabled="!catForm.name" 
+                @click="handleCreateCat"
+                style="padding: 0 var(--space-md);"
+              >
+                บันทึก
+              </button>
+            </div>
           </div>
-          <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" @click="showCatModal = false">ยกเลิก</button>
-            <button class="btn btn-primary flex-1" :disabled="!catForm.name" @click="handleCreateCat">
-              📂 บันทึกหมวดหมู่
-            </button>
+
+          <!-- List of Existing Categories -->
+          <div class="mt-xl">
+            <label class="form-label font-bold" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs); margin-bottom: var(--space-md);">
+              📋 หมวดหมู่ปัจจุบัน ({{ categories.length }} รายการ)
+            </label>
+            
+            <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-xs);">
+              <div 
+                v-for="cat in categories" 
+                :key="cat.id" 
+                class="flex flex-between align-center p-sm" 
+                style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md);"
+              >
+                <span class="font-semibold" style="font-size: var(--font-sm);">📂 {{ cat.name }}</span>
+                <button 
+                  class="btn-action btn-action-delete" 
+                  title="ลบหมวดหมู่"
+                  @click="handleDeleteCat(cat.id)"
+                  style="min-width: 75px; height: 38px; padding: 0 var(--space-md); font-size: var(--font-xs);"
+                >
+                  🗑️ ลบ
+                </button>
+              </div>
+              <div v-if="categories.length === 0" class="text-center text-muted py-md" style="font-size: var(--font-xs);">
+                ไม่มีหมวดหมู่สินค้า
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-md mt-xl">
+            <button class="btn btn-secondary btn-block" @click="showCatModal = false">ปิดหน้าต่าง</button>
           </div>
         </div>
       </div>
@@ -197,9 +236,11 @@ import { ref, onMounted } from 'vue';
 import api from '../api';
 import { ui, formatCurrency } from '../helpers';
 
+import { store } from '../store';
+
 // States
-const menuItems = ref([]);
-const categories = ref([]);
+const menuItems = computed(() => store.menuItems);
+const categories = computed(() => store.categories);
 const loading = ref(true);
 const showCatModal = ref(false);
 const showItemModal = ref(false);
@@ -227,6 +268,7 @@ const handleToggleActive = async (item) => {
     const res = await api.menu.toggle(item.id);
     if (res.success) {
       item.active = item.active === 1 ? 0 : 1;
+      store.clearMenuCache(); // Clear cache to keep it in sync!
       ui.showToast(`เปลี่ยนสถานะของ ${item.name} เรียบร้อย`, 'success');
     }
   } catch (error) {
@@ -244,7 +286,7 @@ const handleDeleteItem = async (id) => {
       const res = await api.menu.delete(id);
       if (res.success) {
         ui.showToast('ลบเมนูอาหารเรียบร้อยแล้ว', 'success');
-        loadData();
+        loadData(true);
       }
     } catch (e) {
       console.error(e);
@@ -292,14 +334,41 @@ const handleCreateCat = async () => {
     const res = await api.menu.createCategory({ name: catForm.value.name });
     if (res.success) {
       ui.showToast(`เพิ่มหมวดหมู่ ${catForm.value.name} สำเร็จ`, 'success');
-      showCatModal.value = false;
-      loadData();
+      catForm.value.name = ''; // Clear input
+      loadData(true);
     }
   } catch (e) {
     console.error(e);
     ui.showToast('เพิ่มหมวดหมู่ไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+  }
+};
+
+// Delete a Category
+const handleDeleteCat = async (catId) => {
+  const cat = categories.value.find(c => c.id === catId);
+  const catName = cat ? cat.name : 'หมวดหมู่นี้';
+  
+  const confirm = await ui.showConfirm(
+    'ลบหมวดหมู่สินค้า',
+    `คุณยืนยันต้องการลบหมวดหมู่ "${catName}" ใช่หรือไม่?`
+  );
+  
+  if (confirm) {
+    ui.showLoading();
+    try {
+      const res = await api.menu.deleteCategory(catId);
+      if (res.success) {
+        ui.showToast('ลบหมวดหมู่เรียบร้อยแล้ว', 'success');
+        loadData(true);
+      }
+    } catch (e) {
+      console.error(e);
+      ui.showToast('ไม่สามารถลบหมวดหมู่ได้: ' + e.message, 'error');
+    } finally {
+      ui.hideLoading();
+    }
   }
 };
 
@@ -324,7 +393,7 @@ const handleSaveItem = async () => {
     if (res.success) {
       ui.showToast(isEditMode.value ? 'แก้ไขเมนูสำเร็จ' : 'เพิ่มเมนูอาหารสำเร็จ', 'success');
       showItemModal.value = false;
-      loadData();
+      loadData(true);
     }
   } catch (e) {
     console.error(e);
@@ -340,14 +409,9 @@ const handleImageError = () => {
 };
 
 // Load initial data
-const loadData = async () => {
+const loadData = async (force = false) => {
   try {
-    const [menuRes, catRes] = await Promise.all([
-      api.menu.getAll(),
-      api.menu.getCategories()
-    ]);
-    menuItems.value = menuRes.data || menuRes || [];
-    categories.value = catRes.data || catRes || [];
+    await store.fetchMenu(force);
   } catch (e) {
     console.error('Failed to load menu data:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลเมนูอาหารได้', 'error');

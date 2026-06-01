@@ -24,7 +24,7 @@
       </div>
 
       <!-- Menu Grid -->
-      <div class="pos-grid stagger-children" id="pos-menu-grid">
+      <div class="pos-grid" :class="{ 'stagger-children': isVisualStaggerActive }" id="pos-menu-grid">
         <!-- Skeleton loader while loading -->
         <template v-if="loading">
           <div v-for="i in 6" :key="i" class="pos-item" style="pointer-events:none; min-height:180px;">
@@ -55,11 +55,13 @@
               <div v-else class="pos-item-placeholder">{{ getEmojiPlaceholder(item.category_id) }}</div>
             </div>
 
-            <!-- Product Name & Price & Stock -->
-            <div class="pos-item-name">{{ item.name }}</div>
-            <div class="pos-item-price">{{ formatCurrency(item.price) }}</div>
-            <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock">
-              {{ item.stock <= 0 ? '❌ หมด' : `เหลือ ${item.stock}` }}
+            <!-- Product Name & Price & Stock in stable container -->
+            <div class="pos-item-details">
+              <div class="pos-item-name">{{ item.name }}</div>
+              <div class="pos-item-price">{{ formatCurrency(item.price) }}</div>
+              <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock">
+                {{ item.stock <= 0 ? '❌ หมด' : `เหลือ ${item.stock}` }}
+              </div>
             </div>
           </div>
         </template>
@@ -184,15 +186,19 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import api from '../api';
 import { ui, formatCurrency } from '../helpers';
 import PaymentModal from '../components/PaymentModal.vue';
+import { store } from '../store';
 
 // Reactive States
-const menuItems = ref([]);
-const categories = ref([]);
+const menuItems = computed(() => {
+  return store.menuItems.filter(item => item.active !== 0 && item.active !== false);
+});
+const categories = computed(() => store.categories);
 const cart = ref(new Map()); // itemId -> { item, quantity }
 const activeCategory = ref('all');
 const cartExpanded = ref(false);
 const showPaymentModal = ref(false);
 const loading = ref(true);
+const isVisualStaggerActive = ref(true);
 
 // Computed variables
 const filteredMenuItems = computed(() => {
@@ -259,10 +265,8 @@ const addToCart = (item) => {
   // Visual feedback animation (flash)
   const el = document.getElementById(`pos-item-${itemId}`);
   if (el) {
-    const flash = document.createElement('div');
-    flash.className = 'pos-item-added';
-    el.appendChild(flash);
-    setTimeout(() => flash.remove(), 400);
+    el.classList.add('added-flash');
+    setTimeout(() => el.classList.remove('added-flash'), 400);
   }
 };
 
@@ -305,30 +309,33 @@ const handleCheckout = () => {
 };
 
 // Callback when payment completes successfully
-const onPaymentSuccess = () => {
+const onPaymentSuccess = async () => {
   cart.value = new Map();
   cartExpanded.value = false;
   showPaymentModal.value = false;
-  loadMenuData(); // Reload menu items and categories to refresh stock counts!
+  try {
+    ui.showLoading();
+    await store.fetchMenu(true); // Force reload menu to update stock counts!
+  } catch (e) {
+    console.error(e);
+  } finally {
+    ui.hideLoading();
+  }
 };
 
 // Load Menu & Categories from API
 const loadMenuData = async () => {
   try {
-    const [menuRes, catRes] = await Promise.all([
-      api.menu.getAll(),
-      api.menu.getCategories()
-    ]);
-    
-    // API might return success payload wrapping data
-    const rawItems = menuRes.data || menuRes || [];
-    menuItems.value = rawItems.filter(item => item.active !== 0 && item.active !== false);
-    categories.value = catRes.data || catRes || [];
+    await store.fetchMenu();
   } catch (error) {
     console.error('Failed to load menu:', error);
     ui.showToast('ไม่สามารถดึงข้อมูลเมนูร้านค้าได้', 'error');
   } finally {
     loading.value = false;
+    // Turn off stagger animation after it finishes to prevent re-triggering on click updates
+    setTimeout(() => {
+      isVisualStaggerActive.value = false;
+    }, 1000);
   }
 };
 
@@ -357,6 +364,47 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* --- Category Tabs --- */
+.category-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tab {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-tab:active {
+  transform: scale(0.97);
+}
+
+.category-tab.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-glow-primary);
+}
+
 /* --- POS Grid --- */
 .pos-grid {
   display: grid;
@@ -373,11 +421,11 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   padding: var(--space-sm);
   text-align: center;
-  transition: all var(--transition-base);
+  transition: background var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -457,13 +505,23 @@ onUnmounted(() => {
   font-weight: var(--font-weight-medium);
 }
 
-.pos-item-added {
+.pos-item-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.pos-item.added-flash::after {
+  content: '';
   position: absolute;
   inset: 0;
   background: rgba(139, 3, 19, 0.15);
   border-radius: var(--radius-lg);
   animation: itemFlash 0.4s ease forwards;
   pointer-events: none;
+  z-index: 1;
 }
 
 /* --- Cart Bar --- */

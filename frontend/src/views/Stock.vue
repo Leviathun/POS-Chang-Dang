@@ -189,10 +189,12 @@ import { ref, onMounted } from 'vue';
 import api from '../api';
 import { ui, formatDateTime } from '../helpers';
 
+import { store } from '../store';
+
 // States
-const stockItems = ref([]);
+const stockItems = computed(() => store.stockItems);
 const loading = ref(true);
-const lowStockThreshold = ref(5);
+const lowStockThreshold = computed(() => store.lowStockThreshold);
 const showActionModal = ref(false);
 const showLogsModal = ref(false);
 const actionType = ref('restock'); // 'restock' or 'adjust'
@@ -217,10 +219,9 @@ const loadSettings = async () => {
   }
 };
 
-const loadStockData = async () => {
+const loadStockData = async (force = false) => {
   try {
-    const res = await api.stock.getAll();
-    stockItems.value = res.data || res || [];
+    await store.fetchStock(force);
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลคลังสินค้าได้', 'error');
@@ -255,9 +256,10 @@ const handleSaveAction = async () => {
     }
 
     if (res.success) {
+      store.clearMenuCache(); // Invalidate menu cache so POS updates stock!
       ui.showToast(actionType.value === 'restock' ? 'เติมสต็อกเรียบร้อย' : 'ปรับสต็อกหน้าร้านสำเร็จ', 'success');
       showActionModal.value = false;
-      loadStockData();
+      loadStockData(true);
     }
   } catch (e) {
     console.error(e);
