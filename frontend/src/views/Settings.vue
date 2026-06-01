@@ -143,14 +143,15 @@
                 ••••
               </td>
               <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <div class="flex justify-center gap-xs">
-                  <button class="btn btn-ghost btn-sm p-xs" @click="openEditUserModal(u)">📝</button>
+                <div class="flex justify-center gap-sm">
+                  <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditUserModal(u)">📝 แก้ไข</button>
                   <button 
-                    class="btn btn-ghost btn-sm p-xs text-danger" 
+                    class="btn-action btn-action-delete" 
+                    title="ลบ"
                     :disabled="u.id === currentUser?.id"
                     @click="handleDeleteUser(u.id)"
                   >
-                    🗑️
+                    🗑️ ลบ
                   </button>
                 </div>
               </td>
@@ -385,5 +386,74 @@ onMounted(() => {
 <style scoped>
 .table-row-hover:hover {
   background: rgba(139, 3, 19, 0.015) !important;
+}
+
+/* --- Setting Item --- */
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-label {
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.setting-desc {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.setting-value {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+/* --- Staff Card --- */
+.staff-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-md);
+}
+
+.staff-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-md);
+  flex-shrink: 0;
+}
+
+.staff-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.staff-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-base);
+}
+
+.staff-role {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
 }
 </style>

@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const { initDatabase } = require('./backend/config/database');
+const { initDatabase } = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,7 +13,7 @@ app.use(cors());
 // LINE webhook needs raw body for signature verification
 // Must be registered BEFORE express.json()
 try {
-  const lineRouter = require('./backend/routes/line');
+  const lineRouter = require('./routes/line');
   app.use('/api/line', lineRouter);
 } catch (e) {
   console.log('⚠️  LINE integration not configured (this is OK for development)');
@@ -22,20 +22,20 @@ try {
 // JSON parser for all other routes
 app.use(express.json({ limit: '10mb' }));
 
-// Static files (PWA)
-app.use(express.static(path.join(__dirname, 'public')));
+// Static files (PWA) - served from root dist/ folder
+app.use(express.static(path.join(__dirname, '..', 'dist')));
 
 // ─── API Routes ───────────────────────────────────────────
-app.use('/api/auth', require('./backend/routes/auth'));
-app.use('/api/menu', require('./backend/routes/menu'));
-app.use('/api/orders', require('./backend/routes/orders'));
-app.use('/api/reports', require('./backend/routes/reports'));
-app.use('/api/settings', require('./backend/routes/settings'));
-app.use('/api/stock', require('./backend/routes/stock'));
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/menu', require('./routes/menu'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/stock', require('./routes/stock'));
 
 // ─── SPA Fallback ─────────────────────────────────────────
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 
 // ─── Error Handler ────────────────────────────────────────
@@ -52,7 +52,7 @@ initDatabase();
 
 // Start cron jobs (daily LINE report)
 try {
-  require('./backend/services/cron');
+  require('./services/cron');
 } catch (e) {
   console.log('⚠️  Cron jobs not started:', e.message);
 }

@@ -302,3 +302,175 @@ const confirmQRPayment = async () => {
   }
 };
 </script>
+
+<style scoped>
+/* --- Payment Section --- */
+.payment-amount-display {
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.payment-entered {
+  font-size: var(--font-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+.payment-change {
+  margin-top: var(--space-md);
+  font-size: var(--font-lg);
+}
+
+.payment-change.positive {
+  color: var(--success);
+}
+
+.payment-change.negative {
+  color: var(--danger-light);
+}
+
+.quick-amounts {
+  display: flex;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+  margin-bottom: var(--space-md);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.quick-amounts::-webkit-scrollbar { display: none; }
+
+.quick-amount-btn {
+  padding: var(--space-sm) var(--space-lg);
+  background: rgba(244, 162, 97, 0.1);
+  border: 1px solid rgba(244, 162, 97, 0.2);
+  border-radius: var(--radius-full);
+  color: var(--accent);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  transition: var(--transition-base);
+  cursor: pointer;
+}
+
+.quick-amount-btn:active {
+  transform: scale(0.95);
+  background: rgba(244, 162, 97, 0.2);
+}
+
+/* --- Payment Methods --- */
+.payment-methods {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.payment-method-btn {
+  padding: var(--space-xl) var(--space-lg);
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.payment-method-btn:active {
+  transform: scale(0.97);
+}
+
+.payment-method-btn.selected {
+  border-color: var(--primary);
+  background: rgba(230, 57, 70, 0.08);
+}
+
+.payment-method-btn .method-icon {
+  font-size: 2rem;
+  margin-bottom: var(--space-sm);
+}
+
+.payment-method-btn .method-label {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* --- Success Animation --- */
+.success-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4xl) var(--space-xl);
+  text-align: center;
+}
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--gradient-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  margin-bottom: var(--space-2xl);
+  animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 40px var(--success-glow);
+}
+
+.success-title {
+  font-size: var(--font-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-sm);
+}
+
+.success-subtitle {
+  font-size: var(--font-base);
+  color: var(--text-secondary);
+}
+
+/* Confetti particles */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: confettiFall 1.5s ease forwards;
+}
+
+/* --- QR Code Section --- */
+.qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2xl);
+}
+
+.qr-placeholder {
+  width: 200px;
+  height: 200px;
+  background: white;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-xl);
+}
+
+.qr-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+}
+</style>

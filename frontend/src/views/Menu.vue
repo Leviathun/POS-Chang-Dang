@@ -7,8 +7,8 @@
         เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
       </div>
       <div class="flex gap-sm">
-        <button class="btn btn-secondary btn-sm" @click="openCatModal">📂 +หมวดหมู่</button>
-        <button class="btn btn-primary btn-sm" @click="openAddModal">🍗 +เพิ่มเมนู</button>
+        <button class="btn btn-secondary" @click="openCatModal">📂 +หมวดหมู่</button>
+        <button class="btn btn-primary" @click="openAddModal">🍗 +เพิ่มเมนู</button>
       </div>
     </div>
 
@@ -74,9 +74,9 @@
               </td>
               <!-- Actions -->
               <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <div class="flex justify-center gap-xs">
-                  <button class="btn btn-ghost btn-sm p-xs" title="แก้ไข" @click="openEditModal(item)">📝</button>
-                  <button class="btn btn-ghost btn-sm p-xs text-danger" title="ลบ" @click="handleDeleteItem(item.id)">🗑️</button>
+                <div class="flex justify-center gap-sm">
+                  <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)">📝 แก้ไข</button>
+                  <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
                 </div>
               </td>
             </tr>
