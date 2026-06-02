@@ -13,7 +13,23 @@
         <h2 class="font-bold text-gradient mb-1" style="font-size: 1.8rem;">
           {{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}
         </h2>
-        <p class="text-secondary text-sm mb-6">กรุณาระบุรหัส PIN เพื่อยืนยันเข้าใช้งาน</p>
+        <p class="text-secondary text-sm mb-lg">กรุณาเลือกสาขาและระบุรหัส PIN เพื่อเข้าใช้งาน</p>
+
+        <!-- Branch Selector Loading Skeleton -->
+        <div v-if="isLoadingBranches" class="branch-selector mb-xl" style="margin-top: 1.75rem !important;">
+          <div class="skeleton-pulse" style="width: 100px; height: 18px; border-radius: 4px; margin-bottom: var(--space-sm);"></div>
+          <div class="skeleton-pulse" style="width: 100%; height: 46px; border-radius: var(--radius-md); border: 2px solid rgba(139, 3, 19, 0.08);"></div>
+        </div>
+
+        <!-- Branch Selector -->
+        <div v-else-if="branches.length > 0" class="branch-selector mb-xl" style="margin-top: 1.75rem !important;">
+          <label class="branch-label">🏠 เลือกสาขา</label>
+          <select v-model="selectedBranch" class="form-select branch-select">
+            <option v-for="b in branches" :key="b.id" :value="b.id">
+              {{ b.name }}{{ b.address ? ' — ' + b.address : '' }}
+            </option>
+          </select>
+        </div>
 
         <!-- PIN Dots Display -->
         <div class="pin-display flex justify-center gap-4 mb-8" :class="{ 'shake': pinShake }">
@@ -71,7 +87,7 @@
             <span class="sidebar-icon">📦</span>
             <span class="sidebar-label">คลังสินค้า/สต็อก</span>
           </router-link>
-          <router-link v-if="adminUser" to="/reports" class="sidebar-item" active-class="active">
+          <router-link to="/reports" class="sidebar-item" active-class="active">
             <span class="sidebar-icon">📊</span>
             <span class="sidebar-label">รายงานยอดขาย</span>
           </router-link>
@@ -94,9 +110,12 @@
       <div class="main-layout">
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
-          <span class="header-title">🐘 {{ activeTitle }}</span>
+          <span class="header-title"><span v-if="route.path === '/pos'">🐘 </span>{{ activeTitle }}</span>
           <div class="header-right">
-            <button class="header-btn" id="btn-logout" title="ออกจากระบบ" @click="handleLogout">🚪</button>
+            <button class="header-btn" id="btn-logout" @click="handleLogout">
+              <span>🚪</span>
+              <span style="font-size: 11px; font-weight: bold; margin-left: 2px;">ออก</span>
+            </button>
           </div>
         </header>
 
@@ -132,9 +151,9 @@
             <span class="nav-icon">📦</span>
             <span class="nav-label">สต็อก</span>
           </router-link>
-          <router-link v-if="adminUser" to="/reports" class="nav-item" active-class="active" data-page="reports">
+          <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
             <span class="nav-icon">📊</span>
-            <span class="nav-label">รายงาน</span>
+            <span class="nav-label">รายงานยอด</span>
           </router-link>
           <router-link v-if="adminUser" to="/settings" class="nav-item" active-class="active" data-page="settings">
             <span class="nav-icon">⚙️</span>
@@ -187,6 +206,9 @@ const shopSettings = ref({ shop_name: 'ร้านไก่ทอดช้า�
 const enteredPin = ref('');
 const pinShake = ref(false);
 const hasCartBar = ref(false); // Can be toggled by child view
+const branches = ref([]);
+const selectedBranch = ref(null);
+const isLoadingBranches = ref(true);
 
 const route = useRoute();
 const router = useRouter();
@@ -239,11 +261,12 @@ const pressKey = (key) => {
 const submitPin = async () => {
   ui.showLoading();
   try {
-    const res = await api.auth.login(enteredPin.value);
+    const res = await api.auth.login(enteredPin.value, selectedBranch.value);
     if (res.success) {
       sessionStorage.setItem('pos_user', JSON.stringify(res.data.user));
       user.value = res.data.user;
-      ui.showToast(`ยินดีต้อนรับคุณ ${user.value.name} 🎉`, 'success');
+      const branchName = res.data.branch ? res.data.branch.name : '';
+      ui.showToast(`ยินดีต้อนรับคุณ ${user.value.name} 🎉${branchName ? ' (สาขา: ' + branchName + ')' : ''}`, 'success');
       enteredPin.value = '';
       router.push('/pos');
     } else {
@@ -290,9 +313,28 @@ const getToastIcon = (type) => {
   return icons[type] || 'ℹ️';
 };
 
+// Load branches list for login screen
+const loadBranches = async () => {
+  isLoadingBranches.value = true;
+  try {
+    const res = await api.auth.getBranches();
+    if (res.success && Array.isArray(res.data)) {
+      branches.value = res.data;
+      if (res.data.length > 0 && !selectedBranch.value) {
+        selectedBranch.value = res.data[0].id;
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not load branches:', e.message);
+  } finally {
+    isLoadingBranches.value = false;
+  }
+};
+
 onMounted(() => {
   user.value = getUser();
   loadSettings();
+  loadBranches();
 
   // Listen to global events for cart bar visibility
   window.addEventListener('cart-state-change', (e) => {
@@ -375,6 +417,61 @@ onMounted(() => {
   width: 100%;
   max-width: 340px;
   text-align: center;
+}
+
+/* --- Branch Selector Custom Style --- */
+.branch-label {
+  font-size: var(--font-base) !important; /* 16px - Highly readable on mobile! */
+  font-weight: var(--font-weight-bold) !important;
+  color: var(--text-primary) !important;
+  display: block !important;
+  margin-bottom: var(--space-sm) !important;
+  text-align: left !important;
+}
+
+.branch-select {
+  width: 100% !important;
+  padding: 12px 48px 12px var(--space-md) !important; /* 48px right padding to ensure plenty of space for text */
+  font-size: var(--font-base) !important; /* 16px - Matches other input fields! */
+  border-radius: var(--radius-md) !important;
+  border: 2px solid var(--border-color) !important;
+  background-color: var(--card-bg) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236e4e37' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 20px center !important; /* Positioned chevron 20px left, away from edge! */
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  transition: all var(--transition-base) !important;
+}
+
+.branch-select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-glow) !important;
+  outline: none !important;
+}
+
+/* Skeleton Loader Shimmer (Warm Reddish tones for Chang Dang brand!) */
+.skeleton-pulse {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    rgba(139, 3, 19, 0.04) 25%,
+    rgba(139, 3, 19, 0.08) 50%,
+    rgba(139, 3, 19, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .login-logo {
@@ -460,15 +557,20 @@ onMounted(() => {
 #app-header .header-right { right: var(--space-lg); }
 
 #app-header .header-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
+  height: 32px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  font-size: var(--font-lg);
+  background: rgba(139, 3, 19, 0.06) !important;
+  border: 1px solid rgba(139, 3, 19, 0.12) !important;
+  color: var(--primary) !important;
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold);
+  padding: 0 8px !important;
+  gap: 4px;
+  width: auto !important;
+  cursor: pointer;
   transition: var(--transition-base);
 }
 
@@ -519,14 +621,14 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: var(--space-sm) var(--space-md);
+  padding: 6px 16px; /* Premium pill shape padding */
   color: var(--text-tertiary);
   font-size: var(--font-xs);
   font-weight: var(--font-weight-medium);
-  transition: var(--transition-base);
+  transition: all var(--transition-base);
   position: relative;
   -webkit-tap-highlight-color: transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg); /* Rounded pill active background shape */
 }
 
 .nav-item .nav-icon {
@@ -535,23 +637,18 @@ onMounted(() => {
 }
 
 .nav-item.active {
-  color: var(--primary);
+  color: var(--primary) !important;
+  background: rgba(139, 3, 19, 0.08) !important; /* Premium brand-colored translucent pill background */
+  font-weight: var(--font-weight-bold) !important;
 }
 
 .nav-item.active .nav-icon {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
+/* Remove active red top border line */
 .nav-item.active::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 3px;
-  background: var(--gradient-primary);
-  border-radius: 0 0 var(--radius-full) var(--radius-full);
+  display: none !important;
 }
 
 .nav-item:active {
@@ -716,10 +813,11 @@ onMounted(() => {
 
 /* --- Responsive Layout for Desktop / Tablet --- */
 @media (min-width: 1024px) {
-  /* Center toast relative to the content area on PC (sidebar takes 280px) */
+  /* ทุกๆการแจ้งเตือน ต้องแจ้งด้านบน ตรงกลางหน้าจอเสมอ (ไม่ว่าจะล็อกอินอยู่หรือไม่ก็ตาม) */
   #toast-container {
     top: 24px;
-    left: calc(50% + var(--sidebar-width) / 2);
+    left: 50% !important;
+    transform: translateX(-50%) !important;
   }
 
   /* Desktop Sidebar styling */

@@ -149,7 +149,7 @@
         <button class="btn btn-ghost btn-sm text-danger" @click="handleClearCart">ล้างทั้งหมด</button>
       </div>
       
-      <div id="cart-items-list" style="overflow-y: auto; max-height: calc(40vh - 60px);">
+      <div id="cart-items-list" style="overflow-y: auto; max-height: calc(45vh - 75px); padding-bottom: 24px;">
         <div v-for="[itemId, cartItem] in cart" :key="itemId" class="cart-item animate-fade-in">
           <div class="cart-item-info">
             <div class="cart-item-name">{{ cartItem.item.name }}</div>
@@ -546,6 +546,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
+  width: 100% !important; /* Ensure it expands to full width to push payment button right */
 }
 
 .cart-info {
@@ -582,29 +583,37 @@ onUnmounted(() => {
 /* --- Cart Detail Panel --- */
 .cart-detail-panel {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height));
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height) - 2px);
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   max-width: var(--max-width);
-  max-height: 40vh;
+  max-height: 45vh; /* Increased max height slightly */
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--primary-light) !important;
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12) !important;
+  display: flex !important; /* Enforce flex layout */
+  flex-direction: column !important; /* Stack children vertically */
   overflow-y: auto;
   z-index: 49;
   animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Enforce absolute hiding when the hidden class is present on mobile */
+.cart-detail-panel.hidden {
+  display: none !important;
 }
 
 .cart-detail-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-md) var(--space-xl);
-  border-bottom: 1px solid var(--border-color);
+  padding: 16px 20px !important; /* Increased header padding for spaciousness */
+  border-bottom: 2px dashed rgba(139, 3, 19, 0.15) !important; /* Diner-style dashed border */
   position: sticky;
   top: 0;
-  background: var(--bg-secondary);
+  background: rgba(255, 247, 223, 0.98) !important; /* Standout warm background */
   z-index: 1;
 }
 
@@ -612,8 +621,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-md) var(--space-xl);
-  border-bottom: 1px solid var(--border-color);
+  padding: 16px 20px !important; /* Massive breathing room for items */
+  border-bottom: 1px solid rgba(139, 3, 19, 0.08);
+  background: rgba(255, 255, 255, 0.4) !important; /* Standout background */
 }
 
 .cart-item-info {
@@ -622,16 +632,19 @@ onUnmounted(() => {
 }
 
 .cart-item-name {
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-base) !important; /* 16px - Highly readable and bold! */
+  font-weight: var(--font-weight-bold) !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .cart-item-price {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
+  font-size: var(--font-xs) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 500;
 }
 
 .cart-item-qty {
@@ -641,8 +654,8 @@ onUnmounted(() => {
 }
 
 .qty-btn {
-  width: 30px;
-  height: 30px;
+  width: 38px; /* Enlarged touch target from 30px for easy pressing! */
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -650,7 +663,7 @@ onUnmounted(() => {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: var(--font-md);
+  font-size: var(--font-base); /* 16px font-size for better visibility */
   font-weight: var(--font-weight-bold);
   transition: var(--transition-base);
 }
