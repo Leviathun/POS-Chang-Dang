@@ -6,10 +6,31 @@ const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
-// ─── POST /login — เข้าสู่ระบบด้วย PIN ─────────────────
+// ─── GET /branches — รายการสาขาทั้งหมด (Public, ไม่ต้อง login) ───
+router.get('/branches', async (req, res) => {
+  try {
+    const db = getDb();
+    const branches = await db.prepare(
+      'SELECT id, name, address, phone FROM branches ORDER BY id ASC'
+    ).all();
+
+    res.json({
+      success: true,
+      data: branches
+    });
+  } catch (error) {
+    console.error('❌ Get branches error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสาขา'
+    });
+  }
+});
+
+// ─── POST /login — เข้าสู่ระบบด้วย PIN + เลือกสาขา ──────
 router.post('/login', async (req, res) => {
   try {
-    const { pin } = req.body;
+    const { pin, branch_id } = req.body;
 
     if (!pin) {
       return res.status(400).json({
@@ -20,7 +41,7 @@ router.post('/login', async (req, res) => {
 
     const db = getDb();
     const user = await db.prepare(
-      'SELECT id, name, role, active FROM users WHERE pin = ? AND active = 1'
+      'SELECT id, name, role, active, branch_id FROM users WHERE pin = ? AND active = 1'
     ).get(String(pin));
 
     if (!user) {
@@ -30,9 +51,47 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const selectedBranchId = branch_id ? Number(branch_id) : null;
+
+    // ถ้าไม่ใช่แอดมิน (เป็นพนักงานทั่วไป) ต้องตรวจสอบสิทธิ์สาขา
+    if (user.role !== 'admin') {
+      if (selectedBranchId && user.branch_id && selectedBranchId !== user.branch_id) {
+        return res.status(403).json({
+          success: false,
+          error: 'รหัส PIN นี้ไม่มีสิทธิ์เข้าใช้งานในสาขานี้'
+        });
+      }
+    }
+
+    // ใช้ branch_id ที่เลือกจากหน้า login (ถ้ามี) แทน branch_id ในฐานข้อมูล
+    let activeBranchId = selectedBranchId || user.branch_id;
+    if (!activeBranchId) {
+      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+      activeBranchId = defaultBranch ? defaultBranch.id : null;
+    }
+
+    // อัปเดต branch_id ของ user ให้ตรงกับที่เลือก (ถ้าเปลี่ยน)
+    if (activeBranchId && activeBranchId !== user.branch_id) {
+      await db.prepare('UPDATE users SET branch_id = ? WHERE id = ?').run(activeBranchId, user.id);
+    }
+
+    // Write to activity logs
+    const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(activeBranchId);
+    await db.prepare(`
+      INSERT INTO activity_logs (branch_id, user_id, action, details)
+      VALUES (?, ?, 'login', ?)
+    `).run(activeBranchId, user.id, `พนักงาน ${user.name} เข้าสู่ระบบสำเร็จ (สาขา: ${branchInfo ? branchInfo.name : 'ไม่ระบุ'})`);
+
+    // ส่ง user กลับพร้อม branch_id ที่ถูกต้อง
     res.json({
       success: true,
-      data: { user }
+      data: {
+        user: {
+          ...user,
+          branch_id: activeBranchId
+        },
+        branch: branchInfo || null
+      }
     });
   } catch (error) {
     console.error('❌ Login error:', error.message);
@@ -48,7 +107,7 @@ router.get('/users', requireAdmin, async (req, res) => {
   try {
     const db = getDb();
     const users = await db.prepare(
-      'SELECT id, name, pin, role, active, created_at FROM users ORDER BY id'
+      'SELECT id, name, pin, role, active, branch_id, created_at FROM users ORDER BY id'
     ).all();
 
     res.json({

@@ -196,7 +196,7 @@ async function initDatabase() {
       change_qty INTEGER NOT NULL,
       previous_stock INTEGER,
       new_stock INTEGER,
-      reason TEXT CHECK(reason IN ('sale', 'restock', 'adjustment', 'waste', 'cancel_restore')),
+      reason TEXT CHECK(reason IN ('sale', 'restock', 'adjustment', 'waste', 'cancel_restore', 'staff_benefit')),
       order_id INTEGER REFERENCES orders(id),
       staff_id INTEGER REFERENCES users(id),
       note TEXT,
@@ -206,11 +206,51 @@ async function initDatabase() {
       key TEXT PRIMARY KEY,
       value TEXT,
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      staff_id INTEGER REFERENCES users(id),
+      amount REAL NOT NULL,
+      category TEXT NOT NULL CHECK(category IN ('raw_materials', 'gas_fuel', 'packaging', 'other')),
+      note TEXT,
+      expense_date DATE DEFAULT (date('now', 'localtime')),
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS activity_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      user_id INTEGER REFERENCES users(id),
+      action TEXT NOT NULL,
+      details TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`
   ];
 
   for (const table of tables) {
     await db.exec(table);
+  }
+
+  // Add cancel_reason column to orders if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE orders ADD COLUMN cancel_reason TEXT");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Migration: Fix users with NULL branch_id — assign to first branch
+  try {
+    const firstBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+    if (firstBranch) {
+      const updated = await db.prepare(
+        'UPDATE users SET branch_id = ? WHERE branch_id IS NULL'
+      ).run(firstBranch.id);
+      if (updated.changes > 0) {
+        console.log(`  🔧 Migration: อัปเดต ${updated.changes} ผู้ใช้ที่ยังไม่มีสาขา → สาขา ID ${firstBranch.id}`);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration fix branch_id:', e.message);
   }
 
   // ─── Create Indexes ───────────────────────────────────────

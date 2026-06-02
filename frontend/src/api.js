@@ -50,8 +50,11 @@ async function request(method, path, body, options = {}) {
 }
 
 const auth = {
-  async login(pin) {
-    return request('POST', '/api/auth/login', { pin });
+  async login(pin, branchId) {
+    return request('POST', '/api/auth/login', { pin, branch_id: branchId });
+  },
+  async getBranches() {
+    return request('GET', '/api/auth/branches');
   },
   async getUsers() {
     return request('GET', '/api/auth/users');
@@ -109,8 +112,8 @@ const orders = {
   async complete(id, data) {
     return request('POST', `/api/orders/${id}/complete`, data);
   },
-  async cancel(id) {
-    return request('POST', `/api/orders/${id}/cancel`);
+  async cancel(id, reason) {
+    return request('POST', `/api/orders/${id}/cancel`, { reason });
   },
   async getQR(id) {
     return request('GET', `/api/orders/${id}/qr`);
@@ -156,6 +159,26 @@ const settings = {
   },
 };
 
+const expenses = {
+  async create(data) {
+    return request('POST', '/api/expenses', data);
+  },
+  async get(date) {
+    return request('GET', `/api/expenses?date=${date}`);
+  },
+  async delete(id) {
+    return request('DELETE', `/api/expenses/${id}`);
+  },
+};
+
+const activities = {
+  async get(date, userId) {
+    let path = `/api/activities?date=${date}`;
+    if (userId) path += `&user_id=${userId}`;
+    return request('GET', path);
+  },
+};
+
 export default {
   auth,
   menu,
@@ -163,4 +186,6 @@ export default {
   stock,
   reports,
   settings,
+  expenses,
+  activities,
 };
