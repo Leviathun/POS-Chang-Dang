@@ -29,15 +29,7 @@ const routes = [
   {
     path: '/reports',
     name: 'Reports',
-    component: Reports,
-    beforeEnter: (to, from, next) => {
-      // Admin only
-      if (isAdmin()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: Reports
   },
   {
     path: '/settings',

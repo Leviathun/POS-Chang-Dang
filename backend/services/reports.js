@@ -66,9 +66,9 @@ async function getDailyReport(date, branchId = null) {
     params5.push(branchId);
   }
   const orders = await db.prepare(`
-    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, created_at
+    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, cancel_reason, created_at
     FROM orders
-    WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
+    WHERE date(created_at) = ? AND status IN ('completed', 'cancelled')${branchFilter}
     ORDER BY id DESC
   `).all(params5);
  

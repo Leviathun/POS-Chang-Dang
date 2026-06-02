@@ -32,7 +32,6 @@ router.get('/', async (req, res) => {
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id
       LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-      WHERE mi.active = 1
       ORDER BY mi.sort_order ASC, mi.id ASC
     `).all(branchId);
 

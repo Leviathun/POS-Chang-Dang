@@ -32,7 +32,6 @@ router.get('/', async (req, res) => {
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id
       LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-      WHERE mi.active = 1
       ORDER BY mi.sort_order ASC, mi.id ASC
     `).all(branchId);
 
@@ -154,10 +153,10 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
       });
     }
 
-    if (!reason || !['adjustment', 'waste'].includes(reason)) {
+    if (!reason || !['adjustment', 'waste', 'staff_benefit'].includes(reason)) {
       return res.status(400).json({
         success: false,
-        error: "กรุณาระบุเหตุผล: 'adjustment' หรือ 'waste'"
+        error: "กรุณาระบุเหตุผล: 'adjustment', 'waste' หรือ 'staff_benefit'"
       });
     }
 
@@ -214,6 +213,28 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         reason,
         req.user.id,
         note || `ปรับสต็อก ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`
+      );
+
+      // บันทึกกิจกรรมพนักงาน
+      let actionLabel = 'adjust_stock';
+      if (reason === 'waste') actionLabel = 'record_waste';
+      else if (reason === 'staff_benefit') actionLabel = 'staff_credit';
+
+      let detailsText = `ปรับปรุงสต็อก ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} ชิ้น (ก่อนปรับ: ${branchStock.quantity}, หลังปรับ: ${newStock})`;
+      if (reason === 'waste') {
+        detailsText = `บันทึกของเสีย ${item.name} ${quantity} ชิ้น (${note || 'ไม่ระบุรายละเอียดเพิ่มเติม'})`;
+      } else if (reason === 'staff_benefit') {
+        detailsText = `บันทึกของกินพนักงาน/เครดิต ${item.name} ${quantity} ชิ้น (${note || 'แจกพนักงานรับประทาน'})`;
+      }
+
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details)
+        VALUES (?, ?, ?, ?)
+      `).run(
+        branchId,
+        req.user.id,
+        actionLabel,
+        detailsText
       );
 
       return newStock;

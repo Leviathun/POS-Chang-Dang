@@ -96,6 +96,16 @@ router.post('/', requireAuth, async (req, res) => {
         note || null
       );
 
+      // บันทึกกิจกรรมพนักงาน
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details)
+        VALUES (?, ?, 'create_order', ?)
+      `).run(
+        branchId,
+        req.user.id,
+        `สร้างออเดอร์ใหม่สำเร็จ เลขที่ ${orderNumber} ยอดรวม ${total} บาท`
+      );
+
       const orderId = orderResult.lastInsertRowid;
 
       // บันทึกรายการสินค้า
@@ -344,6 +354,16 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         WHERE id = ?
       `).run(payment_method, cash_received || null, cashChange, Number(id));
 
+      // บันทึกกิจกรรมพนักงาน
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details)
+        VALUES (?, ?, 'complete_order', ?)
+      `).run(
+        branchId,
+        req.user.id,
+        `ชำระเงินออเดอร์ ${order.order_number} สำเร็จ (วิธี: ${payment_method === 'cash' ? 'เงินสด' : 'QR Code'})`
+      );
+
       // ดึงรายการสินค้าในออเดอร์
       const orderItems = await db.prepare(
         'SELECT * FROM order_items WHERE order_id = ?'
@@ -416,11 +436,11 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
     });
   }
 });
-
 // ─── POST /:id/cancel — ยกเลิกออเดอร์ ──────────────────
 router.post('/:id/cancel', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    const { reason } = req.body;
     const db = getDb();
 
     const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id));
@@ -444,10 +464,10 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
 
     // ใช้ transaction สำหรับยกเลิก + คืนสต็อก
     const cancelOrder = db.transaction(async () => {
-      // อัปเดตสถานะ
+      // อัปเดตสถานะและเหตุผล
       await db.prepare(
-        "UPDATE orders SET status = 'cancelled' WHERE id = ?"
-      ).run(Number(id));
+        "UPDATE orders SET status = 'cancelled', cancel_reason = ? WHERE id = ?"
+      ).run(reason || null, Number(id));
 
       // คืนสต็อกเฉพาะเมื่อออเดอร์ถูก complete ไปแล้ว
       if (wasCompleted) {
@@ -487,11 +507,21 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
               newStock,
               Number(id),
               req.user.id,
-              `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อก ${oi.item_name} x${oi.quantity}`
+              `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อก ${oi.item_name} x${oi.quantity} (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
             );
           }
         }
       }
+
+      // บันทึกกิจกรรมพนักงาน
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details)
+        VALUES (?, ?, 'cancel_order', ?)
+      `).run(
+        branchId,
+        req.user.id,
+        `ยกเลิกออเดอร์ ${order.order_number} สำเร็จ (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
+      );
 
       const updatedOrder = await db.prepare(`
         SELECT o.*, u.name as staff_name, b.name as branch_name
