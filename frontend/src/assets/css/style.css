@@ -489,7 +489,8 @@ ul, ol { list-style: none; }
 .toggle-slider {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(110, 78, 55, 0.3); /* Rich, highly visible brand coffee-brown shade */
+  border: 1px solid rgba(110, 78, 55, 0.15); /* Subtle outline for depth */
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: var(--transition-base);
@@ -566,19 +567,20 @@ ul, ol { list-style: none; }
 /* Quantity badge (floating) */
 .qty-badge {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 22px;
-  height: 22px;
+  top: -9px;
+  right: -9px;
+  width: 30px;
+  height: 30px;
   background: var(--primary);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
-  font-weight: var(--font-weight-bold);
-  box-shadow: 0 2px 8px rgba(230, 57, 70, 0.4);
+  font-size: 0.95rem;
+  font-weight: 800;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.45);
   animation: scaleIn 0.25s var(--transition-spring);
   z-index: 2;
 }
@@ -641,6 +643,13 @@ ul, ol { list-style: none; }
   max-height: 85vh;
   max-height: 85dvh;
   animation: scaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (max-width: 576px) {
+  .modal-content.modal-center {
+    width: calc(100% - 32px) !important;
+    margin: auto 16px !important;
+  }
 }
 
 .modal-handle {

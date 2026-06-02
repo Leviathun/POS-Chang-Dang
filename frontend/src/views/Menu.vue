@@ -2,18 +2,18 @@
   <div id="menu-page" class="page-enter">
     
     <!-- Top Action Card -->
-    <div class="card mb-lg flex flex-between align-center p-md">
-      <div style="font-size: var(--font-sm); color: var(--text-secondary);">
+    <div class="card mb-lg menu-top-action-card">
+      <div class="menu-total-count">
         เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
       </div>
-      <div class="flex gap-sm">
+      <div class="menu-action-buttons">
         <button class="btn btn-secondary" @click="openCatModal">📂 จัดการหมวดหมู่</button>
         <button class="btn btn-primary" @click="openAddModal">🍗 + เพิ่มเมนู</button>
       </div>
     </div>
 
-    <!-- Menu List Table -->
-    <div class="card p-0 overflow-hidden">
+    <!-- Desktop Menu List Table (Visible on desktop only) -->
+    <div class="card p-0 overflow-hidden desktop-menu-table-container">
       <div style="overflow-x: auto;">
         <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
@@ -82,6 +82,59 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Card List (Visible on mobile only) -->
+    <div class="mobile-menu-list-container">
+      <div v-if="loading" class="text-center py-3xl">
+        <div class="spinner" style="margin: 0 auto;"></div>
+      </div>
+      <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
+        ยังไม่มีข้อมูลสินค้า กด "+เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
+      </div>
+      <div v-else class="mobile-menu-list">
+        <div 
+          v-for="item in menuItems" 
+          :key="item.id" 
+          class="mobile-menu-card"
+          :class="{ 'inactive-item': item.active === 0 || item.active === false }"
+        >
+          <div class="mobile-menu-card-body">
+            <!-- Left: Product Image / Emoji -->
+            <div class="mobile-menu-card-img-container">
+              <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
+              <div v-else class="mobile-menu-card-placeholder">🍗</div>
+            </div>
+            
+            <!-- Middle: Name & Category -->
+            <div class="mobile-menu-card-details">
+              <div class="mobile-menu-card-name">{{ item.name }}</div>
+              <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
+            </div>
+            
+            <!-- Right: Price & Active Switch -->
+            <div class="mobile-menu-card-meta">
+              <div class="mobile-menu-card-price">{{ formatCurrency(item.price) }}</div>
+              <div class="mobile-menu-card-status">
+                <label class="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    :checked="item.active !== 0 && item.active !== false"
+                    @change="handleToggleActive(item)"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Bottom Action Buttons -->
+          <div class="mobile-menu-card-actions">
+            <button class="btn-action btn-action-edit" @click="openEditModal(item)">📝 แก้ไข</button>
+            <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -232,7 +285,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../api';
 import { ui, formatCurrency } from '../helpers';
 
@@ -426,7 +479,185 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Custom responsive layout for top actions */
+.menu-top-action-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md);
+}
+.menu-total-count {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+.menu-action-buttons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Hide mobile menu list by default */
+.mobile-menu-list-container {
+  display: none;
+}
+
+/* Desktop layout rules */
+.desktop-menu-table-container {
+  display: block;
+}
+
 .table-row-hover:hover {
   background: rgba(139, 3, 19, 0.015) !important;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  /* Top Actions layout on mobile */
+  .menu-top-action-card {
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: stretch;
+    text-align: center;
+    padding: var(--space-md);
+  }
+  
+  .menu-total-count {
+    font-size: var(--font-base);
+    font-weight: var(--font-weight-medium);
+  }
+  
+  .menu-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+    width: 100%;
+  }
+  
+  .menu-action-buttons button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Table Hide & Mobile List Show */
+  .desktop-menu-table-container {
+    display: none;
+  }
+  
+  .mobile-menu-list-container {
+    display: block;
+    width: 100%;
+  }
+  
+  .mobile-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding-bottom: var(--space-2xl);
+  }
+  
+  .mobile-menu-card {
+    background: var(--card-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    box-shadow: 0 4px 12px rgba(139, 3, 19, 0.03);
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mobile-menu-card.inactive-item {
+    border-color: rgba(110, 78, 55, 0.15);
+    background: rgba(110, 78, 55, 0.02);
+  }
+
+  .mobile-menu-card-body {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%;
+  }
+  
+  .mobile-menu-card-img-container {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .mobile-menu-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .mobile-menu-card-placeholder {
+    font-size: 1.6rem;
+  }
+  
+  .mobile-menu-card-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  
+  .mobile-menu-card-name {
+    font-size: var(--font-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    word-break: break-word;
+    text-align: left;
+  }
+  
+  .mobile-menu-card-category {
+    font-size: var(--font-xs);
+    color: var(--text-tertiary);
+    text-align: left;
+  }
+  
+  .mobile-menu-card-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+  }
+  
+  .mobile-menu-card-price {
+    font-size: var(--font-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--primary);
+  }
+  
+  .mobile-menu-card-status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  
+  .mobile-menu-card-actions {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px dashed var(--border-color);
+    width: 100%;
+  }
+  
+  .mobile-menu-card-actions .btn-action {
+    flex: 1;
+    height: 44px;
+    font-size: var(--font-sm);
+    justify-content: center;
+  }
 }
 </style>

@@ -8,14 +8,14 @@
       </div>
     </div>
 
-    <!-- Stock Table -->
-    <div class="card p-0 overflow-hidden mb-lg">
+    <!-- Desktop Stock Table (Visible on desktop only) -->
+    <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
       <div style="overflow-x: auto;">
         <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-              <th style="padding: var(--space-md);">เมนูอาหาร</th>
-              <th style="padding: var(--space-md); text-align: right;">จำนวนคงเหลือ</th>
+              <th style="padding: var(--space-md); text-align: center;">เมนูอาหาร</th>
+              <th style="padding: var(--space-md); text-align: center;">จำนวนคงเหลือ</th>
               <th style="padding: var(--space-md); text-align: center;">จัดการสต็อก</th>
             </tr>
           </thead>
@@ -45,27 +45,85 @@
                 </div>
               </td>
               <!-- Quantity -->
-              <td style="padding: var(--space-md); text-align: right; font-weight: bold; vertical-align: middle;">
-                <span v-if="item.quantity === null || item.quantity === undefined" class="text-secondary" style="font-weight: normal; font-size:var(--font-xs);">
-                  ♾️ ไม่จำกัด
-                </span>
-                <span v-else :class="{ 'text-danger': item.quantity <= lowStockThreshold }">
-                  {{ item.quantity }} ชิ้น
-                  <span v-if="item.quantity <= lowStockThreshold && item.quantity > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
-                  <span v-if="item.quantity <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
+              <td style="padding: var(--space-md); text-align: center; font-weight: bold; vertical-align: middle;">
+                <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }">
+                  {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
+                  <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
+                  <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
                 </span>
               </td>
               <!-- Actions -->
               <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <div class="flex justify-center gap-sm">
-                  <button class="btn btn-success btn-sm" @click="openActionModal('restock', item)">➕ เติมของ</button>
-                  <button class="btn btn-secondary btn-sm" @click="openActionModal('adjust', item)">🔧 ปรับปรุง</button>
-                  <button class="btn btn-ghost btn-sm p-xs" title="ดูประวัติ" @click="viewLogs(item)">📊 ประวัติ</button>
+                <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
+                  <button class="btn btn-success" @click="openActionModal('restock', item)">➕ เติมของ</button>
+                  <button class="btn btn-secondary" @click="openActionModal('adjust', item)">🔧 ปรับปรุง</button>
+                  <button class="btn" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2);" @click="openActionModal('waste', item)">🗑️ ของเสีย</button>
+                  <button class="btn" style="background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);" @click="openActionModal('staff_benefit', item)">🍴 เครดิต</button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Mobile Stock Card List (Visible on mobile only) -->
+    <div class="mobile-stock-list-container">
+      <div v-if="loading" class="text-center py-3xl">
+        <div class="spinner" style="margin: 0 auto;"></div>
+      </div>
+      <div v-else-if="stockItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
+        ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก
+      </div>
+      <div v-else class="mobile-stock-list">
+        <div 
+          v-for="item in stockItems" 
+          :key="item.id" 
+          class="mobile-stock-card"
+          :class="{ 'out-of-stock-card': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0 }"
+        >
+          <div class="mobile-stock-card-body">
+            <!-- Left: Name & ID -->
+            <div class="mobile-stock-card-details">
+              <div class="mobile-stock-card-name">{{ item.name }}</div>
+              <div class="mobile-stock-card-id">ID: {{ item.id }}</div>
+            </div>
+            
+            <!-- Right: Stock Quantity & Badge -->
+            <div class="mobile-stock-card-meta">
+              <div 
+                class="mobile-stock-card-qty"
+                :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }"
+              >
+                {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
+              </div>
+              <div class="mobile-stock-card-badge">
+                <span 
+                  v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" 
+                  class="badge badge-warning badge-sm"
+                  style="display: block; font-size: 0.65rem;"
+                >
+                  ⚠️ ใกล้หมด
+                </span>
+                <span 
+                  v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" 
+                  class="badge badge-danger badge-sm"
+                  style="display: block; font-size: 0.65rem;"
+                >
+                  ❌ หมดเกลี้ยง
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Bottom Stock Actions in 2x2 Grid -->
+          <div class="mobile-stock-card-actions">
+            <button class="btn btn-success" @click="openActionModal('restock', item)">➕ เติมของ</button>
+            <button class="btn btn-secondary" @click="openActionModal('adjust', item)">🔧 ปรับปรุง</button>
+            <button class="btn btn-danger-outline" @click="openActionModal('waste', item)">🗑️ ของเสีย</button>
+            <button class="btn btn-warning-outline" @click="openActionModal('staff_benefit', item)">🍴 เครดิต</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -75,7 +133,7 @@
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
           <h3>
-            {{ actionType === 'restock' ? '➕ เติมสต็อกสินค้า' : '🔧 ปรับปรุงยอดสต็อก' }}
+            {{ actionType === 'restock' ? '➕ เติมสต็อกสินค้า' : actionType === 'waste' ? '🗑️ บันทึกสินค้าเสีย' : actionType === 'staff_benefit' ? '🍴 บันทึกเครดิตพนักงาน' : '🔧 ปรับปรุงยอดสต็อก' }}
           </h3>
           <button class="modal-close" @click="showActionModal = false">✕</button>
         </div>
@@ -84,13 +142,13 @@
             {{ activeItem?.name }}
           </div>
           <div style="font-size: var(--font-sm); color: var(--text-secondary); text-align: center; margin-bottom: var(--space-lg);">
-            จำนวนคงเหลือในระบบปัจจุบัน: <strong>{{ activeItem?.quantity !== null ? activeItem?.quantity : 'ไม่จำกัด' }}</strong>
+            จำนวนคงเหลือในระบบปัจจุบัน: <strong>{{ activeItem?.quantity !== null && activeItem?.quantity !== undefined ? activeItem?.quantity : 0 }} ชิ้น</strong>
           </div>
 
           <!-- Quantity input -->
           <div class="form-group">
             <label class="form-label">
-              {{ actionType === 'restock' ? 'จำนวนที่ต้องการเติม (ชิ้น) *' : 'ระบุยอดจำนวนจริงหน้าร้านปัจจุบัน (ชิ้น) *' }}
+              {{ actionType === 'restock' ? 'จำนวนที่ต้องการเติม (ชิ้น) *' : 'จำนวนที่ต้องการหัก (ชิ้น) *' }}
             </label>
             <input 
               type="number" 
@@ -101,14 +159,28 @@
             />
           </div>
 
+          <!-- Waste Preset Notes -->
+          <div v-if="actionType === 'waste'" class="form-group">
+            <label class="form-label">สาเหตุของเสีย</label>
+            <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+              <button 
+                v-for="preset in wastePresets" :key="preset"
+                class="btn btn-sm"
+                :class="actionForm.note === preset ? 'btn-primary' : 'btn-secondary'"
+                @click="actionForm.note = preset"
+                style="min-height:38px;"
+              >{{ preset }}</button>
+            </div>
+          </div>
+
           <!-- Note/Reason -->
           <div class="form-group">
-            <label class="form-label">บันทึกช่วยจำ (เช่น เลขบิล หรือเหตุผลที่ปรับปรุง)</label>
+            <label class="form-label">บันทึกช่วยจำ {{ actionType === 'waste' || actionType === 'staff_benefit' ? '' : '(เช่น เลขบิล หรือเหตุผลที่ปรับปรุง)' }}</label>
             <input 
               type="text" 
               class="form-input" 
               v-model="actionForm.note" 
-              placeholder="ใส่ข้อความช่วยจำ..." 
+              :placeholder="actionType === 'staff_benefit' ? 'ชื่อพนักงานที่รับ...' : 'ใส่ข้อความช่วยจำ...'" 
             />
           </div>
 
@@ -185,7 +257,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../api';
 import { ui, formatDateTime } from '../helpers';
 
@@ -197,10 +269,11 @@ const loading = ref(true);
 const lowStockThreshold = computed(() => store.lowStockThreshold);
 const showActionModal = ref(false);
 const showLogsModal = ref(false);
-const actionType = ref('restock'); // 'restock' or 'adjust'
+const actionType = ref('restock'); // 'restock', 'adjust', 'waste', or 'staff_benefit'
 const activeItem = ref(null);
 const logs = ref([]);
 const logsLoading = ref(false);
+const wastePresets = ['🍂 เน่า/เสีย', '🛹 ตกพื้น/เสียหาย'];
 
 const actionForm = ref({
   quantity: '',
@@ -252,7 +325,10 @@ const handleSaveAction = async () => {
     if (actionType.value === 'restock') {
       res = await api.stock.restock(itemId, { quantity: qty, note });
     } else {
-      res = await api.stock.adjust(itemId, { quantity: qty, note });
+      // For adjust, waste, and staff_benefit — send negative qty and reason
+      const reason = actionType.value === 'waste' ? 'waste' : actionType.value === 'staff_benefit' ? 'staff_benefit' : 'adjustment';
+      const delta = actionType.value === 'adjust' ? qty : -Math.abs(qty);
+      res = await api.stock.adjust(itemId, { quantity: delta, reason, note });
     }
 
     if (res.success) {
@@ -290,7 +366,8 @@ const getReasonLabel = (reason) => {
     'restock': '➕ เติมสต็อกสินค้า',
     'adjustment': '🔧 ปรับปรุงจำนวนสต็อก',
     'waste': '🗑️ สินค้าเสีย/ทิ้ง',
-    'cancel_restore': '🔄 คืนสต็อก (ยกเลิกบิล)'
+    'cancel_restore': '🔄 คืนสต็อก (ยกเลิกบิล)',
+    'staff_benefit': '🍴 แจกพนักงาน/เครดิต'
   };
   return map[reason] || reason;
 };
@@ -302,6 +379,135 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Responsive container controls */
+.mobile-stock-list-container {
+  display: none;
+}
+
+.desktop-stock-table-container {
+  display: block;
+}
+
+.btn-danger-outline {
+  background: rgba(255, 59, 48, 0.08) !important;
+  color: #ff3b30 !important;
+  border: 1px solid rgba(255, 59, 48, 0.2) !important;
+}
+
+.btn-warning-outline {
+  background: rgba(255, 149, 0, 0.08) !important;
+  color: #ff9500 !important;
+  border: 1px solid rgba(255, 149, 0, 0.2) !important;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .desktop-stock-table-container {
+    display: none;
+  }
+  
+  .mobile-stock-list-container {
+    display: block;
+    width: 100%;
+  }
+  
+  .mobile-stock-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding-bottom: var(--space-2xl);
+  }
+  
+  .mobile-stock-card {
+    background: var(--card-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    box-shadow: 0 4px 12px rgba(139, 3, 19, 0.03);
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mobile-stock-card.out-of-stock-card {
+    border-color: rgba(173, 40, 30, 0.2);
+    background: rgba(173, 40, 30, 0.02);
+  }
+  
+  .mobile-stock-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    width: 100%;
+  }
+  
+  .mobile-stock-card-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    text-align: left;
+  }
+  
+  .mobile-stock-card-name {
+    font-size: var(--font-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    word-break: break-word;
+  }
+  
+  .mobile-stock-card-id {
+    font-size: var(--font-xs);
+    color: var(--text-tertiary);
+  }
+  
+  .mobile-stock-card-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+  }
+  
+  .mobile-stock-card-qty {
+    font-size: var(--font-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-secondary);
+  }
+  
+  .mobile-stock-card-qty.text-danger {
+    color: var(--danger) !important;
+  }
+  
+  .mobile-stock-card-badge {
+    display: flex;
+    align-items: center;
+  }
+  
+  .mobile-stock-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px dashed var(--border-color);
+    width: 100%;
+  }
+  
+  .mobile-stock-card-actions .btn {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: var(--font-sm) !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
 .table-row-hover:hover {
   background: rgba(139, 3, 19, 0.015) !important;
 }
@@ -369,11 +575,20 @@ onMounted(() => {
 .stock-actions {
   display: flex;
   gap: var(--space-xs);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .stock-actions .btn {
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-xs);
+  padding: 10px 18px !important;
+  font-size: var(--font-sm) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  min-height: 44px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: var(--radius-md) !important;
+  gap: 4px !important;
 }
 
 /* --- Stock History / Logs --- */

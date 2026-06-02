@@ -112,6 +112,7 @@
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
               <th style="padding: var(--space-md); font-size:var(--font-sm);">ชื่อพนักงาน</th>
+              <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">สาขา</th>
               <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">บทบาท</th>
               <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">รหัส PIN</th>
               <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">จัดการ</th>
@@ -119,7 +120,7 @@
           </thead>
           <tbody>
             <tr v-if="usersLoading">
-              <td colspan="4" style="text-align: center; padding: var(--space-2xl);">
+              <td colspan="5" style="text-align: center; padding: var(--space-2xl);">
                 <div class="spinner" style="margin: 0 auto;"></div>
               </td>
             </tr>
@@ -133,6 +134,11 @@
               <td style="padding: var(--space-md); vertical-align: middle;">
                 <div class="font-bold" style="font-size: var(--font-base);">{{ u.name }}</div>
                 <div style="font-size: 10px; color: var(--text-tertiary);">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+              </td>
+              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <span style="font-size: var(--font-xs); color: var(--text-secondary);">
+                  🏠 {{ getBranchName(u.branch_id) }}
+                </span>
               </td>
               <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                 <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
@@ -202,6 +208,16 @@
             </select>
           </div>
 
+          <!-- Branch -->
+          <div class="form-group">
+            <label class="form-label">🏠 สาขาที่สังกัด *</label>
+            <select class="form-select" v-model="userForm.branch_id">
+              <option v-for="b in branches" :key="b.id" :value="b.id">
+                {{ b.name }}{{ b.address ? ' — ' + b.address : '' }}
+              </option>
+            </select>
+          </div>
+
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
             <button class="btn btn-secondary flex-1" @click="showUserModal = false">ยกเลิก</button>
@@ -233,6 +249,7 @@ const usersLoading = ref(false);
 const showUserModal = ref(false);
 const isEditUserMode = ref(false);
 const editUserId = ref(null);
+const branches = ref([]);
 
 // Forms
 const shopForm = ref({
@@ -247,7 +264,8 @@ const shopForm = ref({
 const userForm = ref({
   name: '',
   pin: '',
-  role: 'staff'
+  role: 'staff',
+  branch_id: null
 });
 
 // Load Shop Settings
@@ -312,7 +330,8 @@ const openAddUserModal = () => {
   userForm.value = {
     name: '',
     pin: '',
-    role: 'staff'
+    role: 'staff',
+    branch_id: branches.value.length > 0 ? branches.value[0].id : null
   };
   showUserModal.value = true;
 };
@@ -323,7 +342,8 @@ const openEditUserModal = (u) => {
   userForm.value = {
     name: u.name,
     pin: '', // Keep PIN empty initially for security
-    role: u.role
+    role: u.role,
+    branch_id: u.branch_id || (branches.value.length > 0 ? branches.value[0].id : null)
   };
   showUserModal.value = true;
 };
@@ -334,7 +354,8 @@ const handleSaveUser = async () => {
     const payload = {
       name: userForm.value.name,
       pin: userForm.value.pin,
-      role: userForm.value.role
+      role: userForm.value.role,
+      branch_id: userForm.value.branch_id
     };
 
     let res;
@@ -376,9 +397,28 @@ const handleDeleteUser = async (id) => {
   }
 };
 
+// Load branches for user management
+const loadBranches = async () => {
+  try {
+    const res = await api.auth.getBranches();
+    if (res.success && Array.isArray(res.data)) {
+      branches.value = res.data;
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not load branches:', e.message);
+  }
+};
+
+const getBranchName = (branchId) => {
+  if (!branchId) return 'ไม่ระบุ';
+  const b = branches.value.find(br => br.id === branchId);
+  return b ? b.name : `สาขา #${branchId}`;
+};
+
 onMounted(() => {
   currentUser.value = getUser();
   loadShopSettings();
+  loadBranches();
   loadUsersData();
 });
 </script>
