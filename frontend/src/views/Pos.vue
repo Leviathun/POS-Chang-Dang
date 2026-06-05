@@ -55,9 +55,11 @@
               <div v-else class="pos-item-placeholder">{{ getEmojiPlaceholder(item.category_id) }}</div>
             </div>
 
-            <!-- Product Name & Price & Stock in stable container -->
+            <!-- Product Name -->
+            <div class="pos-item-name">{{ item.name }}</div>
+
+            <!-- Product Price & Stock in stable container -->
             <div class="pos-item-details">
-              <div class="pos-item-name">{{ item.name }}</div>
               <div class="pos-item-price">{{ formatCurrency(item.price) }}</div>
               <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock">
                 {{ item.stock <= 0 ? '❌ หมด' : `เหลือ ${item.stock}` }}
@@ -482,15 +484,16 @@ onUnmounted(() => {
 .pos-item-name {
   font-size: var(--font-sm);
   font-weight: var(--font-weight-semibold);
-  margin-top: 2px;
   line-height: 1.25;
   color: var(--text-primary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   height: 2.5em;
+  width: 100%;
+  padding: 0 var(--space-xs);
+  overflow: hidden;
 }
 
 .pos-item-price {

@@ -33,7 +33,7 @@
             </tr>
             <tr v-else-if="menuItems.length === 0">
               <td colspan="5" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
-                ยังไม่มีข้อมูลสินค้า กด "+เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
+                ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
               </td>
             </tr>
             <tr 
@@ -91,7 +91,7 @@
         <div class="spinner" style="margin: 0 auto;"></div>
       </div>
       <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
-        ยังไม่มีข้อมูลสินค้า กด "+เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
+        ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
       </div>
       <div v-else class="mobile-menu-list">
         <div 
@@ -221,7 +221,7 @@
               type="text" 
               class="form-input" 
               v-model="itemForm.name" 
-              placeholder="เช่น ปีกไก่ทอด Rimberio" 
+              placeholder="เช่น ปีกไก่ทอด" 
             />
           </div>
 
@@ -232,7 +232,7 @@
               type="number" 
               class="form-input" 
               v-model.number="itemForm.price" 
-              placeholder="เช่น 59" 
+              placeholder="เช่น 20" 
               min="0"
             />
           </div>
@@ -255,19 +255,40 @@
               <span class="toggle-slider"></span>
             </label>
             <span style="font-size: var(--font-sm); color: var(--text-primary); font-weight: var(--font-weight-medium);">
-              ติดตามสต็อกของสด (แบ่งประเภทเป็น ของสด / ทอดสุก)
+              มีของสด
             </span>
           </div>
 
           <!-- Image URL -->
           <div class="form-group">
-            <label class="form-label">ลิงก์รูปภาพอาหาร (Image URL)</label>
+            <label class="form-label font-bold">รูปภาพอาหาร</label>
+            <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-xs);">
+              <input 
+                type="text" 
+                class="form-input flex-1" 
+                v-model="itemForm.image_url" 
+                placeholder="ใส่ URL รูปภาพ หรือวางรูปภาพ..." 
+                @paste="handlePaste"
+              />
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 15px;"
+                @click="triggerFileInput"
+              >
+                📁 อัปโหลดภาพ
+              </button>
+            </div>
             <input 
-              type="text" 
-              class="form-input" 
-              v-model="itemForm.image_url" 
-              placeholder="ใส่ URL รูปภาพสินค้า..." 
+              type="file" 
+              ref="fileInputRef" 
+              style="display: none;" 
+              accept="image/*" 
+              @change="handleFileChange"
             />
+            <span style="font-size: var(--font-xs); color: var(--text-tertiary); display: block; margin-top: 2px; text-align: left;">
+              💡 สามารถเลือกไฟล์, วางลิงก์รูปภาพ หรือคัดลอกรูปภาพแล้วกดวาง (Ctrl+V) ในช่องด้านบนได้
+            </span>
           </div>
 
           <!-- Image Preview in Form -->
@@ -343,7 +364,7 @@ const handleToggleActive = async (item) => {
 
 // Delete menu item
 const handleDeleteItem = async (id) => {
-  const confirm = await ui.showConfirm('ลบเมนูอาหาร', 'คุณยืนยันต้องการลบเมนูอาหารนี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้');
+  const confirm = await ui.showConfirm('ลบเมนูอาหาร', 'คุณยืนยันต้องการลบเมนูอาหารนี้ใช่หรือไม่?\nการกระทำนี้ไม่สามารถย้อนกลับได้');
   if (confirm) {
     ui.showLoading();
     try {
@@ -391,6 +412,48 @@ const openEditModal = (item) => {
     track_raw_stock: item.raw_stock !== null && item.raw_stock !== undefined
   };
   showItemModal.value = true;
+};
+
+const fileInputRef = ref(null);
+
+const triggerFileInput = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click();
+  }
+};
+
+const handleFileChange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  if (file.size > 2 * 1024 * 1024) { // limit 2MB
+    ui.showToast('ขนาดไฟล์รูปภาพห้ามเกิน 2MB', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    itemForm.value.image_url = event.target.result;
+    ui.showToast('อัปโหลดและแปลงรูปภาพเรียบร้อย', 'success');
+  };
+  reader.readAsDataURL(file);
+};
+
+const handlePaste = (e) => {
+  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+  for (const item of items) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        itemForm.value.image_url = event.target.result;
+        ui.showToast('วางรูปภาพเรียบร้อยแล้ว', 'success');
+      };
+      reader.readAsDataURL(file);
+      e.preventDefault();
+      break;
+    }
+  }
 };
 
 // Create new Category
@@ -498,11 +561,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-md);
 }
 .menu-total-count {
-  font-size: var(--font-sm);
+  font-size: 1.25rem;
+  font-weight: bold;
   color: var(--text-secondary);
+  margin-left: 0;
 }
 .menu-action-buttons {
   display: flex;
@@ -535,8 +599,9 @@ onMounted(() => {
   }
   
   .menu-total-count {
-    font-size: var(--font-base);
-    font-weight: var(--font-weight-medium);
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-left: 0;
   }
   
   .menu-action-buttons {

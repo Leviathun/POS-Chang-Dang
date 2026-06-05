@@ -3,8 +3,8 @@
     
     <!-- Info Header Card -->
     <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div style="font-size: var(--font-sm); color: var(--text-secondary); text-align: left;">
-        ระบบจัดการคลังวัตถุดิบและสต็อกสินค้าของร้านไก่ทอดช้างแดง
+      <div class="stock-page-title">
+        ระบบจัดการสต็อกสินค้า
       </div>
       <div>
         <button class="btn btn-primary" style="background: linear-gradient(135deg, #e63946, #b7091b); color: white; border: none; font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); gap: var(--space-xs); padding: 10px 20px;" @click="openBulkModal">
@@ -20,8 +20,8 @@
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
               <th style="padding: var(--space-md); text-align: center; width: 30%;">เมนูอาหาร</th>
-              <th style="padding: var(--space-md); text-align: center; width: 20%;">ของสด (🥩)</th>
-              <th style="padding: var(--space-md); text-align: center; width: 20%;">ทอดสุก/พร้อมขาย (🍗)</th>
+              <th style="padding: var(--space-md); text-align: center; width: 20%;">ของสด</th>
+              <th style="padding: var(--space-md); text-align: center; width: 20%;">ทอดสุก/พร้อมขาย</th>
               <th style="padding: var(--space-md); text-align: center; width: 30%;">จัดการสต็อก</th>
             </tr>
           </thead>
@@ -72,7 +72,7 @@
               <!-- Actions -->
               <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                 <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
-                  <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn btn-primary" style="background: linear-gradient(135deg, #ff4500, #ff8c00); color: white;" @click="openActionModal('fry', item)">🔥 ทอดสินค้า</button>
+                  <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn btn-primary" style="background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" @click="openActionModal('fry', item)">🔥 ทอดสินค้า</button>
                   <button class="btn" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2);" @click="openActionModal('waste', item)">🗑️ ของเสีย</button>
                   <button class="btn" style="background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);" @click="openActionModal('staff_benefit', item)">🍴 เครดิต</button>
                 </div>
@@ -159,7 +159,7 @@
             <button 
               v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" 
               class="btn btn-primary" 
-              style="grid-column: span 2; background: linear-gradient(135deg, #ff4500, #ff8c00); color: white;" 
+              style="grid-column: span 2; background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" 
               @click="openActionModal('fry', item)"
             >
               🔥 ทอดสินค้า (หักของสด ➔ ทอดสุก)
@@ -203,7 +203,7 @@
                 :class="actionForm.stock_type === 'cooked' ? 'btn-primary' : 'btn-secondary'"
                 @click="actionForm.stock_type = 'cooked'"
                 type="button"
-                style="min-height:38px; padding: 0 !important; font-size: var(--font-xs) !important;"
+                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: bold;"
               >
                 🍗 ทอดสุก ({{ activeItem?.quantity || 0 }} ชิ้น)
               </button>
@@ -212,7 +212,7 @@
                 :class="actionForm.stock_type === 'raw' ? 'btn-primary' : 'btn-secondary'"
                 @click="actionForm.stock_type = 'raw'"
                 type="button"
-                style="min-height:38px; padding: 0 !important; font-size: var(--font-xs) !important;"
+                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: bold;"
               >
                 🥩 ของสด ({{ activeItem?.raw_quantity || 0 }} ชิ้น)
               </button>
@@ -234,7 +234,7 @@
           </div>
 
           <div v-if="actionType === 'fry'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
-            * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "ทอดสุกพร้อมขาย" ทันที
+            * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "ทอดสุก" 
           </div>
 
           <!-- Waste Preset Notes -->
@@ -252,7 +252,7 @@
           </div>
 
           <!-- Note/Reason -->
-          <div class="form-group">
+          <div v-if="actionType !== 'fry'" class="form-group">
             <label class="form-label">บันทึกช่วยจำ {{ actionType === 'waste' || actionType === 'staff_benefit' ? '' : '(เช่น เลขบิล หรือเหตุผลที่ปรับปรุง)' }}</label>
             <input 
               type="text" 
@@ -348,24 +348,24 @@
               :class="{ 'active': bulkTab === 'relative' }" 
               @click="setBulkTab('relative')"
             >
-              📥 เพิ่มสต็อก (Relative)
+              📥 เพิ่มสต็อก
             </button>
             <button 
               class="bulk-tab" 
               :class="{ 'active': bulkTab === 'absolute' }" 
               @click="setBulkTab('absolute')"
             >
-              🔧 ปรับปรุงยอด (Absolute)
+              🔧 ปรับปรุงยอด
             </button>
           </div>
 
           <!-- Description Hint -->
           <div class="mb-md" style="font-size: var(--font-xs); color: var(--text-secondary); text-align: left;">
             <span v-if="bulkTab === 'relative'">
-              💡 <strong>โหมดเพิ่มสต็อกสัมพัทธ์ (Relative):</strong> พิมพ์จำนวนที่นำเข้าเพิ่ม (เช่น <code>30</code> หรือ <code>+30</code>) หรือจำนวนที่หักออก (เช่น <code>-5</code>) ปล่อยว่างหรือกรอก <code>0</code> หากไม่มีความเปลี่ยนแปลง
+              💡 <strong>โหมดเพิ่มสต็อก :</strong> พิมพ์จำนวนที่นำเข้าเพิ่ม (เช่น <code>30</code>) หรือจำนวนที่หักออก (เช่น <code>-5</code>) ปล่อยว่างหรือกรอก <code>0</code> หากไม่มีความเปลี่ยนแปลง
             </span>
             <span v-else>
-              💡 <strong>โหมดปรับปรุงยอดนับจริง (Absolute):</strong> นับจำนวนจริงบนชั้นวางแล้วกรอกยอดสุดท้ายตรงๆ ระบบจะทำการคำนวณส่วนต่างเดลต้าและบันทึกเหตุผลให้โดยอัตโนมัติ
+              💡 <strong>โหมดปรับปรุงยอด :</strong> พิมพ์จำนวนที่ต้องการแก้ไข ระบบจะทำการคำนวณส่วนต่างและบันทึกเหตุผลให้โดยอัตโนมัติ 
             </span>
           </div>
 
@@ -729,15 +729,15 @@ onMounted(() => {
 }
 .bulk-tab {
   flex: 1;
-  padding: 12px 8px;
+  padding: 16px 8px;
   text-align: center;
   cursor: pointer;
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
   color: var(--text-secondary);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold);
   transition: all var(--transition-base);
 }
 .bulk-tab:hover {
@@ -764,10 +764,10 @@ onMounted(() => {
 .bulk-stock-header-row {
   display: grid;
   grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.2fr;
-  padding: var(--space-sm);
+  padding: var(--space-md) var(--space-sm);
   background: rgba(139, 3, 19, 0.05);
   border-bottom: 2px solid var(--border-color);
-  font-size: var(--font-xs);
+  font-size: 1.15rem;
   font-weight: bold;
   color: var(--text-secondary);
 }
@@ -775,7 +775,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.2fr;
   align-items: center;
-  padding: var(--space-sm);
+  padding: var(--space-md) var(--space-sm);
   border-bottom: 1px solid var(--border-color);
   gap: var(--space-sm);
 }
@@ -786,9 +786,11 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
   text-align: left;
+  font-size: 1.25rem;
 }
 .bulk-item-current-col {
-  font-size: var(--font-xs);
+  font-size: 1.20rem;
+  font-weight: bold;
   color: var(--text-primary);
   text-align: center;
 }
@@ -798,9 +800,10 @@ onMounted(() => {
   gap: 2px;
 }
 .bulk-input-wrapper input {
-  height: 38px;
+  height: 48px;
   padding: var(--space-xs);
-  font-size: var(--font-sm);
+  font-size: 1.3rem;
+  font-weight: bold;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
@@ -818,6 +821,20 @@ onMounted(() => {
   cursor: not-allowed !important;
   opacity: 0.6 !important;
 }
+.absolute-reason-section select,
+.absolute-reason-section input {
+  font-size: 1.15rem !important;
+  height: 48px !important;
+}
+.absolute-reason-section label {
+  font-size: 1.15rem !important;
+}
+.stock-page-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--text-secondary);
+  text-align: left;
+}
 .mobile-label {
   display: none;
 }
@@ -825,6 +842,11 @@ onMounted(() => {
   display: none;
 }
 @media (max-width: 768px) {
+  .stock-page-title {
+    font-size: 1.1rem !important;
+    font-weight: bold !important;
+    text-align: center !important;
+  }
   .desktop-only {
     display: none !important;
   }
@@ -841,10 +863,11 @@ onMounted(() => {
   }
   .mobile-label {
     display: inline-block;
-    font-size: 11px;
+    font-size: 1.15rem;
+    font-weight: bold;
     color: var(--text-tertiary);
     margin-right: var(--space-xs);
-    width: 100px;
+    width: 130px;
     text-align: left;
     flex-shrink: 0;
   }
@@ -856,6 +879,7 @@ onMounted(() => {
     align-items: center;
     text-align: left !important;
     padding-left: var(--space-xs);
+    font-size: 1.20rem;
   }
   .bulk-item-input-col {
     display: flex;

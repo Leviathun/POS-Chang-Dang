@@ -732,6 +732,7 @@ onMounted(() => {
   font-size: var(--font-sm);
   color: var(--text-secondary);
   margin-bottom: var(--space-2xl);
+  white-space: pre-line;
 }
 
 .confirm-actions {
