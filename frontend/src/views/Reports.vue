@@ -225,15 +225,15 @@
 
         <!-- Ledger Table (Desktop Only) -->
         <div class="hide-mobile" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm);">
+          <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-sm); table-layout: fixed;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap;">วัน-เวลา</th>
-                <th style="padding: var(--space-md); font-size:12px; font-weight:bold;">ชื่อรายการ</th>
-                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:right; white-space:nowrap;">รายรับ</th>
-                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:right; white-space:nowrap;">รายจ่าย</th>
-                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:right; white-space:nowrap;">คงเหลือ</th>
-                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:center; white-space:nowrap;">จัดการ</th>
+                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: left !important;">วัน-เวลา</th>
+                <th style="width: 35%; padding: var(--space-md); font-size:12px; font-weight:bold; text-align: left !important;">ชื่อรายการ</th>
+                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">รายรับ</th>
+                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">รายจ่าย</th>
+                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">คงเหลือ</th>
+                <th style="width: 5%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -254,22 +254,22 @@
                 style="border-bottom: 1px solid var(--border-color);"
                 class="table-row-hover"
               >
-                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; font-size:11px; color:var(--text-secondary);">
+                <td style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; font-size:11px; color:var(--text-secondary); text-align: left !important;">
                   {{ formatDate(item.created_at) }}<br/>{{ formatTime(item.created_at) }}
                 </td>
-                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500;">
+                <td style="width: 35%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500; text-align: left !important; white-space: normal; word-break: break-word;">
                   {{ item.name }}
                 </td>
-                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:right; font-weight:bold;" class="text-success">
+                <td class="text-success" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; text-align: center !important;">
                   {{ item.income > 0 ? formatCurrency(item.income) : '-' }}
                 </td>
-                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:right; font-weight:bold;" class="text-danger">
+                <td class="text-danger" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; text-align: center !important;">
                   {{ item.expense > 0 ? '-' + formatCurrency(item.expense) : '-' }}
                 </td>
-                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:right; font-weight:bold; color: var(--text-primary);">
+                <td style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; color: var(--text-primary); text-align: center !important;">
                   {{ formatCurrency(item.runningBalance) }}
                 </td>
-                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:center;">
+                <td style="width: 5%; padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align: center !important;">
                   <button 
                     v-if="item.type === 'expense'" 
                     class="btn btn-sm" 

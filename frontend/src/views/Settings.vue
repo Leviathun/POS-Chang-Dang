@@ -100,70 +100,128 @@
     </div>
 
     <!-- Tab 2: User management -->
-    <div v-if="activeTab === 'users'" class="card p-0 overflow-hidden">
-      <div class="flex flex-between align-center p-md" style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.02);">
-        <span class="font-bold" style="font-size: var(--font-sm);">👥 จัดการพนักงานหน้าร้าน</span>
-        <button class="btn btn-primary btn-sm" @click="openAddUserModal">➕ เพิ่มพนักงาน</button>
+    <div v-if="activeTab === 'users'" class="flex flex-col gap-lg" style="width: 100%;">
+      <!-- Top Action Card -->
+      <div class="card flex flex-between align-center p-lg staff-header-card" style="background: var(--card-bg); gap: var(--space-md); flex-wrap: wrap;">
+        <span class="font-bold" style="font-size: 1.25rem;">👥 จัดการพนักงานหน้าร้าน</span>
+        <button class="btn btn-primary" style="font-weight: bold; min-height: 44px; padding: 10px 20px;" @click="openAddUserModal">➕ เพิ่มพนักงาน</button>
       </div>
 
-      <!-- Users list table -->
-      <div style="overflow-x: auto;">
-        <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-              <th style="padding: var(--space-md); font-size:var(--font-sm);">ชื่อพนักงาน</th>
-              <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">สาขา</th>
-              <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">บทบาท</th>
-              <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">รหัส PIN</th>
-              <th style="padding: var(--space-md); font-size:var(--font-sm); text-align: center;">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="usersLoading">
-              <td colspan="5" style="text-align: center; padding: var(--space-2xl);">
-                <div class="spinner" style="margin: 0 auto;"></div>
-              </td>
-            </tr>
-            <tr 
-              v-else 
-              v-for="u in users" 
-              :key="u.id" 
-              style="border-bottom: 1px solid var(--border-color);"
-              class="table-row-hover"
-            >
-              <td style="padding: var(--space-md); vertical-align: middle;">
-                <div class="font-bold" style="font-size: var(--font-base);">{{ u.name }}</div>
-                <div style="font-size: 10px; color: var(--text-tertiary);">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
-              </td>
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <span style="font-size: var(--font-xs); color: var(--text-secondary);">
-                  🏠 {{ getBranchName(u.branch_id) }}
-                </span>
-              </td>
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
-                  {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
-                </span>
-              </td>
-              <td style="padding: var(--space-md); text-align: center; font-weight: bold; vertical-align: middle; color:var(--primary);">
-                ••••
-              </td>
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <div class="flex justify-center gap-sm">
-                  <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditUserModal(u)">📝 แก้ไข</button>
-                  <button 
-                    class="btn-action btn-action-delete" 
-                    title="ลบ"
-                    :disabled="u.id === currentUser?.id"
-                    @click="handleDeleteUser(u.id)"
-                  >
-                    🗑️ ลบ
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Users list table (Visible on Desktop Only) -->
+      <div class="card p-0 overflow-hidden hide-mobile">
+        <div style="overflow-x: auto;">
+          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md);">ชื่อพนักงาน</th>
+                <th style="padding: var(--space-md); text-align: center;">สาขา</th>
+                <th style="padding: var(--space-md); text-align: center;">บทบาท</th>
+                <th style="padding: var(--space-md); text-align: center;">รหัส PIN</th>
+                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="usersLoading">
+                <td colspan="5" style="text-align: center; padding: var(--space-2xl);">
+                  <div class="spinner" style="margin: 0 auto;"></div>
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="u in users" 
+                :key="u.id" 
+                style="border-bottom: 1px solid var(--border-color);"
+                class="table-row-hover"
+              >
+                <td style="padding: var(--space-md); vertical-align: middle;">
+                  <div class="font-bold" style="font-size: var(--font-base);">{{ u.name }}</div>
+                  <div style="font-size: 10px; color: var(--text-tertiary);">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+                </td>
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <span style="font-size: var(--font-xs); color: var(--text-secondary);">
+                    🏠 {{ getBranchName(u.branch_id) }}
+                  </span>
+                </td>
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
+                    {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
+                  </span>
+                </td>
+                <td style="padding: var(--space-md); text-align: center; font-weight: bold; vertical-align: middle; color:var(--primary);">
+                  ••••
+                </td>
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <div class="flex justify-center gap-sm">
+                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditUserModal(u)">📝 แก้ไข</button>
+                    <button 
+                      class="btn-action btn-action-delete" 
+                      title="ลบ"
+                      :disabled="u.id === currentUser?.id"
+                      @click="handleDeleteUser(u.id)"
+                    >
+                      🗑️ ลบ
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile Users Cards List (Visible on Mobile Only) -->
+      <div class="show-mobile-only p-md mobile-users-list">
+        <div v-if="usersLoading" style="text-align: center; padding: var(--space-xl);">
+          <div class="spinner" style="margin: 0 auto;"></div>
+        </div>
+        <div v-else-if="users.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+          ยังไม่มีข้อมูลพนักงาน
+        </div>
+        <div 
+          v-else 
+          v-for="u in users" 
+          :key="u.id"
+          class="card p-sm flex align-center gap-md"
+          style="margin-bottom: var(--space-sm);"
+        >
+          <!-- Profile Badge -->
+          <div 
+            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: var(--font-md); flex-shrink: 0;"
+          >
+            {{ u.name ? u.name.charAt(0).toUpperCase() : '👤' }}
+          </div>
+
+          <!-- Info & Actions -->
+          <div class="flex-1" style="min-width: 0;">
+            <div class="flex flex-between align-center mb-xs">
+              <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ u.name }}</span>
+              <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
+                {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
+              </span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: var(--space-sm);">
+              🏠 {{ getBranchName(u.branch_id) }} | PIN: <strong style="color:var(--primary);">••••</strong>
+            </div>
+            <!-- Actions buttons in card -->
+            <div class="flex gap-sm">
+              <button 
+                class="btn btn-sm flex-1" 
+                style="background: rgba(255, 171, 43, 0.12); color: var(--accent-dark); border: 1px solid rgba(255, 171, 43, 0.25); min-height: 36px; font-size: 12px; justify-content: center;" 
+                @click="openEditUserModal(u)"
+              >
+                📝 แก้ไข
+              </button>
+              <button 
+                class="btn btn-sm flex-1" 
+                style="background: rgba(173, 40, 30, 0.08); color: var(--primary); border: 1px solid rgba(173, 40, 30, 0.18); min-height: 36px; font-size: 12px; justify-content: center;" 
+                :disabled="u.id === currentUser?.id"
+                @click="handleDeleteUser(u.id)"
+              >
+                🗑️ ลบ
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -536,5 +594,33 @@ onMounted(() => {
 .staff-role {
   font-size: var(--font-xs);
   color: var(--text-secondary);
+}
+
+/* --- Responsive Visibility Utilities --- */
+.show-mobile-only {
+  display: none !important;
+}
+.hide-mobile {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .show-mobile-only {
+    display: block !important;
+  }
+  .show-mobile-only.mobile-users-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+  .staff-header-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
 }
 </style>
