@@ -1,31 +1,31 @@
 <template>
   <div id="reports-page" class="page-enter">
     
-    <!-- Tab toggles placed at the very top, styled as pills -->
-    <div v-if="isAdminUser" class="reports-pill-tabs mb-lg">
+    <!-- Tab toggles placed at the very top, styled as category tabs (matching settings) -->
+    <div v-if="isAdminUser" class="category-tabs mb-lg">
       <button 
-        class="reports-pill-tab" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'sales' }"
         @click="activeTab = 'sales'"
       >
         📊 ยอดขาย
       </button>
       <button 
-        class="reports-pill-tab" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'expenses' }"
         @click="activeTab = 'expenses'"
       >
         💸 บันทึกค่าใช้จ่ายประจำวัน
       </button>
       <button 
-        class="reports-pill-tab" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'top_menus' }"
         @click="activeTab = 'top_menus'"
       >
         🔥 10 อันดับเมนูขายดี
       </button>
       <button 
-        class="reports-pill-tab" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'activity_logs' }"
         @click="activeTab = 'activity_logs'"
       >
@@ -60,7 +60,7 @@
         <div v-if="isAdminUser" class="grid grid-2 gap-md" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-md);">
           <div class="card text-center p-md">
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px;">ยอดขายวันนี้</div>
-            <div class="font-bold text-gradient" style="font-size: var(--font-xl);">{{ formatCurrency(summary.today_sales) }}</div>
+            <div class="font-bold text-primary" style="font-size: var(--font-xl);">{{ formatCurrency(summary.today_sales) }}</div>
             <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</div>
           </div>
           <div class="card text-center p-md">
@@ -169,43 +169,161 @@
         <div class="card-title" style="font-size: var(--font-sm);">💸 บันทึกค่าใช้จ่ายประจำวัน (วันที่ {{ formatDate(selectedDate) }})</div>
         
         <!-- Quick Add Expense Form -->
-        <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-bottom:var(--space-md);">
-          <input type="number" class="form-input" v-model.number="expenseForm.amount" placeholder="จำนวนเงิน (บาท)" style="flex:1; min-width:100px;" />
-          <select class="form-input" v-model="expenseForm.category" style="flex:1; min-width:120px;">
-            <option value="raw_materials">🍗 วัตถุดิบ</option>
-            <option value="gas_fuel">⛽ แก๊ส/น้ำมัน</option>
-            <option value="packaging">📦 บรรจุภัณฑ์/ถุง</option>
-            <option value="other">📎 อื่นๆ</option>
-          </select>
-        </div>
-        <div style="display:flex; gap:var(--space-sm); margin-bottom:var(--space-md);">
-          <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." style="flex:1;" />
-          <button class="btn btn-primary" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0" style="white-space:nowrap;">
-            💾 บันทึก
-          </button>
+        <div class="expense-form-grid">
+          <div class="form-group mb-xs">
+            <input type="number" class="form-input" v-model.number="expenseForm.amount" placeholder="จำนวนเงิน (บาท)" />
+          </div>
+          <div class="form-group mb-xs">
+            <select class="form-select" v-model="expenseForm.category">
+              <option value="raw_materials">🍗 วัตถุดิบ</option>
+              <option value="gas_fuel">⛽ แก๊ส/น้ำมัน</option>
+              <option value="packaging">📦 บรรจุภัณฑ์/ถุง</option>
+              <option value="other">📎 อื่นๆ</option>
+            </select>
+          </div>
+          <div class="form-group mb-xs">
+            <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." />
+          </div>
+          <div class="form-group mb-xs">
+            <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0" style="white-space:nowrap;">
+              💾 บันทึก
+            </button>
+          </div>
         </div>
 
-        <!-- Today's Expense List -->
-        <div v-if="expenses.length > 0" style="display:flex; flex-direction:column; gap:var(--space-sm);">
-          <div v-for="exp in expenses" :key="exp.id" class="p-sm card" style="font-size:var(--font-sm); background:var(--bg-primary); display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <span class="font-bold text-danger">-{{ formatCurrency(exp.amount) }}</span>
-              <span style="margin-left:6px; color:var(--text-secondary);">{{ getCategoryLabel(exp.category) }}</span>
-              <div v-if="exp.note" style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">{{ exp.note }}</div>
+        <!-- Monthly Ledger Section -->
+        <div class="divider" style="margin: var(--space-xl) 0; height:1px; background:var(--border-color);"></div>
+        
+        <div class="flex flex-between align-center mb-md">
+          <div class="card-title" style="font-size: var(--font-sm); margin: 0;">
+            📅 สมุดบัญชีรายรับ-รายจ่าย (เดือน {{ selectedDate.substring(0, 7) }})
+          </div>
+          <div v-if="ledgerLoading" class="spinner spinner-sm"></div>
+        </div>
+
+        <!-- Monthly Summary Cards -->
+        <div class="ledger-summary-grid">
+          <div class="p-xs card" style="background:rgba(42, 157, 143, 0.05); border:none; text-align:center;">
+            <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายรับรวม</div>
+            <div class="font-bold text-success" style="font-size:var(--font-base);">
+              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.income, 0)) }}
             </div>
-            <button class="btn btn-sm" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:4px 8px; font-size:11px; border-radius:var(--radius-sm); cursor:pointer;" @click="handleDeleteExpense(exp.id)">🗑️</button>
           </div>
-          <div class="flex flex-between font-bold" style="font-size:var(--font-sm); padding-top:var(--space-sm); border-top:1px solid var(--border-color);">
-            <span>รวมค่าใช้จ่ายวันนี้:</span>
-            <span class="text-danger">-{{ formatCurrency(totalExpenses) }}</span>
+          <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
+            <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายจ่ายรวม</div>
+            <div class="font-bold text-danger" style="font-size:var(--font-base);">
+              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.expense, 0)) }}
+            </div>
           </div>
-          <div class="flex flex-between font-bold" style="font-size:var(--font-md); color:var(--success);">
-            <span>💰 กำไรสุทธิ:</span>
-            <span>{{ formatCurrency(dailyReport.total_sales - totalExpenses) }}</span>
+          <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
+            <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">คงเหลือสุทธิ</div>
+            <div class="font-bold" style="font-size:var(--font-base); color: var(--text-primary);">
+              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.income - t.expense, 0)) }}
+            </div>
           </div>
         </div>
-        <div v-else style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
-          ยังไม่มีค่าใช้จ่ายในวันนี้
+
+        <!-- Ledger Table (Desktop Only) -->
+        <div class="hide-mobile" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm);">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap;">วัน-เวลา</th>
+                <th style="padding: var(--space-md); font-size:12px; font-weight:bold;">ชื่อรายการ</th>
+                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:right; white-space:nowrap;">รายรับ</th>
+                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:right; white-space:nowrap;">รายจ่าย</th>
+                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:right; white-space:nowrap;">คงเหลือ</th>
+                <th style="padding: var(--space-md); font-size:12px; font-weight:bold; text-align:center; white-space:nowrap;">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="ledgerLoading && ledgerTransactions.length === 0">
+                <td colspan="6" style="text-align: center; padding: var(--space-xl);">
+                  <div class="spinner" style="margin: 0 auto;"></div>
+                </td>
+              </tr>
+              <tr v-else-if="ledgerTransactions.length === 0">
+                <td colspan="6" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+                  ไม่มีรายการธุรกรรมในเดือนนี้
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="item in ledgerTransactions" 
+                :key="item.type + '-' + item.id" 
+                style="border-bottom: 1px solid var(--border-color);"
+                class="table-row-hover"
+              >
+                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; font-size:11px; color:var(--text-secondary);">
+                  {{ formatDate(item.created_at) }}<br/>{{ formatTime(item.created_at) }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500;">
+                  {{ item.name }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:right; font-weight:bold;" class="text-success">
+                  {{ item.income > 0 ? formatCurrency(item.income) : '-' }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:right; font-weight:bold;" class="text-danger">
+                  {{ item.expense > 0 ? '-' + formatCurrency(item.expense) : '-' }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:right; font-weight:bold; color: var(--text-primary);">
+                  {{ formatCurrency(item.runningBalance) }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align:center;">
+                  <button 
+                    v-if="item.type === 'expense'" 
+                    class="btn btn-sm" 
+                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:4px 8px; font-size:11px; border-radius:var(--radius-sm); cursor:pointer;" 
+                    @click="handleDeleteExpense(item.id)"
+                  >
+                    🗑️
+                  </button>
+                  <span v-else style="color:var(--text-tertiary); font-size:10px;">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Ledger List (Mobile Only) -->
+        <div class="ledger-mobile-list show-mobile-only">
+          <div v-if="ledgerLoading && ledgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
+            <div class="spinner" style="margin: 0 auto;"></div>
+          </div>
+          <div v-else-if="ledgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+            ไม่มีรายการธุรกรรมในเดือนนี้
+          </div>
+          <div v-else style="display:flex; flex-direction:column; gap:var(--space-sm);">
+            <div 
+              v-for="item in ledgerTransactions" 
+              :key="item.type + '-' + item.id" 
+              class="ledger-mobile-card"
+              :class="item.type === 'order' ? 'income' : 'expense'"
+            >
+              <div class="flex flex-between align-center">
+                <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ item.name }}</span>
+              </div>
+              <div class="flex flex-between align-center mt-xs" style="font-size: 11px; color: var(--text-secondary);">
+                <span>📅 {{ formatDate(item.created_at) }} {{ formatTime(item.created_at) }}</span>
+                <div class="flex align-center gap-md">
+                  <span v-if="item.income > 0" class="font-bold text-success" style="font-size: var(--font-base);">
+                    +{{ formatCurrency(item.income) }}
+                  </span>
+                  <span v-else class="font-bold text-danger" style="font-size: var(--font-base);">
+                    -{{ formatCurrency(item.expense) }}
+                  </span>
+                  <button 
+                    v-if="item.type === 'expense'"
+                    class="btn btn-sm" 
+                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 14px; font-size:13px; border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px;" 
+                    @click="handleDeleteExpense(item.id)"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -258,13 +376,20 @@
         <div v-if="filteredActivityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
           ยังไม่มีกิจกรรมที่ตรงตามตัวกรองในวันนี้
         </div>
-        <div v-else style="display:flex; flex-direction:column; gap:var(--space-sm); max-height:450px; overflow-y:auto;">
-          <div v-for="log in filteredActivityLogs" :key="log.id" class="p-sm" style="font-size:12px; border-bottom:1px solid var(--border-color);">
-            <div class="flex flex-between">
-              <span class="font-bold">{{ getActionIcon(log.action) }} {{ log.staff_name || 'ระบบ' }}</span>
-              <span style="color:var(--text-tertiary); font-size:11px;">{{ formatTime(log.created_at) }}</span>
+        <div v-else class="activity-logs-list">
+          <div v-for="log in filteredActivityLogs" :key="log.id" class="activity-log-item">
+            <div class="log-badge-wrapper">
+              <div class="log-badge" :class="log.action">
+                {{ getActionIcon(log.action) }}
+              </div>
             </div>
-            <div style="color:var(--text-secondary); margin-top:2px;">{{ log.details }}</div>
+            <div class="log-content-wrapper">
+              <div class="log-details">{{ log.details }}</div>
+              <div class="log-meta">
+                <span class="log-user">👤 {{ log.staff_name || 'ระบบ' }}</span>
+                <span class="log-time">🕒 {{ formatTime(log.created_at) }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -358,11 +483,13 @@ const activityLogs = ref([]);
 const filterAction = ref('all');
 
 const filteredActivityLogs = computed(() => {
-  if (filterAction.value === 'all') return activityLogs.value;
-  return activityLogs.value.filter(log => {
+  // Filter out create_order entirely to prevent duplicate count & confusion
+  const list = activityLogs.value.filter(log => log.action !== 'create_order');
+  if (filterAction.value === 'all') return list;
+  return list.filter(log => {
     const act = log.action;
     if (filterAction.value === 'login') return act === 'login';
-    if (filterAction.value === 'sales') return act === 'create_order' || act === 'complete_order';
+    if (filterAction.value === 'sales') return act === 'complete_order';
     if (filterAction.value === 'cancel') return act === 'cancel_order';
     if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
     if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
@@ -394,6 +521,66 @@ const expenseForm = ref({
 });
 
 const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.amount || 0), 0));
+
+// Ledger States
+const ledgerTransactions = ref([]);
+const ledgerLoading = ref(false);
+
+const loadMonthlyLedger = async () => {
+  ledgerLoading.value = true;
+  try {
+    const monthVal = selectedDate.value.substring(0, 7);
+    const ordersRes = await api.orders.getAll({ status: 'completed', month: monthVal });
+    const monthOrders = ordersRes.success ? (ordersRes.data || []) : [];
+
+    const expensesRes = await api.expenses.get({ month: monthVal });
+    const monthExpenses = expensesRes.success ? (expensesRes.data || []) : [];
+
+    const list = [];
+
+    monthOrders.forEach(o => {
+      list.push({
+        id: o.id,
+        created_at: o.created_at,
+        timestamp: new Date(o.created_at).getTime(),
+        name: `ขายสินค้า (บิล #${o.order_number})`,
+        income: o.total || 0,
+        expense: 0,
+        type: 'order'
+      });
+    });
+
+    monthExpenses.forEach(e => {
+      list.push({
+        id: e.id,
+        created_at: e.created_at,
+        timestamp: new Date(e.created_at).getTime(),
+        name: e.note || getCategoryLabel(e.category),
+        income: 0,
+        expense: e.amount || 0,
+        type: 'expense'
+      });
+    });
+
+    list.sort((a, b) => a.timestamp - b.timestamp);
+
+    let running = 0;
+    const computedList = list.map(item => {
+      running += item.income - item.expense;
+      return {
+        ...item,
+        runningBalance: running
+      };
+    });
+
+    ledgerTransactions.value = computedList.reverse();
+  } catch (e) {
+    console.error('❌ Failed to load monthly ledger:', e);
+    ui.showToast('ไม่สามารถดึงข้อมูลบัญชีรายรับ-รายจ่ายรายเดือนได้', 'error');
+  } finally {
+    ledgerLoading.value = false;
+  }
+};
 
 // ── Data Loading ──
 
@@ -437,6 +624,7 @@ const loadDailyReport = async () => {
     if (isAdmin()) {
       loadExpenses(dateVal);
       loadActivityLogs(dateVal);
+      loadMonthlyLedger();
     }
   } catch (e) {
     console.error(e);
@@ -548,6 +736,7 @@ const handleAddExpense = async () => {
       expenseForm.value = { amount: null, category: 'raw_materials', note: '' };
       loadExpenses(selectedDate.value);
       loadActivityLogs(selectedDate.value);
+      loadMonthlyLedger();
     }
   } catch (e) {
     ui.showToast('บันทึกค่าใช้จ่ายไม่สำเร็จ: ' + e.message, 'error');
@@ -566,6 +755,7 @@ const handleDeleteExpense = async (id) => {
       ui.showToast('ลบค่าใช้จ่ายสำเร็จ', 'success');
       loadExpenses(selectedDate.value);
       loadActivityLogs(selectedDate.value);
+      loadMonthlyLedger();
     }
   } catch (e) {
     ui.showToast('ลบค่าใช้จ่ายไม่สำเร็จ: ' + e.message, 'error');
@@ -605,53 +795,52 @@ onMounted(() => {
   if (isAdmin()) {
     loadReportSummary();
     loadTopItems();
+    loadMonthlyLedger();
   }
   loadDailyReport();
 });
 </script>
 
 <style scoped>
-/* Segmented controller pill-tabs styling */
-.reports-pill-tabs {
+/* --- Category Tabs --- */
+.category-tabs {
   display: flex;
-  background: rgba(139, 3, 19, 0.04);
-  padding: 6px;
-  border-radius: var(--radius-xl);
-  gap: 6px;
-  border: 1px solid var(--border-color);
+  gap: var(--space-sm);
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
   scrollbar-width: none;
-  width: 100%;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
 }
-.reports-pill-tabs::-webkit-scrollbar {
+
+.category-tabs::-webkit-scrollbar {
   display: none;
 }
-.reports-pill-tab {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--radius-lg);
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: bold;
+
+.category-tab {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
   font-size: var(--font-sm);
-  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
   white-space: nowrap;
   transition: all var(--transition-base);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.reports-pill-tab:hover {
-  color: var(--text-primary);
-  background: rgba(139, 3, 19, 0.03);
+
+.category-tab:active {
+  transform: scale(0.97);
 }
-.reports-pill-tab.active {
+
+.category-tab.active {
   background: var(--gradient-primary);
   color: white;
-  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.12);
+  border-color: transparent;
+  box-shadow: var(--shadow-glow-primary);
 }
 
 .stat-card {
@@ -662,15 +851,146 @@ onMounted(() => {
   text-align: center;
 }
 
+/* --- Responsive Utilities --- */
+.show-mobile-only {
+  display: none;
+}
+.hide-mobile {
+  display: block;
+}
+
 @media (max-width: 768px) {
-  .reports-pill-tabs {
-    padding: 4px;
-    border-radius: var(--radius-lg);
+  .show-mobile-only {
+    display: block;
   }
-  .reports-pill-tab {
-    padding: 8px 12px;
-    font-size: var(--font-xs);
-    border-radius: var(--radius-md);
+  .hide-mobile {
+    display: none;
   }
+}
+
+/* --- Expense Form Grid --- */
+.expense-form-grid {
+  display: grid;
+  grid-template-columns: 150px 180px 1fr auto;
+  gap: var(--space-sm);
+  align-items: end;
+  margin-bottom: var(--space-md);
+}
+
+@media (max-width: 768px) {
+  .expense-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+}
+
+/* --- Ledger Summary Grid --- */
+.ledger-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 768px) {
+  .ledger-summary-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+}
+
+/* --- Ledger Mobile Card --- */
+.ledger-mobile-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  transition: all var(--transition-base);
+  border-left: 4px solid var(--text-tertiary);
+}
+.ledger-mobile-card.income {
+  border-left-color: var(--success);
+}
+.ledger-mobile-card.expense {
+  border-left-color: var(--danger);
+}
+
+/* --- Activity Logs Premium Layout --- */
+.activity-logs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.activity-log-item {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+}
+
+.activity-log-item:hover {
+  background: var(--card-bg-hover);
+  border-color: var(--border-color-light);
+}
+
+.log-badge-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.log-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  background: rgba(139, 3, 19, 0.04);
+}
+
+/* Log badge colors */
+.log-badge.login { background: rgba(255, 171, 43, 0.1); }
+.log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); }
+.log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); }
+.log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); }
+.log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); }
+.log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); }
+
+.log-content-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.log-details {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.log-meta {
+  display: flex;
+  gap: var(--space-md);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.log-user, .log-time {
+  white-space: nowrap;
 }
 </style>
