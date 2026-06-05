@@ -24,11 +24,29 @@
         <!-- Branch Selector -->
         <div v-else-if="branches.length > 0" class="branch-selector mb-xl" style="margin-top: 1.75rem !important;">
           <label class="branch-label">🏠 เลือกสาขา</label>
-          <select v-model="selectedBranch" class="form-select branch-select">
-            <option v-for="b in branches" :key="b.id" :value="b.id">
-              {{ b.name }}{{ b.address ? ' — ' + b.address : '' }}
-            </option>
-          </select>
+          <div class="custom-select-wrapper" @click.stop>
+            <div 
+              class="custom-select-trigger branch-select" 
+              :class="{ 'active': isBranchDropdownOpen }" 
+              @click="isBranchDropdownOpen = !isBranchDropdownOpen"
+              style="border: 2px solid var(--border-color) !important; background-color: var(--card-bg) !important;"
+            >
+              <span class="custom-select-text">
+                {{ selectedBranchName || 'กรุณาเลือกสาขา' }}
+              </span>
+            </div>
+            <div v-if="isBranchDropdownOpen" class="custom-select-dropdown">
+              <div 
+                v-for="b in branches" 
+                :key="b.id" 
+                class="custom-select-option"
+                :class="{ 'selected': b.id === selectedBranch }"
+                @click="selectBranch(b.id)"
+              >
+                {{ b.name }}{{ b.address ? ' — ' + b.address : '' }}
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- PIN Dots Display -->
@@ -195,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from './api';
 import { ui, uiState, getUser, isAdmin } from './helpers';
@@ -209,6 +227,17 @@ const hasCartBar = ref(false); // Can be toggled by child view
 const branches = ref([]);
 const selectedBranch = ref(null);
 const isLoadingBranches = ref(true);
+
+// Custom dropdown state for branch selector
+const isBranchDropdownOpen = ref(false);
+const selectedBranchName = computed(() => {
+  const b = branches.value.find(x => x.id === selectedBranch.value);
+  return b ? b.name + (b.address ? ' — ' + b.address : '') : '';
+});
+const selectBranch = (id) => {
+  selectedBranch.value = id;
+  isBranchDropdownOpen.value = false;
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -332,6 +361,10 @@ const loadBranches = async () => {
   }
 };
 
+const closeBranchDropdown = () => {
+  isBranchDropdownOpen.value = false;
+};
+
 onMounted(() => {
   user.value = getUser();
   loadSettings();
@@ -341,6 +374,13 @@ onMounted(() => {
   window.addEventListener('cart-state-change', (e) => {
     hasCartBar.value = e.detail && e.detail.hasItems;
   });
+
+  // Close branch selector dropdown when clicking outside
+  window.addEventListener('click', closeBranchDropdown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeBranchDropdown);
 });
 </script>
 

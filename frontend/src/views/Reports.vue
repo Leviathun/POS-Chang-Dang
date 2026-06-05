@@ -173,14 +173,25 @@
           <div class="form-group mb-xs">
             <input type="number" class="form-input" v-model.number="expenseForm.amount" placeholder="จำนวนเงิน (บาท)" />
           </div>
-          <div class="form-group mb-xs">
-            <select class="form-select" v-model="expenseForm.category">
-              <option value="raw_materials">🍗 วัตถุดิบ</option>
-              <option value="gas_fuel">⛽ แก๊ส/น้ำมัน</option>
-              <option value="packaging">📦 บรรจุภัณฑ์/ถุง</option>
-              <option value="other">📎 อื่นๆ</option>
-            </select>
-          </div>
+            <div class="form-group mb-xs">
+              <div class="custom-select-wrapper" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isExpenseCategoryDropdownOpen }" 
+                  @click="isExpenseCategoryDropdownOpen = !isExpenseCategoryDropdownOpen"
+                >
+                  <span class="custom-select-text">
+                    {{ selectedExpenseCategoryLabel }}
+                  </span>
+                </div>
+                <div v-if="isExpenseCategoryDropdownOpen" class="custom-select-dropdown">
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_materials' }" @click="selectExpenseCategory('raw_materials')">🍗 วัตถุดิบ</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'gas_fuel' }" @click="selectExpenseCategory('gas_fuel')">⛽ แก๊ส/น้ำมัน</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')">📦 บรรจุภัณฑ์/ถุง</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')">📎 อื่นๆ</div>
+                </div>
+              </div>
+            </div>
           <div class="form-group mb-xs">
             <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." />
           </div>
@@ -362,15 +373,27 @@
         <!-- Filter dropdown -->
         <div class="form-group mb-md">
           <label class="form-label font-bold" style="font-size: var(--font-sm);">🔍 กรองประเภทกิจกรรม:</label>
-          <select v-model="filterAction" class="form-select" style="height: 40px; font-size: var(--font-sm);">
-            <option value="all">📁 ทั้งหมด</option>
-            <option value="login">🔑 การลงชื่อเข้าใช้งาน (Login)</option>
-            <option value="sales">🛒 การขาย / ออกบิล (Sales)</option>
-            <option value="cancel">🚫 การยกเลิกบิล (Void)</option>
-            <option value="expenses">💸 บันทึกค่าใช้จ่าย (Expenses)</option>
-            <option value="stock">🔧 จัดการสต็อก / ของเสีย (Stock & Waste)</option>
-            <option value="credit">🍴 เครดิตพนักงาน (Staff Credit)</option>
-          </select>
+          <div class="custom-select-wrapper" @click.stop>
+            <div 
+              class="custom-select-trigger" 
+              :class="{ 'active': isFilterActionDropdownOpen }" 
+              @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen"
+              style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
+            >
+              <span class="custom-select-text" style="font-size: var(--font-sm);">
+                {{ selectedFilterActionLabel }}
+              </span>
+            </div>
+            <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')">📁 ทั้งหมด</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')">🔑 การลงชื่อเข้าใช้งาน (Login)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')">🛒 การขาย / ออกบิล (Sales)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')">🚫 การยกเลิกบิล (Void)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')">💸 บันทึกค่าใช้จ่าย (Expenses)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')">🔧 จัดการสต็อก / ของเสีย (Stock & Waste)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')">🍴 เครดิตพนักงาน (Staff Credit)</div>
+            </div>
+          </div>
         </div>
 
         <div v-if="filteredActivityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
@@ -449,7 +472,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin } from '../helpers';
 
@@ -525,6 +548,44 @@ const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.
 // Ledger States
 const ledgerTransactions = ref([]);
 const ledgerLoading = ref(false);
+
+// Custom dropdowns logic for Reports.vue
+const isExpenseCategoryDropdownOpen = ref(false);
+const selectedExpenseCategoryLabel = computed(() => {
+  const categoryLabels = {
+    raw_materials: '🍗 วัตถุดิบ',
+    gas_fuel: '⛽ แก๊ส/น้ำมัน',
+    packaging: '📦 บรรจุภัณฑ์/ถุง',
+    other: '📎 อื่นๆ'
+  };
+  return categoryLabels[expenseForm.value.category] || 'เลือกหมวดหมู่...';
+});
+const selectExpenseCategory = (cat) => {
+  expenseForm.value.category = cat;
+  isExpenseCategoryDropdownOpen.value = false;
+};
+
+const isFilterActionDropdownOpen = ref(false);
+const selectedFilterActionLabel = computed(() => {
+  const filterLabels = {
+    all: '📁 ทั้งหมด',
+    login: '🔑 การลงชื่อเข้าใช้งาน (Login)',
+    sales: '🛒 การขาย / ออกบิล (Sales)',
+    cancel: '🚫 การยกเลิกบิล (Void)',
+    expenses: '💸 บันทึกค่าใช้จ่าย (Expenses)',
+    stock: '🔧 จัดการสต็อก / ของเสีย (Stock & Waste)',
+    credit: '🍴 เครดิตพนักงาน (Staff Credit)'
+  };
+  return filterLabels[filterAction.value] || '📁 ทั้งหมด';
+});
+const selectFilterAction = (action) => {
+  filterAction.value = action;
+  isFilterActionDropdownOpen.value = false;
+};
+const closeReportsDropdowns = () => {
+  isExpenseCategoryDropdownOpen.value = false;
+  isFilterActionDropdownOpen.value = false;
+};
 
 const loadMonthlyLedger = async () => {
   ledgerLoading.value = true;
@@ -798,6 +859,11 @@ onMounted(() => {
     loadMonthlyLedger();
   }
   loadDailyReport();
+  window.addEventListener('click', closeReportsDropdowns);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeReportsDropdowns);
 });
 </script>
 

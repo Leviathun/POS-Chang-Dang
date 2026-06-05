@@ -260,20 +260,48 @@
           <!-- Role -->
           <div class="form-group">
             <label class="form-label">สิทธิ์การใช้งานระบบ *</label>
-            <select class="form-select" v-model="userForm.role">
-              <option value="staff">พนักงานหน้าร้าน (ขายและคุมสต็อกได้)</option>
-              <option value="admin">ผู้บริหาร/เจ้าของร้าน (ดูรายงานและแก้การตั้งค่าได้)</option>
-            </select>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isRoleDropdownOpen }" 
+                @click="isRoleDropdownOpen = !isRoleDropdownOpen"
+              >
+                <span class="custom-select-text">
+                  {{ userForm.role === 'admin' ? 'ผู้บริหาร/เจ้าของร้าน (ดูรายงานและแก้การตั้งค่าได้)' : 'พนักงานหน้าร้าน (ขายและคุมสต็อกได้)' }}
+                </span>
+              </div>
+              <div v-if="isRoleDropdownOpen" class="custom-select-dropdown">
+                <div class="custom-select-option" :class="{ 'selected': userForm.role === 'staff' }" @click="selectUserRole('staff')">พนักงานหน้าร้าน (ขายและคุมสต็อกได้)</div>
+                <div class="custom-select-option" :class="{ 'selected': userForm.role === 'admin' }" @click="selectUserRole('admin')">ผู้บริหาร/เจ้าของร้าน (ดูรายงานและแก้การตั้งค่าได้)</div>
+              </div>
+            </div>
           </div>
 
           <!-- Branch -->
           <div class="form-group">
             <label class="form-label">🏠 สาขาที่สังกัด *</label>
-            <select class="form-select" v-model="userForm.branch_id">
-              <option v-for="b in branches" :key="b.id" :value="b.id">
-                {{ b.name }}{{ b.address ? ' — ' + b.address : '' }}
-              </option>
-            </select>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isBranchDropdownOpen }" 
+                @click="isBranchDropdownOpen = !isBranchDropdownOpen"
+              >
+                <span class="custom-select-text">
+                  {{ selectedUserBranchName }}
+                </span>
+              </div>
+              <div v-if="isBranchDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  v-for="b in branches" 
+                  :key="b.id" 
+                  class="custom-select-option"
+                  :class="{ 'selected': b.id === userForm.branch_id }"
+                  @click="selectUserBranch(b.id)"
+                >
+                  {{ b.name }}{{ b.address ? ' — ' + b.address : '' }}
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Buttons -->
@@ -295,9 +323,33 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
 import { ui, formatDate, getUser } from '../helpers';
+
+// Custom Dropdown logic for Settings.vue
+const isRoleDropdownOpen = ref(false);
+const isBranchDropdownOpen = ref(false);
+
+const selectedUserBranchName = computed(() => {
+  const b = branches.value.find(x => x.id === userForm.value.branch_id);
+  return b ? b.name + (b.address ? ' — ' + b.address : '') : 'เลือกสาขาที่สังกัด...';
+});
+
+const selectUserRole = (role) => {
+  userForm.value.role = role;
+  isRoleDropdownOpen.value = false;
+};
+
+const selectUserBranch = (branchId) => {
+  userForm.value.branch_id = branchId;
+  isBranchDropdownOpen.value = false;
+};
+
+const closeSettingsDropdowns = () => {
+  isRoleDropdownOpen.value = false;
+  isBranchDropdownOpen.value = false;
+};
 
 // States
 const activeTab = ref('shop');
@@ -478,6 +530,11 @@ onMounted(() => {
   loadShopSettings();
   loadBranches();
   loadUsersData();
+  window.addEventListener('click', closeSettingsDropdowns);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeSettingsDropdowns);
 });
 </script>
 

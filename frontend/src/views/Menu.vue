@@ -240,12 +240,28 @@
           <!-- Category Selector -->
           <div class="form-group">
             <label class="form-label">หมวดหมู่สินค้า *</label>
-            <select class="form-select" v-model="itemForm.category_id">
-              <option disabled value="">เลือกหมวดหมู่...</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isCategoryDropdownOpen }" 
+                @click="isCategoryDropdownOpen = !isCategoryDropdownOpen"
+              >
+                <span class="custom-select-text">
+                  {{ selectedCategoryName }}
+                </span>
+              </div>
+              <div v-if="isCategoryDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  v-for="cat in categories" 
+                  :key="cat.id" 
+                  class="custom-select-option"
+                  :class="{ 'selected': cat.id === itemForm.category_id }"
+                  @click="selectCategory(cat.id)"
+                >
+                  {{ cat.name }}
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Raw Stock Tracking Toggle (Checkbox) -->
@@ -317,11 +333,25 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
 import { ui, formatCurrency } from '../helpers';
 
 import { store } from '../store';
+
+// Custom Category Dropdown States/Helpers
+const isCategoryDropdownOpen = ref(false);
+const selectedCategoryName = computed(() => {
+  const cat = categories.value.find(c => c.id === itemForm.value.category_id);
+  return cat ? cat.name : 'เลือกหมวดหมู่...';
+});
+const selectCategory = (id) => {
+  itemForm.value.category_id = id;
+  isCategoryDropdownOpen.value = false;
+};
+const closeCategoryDropdown = () => {
+  isCategoryDropdownOpen.value = false;
+};
 
 // States
 const menuItems = computed(() => store.menuItems);
@@ -552,6 +582,11 @@ const loadData = async (force = false) => {
 
 onMounted(() => {
   loadData();
+  window.addEventListener('click', closeCategoryDropdown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeCategoryDropdown);
 });
 </script>
 

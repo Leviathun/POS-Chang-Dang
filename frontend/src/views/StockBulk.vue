@@ -129,11 +129,22 @@
         <div v-if="bulkTab === 'absolute'" class="absolute-reason-section mt-xl">
           <div class="form-group mb-0">
             <label class="form-label font-bold" style="font-size: var(--font-md);">เหตุผลในการปรับยอดจริง *</label>
-            <select v-model="bulkReasonPreset" class="form-select">
-              <option value="นับยอดขาด/เกิน">📊 นับยอดขาด/เกิน</option>
-              <option value="กรอกผิด">✏️ กรอกผิด (แก้ไขยอด)</option>
-              <option value="อื่นๆ">❓ อื่นๆ</option>
-            </select>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isReasonDropdownOpen }" 
+                @click="isReasonDropdownOpen = !isReasonDropdownOpen"
+              >
+                <span class="custom-select-text">
+                  {{ selectedReasonLabel }}
+                </span>
+              </div>
+              <div v-if="isReasonDropdownOpen" class="custom-select-dropdown">
+                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'นับยอดขาด/เกิน' }" @click="selectReasonPreset('นับยอดขาด/เกิน')">📊 นับยอดขาด/เกิน</div>
+                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'กรอกผิด' }" @click="selectReasonPreset('กรอกผิด')">✏️ กรอกผิด (แก้ไขยอด)</div>
+                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'อื่นๆ' }" @click="selectReasonPreset('อื่นๆ')">❓ อื่นๆ</div>
+              </div>
+            </div>
           </div>
           <div class="form-group mb-0">
             <label class="form-label font-bold" style="font-size: var(--font-md);">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
@@ -165,7 +176,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api';
 import { ui, isAdmin } from '../helpers';
@@ -179,6 +190,24 @@ const bulkFormItems = ref([]);
 const bulkReasonPreset = ref('นับยอดขาด/เกิน');
 const bulkNote = ref('');
 const lowStockThreshold = computed(() => store.lowStockThreshold);
+
+// Custom Dropdown logic for StockBulk.vue
+const isReasonDropdownOpen = ref(false);
+const selectedReasonLabel = computed(() => {
+  const reasonLabels = {
+    'นับยอดขาด/เกิน': '📊 นับยอดขาด/เกิน',
+    'กรอกผิด': '✏️ กรอกผิด (แก้ไขยอด)',
+    'อื่นๆ': '❓ อื่นๆ'
+  };
+  return reasonLabels[bulkReasonPreset.value] || '📊 นับยอดขาด/เกิน';
+});
+const selectReasonPreset = (val) => {
+  bulkReasonPreset.value = val;
+  isReasonDropdownOpen.value = false;
+};
+const closeReasonDropdown = () => {
+  isReasonDropdownOpen.value = false;
+};
 
 const initializeForm = () => {
   bulkFormItems.value = stockItems.value.map(item => {
@@ -288,6 +317,11 @@ const handleSaveBulkAdjust = async () => {
 
 onMounted(() => {
   loadStockData();
+  window.addEventListener('click', closeReasonDropdown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeReasonDropdown);
 });
 </script>
 
