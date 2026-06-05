@@ -28,7 +28,8 @@ router.get('/', async (req, res) => {
         mi.image_url, mi.active, mi.sort_order,
         mi.created_at, mi.updated_at,
         c.name as category_name,
-        bs.quantity as stock
+        bs.quantity as stock,
+        bs.raw_quantity as raw_stock
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id
       LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
@@ -206,7 +207,7 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
 // ─── POST / — สร้างเมนูใหม่ ─────────────────────────────
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { name, price, category_id, image_url, stock, sort_order } = req.body;
+    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order } = req.body;
 
     if (!name || price === undefined || price === null) {
       return res.status(400).json({
@@ -260,9 +261,14 @@ router.post('/', requireAdmin, async (req, res) => {
       // ใส่ข้อมูลสต็อกแยกสาขา
       if (branchId) {
         await db.prepare(`
-          INSERT INTO branch_stocks (branch_id, menu_item_id, quantity)
-          VALUES (?, ?, ?)
-        `).run(branchId, newItemId, stock !== undefined && stock !== null ? stock : null);
+          INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
+          VALUES (?, ?, ?, ?)
+        `).run(
+          branchId, 
+          newItemId, 
+          stock !== undefined && stock !== null ? stock : null,
+          track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null
+        );
       }
 
       return newItemId;
@@ -271,7 +277,7 @@ router.post('/', requireAdmin, async (req, res) => {
     const orderId = await createMenuWithStock();
 
     const item = await db.prepare(`
-      SELECT mi.*, c.name as category_name, bs.quantity as stock
+      SELECT mi.*, c.name as category_name, bs.quantity as stock, bs.raw_quantity as raw_stock
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id
       LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
@@ -295,7 +301,7 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category_id, image_url, stock, sort_order, active } = req.body;
+    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active } = req.body;
     const db = getDb();
 
     const item = await db.prepare('SELECT * FROM menu_items WHERE id = ?').get(Number(id));
@@ -341,21 +347,43 @@ router.put('/:id', requireAdmin, async (req, res) => {
       );
 
       // อัปเดตสต็อกใน branch_stocks
-      if (stock !== undefined && branchId) {
-        await db.prepare(`
-          INSERT INTO branch_stocks (branch_id, menu_item_id, quantity)
-          VALUES (?, ?, ?)
-          ON CONFLICT(branch_id, menu_item_id) DO UPDATE SET
-            quantity = excluded.quantity,
-            updated_at = datetime('now', 'localtime')
-        `).run(branchId, Number(id), stock);
+      if (branchId) {
+        const stockRow = await db.prepare('SELECT * FROM branch_stocks WHERE branch_id = ? AND menu_item_id = ?').get(branchId, Number(id));
+        if (stockRow) {
+          let q = stockRow.quantity;
+          if (stock !== undefined && stock !== null) {
+            q = stock;
+          }
+          let rq = stockRow.raw_quantity;
+          if (track_raw_stock !== undefined) {
+            if (track_raw_stock) {
+              rq = (raw_stock !== undefined && raw_stock !== null) ? raw_stock : (rq !== null ? rq : 0);
+            } else {
+              rq = null;
+            }
+          } else if (raw_stock !== undefined) {
+            rq = raw_stock;
+          }
+          await db.prepare(`
+            UPDATE branch_stocks
+            SET quantity = ?, raw_quantity = ?, updated_at = datetime('now', 'localtime')
+            WHERE branch_id = ? AND menu_item_id = ?
+          `).run(q, rq, branchId, Number(id));
+        } else {
+          let q = stock !== undefined && stock !== null ? stock : 0;
+          let rq = track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null;
+          await db.prepare(`
+            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
+            VALUES (?, ?, ?, ?)
+          `).run(branchId, Number(id), q, rq);
+        }
       }
     });
 
     await updateMenuWithStock();
 
     const updated = await db.prepare(`
-      SELECT mi.*, c.name as category_name, bs.quantity as stock
+      SELECT mi.*, c.name as category_name, bs.quantity as stock, bs.raw_quantity as raw_stock
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id
       LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?

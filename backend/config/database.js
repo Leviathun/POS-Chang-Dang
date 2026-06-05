@@ -162,6 +162,7 @@ async function initDatabase() {
       branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
       menu_item_id INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
       quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
+      raw_quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
       updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
       UNIQUE(branch_id, menu_item_id)
     )`,
@@ -234,6 +235,13 @@ async function initDatabase() {
   // Add cancel_reason column to orders if not exists (SQLite-friendly ALTER TABLE)
   try {
     await db.exec("ALTER TABLE orders ADD COLUMN cancel_reason TEXT");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Add raw_quantity column to branch_stocks if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE branch_stocks ADD COLUMN raw_quantity INTEGER DEFAULT NULL");
   } catch (e) {
     // Column already exists, safe to ignore
   }

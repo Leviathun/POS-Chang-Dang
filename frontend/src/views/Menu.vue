@@ -248,6 +248,17 @@
             </select>
           </div>
 
+          <!-- Raw Stock Tracking Toggle (Checkbox) -->
+          <div class="form-group flex align-center gap-sm mt-md mb-md">
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="itemForm.track_raw_stock" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span style="font-size: var(--font-sm); color: var(--text-primary); font-weight: var(--font-weight-medium);">
+              ติดตามสต็อกของสด (แบ่งประเภทเป็น ของสด / ทอดสุก)
+            </span>
+          </div>
+
           <!-- Image URL -->
           <div class="form-group">
             <label class="form-label">ลิงก์รูปภาพอาหาร (Image URL)</label>
@@ -363,7 +374,8 @@ const openAddModal = () => {
     name: '',
     price: '',
     category_id: categories.value[0]?.id || '',
-    image_url: ''
+    image_url: '',
+    track_raw_stock: false
   };
   showItemModal.value = true;
 };
@@ -375,7 +387,8 @@ const openEditModal = (item) => {
     name: item.name,
     price: item.price,
     category_id: item.category_id,
-    image_url: item.image_url || ''
+    image_url: item.image_url || '',
+    track_raw_stock: item.raw_stock !== null && item.raw_stock !== undefined
   };
   showItemModal.value = true;
 };
@@ -433,7 +446,8 @@ const handleSaveItem = async () => {
       name: itemForm.value.name,
       price: Number(itemForm.value.price) || 0,
       category_id: Number(itemForm.value.category_id),
-      image_url: itemForm.value.image_url.trim() || null
+      image_url: itemForm.value.image_url.trim() || null,
+      track_raw_stock: !!itemForm.value.track_raw_stock
     };
 
     let res;

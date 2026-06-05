@@ -528,8 +528,9 @@ onUnmounted(() => {
 .cart-bar {
   position: fixed;
   bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 100%;
   max-width: var(--max-width);
   padding: var(--space-md) var(--space-lg);
@@ -584,8 +585,9 @@ onUnmounted(() => {
 .cart-detail-panel {
   position: fixed;
   bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height) - 2px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 100%;
   max-width: var(--max-width);
   max-height: 45vh; /* Increased max height slightly */
@@ -663,7 +665,7 @@ onUnmounted(() => {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: var(--font-base); /* 16px font-size for better visibility */
+  font-size: 1.35rem; /* Enlarged font-size to match the circle size! */
   font-weight: var(--font-weight-bold);
   transition: var(--transition-base);
 }
@@ -685,8 +687,8 @@ onUnmounted(() => {
 }
 
 .cart-item-subtotal {
-  font-weight: var(--font-weight-semibold);
-  color: var(--accent);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
   font-size: var(--font-sm);
   min-width: 60px;
   text-align: right;

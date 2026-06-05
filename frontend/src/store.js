@@ -34,7 +34,8 @@ export const store = reactive({
       if (res.success && res.data && Array.isArray(res.data.items)) {
         this.stockItems = res.data.items.map(item => ({
           ...item,
-          quantity: item.stock
+          quantity: item.stock,
+          raw_quantity: item.raw_stock
         }));
         if (res.data.threshold) {
           this.lowStockThreshold = Number(res.data.threshold) || 5;

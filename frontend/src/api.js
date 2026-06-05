@@ -130,8 +130,14 @@ const stock = {
   async adjust(id, data) {
     return request('POST', `/api/stock/${id}/adjust`, data);
   },
+  async fry(id, data) {
+    return request('POST', `/api/stock/${id}/fry`, data);
+  },
   async getLogs(id) {
     return request('GET', `/api/stock/${id}/logs`);
+  },
+  async bulkAdjust(data) {
+    return request('POST', '/api/stock/bulk-adjust', data);
   },
 };
 
