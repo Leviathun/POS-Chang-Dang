@@ -169,8 +169,12 @@ const expenses = {
   async create(data) {
     return request('POST', '/api/expenses', data);
   },
-  async get(date) {
-    return request('GET', `/api/expenses?date=${date}`);
+  async get(dateOrParams) {
+    if (dateOrParams && typeof dateOrParams === 'object') {
+      const query = new URLSearchParams(dateOrParams).toString();
+      return request('GET', `/api/expenses?${query}`);
+    }
+    return request('GET', `/api/expenses?date=${dateOrParams}`);
   },
   async delete(id) {
     return request('DELETE', `/api/expenses/${id}`);

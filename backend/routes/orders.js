@@ -147,7 +147,7 @@ router.post('/', requireAuth, async (req, res) => {
 // ─── GET / — รายการออเดอร์ ──────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { date, status, limit, offset, branch_id } = req.query;
+    const { date, month, status, limit, offset, branch_id } = req.query;
     const db = getDb();
 
     let sql = `
@@ -173,6 +173,9 @@ router.get('/', async (req, res) => {
     if (date) {
       sql += ' AND date(o.created_at) = ?';
       params.push(date);
+    } else if (month) {
+      sql += " AND strftime('%Y-%m', o.created_at) = ?";
+      params.push(month);
     }
 
     if (status) {
