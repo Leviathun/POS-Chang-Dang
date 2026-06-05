@@ -27,10 +27,20 @@
       <div class="pos-grid" :class="{ 'stagger-children': isVisualStaggerActive }" id="pos-menu-grid">
         <!-- Skeleton loader while loading -->
         <template v-if="loading">
-          <div v-for="i in 6" :key="i" class="pos-item" style="pointer-events:none; min-height:180px;">
-            <div class="skeleton" style="width:100%; height:95px; border-radius:var(--radius-md);"></div>
-            <div class="skeleton" style="width:80%; height:14px; margin: 8px auto 4px;"></div>
-            <div class="skeleton" style="width:50%; height:16px; margin: 0 auto;"></div>
+          <div v-for="i in 8" :key="i" class="pos-item skeleton-card" style="pointer-events:none;">
+            <!-- Matches pos-item-img-container -->
+            <div class="pos-item-img-container">
+              <div class="skeleton" style="width:100%; height:100%;"></div>
+            </div>
+            <!-- Matches pos-item-name -->
+            <div class="pos-item-name">
+              <div class="skeleton" style="width:80%; height:16px; border-radius:4px; margin:0 auto;"></div>
+            </div>
+            <!-- Matches pos-item-details -->
+            <div class="pos-item-details">
+              <div class="skeleton" style="width:50%; height:18px; border-radius:4px; margin:0 auto;"></div>
+              <div class="skeleton" style="width:35%; height:12px; border-radius:4px; margin:var(--space-xs) auto 0;"></div>
+            </div>
           </div>
         </template>
 
@@ -862,8 +872,21 @@ onUnmounted(() => {
   }
 
   .pos-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: var(--space-lg);
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-xl);
+  }
+
+  .pos-item {
+    min-height: 280px;
+    padding: var(--space-lg);
+  }
+
+  .pos-item-img-container {
+    height: 160px;
+  }
+
+  .pos-item-name {
+    font-size: 1.15rem !important;
   }
 }
 </style>
