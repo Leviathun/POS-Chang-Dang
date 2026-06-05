@@ -234,6 +234,7 @@ const activeTitle = computed(() => {
     '/pos': shopSettings.value.shop_name || 'ร้านไก่ทอดช้างแดง',
     '/menu': '📋 จัดการเมนู',
     '/stock': '📦 คลังสินค้า',
+    '/stock/bulk': '📦 คลังสินค้า',
     '/reports': '📊 รายงานยอดขาย',
     '/settings': '⚙️ ตั้งค่าระบบ'
   };

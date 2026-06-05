@@ -7,9 +7,9 @@
         ระบบจัดการสต็อกสินค้า
       </div>
       <div>
-        <button class="btn btn-primary" style="background: linear-gradient(135deg, #e63946, #b7091b); color: white; border: none; font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); gap: var(--space-xs); padding: 10px 20px;" @click="openBulkModal">
+        <router-link to="/stock/bulk" class="btn btn-primary" style="background: linear-gradient(135deg, #e63946, #b7091b); color: white; border: none; font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); gap: var(--space-xs); padding: 10px 20px;">
           📦 จัดการสต็อกด่วน
-        </button>
+        </router-link>
       </div>
     </div>
 
@@ -203,18 +203,18 @@
                 :class="actionForm.stock_type === 'cooked' ? 'btn-primary' : 'btn-secondary'"
                 @click="actionForm.stock_type = 'cooked'"
                 type="button"
-                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: bold;"
+                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal;"
               >
-                🍗 ทอดสุก ({{ activeItem?.quantity || 0 }} ชิ้น)
+                🍗 ทอดสุก
               </button>
               <button 
                 class="btn flex-1"
                 :class="actionForm.stock_type === 'raw' ? 'btn-primary' : 'btn-secondary'"
                 @click="actionForm.stock_type = 'raw'"
                 type="button"
-                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: bold;"
+                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal;"
               >
-                🥩 ของสด ({{ activeItem?.raw_quantity || 0 }} ชิ้น)
+                🥩 ของสด
               </button>
             </div>
           </div>
@@ -331,145 +331,7 @@
       </div>
     </div>
 
-    <!-- Bulk Stock Management Modal -->
-    <div v-if="showBulkModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
-      <div class="modal-overlay" @click="showBulkModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-lg" style="position:relative; z-index:2; overflow-y:auto; max-height:90dvh;">
-        <div class="modal-header">
-          <h3>📦 จัดการสต็อกด่วน</h3>
-          <button class="modal-close" @click="showBulkModal = false">✕</button>
-        </div>
-        <div class="modal-body">
-          
-          <!-- Tabs -->
-          <div class="bulk-tabs">
-            <button 
-              class="bulk-tab" 
-              :class="{ 'active': bulkTab === 'relative' }" 
-              @click="setBulkTab('relative')"
-            >
-              📥 เพิ่มสต็อก
-            </button>
-            <button 
-              class="bulk-tab" 
-              :class="{ 'active': bulkTab === 'absolute' }" 
-              @click="setBulkTab('absolute')"
-            >
-              🔧 ปรับปรุงยอด
-            </button>
-          </div>
-
-          <!-- Description Hint -->
-          <div class="mb-md" style="font-size: var(--font-xs); color: var(--text-secondary); text-align: left;">
-            <span v-if="bulkTab === 'relative'">
-              💡 <strong>โหมดเพิ่มสต็อก :</strong> พิมพ์จำนวนที่นำเข้าเพิ่ม (เช่น <code>30</code>) หรือจำนวนที่หักออก (เช่น <code>-5</code>) ปล่อยว่างหรือกรอก <code>0</code> หากไม่มีความเปลี่ยนแปลง
-            </span>
-            <span v-else>
-              💡 <strong>โหมดปรับปรุงยอด :</strong> พิมพ์จำนวนที่ต้องการแก้ไข ระบบจะทำการคำนวณส่วนต่างและบันทึกเหตุผลให้โดยอัตโนมัติ 
-            </span>
-          </div>
-
-          <!-- Form List -->
-          <div class="bulk-stock-list">
-            <!-- Modal Table Header (Visible on Desktop only) -->
-            <div class="bulk-stock-header-row desktop-only">
-              <div style="text-align: left; padding-left: var(--space-sm);">เมนูอาหาร</div>
-              <div style="text-align: center;">ของสดคงเหลือ</div>
-              <div style="text-align: center;">ปรับยอดของสด (🥩)</div>
-              <div style="text-align: center;">ทอดสุกคงเหลือ</div>
-              <div style="text-align: center;">ปรับยอดทอดสุก (🍗)</div>
-            </div>
-            
-            <div v-for="item in bulkFormItems" :key="item.menu_item_id" class="bulk-stock-row">
-              <!-- Column 1: Item Name -->
-              <div class="bulk-item-name-col">
-                <div class="font-bold" style="font-size: var(--font-sm);">{{ item.name }}</div>
-                <div class="mobile-only" style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">ID: {{ item.menu_item_id }}</div>
-              </div>
-              
-              <!-- Column 2: Raw Stock Current -->
-              <div class="bulk-item-current-col text-center">
-                <span class="mobile-label">🥩 ของสดคงเหลือ:</span>
-                <span :class="{ 'text-danger': item.raw_quantity !== null && (item.raw_quantity || 0) <= lowStockThreshold }" style="font-weight: bold; font-size: var(--font-sm);">
-                  {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? item.raw_quantity + ' ชิ้น' : '-' }}
-                </span>
-              </div>
-              
-              <!-- Column 3: Raw Stock Input -->
-              <div class="bulk-item-input-col">
-                <div class="bulk-input-wrapper">
-                  <span class="mobile-label" style="margin-bottom: 2px;">🥩 ปรับยอดของสด:</span>
-                  <input 
-                    type="text" 
-                    v-model="item.raw"
-                    :disabled="item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin()"
-                    :placeholder="item.raw_quantity === null || item.raw_quantity === undefined ? '🔒 ไม่มีของสด' : (!isAdmin() ? '🔒 ล็อก' : (bulkTab === 'relative' ? '0' : String(item.raw_quantity)))"
-                    class="form-input"
-                    :class="{ 'disabled-input': item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin() }"
-                  />
-                </div>
-              </div>
-              
-              <!-- Column 4: Cooked Stock Current -->
-              <div class="bulk-item-current-col text-center">
-                <span class="mobile-label">🍗 ทอดสุกคงเหลือ:</span>
-                <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }" style="font-weight: bold; font-size: var(--font-sm);">
-                  {{ item.quantity !== null && item.quantity !== undefined ? item.quantity + ' ชิ้น' : '0 ชิ้น' }}
-                </span>
-              </div>
-              
-              <!-- Column 5: Cooked Stock Input -->
-              <div class="bulk-item-input-col">
-                <div class="bulk-input-wrapper">
-                  <span class="mobile-label" style="margin-bottom: 2px;">🍗 ปรับยอดทอดสุก:</span>
-                  <input 
-                    type="text" 
-                    v-model="item.cooked"
-                    :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(item.quantity) : '0')"
-                    class="form-input"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Absolute Reconcile Preset Reason & Notes -->
-          <div v-if="bulkTab === 'absolute'" class="absolute-reason-section mt-md" style="text-align: left;">
-            <div class="form-group mb-sm">
-              <label class="form-label font-bold" style="font-size: var(--font-xs);">เหตุผลในการปรับยอดจริง *</label>
-              <select v-model="bulkReasonPreset" class="form-input" style="height: 38px;">
-                <option value="นับยอดขาด/เกิน">📊 นับยอดขาด/เกิน</option>
-                <option value="กรอกผิด">✏️ กรอกผิด (แก้ไขยอด)</option>
-                <option value="อื่นๆ">❓ อื่นๆ</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" style="font-size: var(--font-xs);">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
-              <input 
-                type="text" 
-                v-model="bulkNote" 
-                placeholder="ระบุข้อความเพื่อบันทึกประวัติ..." 
-                class="form-input"
-                style="height: 38px;"
-              />
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" @click="showBulkModal = false" style="height: 44px;">ยกเลิก</button>
-            <button 
-              class="btn btn-primary flex-1" 
-              style="background: linear-gradient(135deg, #e63946, #b7091b); color: white; border: none; height: 44px;"
-              @click="handleSaveBulkAdjust"
-            >
-              💾 บันทึกสต็อกด่วน
-            </button>
-          </div>
-
-        </div>
-      </div>
-    </div>
+    <!-- Bulk Stock Management Modal removed (moved to dedicated page /stock/bulk) -->
 
   </div>
 </template>
@@ -477,7 +339,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../api';
-import { ui, formatDateTime, isAdmin } from '../helpers';
+import { ui, formatDateTime, isAdmin, getUser } from '../helpers';
 
 import { store } from '../store';
 
@@ -496,14 +358,7 @@ const wastePresets = ['🍂 เน่า/เสีย', '🛹 ตกพื้น
 const actionForm = ref({
   quantity: '',
   note: ''
-});
-
-// Bulk Stock Management States
-const showBulkModal = ref(false);
-const bulkTab = ref('relative'); // 'relative' or 'absolute'
-const bulkFormItems = ref([]);
-const bulkReasonPreset = ref('นับยอดขาด/เกิน');
-const bulkNote = ref('');
+});// System Settings States
 
 // Load System Settings to check Low Stock Threshold
 const loadSettings = async () => {
@@ -532,10 +387,17 @@ const loadStockData = async (force = false) => {
 const openActionModal = (type, item) => {
   actionType.value = type;
   activeItem.value = item;
+  
+  let defaultNote = '';
+  if (type === 'staff_benefit') {
+    const currentUser = getUser();
+    defaultNote = currentUser ? currentUser.name : '';
+  }
+
   actionForm.value = {
     quantity: '',
     stock_type: 'cooked', // default to cooked stock
-    note: ''
+    note: defaultNote
   };
   showActionModal.value = true;
 };
@@ -593,107 +455,7 @@ const viewLogs = async (item) => {
   } finally {
     logsLoading.value = false;
   }
-};
-
-const openBulkModal = () => {
-  bulkTab.value = 'relative';
-  bulkReasonPreset.value = 'นับยอดขาด/เกิน';
-  bulkNote.value = '';
-  
-  bulkFormItems.value = stockItems.value.map(item => {
-    return {
-      menu_item_id: item.id,
-      name: item.name,
-      quantity: item.quantity,
-      raw_quantity: item.raw_quantity,
-      cooked: '',
-      raw: ''
-    };
-  });
-  
-  showBulkModal.value = true;
-};
-
-const setBulkTab = (tab) => {
-  bulkTab.value = tab;
-  
-  bulkFormItems.value.forEach(item => {
-    if (tab === 'absolute') {
-      item.cooked = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
-      item.raw = item.raw_quantity !== null && item.raw_quantity !== undefined ? item.raw_quantity : 0;
-    } else {
-      item.cooked = '';
-      item.raw = '';
-    }
-  });
-};
-
-const handleSaveBulkAdjust = async () => {
-  ui.showLoading();
-  try {
-    const itemsToSend = [];
-    
-    for (const item of bulkFormItems.value) {
-      let hasChange = false;
-      
-      const cookedVal = item.cooked !== null && item.cooked !== undefined && String(item.cooked).trim() !== '' ? String(item.cooked).trim() : null;
-      const rawVal = item.raw !== null && item.raw !== undefined && String(item.raw).trim() !== '' ? String(item.raw).trim() : null;
-      
-      const parsedCooked = cookedVal !== null ? Number(cookedVal) : null;
-      const parsedRaw = rawVal !== null ? Number(rawVal) : null;
-      
-      if (bulkTab.value === 'relative') {
-        if ((parsedCooked !== null && parsedCooked !== 0 && !isNaN(parsedCooked)) || 
-            (parsedRaw !== null && parsedRaw !== 0 && !isNaN(parsedRaw))) {
-          hasChange = true;
-        }
-      } else {
-        const currentCooked = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
-        const currentRaw = item.raw_quantity !== null && item.raw_quantity !== undefined ? item.raw_quantity : 0;
-        
-        const targetCooked = parsedCooked !== null && !isNaN(parsedCooked) ? parsedCooked : currentCooked;
-        const targetRaw = parsedRaw !== null && !isNaN(parsedRaw) ? parsedRaw : currentRaw;
-        
-        if (targetCooked !== currentCooked || targetRaw !== currentRaw) {
-          hasChange = true;
-        }
-      }
-      
-      if (hasChange) {
-        itemsToSend.push({
-          menu_item_id: item.menu_item_id,
-          cooked: cookedVal,
-          raw: rawVal
-        });
-      }
-    }
-    
-    if (itemsToSend.length === 0) {
-      ui.showToast('ไม่มีรายการใดที่มีความเปลี่ยนแปลง', 'info');
-      ui.hideLoading();
-      return;
-    }
-    
-    const payload = {
-      mode: bulkTab.value,
-      items: itemsToSend,
-      reason_preset: bulkTab.value === 'absolute' ? bulkReasonPreset.value : undefined,
-      note: bulkTab.value === 'absolute' ? bulkNote.value.trim() : undefined
-    };
-    
-    const res = await api.stock.bulkAdjust(payload);
-    if (res.success) {
-      store.clearMenuCache();
-      ui.showToast('ปรับปรุงสต็อกด่วนเรียบร้อย', 'success');
-      showBulkModal.value = false;
-      await loadStockData(true);
-    }
-  } catch (e) {
-    console.error(e);
-    ui.showToast('ปรับปรุงสต็อกด่วนล้มเหลว: ' + e.message, 'error');
-  } finally {
-    ui.hideLoading();
-  }
+  return map[reason] || reason;
 };
 
 const getReasonLabel = (reason) => {
@@ -720,173 +482,17 @@ onMounted(() => {
   display: none;
 }
 
-/* Bulk Stock Edit UI Styles */
-.bulk-tabs {
-  display: flex;
-  gap: var(--space-xs);
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: var(--space-md);
-}
-.bulk-tab {
-  flex: 1;
-  padding: 16px 8px;
-  text-align: center;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  color: var(--text-secondary);
-  font-size: 1.25rem;
-  font-weight: var(--font-weight-bold);
-  transition: all var(--transition-base);
-}
-.bulk-tab:hover {
-  color: var(--text-primary);
-}
-.bulk-tab.active {
-  border-bottom-color: var(--accent);
-  color: var(--accent);
-  font-weight: var(--font-weight-bold);
-}
-.bulk-stock-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  max-height: 40vh;
-  overflow-y: auto;
-  padding-right: var(--space-xs);
-  margin-bottom: var(--space-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 0;
-  background: rgba(139, 3, 19, 0.01);
-}
-.bulk-stock-header-row {
-  display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.2fr;
-  padding: var(--space-md) var(--space-sm);
-  background: rgba(139, 3, 19, 0.05);
-  border-bottom: 2px solid var(--border-color);
-  font-size: 1.15rem;
-  font-weight: bold;
-  color: var(--text-secondary);
-}
-.bulk-stock-row {
-  display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.2fr;
-  align-items: center;
-  padding: var(--space-md) var(--space-sm);
-  border-bottom: 1px solid var(--border-color);
-  gap: var(--space-sm);
-}
-.bulk-stock-row:last-child {
-  border-bottom: none;
-}
-.bulk-item-name-col {
-  flex: 1;
-  min-width: 0;
-  text-align: left;
-  font-size: 1.25rem;
-}
-.bulk-item-current-col {
-  font-size: 1.20rem;
-  font-weight: bold;
-  color: var(--text-primary);
-  text-align: center;
-}
-.bulk-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.bulk-input-wrapper input {
-  height: 48px;
-  padding: var(--space-xs);
-  font-size: 1.3rem;
-  font-weight: bold;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  text-align: center;
-  width: 100%;
-}
-.bulk-input-wrapper input:focus {
-  border-color: var(--accent);
-  outline: none;
-}
-.bulk-input-wrapper input.disabled-input {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: var(--text-tertiary) !important;
-  cursor: not-allowed !important;
-  opacity: 0.6 !important;
-}
-.absolute-reason-section select,
-.absolute-reason-section input {
-  font-size: 1.15rem !important;
-  height: 48px !important;
-}
-.absolute-reason-section label {
-  font-size: 1.15rem !important;
-}
 .stock-page-title {
   font-size: 1.25rem;
   font-weight: bold;
   color: var(--text-secondary);
   text-align: left;
 }
-.mobile-label {
-  display: none;
-}
-.mobile-only {
-  display: none;
-}
 @media (max-width: 768px) {
   .stock-page-title {
     font-size: 1.1rem !important;
     font-weight: bold !important;
     text-align: center !important;
-  }
-  .desktop-only {
-    display: none !important;
-  }
-  .bulk-stock-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-sm);
-    padding: var(--space-md);
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--space-xs);
-    border: 1px solid var(--border-color);
-  }
-  .mobile-label {
-    display: inline-block;
-    font-size: 1.15rem;
-    font-weight: bold;
-    color: var(--text-tertiary);
-    margin-right: var(--space-xs);
-    width: 130px;
-    text-align: left;
-    flex-shrink: 0;
-  }
-  .mobile-only {
-    display: block !important;
-  }
-  .bulk-item-current-col {
-    display: flex;
-    align-items: center;
-    text-align: left !important;
-    padding-left: var(--space-xs);
-    font-size: 1.20rem;
-  }
-  .bulk-item-input-col {
-    display: flex;
-    align-items: center;
-  }
-  .bulk-input-wrapper {
-    flex: 1;
   }
 }
 @media (max-width: 576px) {

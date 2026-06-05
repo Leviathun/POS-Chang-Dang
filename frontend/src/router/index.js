@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Pos from '../views/Pos.vue'
 import Menu from '../views/Menu.vue'
 import Stock from '../views/Stock.vue'
+import StockBulk from '../views/StockBulk.vue'
 import Reports from '../views/Reports.vue'
 import Settings from '../views/Settings.vue'
 import { getUser, isAdmin } from '../helpers'
@@ -25,6 +26,11 @@ const routes = [
     path: '/stock',
     name: 'Stock',
     component: Stock
+  },
+  {
+    path: '/stock/bulk',
+    name: 'StockBulk',
+    component: StockBulk
   },
   {
     path: '/reports',
