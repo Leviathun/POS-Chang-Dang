@@ -1,22 +1,40 @@
 <template>
   <div id="reports-page" class="page-enter">
     
-    <!-- Admin Only: Top summary widget -->
-    <div v-if="isAdminUser" class="grid grid-2 mb-lg gap-md" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-md);">
-      <div class="card text-center p-md">
-        <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px;">ยอดขายวันนี้</div>
-        <div class="font-bold text-gradient" style="font-size: var(--font-xl);">{{ formatCurrency(summary.today_sales) }}</div>
-        <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</div>
-      </div>
-      <div class="card text-center p-md">
-        <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px;">ยอดรวมเดือนนี้</div>
-        <div class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(summary.month_sales) }}</div>
-        <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">{{ summary.month_orders }} รายการขาย</div>
-      </div>
+    <!-- Tab toggles placed at the very top, styled as pills -->
+    <div v-if="isAdminUser" class="reports-pill-tabs mb-lg">
+      <button 
+        class="reports-pill-tab" 
+        :class="{ 'active': activeTab === 'sales' }"
+        @click="activeTab = 'sales'"
+      >
+        📊 ยอดขาย
+      </button>
+      <button 
+        class="reports-pill-tab" 
+        :class="{ 'active': activeTab === 'expenses' }"
+        @click="activeTab = 'expenses'"
+      >
+        💸 บันทึกค่าใช้จ่ายประจำวัน
+      </button>
+      <button 
+        class="reports-pill-tab" 
+        :class="{ 'active': activeTab === 'top_menus' }"
+        @click="activeTab = 'top_menus'"
+      >
+        🔥 10 อันดับเมนูขายดี
+      </button>
+      <button 
+        class="reports-pill-tab" 
+        :class="{ 'active': activeTab === 'activity_logs' }"
+        @click="activeTab = 'activity_logs'"
+      >
+        👁️ ประวัติกิจกรรมพนักงาน
+      </button>
     </div>
 
-    <!-- Date selector card -->
-    <div class="card mb-lg p-md">
+    <!-- Date selector card (hidden on 'top_menus' tab) -->
+    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md">
       <div class="flex gap-sm align-center">
         <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">📅 เลือกวันที่:</div>
         <input 
@@ -35,75 +53,120 @@
     </div>
 
     <template v-else>
-      <!-- Admin Only: Daily Summary Card -->
-      <div v-if="isAdminUser" class="card mb-lg">
-        <div class="card-title" style="font-size: var(--font-sm);">📊 สรุปยอดวันที่ {{ formatDate(selectedDate) }}</div>
+      <!-- Tab 1: Sales (ยอดขาย) -->
+      <div v-if="activeTab === 'sales'" style="display: flex; flex-direction: column; gap: var(--space-lg);">
         
-        <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
-          <span>ยอดขายทั้งหมด (สุทธิ):</span>
-          <strong class="text-accent" style="font-size: var(--font-md);">{{ formatCurrency(dailyReport.total_sales) }}</strong>
-        </div>
-        <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
-          <span>จำนวนคำสั่งซื้อ:</span>
-          <span>{{ dailyReport.total_orders }} บิล</span>
-        </div>
-        <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
-          <span>เฉลี่ยต่อบิล:</span>
-          <span>{{ formatCurrency(dailyReport.average_bill) }}</span>
+        <!-- Admin Only: Top summary widgets (moved inside Tab 1) -->
+        <div v-if="isAdminUser" class="grid grid-2 gap-md" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-md);">
+          <div class="card text-center p-md">
+            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px;">ยอดขายวันนี้</div>
+            <div class="font-bold text-gradient" style="font-size: var(--font-xl);">{{ formatCurrency(summary.today_sales) }}</div>
+            <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</div>
+          </div>
+          <div class="card text-center p-md">
+            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px;">ยอดรวมเดือนนี้</div>
+            <div class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(summary.month_sales) }}</div>
+            <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">{{ summary.month_orders }} รายการขาย</div>
+          </div>
         </div>
 
-        <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
-        
-        <!-- Payment Methods Breakdowns -->
-        <div class="grid grid-2" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-sm); font-size:var(--font-xs);">
-          <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
-            <div style="color:var(--text-secondary);">💵 เงินสด</div>
-            <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
-              {{ formatCurrency(dailyReport.cash_sales) }}
-            </div>
-            <div style="color:var(--text-tertiary);">{{ dailyReport.cash_orders }} บิล</div>
+        <!-- Admin Only: Daily Summary Card -->
+        <div v-if="isAdminUser" class="card">
+          <div class="card-title" style="font-size: var(--font-sm);">📊 สรุปยอดวันที่ {{ formatDate(selectedDate) }}</div>
+          
+          <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+            <span>ยอดขายทั้งหมด (สุทธิ):</span>
+            <strong class="text-accent" style="font-size: var(--font-md);">{{ formatCurrency(dailyReport.total_sales) }}</strong>
           </div>
-          <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
-            <div style="color:var(--text-secondary);">📱 QR Code</div>
-            <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
-              {{ formatCurrency(dailyReport.qr_sales) }}
+          <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+            <span>จำนวนคำสั่งซื้อ:</span>
+            <span>{{ dailyReport.total_orders }} บิล</span>
+          </div>
+          <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+            <span>เฉลี่ยต่อบิล:</span>
+            <span>{{ formatCurrency(dailyReport.average_bill) }}</span>
+          </div>
+
+          <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
+          
+          <!-- Payment Methods Breakdowns -->
+          <div class="grid grid-2" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-sm); font-size:var(--font-xs);">
+            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+              <div style="color:var(--text-secondary);">💵 เงินสด</div>
+              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+                {{ formatCurrency(dailyReport.cash_sales) }}
+              </div>
+              <div style="color:var(--text-tertiary);">{{ dailyReport.cash_orders }} บิล</div>
             </div>
-            <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
+            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+              <div style="color:var(--text-secondary);">📱 QR Code</div>
+              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+                {{ formatCurrency(dailyReport.qr_sales) }}
+              </div>
+              <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Transaction Logs (ALL ROLES) -->
+        <div class="card">
+          <div class="card-title" style="font-size: var(--font-sm);">📋 รายการบิลประจำวัน</div>
+          
+          <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
+            ยังไม่มีรายการขายในวันนี้
+          </div>
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
+            <div 
+              v-for="order in dailyReport.orders" 
+              :key="order.id" 
+              class="p-sm card"
+              style="font-size:var(--font-sm); background: var(--bg-primary); display:flex; flex-direction:column; gap:2px; cursor:pointer;"
+              @click="toggleExpandOrder(order.id)"
+            >
+              <div class="flex flex-between font-bold">
+                <span :style="order.status === 'cancelled' ? 'text-decoration:line-through; opacity:0.5;' : ''">
+                  #{{ order.order_number }}
+                </span>
+                <div>
+                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:11px; margin-right:4px;">❌ ยกเลิก</span>
+                  <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+                </div>
+              </div>
+              <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
+                <span>{{ order.payment_method === 'cash' ? '💵 เงินสด' : order.payment_method === 'qr' ? '📱 QR Code' : '⏳ รอชำระ' }}</span>
+                <span>เวลา: {{ formatTime(order.created_at) }}</span>
+              </div>
+              <div v-if="order.cancel_reason" style="font-size: 11px; color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
+                เหตุผลยกเลิก: {{ order.cancel_reason }}
+              </div>
+
+              <!-- Expandable: Order Items Detail -->
+              <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);">
+                <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
+                <div v-else>
+                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
+                    <span>{{ item.item_name }} x{{ item.quantity }}</span>
+                    <span>{{ formatCurrency(item.subtotal) }}</span>
+                  </div>
+                </div>
+                <!-- Void Button (only for completed orders) -->
+                <button 
+                  v-if="order.status === 'completed'" 
+                  class="btn btn-sm" 
+                  style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm);"
+                  @click.stop="openVoidModal(order)"
+                >
+                  🚫 ยกเลิกบิลนี้ (Void)
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Admin Only: Top Selling Menu Items (Last 7 Days) -->
-      <div v-if="isAdminUser" class="card mb-lg">
-        <div class="card-title" style="font-size: var(--font-sm);">🔥 10 อันดับเมนูขายดีที่สุด (7 วันที่ผ่านมา)</div>
-        
-        <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
-          ยังไม่มีข้อมูลการขายในรอบ 7 วันที่ผ่านมา
-        </div>
-        <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
-          <div 
-            v-for="(item, index) in topItems" 
-            :key="item.menu_item_id" 
-            class="flex flex-between align-center p-xs"
-            style="font-size:var(--font-sm); border-bottom: 1px solid var(--border-color);"
-          >
-            <div class="flex align-center gap-sm">
-              <span class="font-bold" :class="index === 0 ? 'text-accent' : 'text-secondary'">
-                #{{ index + 1 }}
-              </span>
-              <span>{{ item.item_name }}</span>
-            </div>
-            <div>
-              <span class="font-bold">{{ item.total_qty }}ชิ้น</span> | 
-              <span style="font-size:11px; color:var(--text-secondary);">{{ formatCurrency(item.total_sales) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Admin Only: Expense Recording Card -->
-      <div v-if="isAdminUser" class="card mb-lg">
-        <div class="card-title" style="font-size: var(--font-sm);">💸 บันทึกค่าใช้จ่ายประจำวัน</div>
+      <!-- Tab 2: Expenses (บันทึกค่าใช้จ่ายประจำวัน) -->
+      <div v-if="activeTab === 'expenses' && isAdminUser" class="card">
+        <div class="card-title" style="font-size: var(--font-sm);">💸 บันทึกค่าใช้จ่ายประจำวัน (วันที่ {{ formatDate(selectedDate) }})</div>
         
         <!-- Quick Add Expense Form -->
         <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-bottom:var(--space-md);">
@@ -146,70 +209,57 @@
         </div>
       </div>
 
-      <!-- Today's Transaction Logs (ALL ROLES) -->
-      <div class="card mb-lg">
-        <div class="card-title" style="font-size: var(--font-sm);">📋 รายการบิลประจำวัน</div>
+      <!-- Tab 3: Top Selling Menus (10 อันดับเมนูขายดีที่สุด) -->
+      <div v-if="activeTab === 'top_menus' && isAdminUser" class="card">
+        <div class="card-title" style="font-size: var(--font-sm);">🔥 10 อันดับเมนูขายดีที่สุด (7 วันที่ผ่านมา)</div>
         
-        <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
-          ยังไม่มีรายการขายในวันนี้
+        <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
+          ยังไม่มีข้อมูลการขายในรอบ 7 วันที่ผ่านมา
         </div>
         <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
           <div 
-            v-for="order in dailyReport.orders" 
-            :key="order.id" 
-            class="p-sm card"
-            style="font-size:var(--font-sm); background: var(--bg-primary); display:flex; flex-direction:column; gap:2px; cursor:pointer;"
-            @click="toggleExpandOrder(order.id)"
+            v-for="(item, index) in topItems" 
+            :key="item.menu_item_id" 
+            class="flex flex-between align-center p-xs"
+            style="font-size:var(--font-sm); border-bottom: 1px solid var(--border-color);"
           >
-            <div class="flex flex-between font-bold">
-              <span :style="order.status === 'cancelled' ? 'text-decoration:line-through; opacity:0.5;' : ''">
-                #{{ order.order_number }}
+            <div class="flex align-center gap-sm">
+              <span class="font-bold" :class="index === 0 ? 'text-accent' : 'text-secondary'">
+                #{{ index + 1 }}
               </span>
-              <div>
-                <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:11px; margin-right:4px;">❌ ยกเลิก</span>
-                <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
-              </div>
+              <span>{{ item.item_name }}</span>
             </div>
-            <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
-              <span>{{ order.payment_method === 'cash' ? '💵 เงินสด' : order.payment_method === 'qr' ? '📱 QR Code' : '⏳ รอชำระ' }}</span>
-              <span>เวลา: {{ formatTime(order.created_at) }}</span>
-            </div>
-            <div v-if="order.cancel_reason" style="font-size: 11px; color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
-              เหตุผลยกเลิก: {{ order.cancel_reason }}
-            </div>
-
-            <!-- Expandable: Order Items Detail -->
-            <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);">
-              <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
-              <div v-else>
-                <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
-                  <span>{{ item.item_name }} x{{ item.quantity }}</span>
-                  <span>{{ formatCurrency(item.subtotal) }}</span>
-                </div>
-              </div>
-              <!-- Void Button (only for completed orders) -->
-              <button 
-                v-if="order.status === 'completed'" 
-                class="btn btn-sm" 
-                style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm);"
-                @click.stop="openVoidModal(order)"
-              >
-                🚫 ยกเลิกบิลนี้ (Void)
-              </button>
+            <div>
+              <span class="font-bold">{{ item.total_qty }} ชิ้น</span> | 
+              <span style="font-size:11px; color:var(--text-secondary);">{{ formatCurrency(item.total_sales) }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Admin Only: Activity Logs Card -->
-      <div v-if="isAdminUser" class="card mb-lg">
-        <div class="card-title" style="font-size: var(--font-sm);">👁️ ประวัติกิจกรรมพนักงาน</div>
+      <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
+      <div v-if="activeTab === 'activity_logs' && isAdminUser" class="card">
+        <div class="card-title" style="font-size: var(--font-sm);">👁️ ประวัติกิจกรรมพนักงาน (วันที่ {{ formatDate(selectedDate) }})</div>
         
-        <div v-if="activityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
-          ยังไม่มีกิจกรรมในวันนี้
+        <!-- Filter dropdown -->
+        <div class="form-group mb-md">
+          <label class="form-label font-bold" style="font-size: var(--font-sm);">🔍 กรองประเภทกิจกรรม:</label>
+          <select v-model="filterAction" class="form-select" style="height: 40px; font-size: var(--font-sm);">
+            <option value="all">📁 ทั้งหมด</option>
+            <option value="login">🔑 การลงชื่อเข้าใช้งาน (Login)</option>
+            <option value="sales">🛒 การขาย / ออกบิล (Sales)</option>
+            <option value="cancel">🚫 การยกเลิกบิล (Void)</option>
+            <option value="expenses">💸 บันทึกค่าใช้จ่าย (Expenses)</option>
+            <option value="stock">🔧 จัดการสต็อก / ของเสีย (Stock & Waste)</option>
+            <option value="credit">🍴 เครดิตพนักงาน (Staff Credit)</option>
+          </select>
         </div>
-        <div v-else style="display:flex; flex-direction:column; gap:var(--space-sm); max-height:400px; overflow-y:auto;">
-          <div v-for="log in activityLogs" :key="log.id" class="p-sm" style="font-size:12px; border-bottom:1px solid var(--border-color);">
+
+        <div v-if="filteredActivityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
+          ยังไม่มีกิจกรรมที่ตรงตามตัวกรองในวันนี้
+        </div>
+        <div v-else style="display:flex; flex-direction:column; gap:var(--space-sm); max-height:450px; overflow-y:auto;">
+          <div v-for="log in filteredActivityLogs" :key="log.id" class="p-sm" style="font-size:12px; border-bottom:1px solid var(--border-color);">
             <div class="flex flex-between">
               <span class="font-bold">{{ getActionIcon(log.action) }} {{ log.staff_name || 'ระบบ' }}</span>
               <span style="color:var(--text-tertiary); font-size:11px;">{{ formatTime(log.created_at) }}</span>
@@ -281,6 +331,8 @@ import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin } from '.
 // Role check
 const isAdminUser = computed(() => isAdmin());
 
+const activeTab = ref('sales');
+
 // States
 const selectedDate = ref(getToday());
 const loading = ref(true);
@@ -303,6 +355,21 @@ const dailyReport = ref({
 const topItems = ref([]);
 const expenses = ref([]);
 const activityLogs = ref([]);
+const filterAction = ref('all');
+
+const filteredActivityLogs = computed(() => {
+  if (filterAction.value === 'all') return activityLogs.value;
+  return activityLogs.value.filter(log => {
+    const act = log.action;
+    if (filterAction.value === 'login') return act === 'login';
+    if (filterAction.value === 'sales') return act === 'create_order' || act === 'complete_order';
+    if (filterAction.value === 'cancel') return act === 'cancel_order';
+    if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
+    if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
+    if (filterAction.value === 'credit') return act === 'staff_credit';
+    return true;
+  });
+});
 
 // Expanded order state
 const expandedOrderId = ref(null);
@@ -544,12 +611,66 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Reuse existing chart styles */
+/* Segmented controller pill-tabs styling */
+.reports-pill-tabs {
+  display: flex;
+  background: rgba(139, 3, 19, 0.04);
+  padding: 6px;
+  border-radius: var(--radius-xl);
+  gap: 6px;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+}
+.reports-pill-tabs::-webkit-scrollbar {
+  display: none;
+}
+.reports-pill-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--radius-lg);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: bold;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-base);
+}
+.reports-pill-tab:hover {
+  color: var(--text-primary);
+  background: rgba(139, 3, 19, 0.03);
+}
+.reports-pill-tab.active {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.12);
+}
+
 .stat-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .reports-pill-tabs {
+    padding: 4px;
+    border-radius: var(--radius-lg);
+  }
+  .reports-pill-tab {
+    padding: 8px 12px;
+    font-size: var(--font-xs);
+    border-radius: var(--radius-md);
+  }
 }
 </style>
