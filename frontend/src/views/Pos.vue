@@ -71,8 +71,10 @@
             <!-- Product Price & Stock in stable container -->
             <div class="pos-item-details">
               <div class="pos-item-price">{{ formatCurrency(item.price) }}</div>
-              <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock">
-                {{ item.stock <= 0 ? '❌ หมด' : `เหลือ ${item.stock}` }}
+              <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock" :class="{ 'low-stock': isLowStock(item) }">
+                <span v-if="item.stock <= 0">❌ หมด</span>
+                <span v-else-if="isLowStock(item)">⚠️ ใกล้หมด (เหลือ {{ item.stock }})</span>
+                <span v-else>เหลือ {{ item.stock }}</span>
               </div>
             </div>
           </div>
@@ -254,6 +256,10 @@ const isOutOfStock = (item) => {
   return item.stock !== null && item.stock !== undefined && item.stock <= 0;
 };
 
+const isLowStock = (item) => {
+  return item.stock !== null && item.stock !== undefined && item.stock > 0 && item.stock <= store.lowStockThreshold;
+};
+
 const addToCart = (item) => {
   const itemId = item.id;
   
@@ -342,13 +348,20 @@ const loadMenuData = async () => {
   } catch (error) {
     console.error('Failed to load menu:', error);
     ui.showToast('ไม่สามารถดึงข้อมูลเมนูร้านค้าได้', 'error');
-  } finally {
-    loading.value = false;
-    // Turn off stagger animation after it finishes to prevent re-triggering on click updates
-    setTimeout(() => {
-      isVisualStaggerActive.value = false;
-    }, 1000);
   }
+  
+  try {
+    // Load stock to fetch the low stock threshold from DB/settings
+    await store.fetchStock();
+  } catch (error) {
+    console.warn('Failed to load stock threshold:', error);
+  }
+
+  loading.value = false;
+  // Turn off stagger animation after it finishes to prevent re-triggering on click updates
+  setTimeout(() => {
+    isVisualStaggerActive.value = false;
+  }, 1000);
 };
 
 // Fallback emoji based on category id
@@ -516,6 +529,31 @@ onUnmounted(() => {
   font-size: 0.65rem;
   color: var(--text-tertiary);
   font-weight: var(--font-weight-medium);
+}
+
+.pos-item-stock.low-stock {
+  color: var(--primary-light);
+  font-weight: var(--font-weight-bold);
+  background: rgba(173, 40, 30, 0.08);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(173, 40, 30, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+  animation: pulse-warning 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
 }
 
 .pos-item-details {
