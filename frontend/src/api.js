@@ -56,6 +56,15 @@ const auth = {
   async getBranches() {
     return request('GET', '/api/auth/branches');
   },
+  async createBranch(data) {
+    return request('POST', '/api/auth/branches', data);
+  },
+  async updateBranch(id, data) {
+    return request('PUT', `/api/auth/branches/${id}`, data);
+  },
+  async deleteBranch(id) {
+    return request('DELETE', `/api/auth/branches/${id}`);
+  },
   async getUsers() {
     return request('GET', '/api/auth/users');
   },
@@ -148,6 +157,9 @@ const reports = {
   async monthly(month) {
     return request('GET', `/api/reports/monthly?month=${month}`);
   },
+  async yearly(year) {
+    return request('GET', `/api/reports/yearly?year=${year}`);
+  },
   async topItems(days = 7) {
     return request('GET', `/api/reports/top-items?days=${days}`);
   },
@@ -182,8 +194,12 @@ const expenses = {
 };
 
 const activities = {
-  async get(date, userId) {
-    let path = `/api/activities?date=${date}`;
+  async get(dateOrParams, userId) {
+    if (dateOrParams && typeof dateOrParams === 'object') {
+      const query = new URLSearchParams(dateOrParams).toString();
+      return request('GET', `/api/activities?${query}`);
+    }
+    let path = `/api/activities?date=${dateOrParams}`;
     if (userId) path += `&user_id=${userId}`;
     return request('GET', path);
   },

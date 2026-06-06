@@ -10,7 +10,7 @@ router.use(requireAdmin);
 // ─── GET / — Get Activity Logs (by Date) ─────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { date, user_id, limit, offset } = req.query;
+    const { date, month, year, user_id, limit, offset } = req.query;
     const db = getDb();
 
     let branchId = req.user.branch_id;
@@ -19,7 +19,6 @@ router.get('/', async (req, res) => {
       branchId = defaultBranch ? defaultBranch.id : null;
     }
 
-    const dateVal = date || new Date().toISOString().split('T')[0];
     const queryLimit = parseInt(limit) || 100;
     const queryOffset = parseInt(offset) || 0;
 
@@ -27,9 +26,21 @@ router.get('/', async (req, res) => {
       SELECT al.*, u.name as staff_name 
       FROM activity_logs al
       LEFT JOIN users u ON u.id = al.user_id
-      WHERE al.branch_id = ? AND date(al.created_at) = ?
+      WHERE al.branch_id = ?
     `;
-    const params = [branchId, dateVal];
+    const params = [branchId];
+
+    if (year) {
+      sql += " AND strftime('%Y', al.created_at) = ?";
+      params.push(year);
+    } else if (month) {
+      sql += " AND strftime('%Y-%m', al.created_at) = ?";
+      params.push(month);
+    } else {
+      const dateVal = date || new Date().toISOString().split('T')[0];
+      sql += ' AND date(al.created_at) = ?';
+      params.push(dateVal);
+    }
 
     if (user_id) {
       sql += ' AND al.user_id = ?';

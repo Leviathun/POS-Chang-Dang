@@ -72,7 +72,7 @@ router.post('/', async (req, res) => {
 // ─── GET / — List Expenses (by Date or Month) ───────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { date, month } = req.query;
+    const { date, month, year } = req.query;
     const db = getDb();
 
     let branchId = req.user.branch_id;
@@ -82,7 +82,15 @@ router.get('/', async (req, res) => {
     }
 
     let expenses;
-    if (month) {
+    if (year) {
+      expenses = await db.prepare(`
+        SELECT e.*, u.name as staff_name 
+        FROM expenses e
+        LEFT JOIN users u ON u.id = e.staff_id
+        WHERE e.branch_id = ? AND strftime('%Y', e.expense_date) = ?
+        ORDER BY e.expense_date DESC, e.created_at DESC
+      `).all(branchId, year);
+    } else if (month) {
       expenses = await db.prepare(`
         SELECT e.*, u.name as staff_name 
         FROM expenses e

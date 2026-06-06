@@ -127,12 +127,82 @@ async function getMonthlyReport(month, branchId = null) {
     WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
   `).get(params2);
 
+  // ดึงรายการออเดอร์ทั้งหมดของเดือนนี้
+  const paramsOrders = [month];
+  if (branchId) paramsOrders.push(branchId);
+  const orders = await db.prepare(`
+    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, cancel_reason, created_at
+    FROM orders
+    WHERE strftime('%Y-%m', created_at) = ? AND status IN ('completed', 'cancelled')${branchFilter}
+    ORDER BY id DESC
+  `).all(paramsOrders);
+
   return {
     month,
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
-    daily_breakdown: dailyBreakdown
+    daily_breakdown: dailyBreakdown,
+    orders: orders
+  };
+}
+
+/**
+ * รายงานยอดขายรายปี
+ * @param {string} year - ปี ค.ศ.
+ * @param {number} [branchId] - รหัสสาขา
+ */
+async function getYearlyReport(year, branchId = null) {
+  const db = getDb();
+  let branchFilter = '';
+  const params1 = [year];
+  const params2 = [year];
+
+  if (branchId) {
+    branchFilter = ' AND branch_id = ?';
+    params1.push(branchId);
+    params2.push(branchId);
+  }
+
+  // ยอดรายเดือนของปี
+  const monthlyBreakdown = await db.prepare(`
+    SELECT 
+      strftime('%Y-%m', created_at) as month,
+      COUNT(*) as order_count,
+      COALESCE(SUM(total), 0) as revenue
+    FROM orders 
+    WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
+    GROUP BY strftime('%Y-%m', created_at)
+    ORDER BY month
+  `).all(params1);
+
+  // ยอดรวมของปี
+  const totals = await db.prepare(`
+    SELECT 
+      COUNT(*) as total_orders,
+      COALESCE(SUM(total), 0) as total_revenue,
+      COALESCE(AVG(total), 0) as avg_order_value
+    FROM orders 
+    WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
+  `).get(params2);
+
+  // ดึงรายการออเดอร์ทั้งหมดของปีนี้
+  const paramsOrders = [year];
+  if (branchId) paramsOrders.push(branchId);
+  const orders = await db.prepare(`
+    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, cancel_reason, created_at
+    FROM orders
+    WHERE strftime('%Y', created_at) = ? AND status IN ('completed', 'cancelled')${branchFilter}
+    ORDER BY id DESC
+  `).all(paramsOrders);
+
+  return {
+    year,
+    total_orders: totals.total_orders,
+    total_revenue: totals.total_revenue,
+    avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
+    monthly_breakdown: monthlyBreakdown,
+    orders: orders
   };
 }
 
@@ -230,4 +300,4 @@ async function getSummary(branchId = null) {
   };
 }
 
-module.exports = { getDailyReport, getMonthlyReport, getTopItems, getSummary };
+module.exports = { getDailyReport, getMonthlyReport, getYearlyReport, getTopItems, getSummary };

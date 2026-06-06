@@ -71,6 +71,36 @@ router.get('/monthly', async (req, res) => {
   }
 });
 
+// ─── GET /yearly — รายงานยอดขายรายปี ──────────────────
+router.get('/yearly', async (req, res) => {
+  try {
+    let year = req.query.year;
+    if (!year) {
+      const today = new Date();
+      year = String(today.getFullYear());
+    }
+
+    // กรองตามสาขา
+    let branchId = req.query.branch_id ? Number(req.query.branch_id) : null;
+    if (req.user && req.user.role !== 'admin') {
+      branchId = req.user.branch_id;
+    }
+
+    const report = await reportsService.getYearlyReport(year, branchId);
+
+    res.json({
+      success: true,
+      data: report
+    });
+  } catch (error) {
+    console.error('❌ Yearly report error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการสร้างรายงานรายปี'
+    });
+  }
+});
+
 // ─── GET /top-items — สินค้าขายดี ───────────────────────
 router.get('/top-items', async (req, res) => {
   try {
