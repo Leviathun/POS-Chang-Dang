@@ -225,6 +225,67 @@ async function initDatabase() {
       action TEXT NOT NULL,
       details TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS free_modifiers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL CHECK(category IN ('sauce_small', 'sauce_large', 'dipping', 'powder')),
+      servings_per_bag INTEGER DEFAULT 50,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS branch_free_modifier_stocks (
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+      modifier_id INTEGER NOT NULL REFERENCES free_modifiers(id) ON DELETE CASCADE,
+      total_servings INTEGER DEFAULT 0,
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      PRIMARY KEY (branch_id, modifier_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS free_modifier_stock_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      modifier_id INTEGER NOT NULL REFERENCES free_modifiers(id),
+      change_qty INTEGER NOT NULL,
+      previous_stock INTEGER,
+      new_stock INTEGER,
+      reason TEXT CHECK(reason IN ('sale', 'restock', 'adjustment', 'cancel_restore')),
+      order_id INTEGER REFERENCES orders(id),
+      staff_id INTEGER REFERENCES users(id),
+      note TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS free_modifier_presets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      modifier_ids TEXT NOT NULL,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS archived_orders (
+      id INTEGER PRIMARY KEY,
+      branch_id INTEGER,
+      order_number TEXT UNIQUE NOT NULL,
+      staff_id INTEGER,
+      subtotal REAL NOT NULL,
+      discount REAL DEFAULT 0,
+      total REAL NOT NULL,
+      payment_method TEXT,
+      cash_received REAL,
+      cash_change REAL,
+      status TEXT,
+      note TEXT,
+      cancel_reason TEXT,
+      free_modifiers TEXT,
+      created_at DATETIME
+    )`,
+    `CREATE TABLE IF NOT EXISTS archived_order_items (
+      id INTEGER PRIMARY KEY,
+      order_id INTEGER NOT NULL REFERENCES archived_orders(id) ON DELETE CASCADE,
+      menu_item_id INTEGER,
+      item_name TEXT NOT NULL,
+      item_price REAL NOT NULL,
+      quantity INTEGER NOT NULL,
+      subtotal REAL NOT NULL
     )`
   ];
 
@@ -242,6 +303,13 @@ async function initDatabase() {
   // Add raw_quantity column to branch_stocks if not exists (SQLite-friendly ALTER TABLE)
   try {
     await db.exec("ALTER TABLE branch_stocks ADD COLUMN raw_quantity INTEGER DEFAULT NULL");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Add free_modifiers column to orders if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE orders ADD COLUMN free_modifiers TEXT");
   } catch (e) {
     // Column already exists, safe to ignore
   }
@@ -312,6 +380,63 @@ async function initDatabase() {
     await insertSetting.run('promptpay_id', process.env.PROMPTPAY_ID || '');
     await insertSetting.run('daily_report_time', '21:00');
     await insertSetting.run('low_stock_threshold', '5');
+  }
+
+  // Seed default free modifiers (Sync to make sure no items are missing)
+  const defaultModifiers = [
+    { name: 'ซอสมะเขือเทศ (ซอง)', category: 'sauce_small', servings: 1, active: 1 },
+    { name: 'ซอสพริก (ซอง)', category: 'sauce_small', servings: 1, active: 1 },
+    { name: 'ซอสมะเขือเทศ (ถุง)', category: 'sauce_large', servings: 50, active: 1 },
+    { name: 'ซอสพริก (ถุง)', category: 'sauce_large', servings: 50, active: 1 },
+    { name: 'ซอสมะยองเนส (ถุง)', category: 'sauce_large', servings: 50, active: 1 },
+    { name: 'ซอสชีสดิป (ถุง)', category: 'sauce_large', servings: 50, active: 1 },
+    { name: 'น้ำจิ้มพริกคั่วมะขาม', category: 'dipping', servings: 50, active: 1 },
+    { name: 'น้ำจิ้มเผ็ดถั่วโบราณ', category: 'dipping', servings: 50, active: 0 },
+    { name: 'น้ำจิ้มหวานถั่วโบราณ', category: 'dipping', servings: 50, active: 0 },
+    { name: 'ผงชีส', category: 'powder', servings: 50, active: 1 },
+    { name: 'ผงบาร์บีคิว', category: 'powder', servings: 50, active: 1 },
+    { name: 'ผงหม่าล่า', category: 'powder', servings: 50, active: 1 },
+    { name: 'ผงฮอตแอนด์สไปซี่', category: 'powder', servings: 50, active: 1 },
+    { name: 'ผงวิงส์แซ่บ', category: 'powder', servings: 50, active: 1 },
+    { name: 'ผงปาปริก้า', category: 'powder', servings: 50, active: 1 }
+  ];
+
+  let seededCount = 0;
+  for (const m of defaultModifiers) {
+    const existing = await db.prepare('SELECT id FROM free_modifiers WHERE name = ?').get(m.name);
+    if (!existing) {
+      await db.prepare('INSERT INTO free_modifiers (name, category, servings_per_bag, active) VALUES (?, ?, ?, ?)')
+        .run(m.name, m.category, m.servings, m.active);
+      seededCount++;
+    }
+  }
+  if (seededCount > 0) {
+    console.log(`  🧂 สร้างตัวเลือกซอส/ผง/น้ำจิ้มเริ่มต้นเพิ่มเติมสำเร็จ (${seededCount} รายการ)`);
+  }
+
+  // Seed branch Stocks for free modifiers
+  const branches = await db.prepare('SELECT id FROM branches').all();
+  const modifiers = await db.prepare('SELECT id FROM free_modifiers').all();
+  const insertModStock = db.prepare(`
+    INSERT OR IGNORE INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings)
+    VALUES (?, ?, 0)
+  `);
+  for (const b of branches) {
+    for (const m of modifiers) {
+      await insertModStock.run(b.id, m.id);
+    }
+  }
+
+  // Seed default presets (สูตรสำเร็จ)
+  const presetCount = await db.prepare('SELECT COUNT(*) as count FROM free_modifier_presets').get();
+  if (presetCount.count === 0) {
+    const tomatoBag = await db.prepare("SELECT id FROM free_modifiers WHERE name = 'ซอสมะเขือเทศ (ถุง)'").get();
+    const cheesePowder = await db.prepare("SELECT id FROM free_modifiers WHERE name = 'ผงชีส'").get();
+    if (tomatoBag && cheesePowder) {
+      await db.prepare('INSERT INTO free_modifier_presets (name, modifier_ids) VALUES (?, ?)')
+        .run('มะเขือเทศ + ผงชีส', JSON.stringify([tomatoBag.id, cheesePowder.id]));
+      console.log('  ✨ สร้างสูตรสำเร็จเริ่มต้น (มะเขือเทศ + ผงชีส) สำเร็จ');
+    }
   }
 
   console.log('  ✅ Cloud/Local Database initialized');

@@ -175,6 +175,45 @@ const settings = {
   async update(key, value) {
     return request('PUT', '/api/settings', { key, value });
   },
+  async exportBackup() {
+    return request('GET', '/api/settings/backup/export');
+  },
+  async importBackup(backup) {
+    return request('POST', '/api/settings/backup/import', { backup });
+  },
+  async archiveOrders(months) {
+    return request('POST', '/api/settings/archive', { months });
+  },
+};
+
+const freeModifiers = {
+  async getAll() {
+    return request('GET', '/api/free-modifiers');
+  },
+  async restock(modifierId, bags, note) {
+    return request('POST', '/api/free-modifiers/restock', { modifier_id: modifierId, bags, note });
+  },
+  async adjust(modifierId, quantity, reason, note) {
+    return request('POST', '/api/free-modifiers/adjust', { modifier_id: modifierId, quantity, reason, note });
+  },
+  async toggle(id) {
+    return request('POST', `/api/free-modifiers/toggle/${id}`);
+  },
+  async getPresets() {
+    return request('GET', '/api/free-modifiers/presets');
+  },
+  async createPreset(data) {
+    return request('POST', '/api/free-modifiers/presets', data);
+  },
+  async updatePreset(id, data) {
+    return request('PUT', `/api/free-modifiers/presets/${id}`, data);
+  },
+  async deletePreset(id) {
+    return request('DELETE', `/api/free-modifiers/presets/${id}`);
+  },
+  async getLogs(id) {
+    return request('GET', `/api/free-modifiers/${id}/logs`);
+  },
 };
 
 const expenses = {
@@ -214,4 +253,5 @@ export default {
   settings,
   expenses,
   activities,
+  freeModifiers,
 };

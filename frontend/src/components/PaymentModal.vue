@@ -147,6 +147,10 @@ const props = defineProps({
   total: {
     type: Number,
     required: true
+  },
+  freeModifiers: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -218,7 +222,11 @@ const createBackendOrder = async () => {
       items.push({ menu_item_id: item.id, quantity });
     });
 
-    const res = await api.orders.create({ items, note: '' });
+    const res = await api.orders.create({ 
+      items, 
+      note: '',
+      free_modifiers: props.freeModifiers
+    });
     orderId.value = res.data?.id || res.id;
 
     if (paymentMethod.value === 'qr') {

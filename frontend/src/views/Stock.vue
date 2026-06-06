@@ -13,159 +13,314 @@
       </div>
     </div>
 
-    <!-- Desktop Stock Table (Visible on desktop only) -->
-    <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
-      <div style="overflow-x: auto;">
-        <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-              <th style="padding: var(--space-md); text-align: center; width: 30%;">เมนูอาหาร</th>
-              <th style="padding: var(--space-md); text-align: center; width: 20%;">ของสด</th>
-              <th style="padding: var(--space-md); text-align: center; width: 20%;">ทอดสุก/พร้อมขาย</th>
-              <th style="padding: var(--space-md); text-align: center; width: 30%;">จัดการสต็อก</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loading">
-              <td colspan="4" style="text-align: center; padding: var(--space-3xl);">
-                <div class="spinner" style="margin: 0 auto;"></div>
-              </td>
-            </tr>
-            <tr v-else-if="stockItems.length === 0">
-              <td colspan="4" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
-                ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก (เพิ่มสินค้าในหน้า "จัดการเมนู")
-              </td>
-            </tr>
-            <tr 
-              v-else 
-              v-for="item in stockItems" 
-              :key="item.id" 
-              style="border-bottom: 1px solid var(--border-color);"
-              class="table-row-hover"
-            >
-              <!-- Name -->
-              <td style="padding: var(--space-md); vertical-align: middle;">
-                <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
-                <div style="font-size: var(--font-xs); color: var(--text-tertiary); display: flex; gap: var(--space-sm); align-items: center;">
-                  <span>ID: {{ item.id }}</span>
-                  <span style="color: var(--border-color);">|</span>
-                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item)">📋 ดูประวัติสต็อก</a>
-                </div>
-              </td>
-              <!-- Raw Quantity -->
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <span v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" :class="{ 'text-danger': (item.raw_quantity || 0) <= lowStockThreshold }" style="font-weight: bold;">
-                  {{ item.raw_quantity }} ชิ้น
-                  <span v-if="(item.raw_quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
-                  <span v-if="(item.raw_quantity || 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
-                </span>
-                <span v-else style="color: var(--text-tertiary); font-style: italic;">-</span>
-              </td>
-              <!-- Cooked Quantity -->
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }" style="font-weight: bold;">
-                  {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
-                  <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
-                  <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
-                </span>
-              </td>
-              <!-- Actions -->
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
-                  <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn btn-primary" style="background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" @click="openActionModal('fry', item)">🔥 ทอดสินค้า</button>
-                  <button class="btn" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2);" @click="openActionModal('waste', item)">🗑️ ของเสีย</button>
-                  <button class="btn" style="background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);" @click="openActionModal('staff_benefit', item)">🍴 เครดิต</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- Tab Selector -->
+    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+      <button 
+        class="category-tab" 
+        :class="{ 'active': activeTab === 'menu_items' }"
+        @click="activeTab = 'menu_items'"
+      >
+        🍗 สินค้าและเมนู
+      </button>
+      <button 
+        class="category-tab" 
+        :class="{ 'active': activeTab === 'modifiers' }"
+        @click="activeTab = 'modifiers'"
+      >
+        🧂 ซอสและเครื่องปรุง
+      </button>
     </div>
 
-    <!-- Mobile Stock Card List (Visible on mobile only) -->
-    <div class="mobile-stock-list-container">
-      <div v-if="loading" class="text-center py-3xl">
-        <div class="spinner" style="margin: 0 auto;"></div>
+    <!-- Tab 1: Menu Items Stock -->
+    <div v-if="activeTab === 'menu_items'">
+      <!-- Desktop Stock Table (Visible on desktop only) -->
+      <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
+        <div style="overflow-x: auto;">
+          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md); text-align: center; width: 30%;">เมนูอาหาร</th>
+                <th style="padding: var(--space-md); text-align: center; width: 20%;">ของสด</th>
+                <th style="padding: var(--space-md); text-align: center; width: 20%;">ทอดสุก/พร้อมขาย</th>
+                <th style="padding: var(--space-md); text-align: center; width: 30%;">จัดการสต็อก</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loading">
+                <td colspan="4" style="text-align: center; padding: var(--space-3xl);">
+                  <div class="spinner" style="margin: 0 auto;"></div>
+                </td>
+              </tr>
+              <tr v-else-if="stockItems.length === 0">
+                <td colspan="4" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                  ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก (เพิ่มสินค้าในหน้า "จัดการเมนู")
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="item in stockItems" 
+                :key="item.id" 
+                style="border-bottom: 1px solid var(--border-color);"
+                class="table-row-hover"
+              >
+                <!-- Name -->
+                <td style="padding: var(--space-md); vertical-align: middle;">
+                  <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
+                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); display: flex; gap: var(--space-sm); align-items: center;">
+                    <span>ID: {{ item.id }}</span>
+                    <span style="color: var(--border-color);">|</span>
+                    <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)">📋 ดูประวัติสต็อก</a>
+                  </div>
+                </td>
+                <!-- Raw Quantity -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <span v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" :class="{ 'text-danger': (item.raw_quantity || 0) <= lowStockThreshold }" style="font-weight: bold;">
+                    {{ item.raw_quantity }} ชิ้น
+                    <span v-if="(item.raw_quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
+                    <span v-if="(item.raw_quantity || 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
+                  </span>
+                  <span v-else style="color: var(--text-tertiary); font-style: italic;">-</span>
+                </td>
+                <!-- Cooked Quantity -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }" style="font-weight: bold;">
+                    {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
+                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
+                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
+                  </span>
+                </td>
+                <!-- Actions -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
+                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn btn-primary" style="background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" @click="openActionModal('fry', item, false)">🔥 ทอดสินค้า</button>
+                    <button class="btn" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2);" @click="openActionModal('waste', item, false)">🗑️ ของเสีย</button>
+                    <button class="btn" style="background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);" @click="openActionModal('staff_benefit', item, false)">🍴 เครดิต</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div v-else-if="stockItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
-        ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก
-      </div>
-      <div v-else class="mobile-stock-list">
-        <div 
-          v-for="item in stockItems" 
-          :key="item.id" 
-          class="mobile-stock-card"
-          :class="{ 'out-of-stock-card': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0 }"
-        >
-          <div class="mobile-stock-card-body">
-            <!-- Left: Name & ID -->
-            <div class="mobile-stock-card-details">
-              <div class="mobile-stock-card-name">{{ item.name }}</div>
-              <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
-                <span>ID: {{ item.id }}</span>
-                <span style="color: var(--border-color);">|</span>
-                <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item)">📋 ประวัติ</a>
+
+      <!-- Mobile Stock Card List (Visible on mobile only) -->
+      <div class="mobile-stock-list-container">
+        <div v-if="loading" class="text-center py-3xl">
+          <div class="spinner" style="margin: 0 auto;"></div>
+        </div>
+        <div v-else-if="stockItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
+          ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก
+        </div>
+        <div v-else class="mobile-stock-list">
+          <div 
+            v-for="item in stockItems" 
+            :key="item.id" 
+            class="mobile-stock-card"
+            :class="{ 'out-of-stock-card': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0 }"
+          >
+            <div class="mobile-stock-card-body">
+              <!-- Left: Name & ID -->
+              <div class="mobile-stock-card-details">
+                <div class="mobile-stock-card-name">{{ item.name }}</div>
+                <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
+                  <span>ID: {{ item.id }}</span>
+                  <span style="color: var(--border-color);">|</span>
+                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)">📋 ประวัติ</a>
+                </div>
+              </div>
+              
+              <!-- Right: Stock Quantity & Badge -->
+              <div class="mobile-stock-card-meta">
+                <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-column align-end gap-xs" style="text-align: right;">
+                  <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 2px;">
+                    ทอดแล้ว: <strong :class="{ 'text-danger': (item.quantity || 0) <= lowStockThreshold }">{{ item.quantity || 0 }} ชิ้น</strong>
+                  </div>
+                  <div style="font-size: var(--font-sm); color: var(--text-secondary);">
+                    ของสด: <strong :class="{ 'text-danger': (item.raw_quantity || 0) <= lowStockThreshold }">{{ item.raw_quantity || 0 }} ชิ้น</strong>
+                  </div>
+                </div>
+                <div 
+                  v-else
+                  class="mobile-stock-card-qty"
+                  :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }"
+                >
+                  {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
+                </div>
+                
+                <div class="mobile-stock-card-badge">
+                  <span 
+                    v-if="item.raw_quantity !== null && item.raw_quantity !== undefined && (item.quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) <= lowStockThreshold"
+                    class="badge badge-danger badge-sm"
+                    style="display: block; font-size: 0.65rem;"
+                  >
+                    🚨 ของใกล้หมดทั้งคู่
+                  </span>
+                  <span 
+                    v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" 
+                    class="badge badge-warning badge-sm"
+                    style="display: block; font-size: 0.65rem;"
+                  >
+                    ⚠️ ใกล้หมด
+                  </span>
+                  <span 
+                    v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" 
+                    class="badge badge-danger badge-sm"
+                    style="display: block; font-size: 0.65rem;"
+                  >
+                    ❌ หมดเกลี้ยง
+                  </span>
+                </div>
               </div>
             </div>
             
-            <!-- Right: Stock Quantity & Badge -->
-            <div class="mobile-stock-card-meta">
-              <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-column align-end gap-xs" style="text-align: right;">
-                <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 2px;">
-                  ทอดแล้ว: <strong :class="{ 'text-danger': (item.quantity || 0) <= lowStockThreshold }">{{ item.quantity || 0 }} ชิ้น</strong>
-                </div>
-                <div style="font-size: var(--font-sm); color: var(--text-secondary);">
-                  ของสด: <strong :class="{ 'text-danger': (item.raw_quantity || 0) <= lowStockThreshold }">{{ item.raw_quantity || 0 }} ชิ้น</strong>
-                </div>
-              </div>
-              <div 
-                v-else
-                class="mobile-stock-card-qty"
-                :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }"
+            <!-- Bottom Stock Actions -->
+            <div class="mobile-stock-card-actions">
+              <button 
+                v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" 
+                class="btn btn-primary" 
+                style="grid-column: span 2; background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" 
+                @click="openActionModal('fry', item, false)"
               >
-                {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
-              </div>
-              
-              <div class="mobile-stock-card-badge">
-                <span 
-                  v-if="item.raw_quantity !== null && item.raw_quantity !== undefined && (item.quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) <= lowStockThreshold"
-                  class="badge badge-danger badge-sm"
-                  style="display: block; font-size: 0.65rem;"
-                >
-                  🚨 ของใกล้หมดทั้งคู่
-                </span>
-                <span 
-                  v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" 
-                  class="badge badge-warning badge-sm"
-                  style="display: block; font-size: 0.65rem;"
-                >
-                  ⚠️ ใกล้หมด
-                </span>
-                <span 
-                  v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" 
-                  class="badge badge-danger badge-sm"
-                  style="display: block; font-size: 0.65rem;"
-                >
-                  ❌ หมดเกลี้ยง
-                </span>
-              </div>
+                🔥 ทอดสินค้า (หักของสด ➔ ทอดสุก)
+              </button>
+              <button class="btn btn-danger-outline" @click="openActionModal('waste', item, false)">🗑️ ของเสีย</button>
+              <button class="btn btn-warning-outline" @click="openActionModal('staff_benefit', item, false)">🍴 เครดิต</button>
             </div>
           </div>
-          
-          <!-- Bottom Stock Actions in 2x2 Grid + Full width Fry Button if applicable -->
-          <div class="mobile-stock-card-actions">
-            <!-- Fry chicken/cooked food button -->
-            <button 
-              v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" 
-              class="btn btn-primary" 
-              style="grid-column: span 2; background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" 
-              @click="openActionModal('fry', item)"
-            >
-              🔥 ทอดสินค้า (หักของสด ➔ ทอดสุก)
-            </button>
-            <button class="btn btn-danger-outline" @click="openActionModal('waste', item)">🗑️ ของเสีย</button>
-            <button class="btn btn-warning-outline" @click="openActionModal('staff_benefit', item)">🍴 เครดิต</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Free Modifiers Stock -->
+    <div v-else-if="activeTab === 'modifiers'">
+      <!-- Desktop Free Modifiers Table -->
+      <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
+        <div style="overflow-x: auto;">
+          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md); text-align: center; width: 35%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
+                <th style="padding: var(--space-md); text-align: center; width: 25%;">ประเภท</th>
+                <th style="padding: var(--space-md); text-align: center; width: 20%;">ปริมาณคงเหลือ</th>
+                <th style="padding: var(--space-md); text-align: center; width: 20%;">จัดการสต็อก</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loading">
+                <td colspan="4" style="text-align: center; padding: var(--space-3xl);">
+                  <div class="spinner" style="margin: 0 auto;"></div>
+                </td>
+              </tr>
+              <tr v-else-if="modifierItems.length === 0">
+                <td colspan="4" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                  ไม่มีรายการเครื่องปรุงในระบบ
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="item in modifierItems" 
+                :key="item.id" 
+                style="border-bottom: 1px solid var(--border-color);"
+                :class="{ 'table-row-hover': true, 'opacity-50': !item.active }"
+              >
+                <!-- Name -->
+                <td style="padding: var(--space-md); vertical-align: middle;">
+                  <div class="font-bold" style="font-size: var(--font-base);">
+                    {{ item.name }}
+                    <span v-if="!item.active" class="badge badge-neutral badge-sm" style="margin-left:6px;">ปิดใช้งาน</span>
+                  </div>
+                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); display: flex; gap: var(--space-sm); align-items: center;">
+                    <span>ID: {{ item.id }}</span>
+                    <span style="color: var(--border-color);">|</span>
+                    <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)">📋 ดูประวัติสต็อก</a>
+                  </div>
+                </td>
+                <!-- Category -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <span class="badge" :class="getModifierCategoryClass(item.category)">
+                    {{ getModifierCategoryLabel(item.category) }}
+                  </span>
+                </td>
+                <!-- Quantity -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <span :class="{ 'text-danger font-bold': isModifierLowStock(item), 'font-semibold': !isModifierLowStock(item) }">
+                    {{ formatModifierStock(item) }}
+                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
+                    <span v-if="item.total_servings <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมด</span>
+                  </span>
+                </td>
+                <!-- Actions -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
+                    <button class="btn btn-primary" style="background: var(--success); color: white; border: 1px solid var(--success-light); font-weight: bold;" @click="openActionModal('restock', item, true)">
+                      ➕ เติมสต็อก
+                    </button>
+                    <button class="btn" style="background: rgba(255, 149, 0, 0.1); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.2); font-weight: bold;" @click="openActionModal('adjust', item, true)">
+                      🔧 ปรับปรุง
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile Free Modifiers Card List -->
+      <div class="mobile-stock-list-container">
+        <div v-if="loading" class="text-center py-3xl">
+          <div class="spinner" style="margin: 0 auto;"></div>
+        </div>
+        <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
+          ไม่มีรายการเครื่องปรุงในระบบ
+        </div>
+        <div v-else class="mobile-stock-list">
+          <div 
+            v-for="item in modifierItems" 
+            :key="item.id" 
+            class="mobile-stock-card"
+            :class="{ 'out-of-stock-card': item.total_servings <= 0, 'opacity-50': !item.active }"
+          >
+            <div class="mobile-stock-card-body">
+              <!-- Left: Name & ID -->
+              <div class="mobile-stock-card-details">
+                <div class="mobile-stock-card-name">
+                  {{ item.name }}
+                  <span v-if="!item.active" class="badge badge-sm badge-neutral" style="margin-left:4px;">ปิดใช้งาน</span>
+                </div>
+                <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
+                  <span>ID: {{ item.id }}</span>
+                  <span style="color: var(--border-color);">|</span>
+                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)">📋 ประวัติ</a>
+                </div>
+                <div style="margin-top: 4px;">
+                  <span class="badge badge-sm" :class="getModifierCategoryClass(item.category)">
+                    {{ getModifierCategoryLabel(item.category) }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Right: Stock Quantity & Badge -->
+              <div class="mobile-stock-card-meta">
+                <div class="mobile-stock-card-qty" :class="{ 'text-danger': isModifierLowStock(item) }">
+                  {{ formatModifierStock(item) }}
+                </div>
+                <div class="mobile-stock-card-badge">
+                  <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="badge badge-warning badge-sm">⚠️ ใกล้หมด</span>
+                  <span v-else-if="item.total_servings <= 0" class="badge badge-danger badge-sm">❌ หมด</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Bottom Stock Actions -->
+            <div class="mobile-stock-card-actions">
+              <button class="btn btn-primary" style="background: var(--success); color: white; border: 1px solid var(--success-light); font-weight: bold;" @click="openActionModal('restock', item, true)">
+                ➕ เติมสต็อก
+              </button>
+              <button class="btn" style="background: rgba(255, 149, 0, 0.1); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.2); font-weight: bold;" @click="openActionModal('adjust', item, true)">
+                🔧 ปรับปรุง
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -177,7 +332,7 @@
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
           <h3>
-            {{ actionType === 'fry' ? '🔥 ทอดสินค้า' : actionType === 'restock' ? '➕ เติมสต็อกสินค้า' : actionType === 'waste' ? '🗑️ บันทึกสินค้าเสีย' : actionType === 'staff_benefit' ? '🍴 บันทึกเครดิตพนักงาน' : '🔧 ปรับปรุงยอดสต็อก' }}
+            {{ activeIsModifier ? (actionType === 'restock' ? '➕ เติมสต็อกเครื่องปรุง' : '🔧 ปรับปรุงยอดเครื่องปรุง') : (actionType === 'fry' ? '🔥 ทอดสินค้า' : actionType === 'restock' ? '➕ เติมสต็อกสินค้า' : actionType === 'waste' ? '🗑️ บันทึกสินค้าเสีย' : actionType === 'staff_benefit' ? '🍴 บันทึกเครดิตพนักงาน' : '🔧 ปรับปรุงยอดสต็อก') }}
           </h3>
           <button class="modal-close" @click="showActionModal = false">✕</button>
         </div>
@@ -186,7 +341,10 @@
             {{ activeItem?.name }}
           </div>
           <div style="font-size: var(--font-sm); color: var(--text-secondary); text-align: center; margin-bottom: var(--space-lg);">
-            <span v-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined">
+            <span v-if="activeIsModifier">
+              จำนวนคงเหลือปัจจุบัน: <strong>{{ formatModifierStock(activeItem) }}</strong>
+            </span>
+            <span v-else-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined">
               ทอดสุกแล้ว: <strong>{{ activeItem?.quantity || 0 }} ชิ้น</strong> | ของสด: <strong>{{ activeItem?.raw_quantity || 0 }} ชิ้น</strong>
             </span>
             <span v-else>
@@ -195,7 +353,7 @@
           </div>
 
           <!-- Stock Type Selector (Only if tracks raw stock and not fry mode) -->
-          <div v-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined && actionType !== 'fry'" class="form-group">
+          <div v-if="!activeIsModifier && activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined && actionType !== 'fry'" class="form-group">
             <label class="form-label font-bold">จัดการสต็อกส่วนใด? *</label>
             <div style="display:flex; gap:var(--space-sm); margin-bottom:var(--space-md);">
               <button 
@@ -222,23 +380,31 @@
           <!-- Quantity input -->
           <div class="form-group">
             <label class="form-label">
-              {{ actionType === 'fry' ? 'จำนวนที่ต้องการทอด (ชิ้น) *' : actionType === 'restock' ? 'จำนวนที่ต้องการเติม (ชิ้น) *' : 'จำนวนที่ต้องการหัก (ชิ้น) *' }}
+              <template v-if="activeIsModifier">
+                {{ actionType === 'restock' ? (activeItem?.category === 'sauce_small' ? 'จำนวนซองที่ต้องการเติม *' : 'จำนวนถุงที่ต้องการเติม *') : 'จำนวนรอบเสิร์ฟที่ต้องการปรับ (ใส่ติดลบเพื่อหักออก) *' }}
+              </template>
+              <template v-else>
+                {{ actionType === 'fry' ? 'จำนวนที่ต้องการทอด (ชิ้น) *' : actionType === 'restock' ? 'จำนวนที่ต้องการเติม (ชิ้น) *' : 'จำนวนที่ต้องการหัก (ชิ้น) *' }}
+              </template>
             </label>
             <input 
               type="number" 
               class="form-input" 
               v-model.number="actionForm.quantity" 
               placeholder="ใส่ตัวเลข..." 
-              min="0"
             />
           </div>
 
-          <div v-if="actionType === 'fry'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
+          <div v-if="!activeIsModifier && actionType === 'fry'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
             * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "ทอดสุก" 
           </div>
 
+          <div v-if="activeIsModifier && actionType === 'restock'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
+            * {{ activeItem?.category === 'sauce_small' ? 'ระบบจะเติมสต็อกตามจำนวนซองที่ระบุ' : `ระบบจะคูณด้วย ${activeItem?.servings_per_bag || 50} รอบเสิร์ฟอัตโนมัติเมื่อกดบันทึก` }}
+          </div>
+
           <!-- Waste Preset Notes -->
-          <div v-if="actionType === 'waste'" class="form-group">
+          <div v-if="!activeIsModifier && actionType === 'waste'" class="form-group">
             <label class="form-label">สาเหตุของเสีย</label>
             <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
               <button 
@@ -267,7 +433,7 @@
             <button class="btn btn-secondary flex-1" @click="showActionModal = false">ยกเลิก</button>
             <button 
               class="btn btn-primary flex-1" 
-              :disabled="actionForm.quantity === '' || actionForm.quantity === null || actionForm.quantity <= 0" 
+              :disabled="actionForm.quantity === '' || actionForm.quantity === null" 
               @click="handleSaveAction"
             >
               {{ actionType === 'fry' ? '🔥 เริ่มทอดสินค้า' : '💾 บันทึกสต็อก' }}
@@ -344,13 +510,16 @@ import { ui, formatDateTime, isAdmin, getUser } from '../helpers';
 import { store } from '../store';
 
 // States
+const activeTab = ref('menu_items'); // 'menu_items' or 'modifiers'
 const stockItems = computed(() => store.stockItems);
+const modifierItems = ref([]);
 const loading = ref(true);
 const lowStockThreshold = computed(() => store.lowStockThreshold);
 const showActionModal = ref(false);
 const showLogsModal = ref(false);
 const actionType = ref('restock'); // 'restock', 'adjust', 'waste', or 'staff_benefit'
 const activeItem = ref(null);
+const activeIsModifier = ref(false);
 const logs = ref([]);
 const logsLoading = ref(false);
 const wastePresets = ['🍂 เน่า/เสีย', '🛹 ตกพื้น/เสียหาย'];
@@ -358,23 +527,39 @@ const wastePresets = ['🍂 เน่า/เสีย', '🛹 ตกพื้น
 const actionForm = ref({
   quantity: '',
   note: ''
-});// System Settings States
+});
 
 // Load System Settings to check Low Stock Threshold
 const loadSettings = async () => {
   try {
     const res = await api.settings.getAll();
     if (res.success && res.data.low_stock_threshold) {
-      lowStockThreshold.value = Number(res.data.low_stock_threshold) || 5;
+      store.lowStockThreshold = Number(res.data.low_stock_threshold) || 5;
     }
   } catch (e) {
     console.warn(e);
   }
 };
 
-const loadStockData = async (force = false) => {
+const loadModifiersData = async () => {
   try {
-    await store.fetchStock(force);
+    const res = await api.freeModifiers.getAll();
+    if (res.success) {
+      modifierItems.value = res.data || [];
+    }
+  } catch (e) {
+    console.error(e);
+    ui.showToast('ไม่สามารถโหลดข้อมูลคลังซอส/ผงปรุงรสได้', 'error');
+  }
+};
+
+const loadStockData = async (force = false) => {
+  loading.value = true;
+  try {
+    await Promise.all([
+      store.fetchStock(force),
+      loadModifiersData()
+    ]);
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลคลังสินค้าได้', 'error');
@@ -384,9 +569,10 @@ const loadStockData = async (force = false) => {
 };
 
 // Actions Handlers
-const openActionModal = (type, item) => {
+const openActionModal = (type, item, isMod = false) => {
   actionType.value = type;
   activeItem.value = item;
+  activeIsModifier.value = isMod;
   
   let defaultNote = '';
   if (type === 'staff_benefit') {
@@ -396,7 +582,7 @@ const openActionModal = (type, item) => {
 
   actionForm.value = {
     quantity: '',
-    stock_type: 'cooked', // default to cooked stock
+    stock_type: 'cooked',
     note: defaultNote
   };
   showActionModal.value = true;
@@ -411,24 +597,35 @@ const handleSaveAction = async () => {
     const stockType = actionForm.value.stock_type;
 
     let res;
-    if (actionType.value === 'fry') {
-      res = await api.stock.fry(itemId, { quantity: qty, note });
-    } else if (actionType.value === 'restock') {
-      res = await api.stock.restock(itemId, { quantity: qty, stock_type: stockType, note });
+    if (activeIsModifier.value) {
+      if (actionType.value === 'restock') {
+        res = await api.freeModifiers.restock(itemId, qty, note);
+      } else if (actionType.value === 'adjust') {
+        res = await api.freeModifiers.adjust(itemId, qty, 'adjustment', note);
+      }
     } else {
-      // For adjust, waste, and staff_benefit — send negative qty and reason
-      const reason = actionType.value === 'waste' ? 'waste' : actionType.value === 'staff_benefit' ? 'staff_benefit' : 'adjustment';
-      const delta = actionType.value === 'adjust' ? qty : -Math.abs(qty);
-      res = await api.stock.adjust(itemId, { quantity: delta, reason, stock_type: stockType, note });
+      if (actionType.value === 'fry') {
+        res = await api.stock.fry(itemId, { quantity: qty, note });
+      } else if (actionType.value === 'restock') {
+        res = await api.stock.restock(itemId, { quantity: qty, stock_type: stockType, note });
+      } else {
+        const reason = actionType.value === 'waste' ? 'waste' : actionType.value === 'staff_benefit' ? 'staff_benefit' : 'adjustment';
+        const delta = actionType.value === 'adjust' ? qty : -Math.abs(qty);
+        res = await api.stock.adjust(itemId, { quantity: delta, reason, stock_type: stockType, note });
+      }
     }
 
     if (res.success) {
-      store.clearMenuCache(); // Invalidate menu cache so POS updates stock!
+      store.clearMenuCache();
       let successMsg = 'บันทึกยอดคลังเรียบร้อย';
-      if (actionType.value === 'fry') {
-        successMsg = `ทอดสุกสำเร็จ: หักของสดไป ${qty} ชิ้น และเพิ่มของทอดพร้อมขาย`;
+      if (activeIsModifier.value) {
+        successMsg = actionType.value === 'restock' ? 'เติมสต็อกเครื่องปรุงสำเร็จ' : 'ปรับสต็อกเครื่องปรุงสำเร็จ';
       } else {
-        successMsg = actionType.value === 'restock' ? 'เติมสต็อกสำเร็จ' : 'ปรับสต็อกสำเร็จ';
+        if (actionType.value === 'fry') {
+          successMsg = `ทอดสุกสำเร็จ: หักของสดไป ${qty} ชิ้น และเพิ่มของทอดพร้อมขาย`;
+        } else {
+          successMsg = actionType.value === 'restock' ? 'เติมสต็อกสำเร็จ' : 'ปรับสต็อกสำเร็จ';
+        }
       }
       ui.showToast(successMsg, 'success');
       showActionModal.value = false;
@@ -442,12 +639,15 @@ const handleSaveAction = async () => {
   }
 };
 
-const viewLogs = async (item) => {
+const viewLogs = async (item, isMod = false) => {
   activeItem.value = item;
+  activeIsModifier.value = isMod;
   showLogsModal.value = true;
   logsLoading.value = true;
   try {
-    const res = await api.stock.getLogs(item.id);
+    const res = isMod
+      ? await api.freeModifiers.getLogs(item.id)
+      : await api.stock.getLogs(item.id);
     logs.value = res.data?.logs || res.data || res || [];
   } catch (e) {
     console.error(e);
@@ -455,7 +655,6 @@ const viewLogs = async (item) => {
   } finally {
     logsLoading.value = false;
   }
-  return map[reason] || reason;
 };
 
 const getReasonLabel = (reason) => {
@@ -468,6 +667,52 @@ const getReasonLabel = (reason) => {
     'staff_benefit': '🍴 แจกพนักงาน/เครดิต'
   };
   return map[reason] || reason;
+};
+
+const formatModifierStock = (item) => {
+  if (!item) return '';
+  if (item.category === 'sauce_small') {
+    return `${item.total_servings} ซอง`;
+  }
+  const servingsPerBag = item.servings_per_bag || 50;
+  const bags = Math.floor(item.total_servings / servingsPerBag);
+  const servings = item.total_servings % servingsPerBag;
+  
+  let text = '';
+  if (bags > 0) text += `${bags} ถุง`;
+  if (servings > 0 || bags === 0) {
+    if (text) text += ' ';
+    text += `${servings} รอบ`;
+  }
+  return text;
+};
+
+const isModifierLowStock = (item) => {
+  if (!item) return false;
+  if (item.category === 'sauce_small') {
+    return item.total_servings <= 20;
+  }
+  return item.total_servings <= 30; // under 1 bag
+};
+
+const getModifierCategoryLabel = (category) => {
+  const map = {
+    'sauce_small': 'ซอส (ซองเล็ก)',
+    'sauce_large': 'ซอส (ถุงใหญ่)',
+    'dipping': 'น้ำจิ้ม',
+    'powder': 'ผงปรุงรส'
+  };
+  return map[category] || category;
+};
+
+const getModifierCategoryClass = (category) => {
+  const map = {
+    'sauce_small': 'badge-neutral',
+    'sauce_large': 'badge-primary',
+    'dipping': 'badge-accent',
+    'powder': 'badge-warning'
+  };
+  return map[category] || 'badge-neutral';
 };
 
 onMounted(() => {
@@ -544,7 +789,7 @@ onMounted(() => {
   }
   
   .mobile-stock-card {
-    background: var(--card-bg);
+    background: #ffffff;
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--border-color);
@@ -558,7 +803,7 @@ onMounted(() => {
   
   .mobile-stock-card.out-of-stock-card {
     border-color: rgba(173, 40, 30, 0.2);
-    background: rgba(173, 40, 30, 0.02);
+    background: #fff5f5;
   }
   
   .mobile-stock-card-body {
@@ -777,5 +1022,46 @@ onMounted(() => {
 
 .expandable-content.expanded {
   max-height: 500px;
+}
+
+/* --- Category Tabs --- */
+.category-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tab {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-tab:active {
+  transform: scale(0.97);
+}
+
+.category-tab.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-glow-primary);
 }
 </style>

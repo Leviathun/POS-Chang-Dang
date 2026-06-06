@@ -10,7 +10,7 @@ router.use(attachUser);
 // ─── POST / — สร้างออเดอร์ใหม่ ──────────────────────────
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { items, note, discount } = req.body;
+    const { items, note, discount, free_modifiers } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -84,8 +84,8 @@ router.post('/', requireAuth, async (req, res) => {
 
       // บันทึกออเดอร์
       const orderResult = await db.prepare(`
-        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, status, note)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, status, note, free_modifiers)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
       `).run(
         branchId,
         orderNumber,
@@ -93,7 +93,8 @@ router.post('/', requireAuth, async (req, res) => {
         subtotal,
         orderDiscount,
         total,
-        note || null
+        note || null,
+        free_modifiers ? JSON.stringify(free_modifiers) : null
       );
 
       // บันทึกกิจกรรมพนักงาน
@@ -414,6 +415,47 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         }
       }
 
+      // หักสต็อกของซอส/ผง/น้ำจิ้มฟรี (ถ้ามีในออเดอร์)
+      if (order.free_modifiers) {
+        try {
+          const selectedModifiers = JSON.parse(order.free_modifiers);
+          if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+            const updateModStock = db.prepare(`
+              UPDATE branch_free_modifier_stocks
+              SET total_servings = total_servings - 1
+              WHERE branch_id = ? AND modifier_id = ?
+            `);
+            const getModStock = db.prepare(`
+              SELECT total_servings FROM branch_free_modifier_stocks
+              WHERE branch_id = ? AND modifier_id = ?
+            `);
+            const insertModLog = db.prepare(`
+              INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
+              VALUES (?, ?, -1, ?, ?, 'sale', ?, ?, ?)
+            `);
+
+            for (const mod of selectedModifiers) {
+              const currentMod = await getModStock.get(branchId, mod.id);
+              const prevModStock = currentMod ? currentMod.total_servings : 0;
+              const newModStock = prevModStock - 1;
+
+              await updateModStock.run(branchId, mod.id);
+              await insertModLog.run(
+                branchId,
+                mod.id,
+                prevModStock,
+                newModStock,
+                Number(id),
+                req.user.id,
+                `ใช้ฟรี ${mod.name} ในออเดอร์ ${order.order_number}`
+              );
+            }
+          }
+        } catch (modErr) {
+          console.error('⚠️ Error deducting free modifiers stock:', modErr.message);
+        }
+      }
+
       // ดึงออเดอร์ที่อัปเดตแล้ว
       const updatedOrder = await db.prepare(`
         SELECT o.*, u.name as staff_name, b.name as branch_name
@@ -515,6 +557,47 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
               req.user.id,
               `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อก ${oi.item_name} x${oi.quantity} (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
             );
+          }
+        }
+
+        // คืนสต็อกซอส/ผง/น้ำจิ้มฟรี (ถ้ามีในออเดอร์)
+        if (order.free_modifiers) {
+          try {
+            const selectedModifiers = JSON.parse(order.free_modifiers);
+            if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+              const updateModStock = db.prepare(`
+                UPDATE branch_free_modifier_stocks
+                SET total_servings = total_servings + 1
+                WHERE branch_id = ? AND modifier_id = ?
+              `);
+              const getModStock = db.prepare(`
+                SELECT total_servings FROM branch_free_modifier_stocks
+                WHERE branch_id = ? AND modifier_id = ?
+              `);
+              const insertModLog = db.prepare(`
+                INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
+                VALUES (?, ?, 1, ?, ?, 'cancel_restore', ?, ?, ?)
+              `);
+
+              for (const mod of selectedModifiers) {
+                const currentMod = await getModStock.get(branchId, mod.id);
+                const prevModStock = currentMod ? currentMod.total_servings : 0;
+                const newModStock = prevModStock + 1;
+
+                await updateModStock.run(branchId, mod.id);
+                await insertModLog.run(
+                  branchId,
+                  mod.id,
+                  prevModStock,
+                  newModStock,
+                  Number(id),
+                  req.user.id,
+                  `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อกเครื่องปรุง ${mod.name}`
+                );
+              }
+            }
+          } catch (modErr) {
+            console.error('⚠️ Error restoring free modifiers stock:', modErr.message);
           }
         }
       }
