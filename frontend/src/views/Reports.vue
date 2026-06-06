@@ -177,7 +177,17 @@
 
         <!-- Today's Transaction Logs (ALL ROLES) -->
         <div class="card">
-          <div class="card-title" style="font-size: var(--font-sm);">📋 รายการบิลประจำวัน</div>
+          <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
+            <div class="card-title" style="font-size: var(--font-sm); margin: 0;">📋 รายการบิลประจำวัน</div>
+            <button 
+              v-if="dailyReport.orders?.length > 0"
+              class="btn btn-sm btn-secondary" 
+              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              @click="exportSalesCSV"
+            >
+              📥 ส่งออกรายงานยอดขาย (CSV)
+            </button>
+          </div>
           
           <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
             ยังไม่มีรายการขายในวันนี้
@@ -233,21 +243,30 @@
 
       <!-- Tab: Order History (ประวัติออเดอร์ย้อนหลัง) -->
       <div v-if="activeTab === 'order_history'" class="card">
-        <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
+        <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
           <div class="card-title" style="font-size: var(--font-sm); margin:0;">📋 ประวัติออเดอร์ย้อนหลัง</div>
-          <!-- Order status filter -->
-          <div class="flex align-center gap-xs">
-            <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
-            <select 
-              v-model="historyStatusFilter" 
-              class="form-input p-xs" 
-              style="padding: 4px 12px; border-radius: var(--radius-sm); width: 130px; height:32px; font-size:12px;"
-              @change="loadOrderHistory"
+          <div class="flex align-center gap-sm" style="flex-wrap: wrap;">
+            <button 
+              v-if="historyOrders.length > 0"
+              class="btn btn-sm btn-secondary" 
+              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              @click="exportHistoryOrdersCSV"
             >
-              <option value="all">ทั้งหมด</option>
-              <option value="completed">ชำระเงินแล้ว</option>
-              <option value="cancelled">ยกเลิก</option>
-            </select>
+              📥 ส่งออกประวัติออเดอร์ (CSV)
+            </button>
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
+              <select 
+                v-model="historyStatusFilter" 
+                class="form-input p-xs" 
+                style="padding: 4px 12px; border-radius: var(--radius-sm); width: 130px; height:32px; font-size:12px;"
+                @change="loadOrderHistory"
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="completed">ชำระเงินแล้ว</option>
+                <option value="cancelled">ยกเลิก</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -455,11 +474,21 @@
         <!-- Monthly Ledger Section -->
         <div class="divider" style="margin: var(--space-xl) 0; height:1px; background:var(--border-color);"></div>
         
-        <div class="flex flex-between align-center mb-md">
+        <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
           <div class="card-title" style="font-size: var(--font-sm); margin: 0;">
             📅 สมุดบัญชีรายรับ-รายจ่าย (เดือน {{ selectedDate.substring(0, 7) }})
           </div>
-          <div v-if="ledgerLoading" class="spinner spinner-sm"></div>
+          <div style="display:flex; align-items:center; gap:var(--space-sm);">
+            <button 
+              v-if="ledgerTransactions.length > 0"
+              class="btn btn-sm btn-secondary" 
+              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              @click="exportExpensesCSV"
+            >
+              📥 ส่งออกบัญชี (CSV)
+            </button>
+            <div v-if="ledgerLoading" class="spinner spinner-sm"></div>
+          </div>
         </div>
 
         <!-- Monthly Summary Cards -->
@@ -1221,6 +1250,105 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('click', closeReportsDropdowns);
 });
+
+// CSV Export Methods
+const exportToCSV = (headers, rows, filename) => {
+  try {
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => 
+        row.map(val => {
+          const cleanVal = String(val === null || val === undefined ? '' : val).replace(/"/g, '""');
+          return `"${cleanVal}"`;
+        }).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    ui.showToast('ส่งออกไฟล์ CSV สำเร็จ', 'success');
+  } catch (error) {
+    console.error(error);
+    ui.showToast('เกิดข้อผิดพลาดในการส่งออกไฟล์: ' + error.message, 'error');
+  }
+};
+
+const exportSalesCSV = () => {
+  const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
+  const rows = dailyReport.value.orders.map(o => {
+    let modsText = '';
+    if (o.free_modifiers) {
+      try {
+        const parsed = JSON.parse(o.free_modifiers);
+        if (Array.isArray(parsed)) {
+          modsText = parsed.map(m => m.name).join(' | ');
+        }
+      } catch (e) {}
+    }
+    return [
+      o.order_number,
+      o.total,
+      o.payment_method === 'cash' ? 'เงินสด' : o.payment_method === 'promptpay' ? 'QR Code' : 'รอชำระ',
+      o.staff_name || 'ระบบ',
+      o.branch_name || 'ไม่ระบุ',
+      o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
+      formatDate(o.created_at) + ' ' + formatTime(o.created_at),
+      modsText,
+      o.note || ''
+    ];
+  });
+  
+  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
+  exportToCSV(headers, rows, `sales_report_${periodStr}.csv`);
+};
+
+const exportHistoryOrdersCSV = () => {
+  const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
+  const rows = historyOrders.value.map(o => {
+    let modsText = '';
+    if (o.free_modifiers) {
+      try {
+        const parsed = JSON.parse(o.free_modifiers);
+        if (Array.isArray(parsed)) {
+          modsText = parsed.map(m => m.name).join(' | ');
+        }
+      } catch (e) {}
+    }
+    return [
+      o.order_number,
+      o.total,
+      o.payment_method === 'cash' ? 'เงินสด' : o.payment_method === 'promptpay' ? 'QR Code' : 'รอชำระ',
+      o.staff_name || 'ระบบ',
+      o.branch_name || 'ไม่ระบุ',
+      o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
+      formatDate(o.created_at) + ' ' + formatTime(o.created_at),
+      modsText,
+      o.note || ''
+    ];
+  });
+  
+  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
+  exportToCSV(headers, rows, `order_history_${periodStr}.csv`);
+};
+
+const exportExpensesCSV = () => {
+  const headers = ['วันที่-เวลา', 'รายการ', 'รายรับ (บาท)', 'รายจ่าย (บาท)', 'คงเหลือสุทธิ (บาท)'];
+  const rows = ledgerTransactions.value.map(t => [
+    formatDate(t.created_at) + ' ' + formatTime(t.created_at),
+    t.name,
+    t.income > 0 ? t.income : 0,
+    t.expense > 0 ? t.expense : 0,
+    t.runningBalance
+  ]);
+  const monthVal = selectedDate.value.substring(0, 7);
+  exportToCSV(headers, rows, `ledger_report_${monthVal}.csv`);
+};
 </script>
 
 <style scoped>
