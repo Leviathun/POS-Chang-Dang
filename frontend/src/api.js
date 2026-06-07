@@ -5,7 +5,12 @@
 const BASE_URL = window.location.origin;
 
 async function request(method, path, body, options = {}) {
-  const url = `${BASE_URL}${path}`;
+  let urlPath = path;
+  if (method === 'GET') {
+    const buster = `_cb=${Date.now()}`;
+    urlPath = urlPath.includes('?') ? `${urlPath}&${buster}` : `${urlPath}?${buster}`;
+  }
+  const url = `${BASE_URL}${urlPath}`;
   const headers = {
     'Content-Type': 'application/json',
   };

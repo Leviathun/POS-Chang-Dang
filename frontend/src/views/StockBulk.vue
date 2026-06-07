@@ -304,6 +304,7 @@ const handleSaveBulkAdjust = async () => {
     const res = await api.stock.bulkAdjust(payload);
     if (res.success) {
       store.clearMenuCache();
+      store.clearStockCache();
       ui.showToast('ปรับปรุงสต็อกด่วนเรียบร้อย', 'success');
       router.push('/stock'); // Go back to stock page!
     }

@@ -717,7 +717,7 @@ const getModifierCategoryClass = (category) => {
 
 onMounted(() => {
   loadSettings();
-  loadStockData();
+  loadStockData(true);
 });
 </script>
 

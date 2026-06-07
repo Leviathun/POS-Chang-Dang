@@ -232,6 +232,8 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         `).run(newVal, branchId, Number(id));
       }
 
+      const dbReason = reason === 'staff_benefit' ? 'adjustment' : reason;
+
       await db.prepare(`
         INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -241,7 +243,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         quantity,
         currentQty,
         newVal,
-        reason,
+        dbReason,
         req.user.id,
         note || `ปรับสต็อก${isRaw ? 'ของสด' : 'ของทอด'} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`
       );
