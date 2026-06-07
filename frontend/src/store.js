@@ -62,5 +62,8 @@ export const store = reactive({
   clearAllCache() {
     this.menuLoaded = false;
     this.stockLoaded = false;
+    this.menuItems = [];
+    this.categories = [];
+    this.stockItems = [];
   }
 });

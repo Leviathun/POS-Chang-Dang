@@ -217,6 +217,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from './api';
 import { ui, uiState, getUser, isAdmin } from './helpers';
+import { store } from './store';
 
 // States
 const user = ref(null);
@@ -295,6 +296,7 @@ const submitPin = async () => {
     if (res.success) {
       sessionStorage.setItem('pos_user', JSON.stringify(res.data.user));
       user.value = res.data.user;
+      store.clearAllCache(); // Clear store cache on branch login
       const branchName = res.data.branch ? res.data.branch.name : '';
       ui.showToast(`ยินดีต้อนรับคุณ ${user.value.name} 🎉${branchName ? ' (สาขา: ' + branchName + ')' : ''}`, 'success');
       enteredPin.value = '';
@@ -320,6 +322,7 @@ const handleLogout = async () => {
   if (confirm) {
     sessionStorage.removeItem('pos_user');
     user.value = null;
+    store.clearAllCache(); // Clear store cache on logout
     enteredPin.value = '';
     ui.showToast('ออกจากระบบเรียบร้อย', 'info');
     router.push('/');
