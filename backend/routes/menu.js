@@ -24,15 +24,16 @@ router.get('/', async (req, res) => {
 
     const items = await db.prepare(`
       SELECT 
-        mi.id, mi.name, mi.price, mi.category_id, 
+        mi.id, mi.name, mi.price AS global_price, mi.category_id, 
         mi.image_url, mi.active, mi.sort_order,
         mi.created_at, mi.updated_at,
         c.name as category_name,
+        COALESCE(bs.price, mi.price) AS price,
         bs.quantity as stock,
         bs.raw_quantity as raw_stock
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id
-      LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
+      INNER JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
       ORDER BY mi.sort_order ASC, mi.id ASC
     `).all(branchId);
 
@@ -261,13 +262,14 @@ router.post('/', requireAdmin, async (req, res) => {
       // ใส่ข้อมูลสต็อกแยกสาขา
       if (branchId) {
         await db.prepare(`
-          INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
-          VALUES (?, ?, ?, ?)
+          INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price)
+          VALUES (?, ?, ?, ?, ?)
         `).run(
           branchId, 
           newItemId, 
           stock !== undefined && stock !== null ? stock : null,
-          track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null
+          track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null,
+          price !== undefined && price !== null ? price : null
         );
       }
 
@@ -364,18 +366,23 @@ router.put('/:id', requireAdmin, async (req, res) => {
           } else if (raw_stock !== undefined) {
             rq = raw_stock;
           }
+          let p = stockRow.price;
+          if (price !== undefined) {
+            p = price;
+          }
           await db.prepare(`
             UPDATE branch_stocks
-            SET quantity = ?, raw_quantity = ?, updated_at = datetime('now', 'localtime')
+            SET quantity = ?, raw_quantity = ?, price = ?, updated_at = datetime('now', 'localtime')
             WHERE branch_id = ? AND menu_item_id = ?
-          `).run(q, rq, branchId, Number(id));
+          `).run(q, rq, p, branchId, Number(id));
         } else {
           let q = stock !== undefined && stock !== null ? stock : 0;
           let rq = track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null;
+          let p = price !== undefined ? price : null;
           await db.prepare(`
-            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
-            VALUES (?, ?, ?, ?)
-          `).run(branchId, Number(id), q, rq);
+            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price)
+            VALUES (?, ?, ?, ?, ?)
+          `).run(branchId, Number(id), q, rq, p);
         }
       }
     });

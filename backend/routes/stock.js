@@ -26,13 +26,13 @@ router.get('/', async (req, res) => {
 
     const items = await db.prepare(`
       SELECT 
-        mi.id, mi.name, mi.price, mi.category_id, mi.active,
+        mi.id, mi.name, COALESCE(bs.price, mi.price) as price, mi.category_id, mi.active,
         c.name as category_name,
         bs.quantity as stock,
         bs.raw_quantity as raw_stock
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id
-      LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
+      INNER JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
       ORDER BY mi.sort_order ASC, mi.id ASC
     `).all(branchId);
 

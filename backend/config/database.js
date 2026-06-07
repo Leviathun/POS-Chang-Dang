@@ -163,6 +163,7 @@ async function initDatabase() {
       menu_item_id INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
       quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
       raw_quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
+      price REAL DEFAULT NULL,
       updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
       UNIQUE(branch_id, menu_item_id)
     )`,
@@ -303,6 +304,13 @@ async function initDatabase() {
   // Add raw_quantity column to branch_stocks if not exists (SQLite-friendly ALTER TABLE)
   try {
     await db.exec("ALTER TABLE branch_stocks ADD COLUMN raw_quantity INTEGER DEFAULT NULL");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Add price column to branch_stocks if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE branch_stocks ADD COLUMN price REAL DEFAULT NULL");
   } catch (e) {
     // Column already exists, safe to ignore
   }

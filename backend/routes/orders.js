@@ -41,7 +41,7 @@ router.post('/', requireAuth, async (req, res) => {
 
         // คิวรีดึงเมนูและสต็อกของสาขานี้
         const menuItem = await db.prepare(`
-          SELECT mi.id, mi.name, mi.price, mi.active, bs.quantity as stock
+          SELECT mi.id, mi.name, COALESCE(bs.price, mi.price) as price, mi.active, bs.quantity as stock
           FROM menu_items mi
           LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
           WHERE mi.id = ?
