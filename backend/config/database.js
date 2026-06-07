@@ -337,6 +337,18 @@ async function initDatabase() {
     console.warn('⚠️ Migration fix branch_id:', e.message);
   }
 
+  // Migration: Fix branch_stocks with NULL quantity — set to 0
+  try {
+    const updated = await db.prepare(
+      'UPDATE branch_stocks SET quantity = 0 WHERE quantity IS NULL'
+    ).run();
+    if (updated.changes > 0) {
+      console.log(`  🔧 Migration: อัปเดตสต็อก ${updated.changes} รายการที่มีค่า NULL → 0`);
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration fix branch_stocks quantity:', e.message);
+  }
+
   // ─── Create Indexes ───────────────────────────────────────
   const indexes = [
     `CREATE INDEX IF NOT EXISTS idx_orders_branch ON orders(branch_id)`,

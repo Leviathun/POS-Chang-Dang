@@ -267,7 +267,7 @@ router.post('/', requireAdmin, async (req, res) => {
         `).run(
           branchId, 
           newItemId, 
-          stock !== undefined && stock !== null ? stock : null,
+          stock !== undefined && stock !== null ? stock : 0,
           track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null,
           price !== undefined && price !== null ? price : null
         );
@@ -355,6 +355,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
           let q = stockRow.quantity;
           if (stock !== undefined && stock !== null) {
             q = stock;
+          } else if (q === null) {
+            q = 0;
           }
           let rq = stockRow.raw_quantity;
           if (track_raw_stock !== undefined) {

@@ -305,15 +305,22 @@ router.post('/branches', requireAdmin, async (req, res) => {
 
       const branchId = result.lastInsertRowid;
 
-      // สร้าง stock record เริ่มต้น (NULL = ไม่จำกัด) สำหรับสินค้าทั้งหมดให้กับสาขาใหม่นี้
+      // สร้าง stock record เริ่มต้น (0 = เริ่มต้นคุมสต็อกที่ 0 ชิ้น, ของสดอิงตามสาขาอื่นๆ ที่มีอยู่) สำหรับสินค้าทั้งหมดให้กับสาขาใหม่นี้
       const menuItems = await db.prepare('SELECT id FROM menu_items').all();
-      const insertStock = db.prepare(`
-        INSERT OR IGNORE INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
-        VALUES (?, ?, NULL, NULL)
-      `);
-
       for (const item of menuItems) {
-        await insertStock.run(branchId, item.id);
+        // ตรวจสอบว่ามีสาขาอื่นที่ตั้งค่า raw_quantity ไว้เป็นตัวเลขหรือไม่ (ถ้ามี แสดงว่าตัวนี้เป็นของสด)
+        const existingStock = await db.prepare(`
+          SELECT raw_quantity FROM branch_stocks 
+          WHERE menu_item_id = ? AND raw_quantity IS NOT NULL 
+          LIMIT 1
+        `).get(item.id);
+
+        const rawQuantityVal = existingStock ? 0 : null;
+
+        await db.prepare(`
+          INSERT OR IGNORE INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
+          VALUES (?, ?, 0, ?)
+        `).run(branchId, item.id, rawQuantityVal);
       }
 
       // บันทึก Log กิจกรรม
