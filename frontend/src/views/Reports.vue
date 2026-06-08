@@ -103,8 +103,8 @@
 
           <select 
             v-if="periodMode === 'yearly'"
-            class="form-input p-xs" 
-            style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px; height: 38px; line-height: 24px;"
+            class="form-select" 
+            style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px; height: 38px; line-height: 24px; background-position: right 12px center;"
             v-model="selectedYear" 
             @change="loadReportData"
           >
@@ -256,16 +256,24 @@
             </button>
             <div class="flex align-center gap-xs">
               <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
-              <select 
-                v-model="historyStatusFilter" 
-                class="form-input p-xs" 
-                style="padding: 4px 12px; border-radius: var(--radius-sm); width: 130px; height:32px; font-size:12px;"
-                @change="loadOrderHistory"
-              >
-                <option value="all">ทั้งหมด</option>
-                <option value="completed">ชำระเงินแล้ว</option>
-                <option value="cancelled">ยกเลิก</option>
-              </select>
+              <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isHistoryStatusDropdownOpen }" 
+                  @click="isHistoryStatusDropdownOpen = !isHistoryStatusDropdownOpen"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text">
+                    {{ selectedHistoryStatusLabel }}
+                  </span>
+                </div>
+                <div v-if="isHistoryStatusDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'all' }" @click="selectHistoryStatus('all')" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'completed' }" @click="selectHistoryStatus('completed')" style="padding: 6px 12px; font-size: 12px;">ชำระเงินแล้ว</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'pending' }" @click="selectHistoryStatus('pending')" style="padding: 6px 12px; font-size: 12px;">รอชำระ</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'cancelled' }" @click="selectHistoryStatus('cancelled')" style="padding: 6px 12px; font-size: 12px;">ยกเลิก</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -290,51 +298,49 @@
                 </tr>
               </thead>
               <tbody>
-                <tr 
-                  v-for="order in paginatedHistoryOrders" 
-                  :key="order.id" 
-                  style="border-bottom: 1px solid var(--border-color); cursor: pointer;"
-                  class="table-row-hover"
-                  @click="toggleExpandOrder(order.id)"
-                >
-                  <td style="padding: var(--space-sm) var(--space-md); font-size: 11px; color:var(--text-secondary);">
-                    {{ formatDate(order.created_at) }}<br/>{{ formatTime(order.created_at) }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
-                    #{{ order.order_number }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md);">
-                    {{ order.staff_name || 'ระบบ' }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md);">
-                    {{ order.branch_name || 'ไม่ระบุ' }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                    {{ order.payment_method === 'cash' ? '💵 เงินสด' : order.payment_method === 'qr' ? '📱 QR Code' : '⏳ รอชำระ' }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;" :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">
-                    {{ formatCurrency(order.total) }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                    <span v-if="order.status === 'completed'" class="text-success" style="font-size:12px;">✅ สำเร็จ</span>
-                    <span v-else-if="order.status === 'cancelled'" class="text-danger" style="font-size:12px;">❌ ยกเลิก</span>
-                    <span v-else class="text-warning" style="font-size:12px;">⏳ รอชำระ</span>
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center;" @click.stop>
-                    <button 
-                      v-if="order.status === 'completed'" 
-                      class="btn btn-sm" 
-                      style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); padding:4px 8px; font-size:11px; min-height:28px;"
-                      @click="openVoidModal(order)"
-                    >
-                      🚫 Void
-                    </button>
-                    <span v-else>-</span>
-                  </td>
-                </tr>
-                <!-- Expand detail row for Desktop table -->
-                <template v-for="order in paginatedHistoryOrders" :key="'expand-' + order.id">
-                  <tr v-if="expandedOrderId === order.id" style="background: rgba(139, 3, 19, 0.01);">
+                <template v-for="order in paginatedHistoryOrders" :key="order.id">
+                  <tr 
+                    style="border-bottom: 1px solid var(--border-color); cursor: pointer;"
+                    class="table-row-hover"
+                    @click="toggleExpandOrder(order.id)"
+                  >
+                    <td style="padding: var(--space-sm) var(--space-md); font-size: 11px; color:var(--text-secondary);">
+                      {{ formatDate(order.created_at) }}<br/>{{ formatTime(order.created_at) }}
+                    </td>
+                    <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
+                      #{{ order.order_number }}
+                    </td>
+                    <td style="padding: var(--space-sm) var(--space-md);">
+                      {{ order.staff_name || 'ระบบ' }}
+                    </td>
+                    <td style="padding: var(--space-sm) var(--space-md);">
+                      {{ order.branch_name || 'ไม่ระบุ' }}
+                    </td>
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
+                      {{ order.payment_method === 'cash' ? '💵 เงินสด' : order.payment_method === 'qr' ? '📱 QR Code' : '⏳ รอชำระ' }}
+                    </td>
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;" :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">
+                      {{ formatCurrency(order.total) }}
+                    </td>
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
+                      <span v-if="order.status === 'completed'" class="text-success" style="font-size:12px;">✅ สำเร็จ</span>
+                      <span v-else-if="order.status === 'cancelled'" class="text-danger" style="font-size:12px;">❌ ยกเลิก</span>
+                      <span v-else class="text-warning" style="font-size:12px;">⏳ รอชำระ</span>
+                    </td>
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;" @click.stop>
+                      <button 
+                        v-if="order.status === 'completed'" 
+                        class="btn btn-sm" 
+                        style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); padding:4px 8px; font-size:11px; min-height:28px;"
+                        @click="openVoidModal(order)"
+                      >
+                        🚫 Void
+                      </button>
+                      <span v-else>-</span>
+                    </td>
+                  </tr>
+                  <!-- Expand detail row for Desktop table -->
+                  <tr v-if="expandedOrderId === order.id" :key="'expand-' + order.id" style="background: rgba(139, 3, 19, 0.01);">
                     <td colspan="8" style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
                       <div style="max-width: 500px; margin: 0 auto; border: 1px dashed var(--border-color); padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-primary);">
                         <div class="font-bold mb-xs" style="font-size: 13px; color: var(--primary);">รายละเอียดสินค้า:</div>
@@ -892,9 +898,27 @@ const selectFilterAction = (action) => {
   filterAction.value = action;
   isFilterActionDropdownOpen.value = false;
 };
+
+const isHistoryStatusDropdownOpen = ref(false);
+const selectedHistoryStatusLabel = computed(() => {
+  const statusLabels = {
+    all: 'ทั้งหมด',
+    completed: 'ชำระเงินแล้ว',
+    pending: 'รอชำระ',
+    cancelled: 'ยกเลิก'
+  };
+  return statusLabels[historyStatusFilter.value] || 'ทั้งหมด';
+});
+const selectHistoryStatus = (status) => {
+  historyStatusFilter.value = status;
+  isHistoryStatusDropdownOpen.value = false;
+  loadOrderHistory();
+};
+
 const closeReportsDropdowns = () => {
   isExpenseCategoryDropdownOpen.value = false;
   isFilterActionDropdownOpen.value = false;
+  isHistoryStatusDropdownOpen.value = false;
 };
 
 const loadMonthlyLedger = async () => {
