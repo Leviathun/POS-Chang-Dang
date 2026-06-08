@@ -1,138 +1,274 @@
 <template>
   <div id="menu-page" class="page-enter">
-    
-    <!-- Top Action Card -->
-    <div class="card mb-lg menu-top-action-card">
-      <div class="menu-total-count">
-        เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
-      </div>
-      <div class="menu-action-buttons">
-        <button class="btn btn-secondary" @click="openCatModal">📂 จัดการหมวดหมู่</button>
-        <button class="btn btn-primary" @click="openAddModal">🍗 + เพิ่มเมนู</button>
-      </div>
+
+    <!-- Tab Selector (Rounded Buttons style matching user's request) -->
+    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+      <button 
+        class="category-tab" 
+        :class="{ 'active': activeTab === 'menu_items' }"
+        @click="setTab('menu_items')"
+      >
+        🍗 สินค้าและเมนู
+      </button>
+      <button 
+        class="category-tab" 
+        :class="{ 'active': activeTab === 'modifiers' }"
+        @click="setTab('modifiers')"
+      >
+        🧂 ซอสและเครื่องปรุง
+      </button>
     </div>
 
-    <!-- Desktop Menu List Table (Visible on desktop only) -->
-    <div class="card p-0 overflow-hidden desktop-menu-table-container">
-      <div style="overflow-x: auto;">
-        <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-              <th style="padding: var(--space-md);">รูป</th>
-              <th style="padding: var(--space-md);">เมนูอาหาร</th>
-              <th style="padding: var(--space-md); text-align: right;">ราคา</th>
-              <th style="padding: var(--space-md); text-align: center;">ขาย</th>
-              <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loading">
-              <td colspan="5" style="text-align: center; padding: var(--space-3xl);">
-                <div class="spinner" style="margin: 0 auto;"></div>
-              </td>
-            </tr>
-            <tr v-else-if="menuItems.length === 0">
-              <td colspan="5" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
-                ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
-              </td>
-            </tr>
-            <tr 
-              v-else 
-              v-for="item in menuItems" 
-              :key="item.id" 
-              style="border-bottom: 1px solid var(--border-color);"
-              class="table-row-hover"
-            >
-              <!-- Image Preview -->
-              <td style="padding: var(--space-md); vertical-align: middle;">
-                <div style="width: 48px; height: 36px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
-                  <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
-                  <span v-else style="font-size: 1.1rem;">🍗</span>
-                </div>
-              </td>
-              <!-- Name & Category -->
-              <td style="padding: var(--space-md); vertical-align: middle;">
-                <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
-                <div style="font-size: var(--font-xs); color: var(--text-tertiary);">
-                  {{ getCategoryName(item.category_id) }}
-                </div>
-              </td>
-              <!-- Price -->
-              <td style="padding: var(--space-md); text-align: right; font-weight: bold; vertical-align: middle;">
-                {{ formatCurrency(item.price) }}
-              </td>
-              <!-- Toggle Active Switch -->
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <label class="toggle-switch" style="margin: 0 auto; display: block;">
-                  <input 
-                    type="checkbox" 
-                    :checked="item.active !== 0 && item.active !== false"
-                    @change="handleToggleActive(item)"
-                  />
-                  <span class="toggle-slider"></span>
-                </label>
-              </td>
-              <!-- Actions -->
-              <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                <div class="flex justify-center gap-sm">
-                  <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)">📝 แก้ไข</button>
-                  <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Tab 1: Menu Items Management -->
+    <div v-if="activeTab === 'menu_items'">
+      <!-- Top Action Card -->
+      <div class="card mb-lg menu-top-action-card">
+        <div class="menu-total-count">
+          เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
+        </div>
+        <div class="menu-action-buttons">
+          <button class="btn btn-secondary" @click="openCatModal">📂 จัดการหมวดหมู่</button>
+          <button class="btn btn-primary" @click="openAddModal">🍗 + เพิ่มเมนู</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Mobile Menu Card List (Visible on mobile only) -->
-    <div class="mobile-menu-list-container">
-      <div v-if="loading" class="text-center py-3xl">
-        <div class="spinner" style="margin: 0 auto;"></div>
+      <!-- Desktop Menu List Table (Visible on desktop only) -->
+      <div class="card p-0 overflow-hidden desktop-menu-table-container">
+        <div style="overflow-x: auto;">
+          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md);">รูป</th>
+                <th style="padding: var(--space-md);">เมนูอาหาร</th>
+                <th style="padding: var(--space-md); text-align: right;">ราคา</th>
+                <th style="padding: var(--space-md); text-align: center;">ขาย</th>
+                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loading">
+                <td colspan="5" style="text-align: center; padding: var(--space-3xl);">
+                  <div class="spinner" style="margin: 0 auto;"></div>
+                </td>
+              </tr>
+              <tr v-else-if="menuItems.length === 0">
+                <td colspan="5" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                  ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="item in menuItems" 
+                :key="item.id" 
+                style="border-bottom: 1px solid var(--border-color);"
+                class="table-row-hover"
+              >
+                <!-- Image Preview -->
+                <td style="padding: var(--space-md); vertical-align: middle;">
+                  <div style="width: 48px; height: 36px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                    <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
+                    <span v-else style="font-size: 1.1rem;">🍗</span>
+                  </div>
+                </td>
+                <!-- Name & Category -->
+                <td style="padding: var(--space-md); vertical-align: middle;">
+                  <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
+                  <div style="font-size: var(--font-xs); color: var(--text-tertiary);">
+                    {{ getCategoryName(item.category_id) }}
+                  </div>
+                </td>
+                <!-- Price -->
+                <td style="padding: var(--space-md); text-align: right; font-weight: bold; vertical-align: middle;">
+                  {{ formatCurrency(item.price) }}
+                </td>
+                <!-- Toggle Active Switch -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <label class="toggle-switch" style="margin: 0 auto; display: block;" :class="{ 'disabled': !isAdminUser }">
+                    <input 
+                      type="checkbox" 
+                      :checked="item.active !== 0 && item.active !== false"
+                      :disabled="!isAdminUser"
+                      @change="handleToggleActive(item)"
+                    />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+                <!-- Actions -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <div class="flex justify-center gap-sm">
+                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)">📝 แก้ไข</button>
+                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
-        ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
-      </div>
-      <div v-else class="mobile-menu-list">
-        <div 
-          v-for="item in menuItems" 
-          :key="item.id" 
-          class="mobile-menu-card"
-          :class="{ 'inactive-item': item.active === 0 || item.active === false }"
-        >
-          <div class="mobile-menu-card-body">
-            <!-- Left: Product Image / Emoji -->
-            <div class="mobile-menu-card-img-container">
-              <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
-              <div v-else class="mobile-menu-card-placeholder">🍗</div>
-            </div>
-            
-            <!-- Middle: Name & Category -->
-            <div class="mobile-menu-card-details">
-              <div class="mobile-menu-card-name">{{ item.name }}</div>
-              <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
-            </div>
-            
-            <!-- Right: Price & Active Switch -->
-            <div class="mobile-menu-card-meta">
-              <div class="mobile-menu-card-price">{{ formatCurrency(item.price) }}</div>
-              <div class="mobile-menu-card-status">
-                <label class="toggle-switch">
-                  <input 
-                    type="checkbox" 
-                    :checked="item.active !== 0 && item.active !== false"
-                    @change="handleToggleActive(item)"
-                  />
-                  <span class="toggle-slider"></span>
-                </label>
+
+      <!-- Mobile Menu Card List (Visible on mobile only) -->
+      <div class="mobile-menu-list-container">
+        <div v-if="loading" class="text-center py-3xl">
+          <div class="spinner" style="margin: 0 auto;"></div>
+        </div>
+        <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
+          ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
+        </div>
+        <div v-else class="mobile-menu-list">
+          <div 
+            v-for="item in menuItems" 
+            :key="item.id" 
+            class="mobile-menu-card"
+            :class="{ 'inactive-item': item.active === 0 || item.active === false }"
+          >
+            <div class="mobile-menu-card-body">
+              <!-- Left: Product Image / Emoji -->
+              <div class="mobile-menu-card-img-container">
+                <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
+                <div v-else class="mobile-menu-card-placeholder">🍗</div>
+              </div>
+              
+              <!-- Middle: Name & Category -->
+              <div class="mobile-menu-card-details">
+                <div class="mobile-menu-card-name">{{ item.name }}</div>
+                <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
+              </div>
+              
+              <!-- Right: Price & Active Switch -->
+              <div class="mobile-menu-card-meta">
+                <div class="mobile-menu-card-price">{{ formatCurrency(item.price) }}</div>
+                <div class="mobile-menu-card-status">
+                  <label class="toggle-switch" :class="{ 'disabled': !isAdminUser }">
+                    <input 
+                      type="checkbox" 
+                      :checked="item.active !== 0 && item.active !== false"
+                      :disabled="!isAdminUser"
+                      @change="handleToggleActive(item)"
+                    />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
               </div>
             </div>
+            
+            <!-- Bottom Action Buttons -->
+            <div class="mobile-menu-card-actions">
+              <button class="btn-action btn-action-edit" @click="openEditModal(item)">📝 แก้ไข</button>
+              <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
+            </div>
           </div>
-          
-          <!-- Bottom Action Buttons -->
-          <div class="mobile-menu-card-actions">
-            <button class="btn-action btn-action-edit" @click="openEditModal(item)">📝 แก้ไข</button>
-            <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Free Modifiers Management -->
+    <div v-else-if="activeTab === 'modifiers'">
+      <!-- Top Action Card -->
+      <div class="card mb-lg menu-top-action-card">
+        <div class="menu-total-count">
+          เครื่องปรุงทั้งหมด: <strong>{{ modifierItems.length }}</strong> รายการ
+        </div>
+        <div class="menu-action-buttons">
+          <span style="font-size: var(--font-sm); color: var(--text-tertiary);">สิทธิ์แอดมินในการเปิด/ปิดเครื่องปรุง</span>
+        </div>
+      </div>
+
+      <!-- Desktop Modifiers Table -->
+      <div class="card p-0 overflow-hidden desktop-menu-table-container">
+        <div style="overflow-x: auto;">
+          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md); width: 45%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
+                <th style="padding: var(--space-md); text-align: center; width: 25%;">ประเภท</th>
+                <th style="padding: var(--space-md); text-align: center; width: 30%;">เปิด/ปิดการใช้งาน</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="modifiersLoading">
+                <td colspan="3" style="text-align: center; padding: var(--space-3xl);">
+                  <div class="spinner" style="margin: 0 auto;"></div>
+                </td>
+              </tr>
+              <tr v-else-if="modifierItems.length === 0">
+                <td colspan="3" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                  ไม่มีรายการเครื่องปรุงในระบบ
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="item in modifierItems" 
+                :key="item.id" 
+                style="border-bottom: 1px solid var(--border-color);"
+                :class="{ 'table-row-hover': true, 'opacity-50': !item.active }"
+              >
+                <!-- Name -->
+                <td style="padding: var(--space-md); vertical-align: middle;">
+                  <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
+                  <div style="font-size: var(--font-xs); color: var(--text-tertiary);">ID: {{ item.id }}</div>
+                </td>
+                <!-- Category -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <span class="badge" :class="getModifierCategoryClass(item.category)">
+                    {{ getModifierCategoryLabel(item.category) }}
+                  </span>
+                </td>
+                <!-- Toggle switch -->
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <label class="toggle-switch" style="margin: 0 auto; display: block;" :class="{ 'disabled': !isAdminUser }">
+                    <input 
+                      type="checkbox" 
+                      :checked="item.active !== 0 && item.active !== false"
+                      :disabled="!isAdminUser"
+                      @change="handleToggleModifierActive(item)"
+                    />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile Modifiers List -->
+      <div class="mobile-menu-list-container">
+        <div v-if="modifiersLoading" class="text-center py-3xl">
+          <div class="spinner" style="margin: 0 auto;"></div>
+        </div>
+        <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
+          ไม่มีรายการเครื่องปรุงในระบบ
+        </div>
+        <div v-else class="mobile-menu-list">
+          <div 
+            v-for="item in modifierItems" 
+            :key="item.id" 
+            class="mobile-menu-card"
+            :class="{ 'inactive-item': item.active === 0 || item.active === false }"
+          >
+            <div class="mobile-menu-card-body">
+              <div class="mobile-menu-card-details">
+                <div class="mobile-menu-card-name">{{ item.name }}</div>
+                <div style="margin-top: 4px;">
+                  <span class="badge" :class="getModifierCategoryClass(item.category)">
+                    {{ getModifierCategoryLabel(item.category) }}
+                  </span>
+                </div>
+              </div>
+              <div class="mobile-menu-card-meta">
+                <div class="mobile-menu-card-status">
+                  <label class="toggle-switch" :class="{ 'disabled': !isAdminUser }">
+                    <input 
+                      type="checkbox" 
+                      :checked="item.active !== 0 && item.active !== false"
+                      :disabled="!isAdminUser"
+                      @change="handleToggleModifierActive(item)"
+                    />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -335,9 +471,72 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
-import { ui, formatCurrency } from '../helpers';
+import { ui, formatCurrency, isAdmin } from '../helpers';
 
 import { store } from '../store';
+
+const activeTab = ref('menu_items'); // 'menu_items' or 'modifiers'
+const isAdminUser = computed(() => isAdmin());
+
+const modifierItems = ref([]);
+const modifiersLoading = ref(false);
+
+const setTab = (tab) => {
+  activeTab.value = tab;
+  if (tab === 'modifiers') {
+    loadModifiers(true);
+  } else {
+    loadData(true);
+  }
+};
+
+const loadModifiers = async (force = false) => {
+  modifiersLoading.value = true;
+  try {
+    const res = await api.freeModifiers.getAll();
+    if (res.success) {
+      modifierItems.value = res.data || [];
+    }
+  } catch (error) {
+    console.error('Failed to load modifiers:', error);
+    ui.showToast('ไม่สามารถดึงข้อมูลรายการซอส/เครื่องปรุงได้', 'error');
+  } finally {
+    modifiersLoading.value = false;
+  }
+};
+
+const handleToggleModifierActive = async (item) => {
+  try {
+    const res = await api.freeModifiers.toggle(item.id);
+    if (res.success) {
+      item.active = item.active === 1 ? 0 : 1;
+      ui.showToast(`เปลี่ยนสถานะของ ${item.name} เรียบร้อย`, 'success');
+    }
+  } catch (error) {
+    console.error(error);
+    ui.showToast('เปลี่ยนสถานะเครื่องปรุงไม่สำเร็จ: ' + error.message, 'error');
+  }
+};
+
+const getModifierCategoryLabel = (category) => {
+  const map = {
+    'sauce_small': '🥫 ซอสซอง',
+    'sauce_large': '🧴 ซอสขวด/ถุงบีบ',
+    'dipping': '🥣 น้ำจิ้ม',
+    'powder': '✨ ผงโรย'
+  };
+  return map[category] || category;
+};
+
+const getModifierCategoryClass = (category) => {
+  const map = {
+    'sauce_small': 'badge-success',
+    'sauce_large': 'badge-primary',
+    'dipping': 'badge-accent',
+    'powder': 'badge-warning'
+  };
+  return map[category] || 'badge-neutral';
+};
 
 // Custom Category Dropdown States/Helpers
 const isCategoryDropdownOpen = ref(false);
@@ -773,5 +972,46 @@ onUnmounted(() => {
     font-size: var(--font-sm);
     justify-content: center;
   }
+}
+
+/* --- Category Tabs (Rounded Buttons style matching user's request) --- */
+.category-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tab {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-tab:active {
+  transform: scale(0.97);
+}
+
+.category-tab.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-glow-primary);
 }
 </style>
