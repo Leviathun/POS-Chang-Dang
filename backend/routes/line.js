@@ -110,10 +110,10 @@ async function handleEvent(event) {
 
     // ─── คำสั่ง: ยอดวันนี้ ──────────────────────────────
     if (text === 'ยอดวันนี้' || text === 'ยอด') {
-      const today = new Date();
-      const dateStr = today.getFullYear() + '-' +
-        String(today.getMonth() + 1).padStart(2, '0') + '-' +
-        String(today.getDate()).padStart(2, '0');
+      const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const dateStr = today.getUTCFullYear() + '-' +
+        String(today.getUTCMonth() + 1).padStart(2, '0') + '-' +
+        String(today.getUTCDate()).padStart(2, '0');
 
       const report = await reportsService.getDailyReport(dateStr);
 
@@ -134,9 +134,9 @@ async function handleEvent(event) {
 
     // ─── คำสั่ง: ยอดเดือนนี้ ────────────────────────────
     if (text === 'ยอดเดือนนี้') {
-      const today = new Date();
-      const monthStr = today.getFullYear() + '-' +
-        String(today.getMonth() + 1).padStart(2, '0');
+      const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const monthStr = today.getUTCFullYear() + '-' +
+        String(today.getUTCMonth() + 1).padStart(2, '0');
 
       const report = await reportsService.getMonthlyReport(monthStr);
 

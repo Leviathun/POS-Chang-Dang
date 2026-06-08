@@ -121,8 +121,8 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
 
       // บันทึกประวัติ
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?)
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         Number(id),
@@ -235,8 +235,8 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
       const dbReason = reason === 'staff_benefit' ? 'adjustment' : reason;
 
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         Number(id),
@@ -261,8 +261,8 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
       }
 
       await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         req.user.id,
@@ -353,8 +353,8 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
 
       // 2. บันทึก Stock logs (หักของสด)
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?)
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         Number(id),
@@ -367,8 +367,8 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
 
       // 3. บันทึก Stock logs (เพิ่มของทอด)
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?)
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         Number(id),
@@ -381,8 +381,8 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
 
       // 4. บันทึกกิจกรรมพนักงาน
       await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         req.user.id,
@@ -549,8 +549,8 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             : `ปรับปรุงสต็อกของทอดสุก (Absolute): ปรับจาก ${currentCooked} เป็น ${newCooked} ชิ้น [สาเหตุ: ${reason_preset || 'อื่นๆ'}] (${note || 'ไม่ระบุโน้ต'})`;
 
           await db.prepare(`
-            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
           `).run(
             branchId,
             Number(menu_item_id),
@@ -563,8 +563,8 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
           );
 
           await db.prepare(`
-            INSERT INTO activity_logs (branch_id, user_id, action, details)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+            VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
           `).run(
             branchId,
             req.user.id,
@@ -597,8 +597,8 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             : `ปรับปรุงสต็อกวัตถุดิบ (Absolute): ปรับจาก ${currentRaw} เป็น ${newRaw} ชิ้น [สาเหตุ: ${reason_preset || 'อื่นๆ'}] (${note || 'ไม่ระบุโน้ต'})`;
 
           await db.prepare(`
-            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
           `).run(
             branchId,
             Number(menu_item_id),
@@ -611,8 +611,8 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
           );
 
           await db.prepare(`
-            INSERT INTO activity_logs (branch_id, user_id, action, details)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+            VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
           `).run(
             branchId,
             req.user.id,

@@ -3,6 +3,10 @@ const router = express.Router();
 const { attachUser, requireAdmin } = require('../middleware/auth');
 const reportsService = require('../services/reports');
 
+function getThailandDate() {
+  return new Date(Date.now() + 7 * 60 * 60 * 1000);
+}
+
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
@@ -12,10 +16,10 @@ router.get('/daily', async (req, res) => {
     // ค่าเริ่มต้น = วันนี้
     let date = req.query.date;
     if (!date) {
-      const today = new Date();
-      date = today.getFullYear() + '-' +
-        String(today.getMonth() + 1).padStart(2, '0') + '-' +
-        String(today.getDate()).padStart(2, '0');
+      const today = getThailandDate();
+      date = today.getUTCFullYear() + '-' +
+        String(today.getUTCMonth() + 1).padStart(2, '0') + '-' +
+        String(today.getUTCDate()).padStart(2, '0');
     }
 
     // กรองตามสาขา (พนักงานเห็นเฉพาะสาขาตนเอง, แอดมินฟิลเตอร์ได้อิสระ)
@@ -45,9 +49,9 @@ router.get('/monthly', async (req, res) => {
     // ค่าเริ่มต้น = เดือนนี้
     let month = req.query.month;
     if (!month) {
-      const today = new Date();
-      month = today.getFullYear() + '-' +
-        String(today.getMonth() + 1).padStart(2, '0');
+      const today = getThailandDate();
+      month = today.getUTCFullYear() + '-' +
+        String(today.getUTCMonth() + 1).padStart(2, '0');
     }
 
     // กรองตามสาขา
@@ -76,8 +80,8 @@ router.get('/yearly', async (req, res) => {
   try {
     let year = req.query.year;
     if (!year) {
-      const today = new Date();
-      year = String(today.getFullYear());
+      const today = getThailandDate();
+      year = String(today.getUTCFullYear());
     }
 
     // กรองตามสาขา

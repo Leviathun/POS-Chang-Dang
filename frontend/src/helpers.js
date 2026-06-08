@@ -49,8 +49,15 @@ export function formatCurrency(amount) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return '-';
-  const d = new Date(dateStr);
+  let d;
+  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+    const isoStr = dateStr.replace(' ', 'T') + '+07:00';
+    d = new Date(isoStr);
+  } else {
+    d = new Date(dateStr);
+  }
   return d.toLocaleDateString('th-TH', {
+    timeZone: 'Asia/Bangkok',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -59,8 +66,15 @@ export function formatDate(dateStr) {
 
 export function formatTime(dateStr) {
   if (!dateStr) return '-';
-  const d = new Date(dateStr);
+  let d;
+  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+    const isoStr = dateStr.replace(' ', 'T') + '+07:00';
+    d = new Date(isoStr);
+  } else {
+    d = new Date(dateStr);
+  }
   return d.toLocaleTimeString('th-TH', {
+    timeZone: 'Asia/Bangkok',
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -79,13 +93,22 @@ export function escapeHtml(str) {
 }
 
 export function getToday() {
-  const now = new Date();
-  return now.toISOString().split('T')[0];
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  return formatter.format(new Date());
 }
 
 export function getCurrentMonth() {
-  const now = new Date();
-  return now.toISOString().slice(0, 7);
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit'
+  });
+  return formatter.format(new Date());
 }
 
 // ─── Session Helpers ───

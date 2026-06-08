@@ -84,8 +84,8 @@ router.post('/', requireAuth, async (req, res) => {
 
       // บันทึกออเดอร์
       const orderResult = await db.prepare(`
-        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, status, note, free_modifiers)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, status, note, free_modifiers, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         orderNumber,
@@ -99,8 +99,8 @@ router.post('/', requireAuth, async (req, res) => {
 
       // บันทึกกิจกรรมพนักงาน
       await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details)
-        VALUES (?, ?, 'create_order', ?)
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'create_order', ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         req.user.id,
@@ -363,8 +363,8 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
 
       // บันทึกกิจกรรมพนักงาน
       await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details)
-        VALUES (?, ?, 'complete_order', ?)
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'complete_order', ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         req.user.id,
@@ -389,8 +389,8 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         WHERE mi.id = ?
       `);
       const insertLog = db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, 'sale', ?, ?, ?)
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
       `);
 
       for (const oi of orderItems) {
@@ -430,8 +430,8 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
               WHERE branch_id = ? AND modifier_id = ?
             `);
             const insertModLog = db.prepare(`
-              INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
-              VALUES (?, ?, -1, ?, ?, 'sale', ?, ?, ?)
+              INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+              VALUES (?, ?, -1, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
             `);
 
             for (const mod of selectedModifiers) {
@@ -535,8 +535,8 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
           WHERE mi.id = ?
         `);
         const insertLog = db.prepare(`
-          INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
-          VALUES (?, ?, ?, ?, ?, 'cancel_restore', ?, ?, ?)
+          INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+          VALUES (?, ?, ?, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
         `);
 
         for (const oi of orderItems) {
@@ -575,8 +575,8 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
                 WHERE branch_id = ? AND modifier_id = ?
               `);
               const insertModLog = db.prepare(`
-                INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
-                VALUES (?, ?, 1, ?, ?, 'cancel_restore', ?, ?, ?)
+                INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                VALUES (?, ?, 1, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
               `);
 
               for (const mod of selectedModifiers) {
@@ -604,8 +604,8 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
 
       // บันทึกกิจกรรมพนักงาน
       await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details)
-        VALUES (?, ?, 'cancel_order', ?)
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'cancel_order', ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         req.user.id,

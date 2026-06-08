@@ -78,8 +78,8 @@ router.post('/login', async (req, res) => {
     // Write to activity logs
     const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(activeBranchId);
     await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details)
-      VALUES (?, ?, 'login', ?)
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'login', ?, datetime('now', '+7 hours'))
     `).run(activeBranchId, user.id, `พนักงาน ${user.name} เข้าสู่ระบบสำเร็จ (สาขา: ${branchInfo ? branchInfo.name : 'ไม่ระบุ'})`);
 
     // ส่ง user กลับพร้อม branch_id ที่ถูกต้อง
@@ -164,7 +164,7 @@ router.post('/users', requireAdmin, async (req, res) => {
     }
 
     const result = await db.prepare(
-      'INSERT INTO users (name, pin, role, branch_id) VALUES (?, ?, ?, ?)'
+      'INSERT INTO users (name, pin, role, branch_id, created_at) VALUES (?, ?, ?, ?, datetime("now", "+7 hours"))'
     ).run(name, String(pin), role || 'staff', targetBranchId);
 
     const user = await db.prepare(
@@ -300,7 +300,7 @@ router.post('/branches', requireAdmin, async (req, res) => {
     // ทำรายการแบบ transaction เพื่อความปลอดภัย
     const createBranchTx = db.transaction(async () => {
       const result = await db.prepare(
-        'INSERT INTO branches (name, address, phone) VALUES (?, ?, ?)'
+        'INSERT INTO branches (name, address, phone, created_at) VALUES (?, ?, ?, datetime("now", "+7 hours"))'
       ).run(name.trim(), address ? address.trim() : null, phone ? phone.trim() : null);
 
       const branchId = result.lastInsertRowid;
@@ -325,8 +325,8 @@ router.post('/branches', requireAdmin, async (req, res) => {
 
       // บันทึก Log กิจกรรม
       await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details)
-        VALUES (?, ?, 'create_branch', ?)
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'create_branch', ?, datetime('now', '+7 hours'))
       `).run(branchId, req.user.id, `สร้างสาขาใหม่: ${name}`);
 
       return branchId;
@@ -376,8 +376,8 @@ router.put('/branches/:id', requireAdmin, async (req, res) => {
 
     // บันทึก Log กิจกรรม
     await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details)
-      VALUES (?, ?, 'update_branch', ?)
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'update_branch', ?, datetime('now', '+7 hours'))
     `).run(Number(id), req.user.id, `แก้ไขข้อมูลสาขา: จาก "${branch.name}" เป็น "${name}"`);
 
     const updated = await db.prepare('SELECT * FROM branches WHERE id = ?').get(Number(id));
@@ -442,8 +442,8 @@ router.delete('/branches/:id', requireAdmin, async (req, res) => {
     // บันทึก Log กิจกรรมในส่วนกลาง (ไม่มีสาขาให้ระบุให้ระบุ NULL หรือสาขาแรกที่ยังเหลืออยู่)
     const remainingBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
     await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details)
-      VALUES (?, ?, 'delete_branch', ?)
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'delete_branch', ?, datetime('now', '+7 hours'))
     `).run(remainingBranch ? remainingBranch.id : null, req.user.id, `ลบสาขา: ${branch.name}`);
 
     res.json({

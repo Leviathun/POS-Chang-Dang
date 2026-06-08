@@ -33,17 +33,17 @@ router.post('/', async (req, res) => {
       branchId = defaultBranch ? defaultBranch.id : null;
     }
 
-    const dateVal = expense_date || new Date().toISOString().split('T')[0];
+    const dateVal = expense_date || new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     const result = await db.prepare(`
-      INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).run(branchId, req.user.id, amount, category, note || null, dateVal);
 
     // Also write to activity log
     await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details)
-      VALUES (?, ?, 'log_expense', ?)
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'log_expense', ?, datetime('now', '+7 hours'))
     `).run(
       branchId,
       req.user.id,
@@ -153,8 +153,8 @@ router.delete('/:id', async (req, res) => {
 
     // Also write to activity log
     await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details)
-      VALUES (?, ?, 'delete_expense', ?)
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'delete_expense', ?, datetime('now', '+7 hours'))
     `).run(
       branchId,
       req.user.id,

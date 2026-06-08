@@ -50,19 +50,24 @@ class DatabaseMock {
   }
 
   prepare(sql) {
-    return new Statement(this, sql);
+    // Automatically replace 'localtime' with '+7 hours' to force Thailand timezone (UTC+7)
+    // on cloud-hosted environments (e.g. Turso / Vercel) where host localtime is UTC.
+    const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
+    return new Statement(this, cleanSql);
   }
 
   async execute({ sql, args }) {
     const tx = transactionStorage.getStore();
     const activeClient = tx || this.client;
-    return activeClient.execute({ sql, args });
+    const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
+    return activeClient.execute({ sql: cleanSql, args });
   }
 
   async exec(sql) {
     const tx = transactionStorage.getStore();
     const activeClient = tx || this.client;
-    await activeClient.execute(sql);
+    const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
+    await activeClient.execute(cleanSql);
   }
 
   transaction(fn) {
@@ -459,6 +464,46 @@ async function initDatabase() {
     }
   }
 
+  // Migration: ปรับเวลาของข้อมูลประวัติเดิมที่มีอยู่แล้วให้เป็นเวลาไทย (UTC+7)
+  // เนื่องจากก่อนหน้านี้เก็บเวลาตามเขตเวลาเซิร์ฟเวอร์คลาวด์ที่เป็น UTC
+  try {
+    const migrationDone = await db.prepare("SELECT value FROM settings WHERE key = 'timezone_migration_v2'").get();
+    if (!migrationDone) {
+      console.log('  🔧 Migration: เริ่มต้นปรับปรุงประวัติเวลาเดิมให้เป็นเวลาไทย (UTC+7)...');
+      
+      const tablesToUpdate = [
+        { name: 'branches', cols: ['created_at'] },
+        { name: 'users', cols: ['created_at'] },
+        { name: 'menu_items', cols: ['created_at', 'updated_at'] },
+        { name: 'branch_stocks', cols: ['updated_at'] },
+        { name: 'orders', cols: ['created_at'] },
+        { name: 'stock_logs', cols: ['created_at'] },
+        { name: 'settings', cols: ['updated_at'] },
+        { name: 'expenses', cols: ['created_at'] },
+        { name: 'activity_logs', cols: ['created_at'] },
+        { name: 'free_modifiers', cols: ['created_at'] },
+        { name: 'branch_free_modifier_stocks', cols: ['updated_at'] },
+        { name: 'free_modifier_stock_logs', cols: ['created_at'] },
+        { name: 'free_modifier_presets', cols: ['created_at'] }
+      ];
+
+      for (const t of tablesToUpdate) {
+        for (const col of t.cols) {
+          try {
+            await db.exec(`UPDATE ${t.name} SET ${col} = datetime(${col}, '+7 hours') WHERE ${col} IS NOT NULL`);
+          } catch (e) {
+            console.warn(`  ⚠️ ไม่สามารถปรับเวลาตาราง ${t.name} คอลัมน์ ${col}:`, e.message);
+          }
+        }
+      }
+      
+      await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('timezone_migration_v2', 'done')").run();
+      console.log('  ✅ Migration: ปรับปรุงประวัติเวลาเดิมเสร็จสมบูรณ์');
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration timezone_migration_v2 error:', e.message);
+  }
+
   console.log('  ✅ Cloud/Local Database initialized');
 }
 
@@ -467,10 +512,10 @@ async function initDatabase() {
  */
 async function generateOrderNumber() {
   const db = getDb();
-  const today = new Date();
-  const dateStr = today.getFullYear().toString() +
-    String(today.getMonth() + 1).padStart(2, '0') +
-    String(today.getDate()).padStart(2, '0');
+  const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const dateStr = today.getUTCFullYear().toString() +
+    String(today.getUTCMonth() + 1).padStart(2, '0') +
+    String(today.getUTCDate()).padStart(2, '0');
 
   const prefix = `CD-${dateStr}-`;
 

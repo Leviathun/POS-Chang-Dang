@@ -93,8 +93,8 @@ router.post('/restock', requireAuth, async (req, res) => {
       // บันทึก Log
       const displayUnit = modifier.category === 'sauce_small' ? 'ซอง' : 'ถุง';
       await db.prepare(`
-        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?)
+        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         modifier.id,
@@ -178,8 +178,8 @@ router.post('/adjust', requireAuth, async (req, res) => {
       `).run(branchId, modifier.id, newServings);
 
       await db.prepare(`
-        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?)
+        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         modifier.id,
@@ -284,7 +284,7 @@ router.post('/presets', requireAdmin, async (req, res) => {
       });
     }
 
-    const result = await db.prepare('INSERT INTO free_modifier_presets (name, modifier_ids) VALUES (?, ?)')
+    const result = await db.prepare('INSERT INTO free_modifier_presets (name, modifier_ids, created_at) VALUES (?, ?, datetime("now", "+7 hours"))')
       .run(name, JSON.stringify(modifier_ids));
 
     const newPreset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(result.lastInsertRowid);

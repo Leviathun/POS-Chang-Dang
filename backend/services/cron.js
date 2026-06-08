@@ -53,10 +53,10 @@ async function startDailyReportCron() {
       }
 
       // สร้างรายงานวันนี้ (รวมทุกสาขาให้เจ้าของร้าน)
-      const today = new Date();
-      const dateStr = today.getFullYear() + '-' +
-        String(today.getMonth() + 1).padStart(2, '0') + '-' +
-        String(today.getDate()).padStart(2, '0');
+      const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const dateStr = today.getUTCFullYear() + '-' +
+        String(today.getUTCMonth() + 1).padStart(2, '0') + '-' +
+        String(today.getUTCDate()).padStart(2, '0');
 
       const report = await getDailyReport(dateStr);
       const flexMessage = lineBot.formatDailyReport(report);

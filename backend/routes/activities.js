@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
       sql += " AND strftime('%Y-%m', al.created_at) = ?";
       params.push(month);
     } else {
-      const dateVal = date || new Date().toISOString().split('T')[0];
+      const dateVal = date || new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
       sql += ' AND date(al.created_at) = ?';
       params.push(dateVal);
     }
