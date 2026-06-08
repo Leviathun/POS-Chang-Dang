@@ -6,10 +6,31 @@ const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
-// ─── POST /login — เข้าสู่ระบบด้วย PIN ─────────────────
+// ─── GET /branches — รายการสาขาทั้งหมด (Public, ไม่ต้อง login) ───
+router.get('/branches', async (req, res) => {
+  try {
+    const db = getDb();
+    const branches = await db.prepare(
+      'SELECT id, name, address, phone FROM branches ORDER BY id ASC'
+    ).all();
+
+    res.json({
+      success: true,
+      data: branches
+    });
+  } catch (error) {
+    console.error('❌ Get branches error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสาขา'
+    });
+  }
+});
+
+// ─── POST /login — เข้าสู่ระบบด้วย PIN + เลือกสาขา ──────
 router.post('/login', async (req, res) => {
   try {
-    const { pin } = req.body;
+    const { pin, branch_id } = req.body;
 
     if (!pin) {
       return res.status(400).json({
@@ -20,7 +41,7 @@ router.post('/login', async (req, res) => {
 
     const db = getDb();
     const user = await db.prepare(
-      'SELECT id, name, role, active FROM users WHERE pin = ? AND active = 1'
+      'SELECT id, name, role, active, branch_id FROM users WHERE pin = ? AND active = 1'
     ).get(String(pin));
 
     if (!user) {
@@ -30,9 +51,47 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const selectedBranchId = branch_id ? Number(branch_id) : null;
+
+    // ถ้าไม่ใช่แอดมิน (เป็นพนักงานทั่วไป) ต้องตรวจสอบสิทธิ์สาขา
+    if (user.role !== 'admin') {
+      if (selectedBranchId && user.branch_id && selectedBranchId !== user.branch_id) {
+        return res.status(403).json({
+          success: false,
+          error: 'รหัส PIN นี้ไม่มีสิทธิ์เข้าใช้งานในสาขานี้'
+        });
+      }
+    }
+
+    // ใช้ branch_id ที่เลือกจากหน้า login (ถ้ามี) แทน branch_id ในฐานข้อมูล
+    let activeBranchId = selectedBranchId || user.branch_id;
+    if (!activeBranchId) {
+      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+      activeBranchId = defaultBranch ? defaultBranch.id : null;
+    }
+
+    // อัปเดต branch_id ของ user ให้ตรงกับที่เลือก (ถ้าเปลี่ยน)
+    if (activeBranchId && activeBranchId !== user.branch_id) {
+      await db.prepare('UPDATE users SET branch_id = ? WHERE id = ?').run(activeBranchId, user.id);
+    }
+
+    // Write to activity logs
+    const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(activeBranchId);
+    await db.prepare(`
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'login', ?, datetime('now', '+7 hours'))
+    `).run(activeBranchId, user.id, `พนักงาน ${user.name} เข้าสู่ระบบสำเร็จ (สาขา: ${branchInfo ? branchInfo.name : 'ไม่ระบุ'})`);
+
+    // ส่ง user กลับพร้อม branch_id ที่ถูกต้อง
     res.json({
       success: true,
-      data: { user }
+      data: {
+        user: {
+          ...user,
+          branch_id: activeBranchId
+        },
+        branch: branchInfo || null
+      }
     });
   } catch (error) {
     console.error('❌ Login error:', error.message);
@@ -48,7 +107,7 @@ router.get('/users', requireAdmin, async (req, res) => {
   try {
     const db = getDb();
     const users = await db.prepare(
-      'SELECT id, name, pin, role, active, created_at FROM users ORDER BY id'
+      'SELECT id, name, pin, role, active, branch_id, created_at FROM users ORDER BY id'
     ).all();
 
     res.json({
@@ -105,7 +164,7 @@ router.post('/users', requireAdmin, async (req, res) => {
     }
 
     const result = await db.prepare(
-      'INSERT INTO users (name, pin, role, branch_id) VALUES (?, ?, ?, ?)'
+      'INSERT INTO users (name, pin, role, branch_id, created_at) VALUES (?, ?, ?, ?, datetime("now", "+7 hours"))'
     ).run(name, String(pin), role || 'staff', targetBranchId);
 
     const user = await db.prepare(
@@ -221,6 +280,181 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการลบผู้ใช้'
+    });
+  }
+});
+
+// ─── POST /branches — สร้างสาขาใหม่ (Admin only) ────────────────
+router.post('/branches', requireAdmin, async (req, res) => {
+  try {
+    const { name, address, phone } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุชื่อสาขา'
+      });
+    }
+
+    const db = getDb();
+
+    // ทำรายการแบบ transaction เพื่อความปลอดภัย
+    const createBranchTx = db.transaction(async () => {
+      const result = await db.prepare(
+        'INSERT INTO branches (name, address, phone, created_at) VALUES (?, ?, ?, datetime("now", "+7 hours"))'
+      ).run(name.trim(), address ? address.trim() : null, phone ? phone.trim() : null);
+
+      const branchId = result.lastInsertRowid;
+
+      // สร้าง stock record เริ่มต้น (0 = เริ่มต้นคุมสต็อกที่ 0 ชิ้น, ของสดอิงตามสาขาอื่นๆ ที่มีอยู่) สำหรับสินค้าทั้งหมดให้กับสาขาใหม่นี้
+      const menuItems = await db.prepare('SELECT id FROM menu_items').all();
+      for (const item of menuItems) {
+        // ตรวจสอบว่ามีสาขาอื่นที่ตั้งค่า raw_quantity ไว้เป็นตัวเลขหรือไม่ (ถ้ามี แสดงว่าตัวนี้เป็นของสด)
+        const existingStock = await db.prepare(`
+          SELECT raw_quantity FROM branch_stocks 
+          WHERE menu_item_id = ? AND raw_quantity IS NOT NULL 
+          LIMIT 1
+        `).get(item.id);
+
+        const rawQuantityVal = existingStock ? 0 : null;
+
+        await db.prepare(`
+          INSERT OR IGNORE INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
+          VALUES (?, ?, 0, ?)
+        `).run(branchId, item.id, rawQuantityVal);
+      }
+
+      // บันทึก Log กิจกรรม
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'create_branch', ?, datetime('now', '+7 hours'))
+      `).run(branchId, req.user.id, `สร้างสาขาใหม่: ${name}`);
+
+      return branchId;
+    });
+
+    const newBranchId = await createBranchTx();
+    const newBranch = await db.prepare('SELECT * FROM branches WHERE id = ?').get(newBranchId);
+
+    res.status(201).json({
+      success: true,
+      data: newBranch
+    });
+  } catch (error) {
+    console.error('❌ Create branch error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message.includes('UNIQUE') ? 'มีสาขานี้อยู่ในระบบแล้ว' : 'เกิดข้อผิดพลาดในการสร้างสาขา'
+    });
+  }
+});
+
+// ─── PUT /branches/:id — แก้ไขข้อมูลสาขา (Admin only) ───────────
+router.put('/branches/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, address, phone } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุชื่อสาขา'
+      });
+    }
+
+    const db = getDb();
+    const branch = await db.prepare('SELECT * FROM branches WHERE id = ?').get(Number(id));
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบสาขา'
+      });
+    }
+
+    await db.prepare(
+      'UPDATE branches SET name = ?, address = ?, phone = ? WHERE id = ?'
+    ).run(name.trim(), address ? address.trim() : null, phone ? phone.trim() : null, Number(id));
+
+    // บันทึก Log กิจกรรม
+    await db.prepare(`
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'update_branch', ?, datetime('now', '+7 hours'))
+    `).run(Number(id), req.user.id, `แก้ไขข้อมูลสาขา: จาก "${branch.name}" เป็น "${name}"`);
+
+    const updated = await db.prepare('SELECT * FROM branches WHERE id = ?').get(Number(id));
+
+    res.json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    console.error('❌ Update branch error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message.includes('UNIQUE') ? 'มีสาขานี้อยู่ในระบบแล้ว' : 'เกิดข้อผิดพลาดในการแก้ไขข้อมูลสาขา'
+    });
+  }
+});
+
+// ─── DELETE /branches/:id — ลบสาขา (Admin only) ─────────────────
+router.delete('/branches/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+
+    const branch = await db.prepare('SELECT * FROM branches WHERE id = ?').get(Number(id));
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบสาขา'
+      });
+    }
+
+    // ห้ามลบสาขาสุดท้าย
+    const branchCount = await db.prepare('SELECT COUNT(*) as count FROM branches').get();
+    if (branchCount.count <= 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'ไม่สามารถลบสาขาสุดท้ายของระบบได้'
+      });
+    }
+
+    // ห้ามลบถ้ามีพนักงานผูกอยู่
+    const activeUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE branch_id = ? AND active = 1').get(Number(id));
+    if (activeUsers.count > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'ไม่สามารถลบสาขาที่มีพนักงานปฏิบัติงานอยู่ได้'
+      });
+    }
+
+    // ห้ามลบถ้ามีประวัติออเดอร์ผูกอยู่
+    const ordersCount = await db.prepare('SELECT COUNT(*) as count FROM orders WHERE branch_id = ?').get(Number(id));
+    if (ordersCount.count > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'ไม่สามารถลบสาขาที่มีประวัติการทำรายการ (ออเดอร์) อยู่ได้'
+      });
+    }
+
+    // ลบสาขาและข้อมูล stocks (เนื่องจากมี CASCADE ใน branch_stocks และตารางอื่นที่เกี่ยวข้อง)
+    await db.prepare('DELETE FROM branches WHERE id = ?').run(Number(id));
+
+    // บันทึก Log กิจกรรมในส่วนกลาง (ไม่มีสาขาให้ระบุให้ระบุ NULL หรือสาขาแรกที่ยังเหลืออยู่)
+    const remainingBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+    await db.prepare(`
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'delete_branch', ?, datetime('now', '+7 hours'))
+    `).run(remainingBranch ? remainingBranch.id : null, req.user.id, `ลบสาขา: ${branch.name}`);
+
+    res.json({
+      success: true,
+      data: { message: 'ลบสาขาเรียบร้อยแล้ว' }
+    });
+  } catch (error) {
+    console.error('❌ Delete branch error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการลบสาขา'
     });
   }
 });

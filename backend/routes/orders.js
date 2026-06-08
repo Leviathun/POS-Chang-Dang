@@ -10,7 +10,7 @@ router.use(attachUser);
 // ─── POST / — สร้างออเดอร์ใหม่ ──────────────────────────
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { items, note, discount } = req.body;
+    const { items, note, discount, free_modifiers } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -41,7 +41,7 @@ router.post('/', requireAuth, async (req, res) => {
 
         // คิวรีดึงเมนูและสต็อกของสาขานี้
         const menuItem = await db.prepare(`
-          SELECT mi.id, mi.name, mi.price, mi.active, bs.quantity as stock
+          SELECT mi.id, mi.name, COALESCE(bs.price, mi.price) as price, mi.active, bs.quantity as stock
           FROM menu_items mi
           LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
           WHERE mi.id = ?
@@ -84,8 +84,8 @@ router.post('/', requireAuth, async (req, res) => {
 
       // บันทึกออเดอร์
       const orderResult = await db.prepare(`
-        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, status, note)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, status, note, free_modifiers, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         orderNumber,
@@ -93,7 +93,18 @@ router.post('/', requireAuth, async (req, res) => {
         subtotal,
         orderDiscount,
         total,
-        note || null
+        note || null,
+        free_modifiers ? JSON.stringify(free_modifiers) : null
+      );
+
+      // บันทึกกิจกรรมพนักงาน
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'create_order', ?, datetime('now', '+7 hours'))
+      `).run(
+        branchId,
+        req.user.id,
+        `สร้างออเดอร์ใหม่สำเร็จ เลขที่ ${orderNumber} ยอดรวม ${total} บาท`
       );
 
       const orderId = orderResult.lastInsertRowid;
@@ -137,7 +148,7 @@ router.post('/', requireAuth, async (req, res) => {
 // ─── GET / — รายการออเดอร์ ──────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { date, status, limit, offset, branch_id } = req.query;
+    const { date, month, year, status, limit, offset, branch_id } = req.query;
     const db = getDb();
 
     let sql = `
@@ -163,6 +174,12 @@ router.get('/', async (req, res) => {
     if (date) {
       sql += ' AND date(o.created_at) = ?';
       params.push(date);
+    } else if (month) {
+      sql += " AND strftime('%Y-%m', o.created_at) = ?";
+      params.push(month);
+    } else if (year) {
+      sql += " AND strftime('%Y', o.created_at) = ?";
+      params.push(year);
     }
 
     if (status) {
@@ -344,6 +361,16 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         WHERE id = ?
       `).run(payment_method, cash_received || null, cashChange, Number(id));
 
+      // บันทึกกิจกรรมพนักงาน
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'complete_order', ?, datetime('now', '+7 hours'))
+      `).run(
+        branchId,
+        req.user.id,
+        `ชำระเงินออเดอร์ ${order.order_number} สำเร็จ (วิธี: ${payment_method === 'cash' ? 'เงินสด' : 'QR Code'})`
+      );
+
       // ดึงรายการสินค้าในออเดอร์
       const orderItems = await db.prepare(
         'SELECT * FROM order_items WHERE order_id = ?'
@@ -362,8 +389,8 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         WHERE mi.id = ?
       `);
       const insertLog = db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
-        VALUES (?, ?, ?, ?, ?, 'sale', ?, ?, ?)
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
       `);
 
       for (const oi of orderItems) {
@@ -385,6 +412,47 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
             req.user.id,
             `ขาย ${oi.item_name} x${oi.quantity} (${order.order_number})`
           );
+        }
+      }
+
+      // หักสต็อกของซอส/ผง/น้ำจิ้มฟรี (ถ้ามีในออเดอร์)
+      if (order.free_modifiers) {
+        try {
+          const selectedModifiers = JSON.parse(order.free_modifiers);
+          if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+            const updateModStock = db.prepare(`
+              UPDATE branch_free_modifier_stocks
+              SET total_servings = total_servings - 1
+              WHERE branch_id = ? AND modifier_id = ?
+            `);
+            const getModStock = db.prepare(`
+              SELECT total_servings FROM branch_free_modifier_stocks
+              WHERE branch_id = ? AND modifier_id = ?
+            `);
+            const insertModLog = db.prepare(`
+              INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+              VALUES (?, ?, -1, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
+            `);
+
+            for (const mod of selectedModifiers) {
+              const currentMod = await getModStock.get(branchId, mod.id);
+              const prevModStock = currentMod ? currentMod.total_servings : 0;
+              const newModStock = prevModStock - 1;
+
+              await updateModStock.run(branchId, mod.id);
+              await insertModLog.run(
+                branchId,
+                mod.id,
+                prevModStock,
+                newModStock,
+                Number(id),
+                req.user.id,
+                `ใช้ฟรี ${mod.name} ในออเดอร์ ${order.order_number}`
+              );
+            }
+          }
+        } catch (modErr) {
+          console.error('⚠️ Error deducting free modifiers stock:', modErr.message);
         }
       }
 
@@ -416,11 +484,11 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
     });
   }
 });
-
 // ─── POST /:id/cancel — ยกเลิกออเดอร์ ──────────────────
 router.post('/:id/cancel', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    const { reason } = req.body;
     const db = getDb();
 
     const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id));
@@ -444,10 +512,10 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
 
     // ใช้ transaction สำหรับยกเลิก + คืนสต็อก
     const cancelOrder = db.transaction(async () => {
-      // อัปเดตสถานะ
+      // อัปเดตสถานะและเหตุผล
       await db.prepare(
-        "UPDATE orders SET status = 'cancelled' WHERE id = ?"
-      ).run(Number(id));
+        "UPDATE orders SET status = 'cancelled', cancel_reason = ? WHERE id = ?"
+      ).run(reason || null, Number(id));
 
       // คืนสต็อกเฉพาะเมื่อออเดอร์ถูก complete ไปแล้ว
       if (wasCompleted) {
@@ -467,8 +535,8 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
           WHERE mi.id = ?
         `);
         const insertLog = db.prepare(`
-          INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note)
-          VALUES (?, ?, ?, ?, ?, 'cancel_restore', ?, ?, ?)
+          INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+          VALUES (?, ?, ?, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
         `);
 
         for (const oi of orderItems) {
@@ -487,11 +555,62 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
               newStock,
               Number(id),
               req.user.id,
-              `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อก ${oi.item_name} x${oi.quantity}`
+              `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อก ${oi.item_name} x${oi.quantity} (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
             );
           }
         }
+
+        // คืนสต็อกซอส/ผง/น้ำจิ้มฟรี (ถ้ามีในออเดอร์)
+        if (order.free_modifiers) {
+          try {
+            const selectedModifiers = JSON.parse(order.free_modifiers);
+            if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+              const updateModStock = db.prepare(`
+                UPDATE branch_free_modifier_stocks
+                SET total_servings = total_servings + 1
+                WHERE branch_id = ? AND modifier_id = ?
+              `);
+              const getModStock = db.prepare(`
+                SELECT total_servings FROM branch_free_modifier_stocks
+                WHERE branch_id = ? AND modifier_id = ?
+              `);
+              const insertModLog = db.prepare(`
+                INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                VALUES (?, ?, 1, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
+              `);
+
+              for (const mod of selectedModifiers) {
+                const currentMod = await getModStock.get(branchId, mod.id);
+                const prevModStock = currentMod ? currentMod.total_servings : 0;
+                const newModStock = prevModStock + 1;
+
+                await updateModStock.run(branchId, mod.id);
+                await insertModLog.run(
+                  branchId,
+                  mod.id,
+                  prevModStock,
+                  newModStock,
+                  Number(id),
+                  req.user.id,
+                  `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อกเครื่องปรุง ${mod.name}`
+                );
+              }
+            }
+          } catch (modErr) {
+            console.error('⚠️ Error restoring free modifiers stock:', modErr.message);
+          }
+        }
       }
+
+      // บันทึกกิจกรรมพนักงาน
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'cancel_order', ?, datetime('now', '+7 hours'))
+      `).run(
+        branchId,
+        req.user.id,
+        `ยกเลิกออเดอร์ ${order.order_number} สำเร็จ (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
+      );
 
       const updatedOrder = await db.prepare(`
         SELECT o.*, u.name as staff_name, b.name as branch_name

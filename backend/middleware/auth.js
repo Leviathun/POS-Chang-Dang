@@ -20,7 +20,7 @@ async function attachUser(req, res, next) {
 
     if (userId) {
       const user = await db.prepare(
-        'SELECT id, name, pin, role, active FROM users WHERE id = ? AND active = 1'
+        'SELECT id, name, pin, role, active, branch_id FROM users WHERE id = ? AND active = 1'
       ).get(Number(userId));
 
       if (user) {
