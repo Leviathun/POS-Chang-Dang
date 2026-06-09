@@ -8,11 +8,9 @@
       <div class="retro-checker-sidebar right"></div>
 
       <div class="login-card card glass p-6 w-full max-w-sm text-center">
-        <!-- Elephant Logo SVG with Pulsing Effect -->
-        <div class="brand-logo mb-2" style="display: flex; justify-content: center; height: 4.5rem; animation: float 3s ease-in-out infinite;">
-          <svg viewBox="0 0 64 64" style="width: 4.5rem; height: 4.5rem; fill: var(--primary);">
-            <path d="M58 28.5c-.8-3.5-3.8-6.1-7.4-6.4C46.8 21.8 38 21 34 23.5c-3.1 1.9-4.8 5-4.8 9.5 0 2.2.4 4.1 1 5.6.8 2 2.2 3.6 4 4.5 1.5.8 3.2 1.2 5 1.2h.8v7.2c0 2 2.7 2.4 3.2 1l2.5-6.5c1 .5 2.1.8 3.3.8h1v5.7c0 2 2.7 2.4 3.2 1l2.5-6.5C57.4 38.6 59 34 58 28.5zm-16.8 3c-2 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zM22 36c-2.3 0-5.8 3-5.8 8.7 0 3 .8 4.2 2 4.2 1.2 0 1.2-3.6 3.8-4.8 2.5-1.2 3.1-4.8 3.1-6.9 0-.7-.4-1.2-1.1-1.2h-2z"/>
-          </svg>
+        <!-- Brand Logo Image (No animation) -->
+        <div class="brand-logo mb-2" style="display: flex; justify-content: center; height: 6.5rem; align-items: center;">
+          <img src="@/assets/image/Logo POS.png" alt="Logo" style="height: 100%; object-fit: contain;" />
         </div>
         <h2 class="font-bold text-gradient mb-1" style="font-size: 1.8rem;">
           {{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}
@@ -76,9 +74,7 @@
         <!-- Brand / Logo -->
         <div class="sidebar-brand">
           <span class="brand-emoji" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;">
-            <svg viewBox="0 0 64 64" style="width: 28px; height: 28px; fill: var(--primary);">
-              <path d="M58 28.5c-.8-3.5-3.8-6.1-7.4-6.4C46.8 21.8 38 21 34 23.5c-3.1 1.9-4.8 5-4.8 9.5 0 2.2.4 4.1 1 5.6.8 2 2.2 3.6 4 4.5 1.5.8 3.2 1.2 5 1.2h.8v7.2c0 2 2.7 2.4 3.2 1l2.5-6.5c1 .5 2.1.8 3.3.8h1v5.7c0 2 2.7 2.4 3.2 1l2.5-6.5C57.4 38.6 59 34 58 28.5zm-16.8 3c-2 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zM22 36c-2.3 0-5.8 3-5.8 8.7 0 3 .8 4.2 2 4.2 1.2 0 1.2-3.6 3.8-4.8 2.5-1.2 3.1-4.8 3.1-6.9 0-.7-.4-1.2-1.1-1.2h-2z"/>
-            </svg>
+            <img src="@/assets/image/Logo POS.png" alt="Logo" style="width: 28px; height: 28px; object-fit: contain;" />
           </span>
           <div class="brand-text">
             <span class="brand-name">{{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}</span>
@@ -139,9 +135,7 @@
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
           <span class="header-title" style="display: flex; align-items: center; gap: 6px;">
-            <svg v-if="route.path === '/pos'" viewBox="0 0 64 64" style="width: 24px; height: 24px; fill: var(--primary);">
-              <path d="M58 28.5c-.8-3.5-3.8-6.1-7.4-6.4C46.8 21.8 38 21 34 23.5c-3.1 1.9-4.8 5-4.8 9.5 0 2.2.4 4.1 1 5.6.8 2 2.2 3.6 4 4.5 1.5.8 3.2 1.2 5 1.2h.8v7.2c0 2 2.7 2.4 3.2 1l2.5-6.5c1 .5 2.1.8 3.3.8h1v5.7c0 2 2.7 2.4 3.2 1l2.5-6.5C57.4 38.6 59 34 58 28.5zm-16.8 3c-2 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zM22 36c-2.3 0-5.8 3-5.8 8.7 0 3 .8 4.2 2 4.2 1.2 0 1.2-3.6 3.8-4.8 2.5-1.2 3.1-4.8 3.1-6.9 0-.7-.4-1.2-1.1-1.2h-2z"/>
-            </svg>
+            <img v-if="route.path === '/pos'" src="@/assets/image/Logo POS.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
             <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
             <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
             <i v-else-if="route.path === '/reports'" class="fa-solid fa-chart-line"></i>
@@ -932,7 +926,6 @@ onUnmounted(() => {
 
   .sidebar-brand .brand-emoji {
     font-size: 2.8rem;
-    animation: float 3s ease-in-out infinite;
   }
 
   .sidebar-brand .brand-name {
