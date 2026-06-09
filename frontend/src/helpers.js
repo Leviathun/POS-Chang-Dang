@@ -126,13 +126,13 @@ export function isAdmin() {
   return user && user.role === 'admin';
 }
 
-// ─── Confetti (Uses Rimberio Theme Colors) ───
+// ─── Confetti (Uses Theme Colors) ───
 export function showConfetti() {
   const container = document.createElement('div');
   container.className = 'confetti-container';
   document.body.appendChild(container);
 
-  // Rimberio inspired colors
+  // colors
   const colors = ['#8b0313', '#ad281e', '#ffab2b', '#fff7df', '#2a9d8f'];
 
   for (let i = 0; i < 30; i++) {

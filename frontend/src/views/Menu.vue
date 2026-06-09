@@ -1,21 +1,21 @@
 <template>
   <div id="menu-page" class="page-enter">
 
-    <!-- Tab Selector (Rounded Buttons style matching user's request) -->
+    <!-- Tab Selector -->
     <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
       <button 
         class="category-tab" 
         :class="{ 'active': activeTab === 'menu_items' }"
         @click="setTab('menu_items')"
       >
-        🍗 สินค้าและเมนู
+        <i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> สินค้าและเมนู
       </button>
       <button 
         class="category-tab" 
         :class="{ 'active': activeTab === 'modifiers' }"
         @click="setTab('modifiers')"
       >
-        🧂 ซอสและเครื่องปรุง
+        <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px;"></i> ซอสและเครื่องปรุง
       </button>
     </div>
 
@@ -27,8 +27,8 @@
           เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
         </div>
         <div class="menu-action-buttons">
-          <button class="btn btn-secondary" @click="openCatModal">📂 จัดการหมวดหมู่</button>
-          <button class="btn btn-primary" @click="openAddModal">🍗 + เพิ่มเมนู</button>
+          <button class="btn btn-secondary" @click="openCatModal"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> จัดการหมวดหมู่</button>
+          <button class="btn btn-primary" @click="openAddModal"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มเมนูอาหาร</button>
         </div>
       </div>
 
@@ -67,7 +67,7 @@
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div style="width: 48px; height: 36px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
                     <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
-                    <span v-else style="font-size: 1.1rem;">🍗</span>
+                    <i v-else :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i>
                   </div>
                 </td>
                 <!-- Name & Category -->
@@ -96,8 +96,8 @@
                 <!-- Actions -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
-                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)">📝 แก้ไข</button>
-                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
+                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> แก้ไข</button>
+                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ</button>
                   </div>
                 </td>
               </tr>
@@ -125,7 +125,7 @@
               <!-- Left: Product Image / Emoji -->
               <div class="mobile-menu-card-img-container">
                 <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
-                <div v-else class="mobile-menu-card-placeholder">🍗</div>
+                <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i></div>
               </div>
               
               <!-- Middle: Name & Category -->
@@ -153,8 +153,8 @@
             
             <!-- Bottom Action Buttons -->
             <div class="mobile-menu-card-actions">
-              <button class="btn-action btn-action-edit" @click="openEditModal(item)">📝 แก้ไข</button>
-              <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)">🗑️ ลบ</button>
+              <button class="btn-action btn-action-edit" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> แก้ไข</button>
+              <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ</button>
             </div>
           </div>
         </div>
@@ -210,6 +210,7 @@
                 <!-- Category -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <span class="badge" :class="getModifierCategoryClass(item.category)">
+                    <i :class="getModifierCategoryIcon(item.category)" style="margin-right: 4px;"></i>
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </td>
@@ -251,6 +252,7 @@
                 <div class="mobile-menu-card-name">{{ item.name }}</div>
                 <div style="margin-top: 4px;">
                   <span class="badge" :class="getModifierCategoryClass(item.category)">
+                    <i :class="getModifierCategoryIcon(item.category)" style="margin-right: 4px;"></i>
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </div>
@@ -279,13 +281,13 @@
       <div class="modal-overlay" @click="showCatModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
-          <h3>📂 จัดการหมวดหมู่สินค้า</h3>
+          <h3><i class="fa-solid fa-folder-open" style="margin-right: 6px;"></i> จัดการหมวดหมู่สินค้า</h3>
           <button class="modal-close" @click="showCatModal = false">✕</button>
         </div>
         <div class="modal-body">
           <!-- Create Category Form -->
           <div class="form-group">
-            <label class="form-label font-bold">➕ เพิ่มหมวดหมู่ใหม่</label>
+            <label class="form-label font-bold"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มหมวดหมู่ใหม่</label>
             <div class="flex gap-sm">
               <input 
                 type="text" 
@@ -308,7 +310,7 @@
           <!-- List of Existing Categories -->
           <div class="mt-xl">
             <label class="form-label font-bold" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs); margin-bottom: var(--space-md);">
-              📋 หมวดหมู่ปัจจุบัน ({{ categories.length }} รายการ)
+              <i class="fa-solid fa-list-ul" style="margin-right: 4px;"></i> หมวดหมู่ปัจจุบัน ({{ categories.length }} รายการ)
             </label>
             
             <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-xs);">
@@ -318,14 +320,14 @@
                 class="flex flex-between align-center p-sm" 
                 style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md);"
               >
-                <span class="font-semibold" style="font-size: var(--font-sm);">📂 {{ cat.name }}</span>
+                <span class="font-semibold" style="font-size: var(--font-sm);"><i class="fa-solid fa-folder" style="margin-right: 4px; color: var(--text-tertiary);"></i> {{ cat.name }}</span>
                 <button 
                   class="btn-action btn-action-delete" 
                   title="ลบหมวดหมู่"
                   @click="handleDeleteCat(cat.id)"
                   style="min-width: 75px; height: 38px; padding: 0 var(--space-md); font-size: var(--font-xs);"
                 >
-                  🗑️ ลบ
+                  <i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ
                 </button>
               </div>
               <div v-if="categories.length === 0" class="text-center text-muted py-md" style="font-size: var(--font-xs);">
@@ -346,7 +348,10 @@
       <div class="modal-overlay" @click="showItemModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
-          <h3>{{ isEditMode ? '📝 แก้ไขเมนูอาหาร' : '🍗 เพิ่มเมนูอาหาร' }}</h3>
+          <h3>
+            <i :class="isEditMode ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-plus'" style="margin-right: 6px;"></i>
+            {{ isEditMode ? 'แก้ไขเมนูอาหาร' : 'เพิ่มเมนูอาหาร' }}
+          </h3>
           <button class="modal-close" @click="showItemModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -428,7 +433,7 @@
                 style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 15px;"
                 @click="triggerFileInput"
               >
-                📁 อัปโหลดภาพ
+                <i class="fa-solid fa-image" style="margin-right: 4px;"></i> อัปโหลดภาพ
               </button>
             </div>
             <input 
@@ -439,7 +444,7 @@
               @change="handleFileChange"
             />
             <span style="font-size: var(--font-xs); color: var(--text-tertiary); display: block; margin-top: 2px; text-align: left;">
-              💡 สามารถเลือกไฟล์, วางลิงก์รูปภาพ หรือคัดลอกรูปภาพแล้วกดวาง (Ctrl+V) ในช่องด้านบนได้
+              <i class="fa-regular fa-lightbulb" style="color: var(--primary); margin-right: 4px;"></i> สามารถเลือกไฟล์, วางลิงก์รูปภาพ หรือคัดลอกรูปภาพแล้วกดวาง (Ctrl+V) ในช่องด้านบนได้
             </span>
           </div>
 
@@ -458,7 +463,10 @@
               :disabled="!itemForm.name || !itemForm.price || !itemForm.category_id"
               @click="handleSaveItem"
             >
-              {{ isEditMode ? '💾 บันทึกการแก้ไข' : '💾 บันทึกรายการใหม่' }}
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-floppy-disk"></i>
+                {{ isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกรายการใหม่' }}
+              </span>
             </button>
           </div>
         </div>
@@ -520,12 +528,22 @@ const handleToggleModifierActive = async (item) => {
 
 const getModifierCategoryLabel = (category) => {
   const map = {
-    'sauce_small': '🥫 ซอสซอง',
-    'sauce_large': '🧴 ซอสขวด/ถุงบีบ',
-    'dipping': '🥣 น้ำจิ้ม',
-    'powder': '✨ ผงโรย'
+    'sauce_small': 'ซอสซอง',
+    'sauce_large': 'ซอสขวด/ถุงบีบ',
+    'dipping': 'น้ำจิ้ม',
+    'powder': 'ผงโรย'
   };
   return map[category] || category;
+};
+
+const getModifierCategoryIcon = (category) => {
+  const map = {
+    'sauce_small': 'fa-solid fa-bottle-droplet',
+    'sauce_large': 'fa-solid fa-prescription-bottle',
+    'dipping': 'fa-solid fa-bowl-food',
+    'powder': 'fa-solid fa-sparkles'
+  };
+  return map[category] || 'fa-solid fa-tag';
 };
 
 const getModifierCategoryClass = (category) => {
@@ -574,6 +592,24 @@ const itemForm = ref({
 const getCategoryName = (catId) => {
   const cat = categories.value.find(c => c.id === catId);
   return cat ? cat.name : 'หมวดหมู่อื่นๆ';
+};
+
+// Fallback icon based on category name/id
+const getIconClass = (catId) => {
+  const cat = categories.value.find(c => c.id === catId);
+  const catName = cat ? cat.name : '';
+
+  if (catName.includes('สามกรอบ')) {
+    return 'fa-solid fa-bacon';
+  } else if (catName.includes('ไก่ทอด')) {
+    return 'fa-solid fa-drumstick-bite';
+  } else if (catName.includes('ของทานเล่น')) {
+    return 'fa-solid fa-burger';
+  } else if (catName.includes('ซาลาเปา') || catName.includes('ขนมจีบ')) {
+    return 'fa-solid fa-bread-slice';
+  }
+
+  return 'fa-solid fa-drumstick-bite';
 };
 
 // Toggle item active state

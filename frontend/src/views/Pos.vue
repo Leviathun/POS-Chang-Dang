@@ -62,7 +62,9 @@
             <!-- Product Image / Styled Emoji Placeholder -->
             <div class="pos-item-img-container">
               <img v-if="item.image_url" :src="item.image_url" class="pos-item-img" alt="เมนู" />
-              <div v-else class="pos-item-placeholder">{{ getEmojiPlaceholder(item.category_id) }}</div>
+              <div v-else class="pos-item-placeholder" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                <i :class="getIconClass(item.category_id)" style="font-size: 2.2rem; opacity: 0.65;"></i>
+              </div>
             </div>
 
             <!-- Product Name -->
@@ -72,8 +74,8 @@
             <div class="pos-item-details">
               <div class="pos-item-price">{{ formatCurrency(item.price) }}</div>
               <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock" :class="{ 'low-stock': isLowStock(item) }">
-                <span v-if="item.stock <= 0">❌ หมด</span>
-                <span v-else-if="isLowStock(item)">⚠️ ใกล้หมด (เหลือ {{ item.stock }})</span>
+                <span v-if="item.stock <= 0"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
+                <span v-else-if="isLowStock(item)"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด (เหลือ {{ item.stock }})</span>
                 <span v-else>เหลือ {{ item.stock }}</span>
               </div>
             </div>
@@ -83,7 +85,9 @@
 
       <!-- Empty State -->
       <div v-if="!loading && filteredMenuItems.length === 0" id="pos-empty" class="empty-state">
-        <div class="empty-state-icon">🍗</div>
+        <div class="empty-state-icon" style="font-size: 3rem; margin-bottom: var(--space-md); opacity: 0.5;">
+          <i class="fa-solid fa-utensils"></i>
+        </div>
         <div class="empty-state-title">ยังไม่มีเมนู</div>
         <div class="empty-state-desc">เพิ่มเมนูอาหารในหน้า "จัดการเมนู" เพื่อเริ่มต้นการขาย</div>
       </div>
@@ -94,7 +98,7 @@
       <div class="desktop-cart-card">
         <div class="desktop-cart-header">
           <h3 class="font-bold flex align-center gap-sm" style="font-size: var(--font-base); display:flex; align-items:center;">
-            <span>🛒 รายการสั่งซื้อ</span>
+            <span><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> รายการสั่งซื้อ</span>
             <span class="badge badge-primary" style="margin-left: 6px;" v-if="cartCount > 0">{{ cartCount }} รายการ</span>
           </h3>
           <button class="btn btn-ghost btn-sm text-danger" v-if="cart.size > 0" @click="handleClearCart">ล้างทั้งหมด</button>
@@ -122,7 +126,7 @@
 
         <!-- Empty state for Desktop cart -->
         <div class="desktop-cart-empty" v-else>
-          <div style="font-size: 3rem; margin-bottom: var(--space-md); opacity:0.6;">🍗</div>
+          <div style="font-size: 3rem; margin-bottom: var(--space-md); opacity:0.6;"><i class="fa-solid fa-utensils"></i></div>
           <p class="font-semibold text-secondary">ไม่มีสินค้าในตะกร้า</p>
           <p class="text-muted mt-sm" style="font-size: var(--font-xs);">เลือกเมนูอาหารด้านซ้าย<br/>เพื่อเริ่มการสั่งซื้อ</p>
         </div>
@@ -133,7 +137,7 @@
           <div class="free-modifiers-section mb-md p-sm card" style="border: 1px dashed var(--border-color); background: rgba(255, 247, 223, 0.3); border-radius: var(--radius-md);">
             <div class="flex flex-between align-center">
               <span class="font-semibold" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 4px; color: var(--text-primary);">
-                🧂 รับซอส/ผง/น้ำจิ้ม
+                <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px; color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
               </span>
               <label class="switch-toggle">
                 <input type="checkbox" v-model="useModifiers" @change="onModifiersToggleChange" />
@@ -155,7 +159,7 @@
                     type="button"
                     style="padding: 4px 8px; font-size: 11px; min-height: 28px;"
                   >
-                    ✨ {{ preset.name }}
+                    <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                   </button>
                 </div>
               </div>
@@ -196,8 +200,8 @@
             <span>ยอดสุทธิ</span>
             <span class="text-accent" style="font-size: var(--font-lg);">{{ formatCurrency(cartTotal) }}</span>
           </div>
-          <button class="btn btn-primary btn-block mt-lg" @click="handleCheckout">
-            💰 ชำระเงิน
+          <button class="btn btn-primary btn-block mt-lg" @click="handleCheckout" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-wallet"></i> ชำระเงิน
           </button>
         </div>
       </div>
@@ -210,15 +214,17 @@
           <span class="cart-count">{{ cartCount }} รายการ</span>
           <span class="cart-total">{{ formatCurrency(cartTotal) }}</span>
         </div>
-        <button class="cart-pay-btn" @click="handleCheckout">
-          💰 ชำระเงิน
+        <button class="cart-pay-btn" @click="handleCheckout" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+          <i class="fa-solid fa-wallet"></i> ชำระเงิน
         </button>
       </div>
     </div>
 
     <div id="cart-detail-panel" class="cart-detail-panel mobile-only-cart" :class="{ 'hidden': !cartExpanded || cart.size === 0 }">
       <div class="cart-detail-header">
-        <span class="font-semibold" style="font-size: var(--font-md);">🛒 รายการสั่งซื้อ</span>
+        <span class="font-semibold" style="font-size: var(--font-md); display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-cart-shopping"></i> รายการสั่งซื้อ
+        </span>
         <button class="btn btn-ghost btn-sm text-danger" @click="handleClearCart">ล้างทั้งหมด</button>
       </div>
       
@@ -249,7 +255,7 @@
         }">
           <div class="flex flex-between align-center" style="margin-bottom: 8px;">
             <span class="font-bold" style="font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
-              🧂 รับซอส/ผง/น้ำจิ้ม
+              <i class="fa-solid fa-bottle-droplet" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
             </span>
             <label class="switch-toggle">
               <input type="checkbox" v-model="useModifiers" @change="onModifiersToggleChange" />
@@ -271,7 +277,7 @@
                   type="button"
                   style="padding: 6px 12px; font-size: 12px; min-height: 32px; border-radius: var(--radius-md);"
                 >
-                  ✨ {{ preset.name }}
+                  <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                 </button>
               </div>
             </div>
@@ -492,15 +498,28 @@ const loadMenuData = async () => {
   }, 1000);
 };
 
-// Fallback emoji based on category id
-const getEmojiPlaceholder = (categoryId) => {
-  const emojiMap = {
-    '1': '🍗', // เมนูหลัก (ไก่ทอด)
-    '2': '🍟', // ของทานเล่น
-    '3': '🥤', // เครื่องดื่ม
-    '4': '🌶️'  // อื่นๆ
+// Fallback icon based on category name/id
+const getIconClass = (categoryId) => {
+  const cat = categories.value.find(c => String(c.id) === String(categoryId));
+  const catName = cat ? cat.name : '';
+
+  if (catName.includes('สามกรอบ')) {
+    return 'fa-solid fa-bacon text-primary';
+  } else if (catName.includes('ไก่ทอด')) {
+    return 'fa-solid fa-drumstick-bite text-primary';
+  } else if (catName.includes('ของทานเล่น')) {
+    return 'fa-solid fa-burger text-primary';
+  } else if (catName.includes('ซาลาเปา') || catName.includes('ขนมจีบ')) {
+    return 'fa-solid fa-bread-slice text-primary';
+  }
+
+  const iconMap = {
+    '1': 'fa-solid fa-drumstick-bite text-primary', // เมนูหลัก (ไก่ทอด)
+    '2': 'fa-solid fa-cookie', // ของทานเล่น
+    '3': 'fa-solid fa-glass-water', // เครื่องดื่ม
+    '4': 'fa-solid fa-ellipsis'  // อื่นๆ
   };
-  return emojiMap[String(categoryId)] || '🍗';
+  return iconMap[String(categoryId)] || 'fa-solid fa-drumstick-bite text-primary';
 };
 
 // Free Modifiers Logic & State

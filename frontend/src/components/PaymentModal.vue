@@ -4,7 +4,12 @@
     <div class="modal-content">
       <div class="modal-handle"></div>
       <div class="modal-header">
-        <h3>{{ success ? '🎉 ทำรายการสำเร็จ' : '💰 ชำระเงิน' }}</h3>
+        <h3>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <i :class="success ? 'fa-solid fa-circle-check text-success' : 'fa-solid fa-cash-register'"></i>
+            {{ success ? 'ทำรายการสำเร็จ' : 'ชำระเงิน' }}
+          </span>
+        </h3>
         <button v-if="!success" class="modal-close" @click="handleClose">✕</button>
       </div>
 
@@ -22,8 +27,8 @@
               </span>
             </div>
             <div class="mt-2xl w-full">
-              <button class="btn btn-primary btn-xl" @click="finishPayment">
-                🏠 กลับหน้าขาย
+              <button class="btn btn-primary btn-xl" @click="finishPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                <i class="fa-solid fa-house"></i> กลับหน้าขาย
               </button>
             </div>
           </div>
@@ -32,7 +37,7 @@
         <template v-else>
           <!-- Order Summary Card -->
           <div class="card mb-lg">
-            <div class="card-title" style="font-size: var(--font-sm);">📝 สรุปรายการสินค้า</div>
+            <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-receipt" style="margin-right: 6px;"></i> สรุปรายการสินค้า</div>
             <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
               <span>{{ cartItem.item.name }} × {{ cartItem.quantity }}</span>
               <span class="text-accent">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
@@ -49,11 +54,11 @@
             <div class="card-title mb-md">เลือกช่องทางการชำระเงิน</div>
             <div class="payment-methods">
               <button class="payment-method-btn" @click="selectPaymentMethod('cash')">
-                <div class="method-icon">💵</div>
+                <div class="method-icon"><i class="fa-solid fa-money-bill-wave" style="color: var(--success); font-size: 2.2rem;"></i></div>
                 <div class="method-label">เงินสด</div>
               </button>
               <button class="payment-method-btn" @click="selectPaymentMethod('qr')">
-                <div class="method-icon">📱</div>
+                <div class="method-icon"><i class="fa-solid fa-qrcode" style="color: var(--primary); font-size: 2.2rem;"></i></div>
                 <div class="method-label">QR Code</div>
               </button>
             </div>
@@ -90,7 +95,7 @@
               <button v-for="num in 9" :key="num" class="keypad-key" @click="pressNum(String(num))">{{ num }}</button>
               <button class="keypad-key key-clear" @click="pressNum('C')">C</button>
               <button class="keypad-key" @click="pressNum('0')">0</button>
-              <button class="keypad-key key-backspace" @click="pressNum('⌫')">⌫</button>
+              <button class="keypad-key key-backspace" @click="pressNum('⌫')"><i class="fa-solid fa-delete-left"></i></button>
             </div>
 
             <div style="padding: 0 var(--space-md);">
@@ -98,8 +103,9 @@
                 class="btn btn-primary btn-xl" 
                 :disabled="Number(enteredAmount) < total"
                 @click="confirmCashPayment"
+                style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
               >
-                ✅ ยืนยันรับเงินสด
+                <i class="fa-solid fa-circle-check"></i> ยืนยันรับเงินสด
               </button>
             </div>
           </div>
@@ -121,8 +127,8 @@
                 {{ formatCurrency(total) }}
               </div>
               
-              <button class="btn btn-success btn-xl" @click="confirmQRPayment">
-                ✅ ยืนยันลูกค้าสแกนเรียบร้อย
+              <button class="btn btn-success btn-xl" @click="confirmQRPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                <i class="fa-solid fa-circle-check"></i> ยืนยันลูกค้าสแกนเรียบร้อย
               </button>
             </div>
           </div>

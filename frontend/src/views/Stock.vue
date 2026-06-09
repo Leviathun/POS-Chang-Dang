@@ -8,7 +8,7 @@
       </div>
       <div>
         <router-link to="/stock/bulk" class="btn btn-primary" style="background: linear-gradient(135deg, #e63946, #b7091b); color: white; border: none; font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); gap: var(--space-xs); padding: 10px 20px;">
-          📦 จัดการสต็อกด่วน
+          <i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อกด่วน
         </router-link>
       </div>
     </div>
@@ -20,14 +20,14 @@
         :class="{ 'active': activeTab === 'menu_items' }"
         @click="activeTab = 'menu_items'"
       >
-        🍗 สินค้าและเมนู
+        <i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> สินค้าและเมนู
       </button>
       <button 
         class="category-tab" 
         :class="{ 'active': activeTab === 'modifiers' }"
         @click="activeTab = 'modifiers'"
       >
-        🧂 ซอสและเครื่องปรุง
+        <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px;"></i> ซอสและเครื่องปรุง
       </button>
     </div>
 
@@ -69,15 +69,15 @@
                   <div style="font-size: var(--font-xs); color: var(--text-tertiary); display: flex; gap: var(--space-sm); align-items: center;">
                     <span>ID: {{ item.id }}</span>
                     <span style="color: var(--border-color);">|</span>
-                    <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)">📋 ดูประวัติสต็อก</a>
+                    <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)"><i class="fa-solid fa-file-medical" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
                 <!-- Raw Quantity -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <span v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" :class="{ 'text-danger': (item.raw_quantity || 0) <= lowStockThreshold }" style="font-weight: bold;">
                     {{ item.raw_quantity }} ชิ้น
-                    <span v-if="(item.raw_quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
-                    <span v-if="(item.raw_quantity || 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
+                    <span v-if="(item.raw_quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) > 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="(item.raw_quantity || 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                   <span v-else style="color: var(--text-tertiary); font-style: italic;">-</span>
                 </td>
@@ -85,16 +85,16 @@
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }" style="font-weight: bold;">
                     {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
-                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
-                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมดเกลี้ยง</span>
+                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                 </td>
                 <!-- Actions -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
-                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn btn-primary" style="background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" @click="openActionModal('fry', item, false)">🔥 ทอดสินค้า</button>
-                    <button class="btn" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2);" @click="openActionModal('waste', item, false)">🗑️ ของเสีย</button>
-                    <button class="btn" style="background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);" @click="openActionModal('staff_benefit', item, false)">🍴 เครดิต</button>
+                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn btn-primary" style="background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" @click="openActionModal('fry', item, false)"><i class="fa-solid fa-fire" style="margin-right: 4px;"></i> ทอดสินค้า</button>
+                    <button class="btn" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2);" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ของเสีย</button>
+                    <button class="btn" style="background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิต</button>
                   </div>
                 </td>
               </tr>
@@ -125,7 +125,7 @@
                 <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
                   <span>ID: {{ item.id }}</span>
                   <span style="color: var(--border-color);">|</span>
-                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)">📋 ประวัติ</a>
+                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)"><i class="fa-solid fa-file-medical"></i> ประวัติ</a>
                 </div>
               </div>
               
@@ -153,21 +153,21 @@
                     class="badge badge-danger badge-sm"
                     style="display: block; font-size: 0.65rem;"
                   >
-                    🚨 ของใกล้หมดทั้งคู่
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ของใกล้หมดทั้งคู่
                   </span>
                   <span 
                     v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" 
                     class="badge badge-warning badge-sm"
                     style="display: block; font-size: 0.65rem;"
                   >
-                    ⚠️ ใกล้หมด
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ใกล้หมด
                   </span>
                   <span 
                     v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" 
                     class="badge badge-danger badge-sm"
                     style="display: block; font-size: 0.65rem;"
                   >
-                    ❌ หมดเกลี้ยง
+                    <i class="fa-solid fa-circle-xmark" style="margin-right: 2px;"></i> หมดเกลี้ยง
                   </span>
                 </div>
               </div>
@@ -181,10 +181,10 @@
                 style="grid-column: span 2; background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" 
                 @click="openActionModal('fry', item, false)"
               >
-                🔥 ทอดสินค้า (หักของสด ➔ ทอดสุก)
+                <i class="fa-solid fa-fire"></i> ทอดสินค้า (หักของสด ➔ ทอดสุก)
               </button>
-              <button class="btn btn-danger-outline" @click="openActionModal('waste', item, false)">🗑️ ของเสีย</button>
-              <button class="btn btn-warning-outline" @click="openActionModal('staff_benefit', item, false)">🍴 เครดิต</button>
+              <button class="btn btn-danger-outline" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
+              <button class="btn btn-warning-outline" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
             </div>
           </div>
         </div>
@@ -232,7 +232,7 @@
                   <div style="font-size: var(--font-xs); color: var(--text-tertiary); display: flex; gap: var(--space-sm); align-items: center;">
                     <span>ID: {{ item.id }}</span>
                     <span style="color: var(--border-color);">|</span>
-                    <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)">📋 ดูประวัติสต็อก</a>
+                    <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
                 <!-- Category -->
@@ -245,18 +245,18 @@
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <span :class="{ 'text-danger font-bold': isModifierLowStock(item), 'font-semibold': !isModifierLowStock(item) }">
                     {{ formatModifierStock(item) }}
-                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" style="display:block; font-size: 10px; font-weight:normal;">⚠️ ใกล้หมด</span>
-                    <span v-if="item.total_servings <= 0" style="display:block; font-size: 10px; font-weight:normal;">❌ หมด</span>
+                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="item.total_servings <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
                   </span>
                 </td>
                 <!-- Actions -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
                     <button class="btn btn-primary" style="background: var(--success); color: white; border: 1px solid var(--success-light); font-weight: bold;" @click="openActionModal('restock', item, true)">
-                      ➕ เติมสต็อก
+                      <i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เติมสต็อก
                     </button>
                     <button class="btn" style="background: rgba(255, 149, 0, 0.1); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.2); font-weight: bold;" @click="openActionModal('adjust', item, true)">
-                      🔧 ปรับปรุง
+                      <i class="fa-solid fa-wrench" style="margin-right: 4px;"></i> ปรับปรุง
                     </button>
                   </div>
                 </td>
@@ -291,7 +291,7 @@
                 <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
                   <span>ID: {{ item.id }}</span>
                   <span style="color: var(--border-color);">|</span>
-                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)">📋 ประวัติ</a>
+                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ประวัติ</a>
                 </div>
                 <div style="margin-top: 4px;">
                   <span class="badge badge-sm" :class="getModifierCategoryClass(item.category)">
@@ -306,8 +306,8 @@
                   {{ formatModifierStock(item) }}
                 </div>
                 <div class="mobile-stock-card-badge">
-                  <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="badge badge-warning badge-sm">⚠️ ใกล้หมด</span>
-                  <span v-else-if="item.total_servings <= 0" class="badge badge-danger badge-sm">❌ หมด</span>
+                  <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="badge badge-warning badge-sm"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                  <span v-else-if="item.total_servings <= 0" class="badge badge-danger badge-sm"><i class="fa-solid fa-circle-xmark" style="margin-right: 2px;"></i> หมด</span>
                 </div>
               </div>
             </div>
@@ -315,10 +315,10 @@
             <!-- Bottom Stock Actions -->
             <div class="mobile-stock-card-actions">
               <button class="btn btn-primary" style="background: var(--success); color: white; border: 1px solid var(--success-light); font-weight: bold;" @click="openActionModal('restock', item, true)">
-                ➕ เติมสต็อก
+                <i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เติมสต็อก
               </button>
               <button class="btn" style="background: rgba(255, 149, 0, 0.1); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.2); font-weight: bold;" @click="openActionModal('adjust', item, true)">
-                🔧 ปรับปรุง
+                <i class="fa-solid fa-wrench" style="margin-right: 4px;"></i> ปรับปรุง
               </button>
             </div>
           </div>
@@ -332,7 +332,8 @@
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
           <h3>
-            {{ activeIsModifier ? (actionType === 'restock' ? '➕ เติมสต็อกเครื่องปรุง' : '🔧 ปรับปรุงยอดเครื่องปรุง') : (actionType === 'fry' ? '🔥 ทอดสินค้า' : actionType === 'restock' ? '➕ เติมสต็อกสินค้า' : actionType === 'waste' ? '🗑️ บันทึกสินค้าเสีย' : actionType === 'staff_benefit' ? '🍴 บันทึกเครดิตพนักงาน' : '🔧 ปรับปรุงยอดสต็อก') }}
+            <i :class="getActionIconClass(actionType, activeIsModifier)" style="margin-right: 6px;"></i>
+            {{ getActionTitleLabel(actionType, activeIsModifier) }}
           </h3>
           <button class="modal-close" @click="showActionModal = false">✕</button>
         </div>
@@ -361,18 +362,18 @@
                 :class="actionForm.stock_type === 'cooked' ? 'btn-primary' : 'btn-secondary'"
                 @click="actionForm.stock_type = 'cooked'"
                 type="button"
-                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal;"
+                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);"
               >
-                🍗 ทอดสุก
+                <i class="fa-solid fa-drumstick-bite"></i> ทอดสุก
               </button>
               <button 
                 class="btn flex-1"
                 :class="actionForm.stock_type === 'raw' ? 'btn-primary' : 'btn-secondary'"
                 @click="actionForm.stock_type = 'raw'"
                 type="button"
-                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal;"
+                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);"
               >
-                🥩 ของสด
+                <i class="fa-solid fa-box"></i> ของสด
               </button>
             </div>
           </div>
@@ -412,8 +413,11 @@
                 class="btn btn-sm"
                 :class="actionForm.note === preset ? 'btn-primary' : 'btn-secondary'"
                 @click="actionForm.note = preset"
-                style="min-height:38px;"
-              >{{ preset }}</button>
+                style="min-height:38px; display: inline-flex; align-items: center; gap: 4px;"
+              >
+                <i :class="preset === 'เน่า/เสีย' ? 'fa-solid fa-trash-can' : 'fa-solid fa-circle-exclamation'" style="font-size: var(--font-xs);"></i>
+                {{ preset }}
+              </button>
             </div>
           </div>
 
@@ -436,7 +440,10 @@
               :disabled="actionForm.quantity === '' || actionForm.quantity === null" 
               @click="handleSaveAction"
             >
-              {{ actionType === 'fry' ? '🔥 เริ่มทอดสินค้า' : '💾 บันทึกสต็อก' }}
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <i :class="actionType === 'fry' ? 'fa-solid fa-fire' : 'fa-solid fa-floppy-disk'"></i>
+                {{ actionType === 'fry' ? 'เริ่มทอดสินค้า' : 'บันทึกสต็อก' }}
+              </span>
             </button>
           </div>
         </div>
@@ -448,7 +455,7 @@
       <div class="modal-overlay" @click="showLogsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:80dvh;">
         <div class="modal-header">
-          <h3>📊 ประวัติการเข้า-ออกของสต็อก</h3>
+          <h3><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติการเข้า-ออกของสต็อก</h3>
           <button class="modal-close" @click="showLogsModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -471,8 +478,9 @@
               style="font-size: var(--font-sm); background: var(--bg-primary);"
             >
               <div>
-                <div class="font-bold">
-                  {{ getReasonLabel(log.reason) }}
+                <div class="font-bold" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <i :class="getReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
+                  <span>{{ getReasonLabel(log.reason) }}</span>
                   <span 
                     :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
                     style="margin-left: 4px;"
@@ -522,7 +530,7 @@ const activeItem = ref(null);
 const activeIsModifier = ref(false);
 const logs = ref([]);
 const logsLoading = ref(false);
-const wastePresets = ['🍂 เน่า/เสีย', '🛹 ตกพื้น/เสียหาย'];
+const wastePresets = ['เน่า/เสีย', 'ตกพื้น/เสียหาย'];
 
 const actionForm = ref({
   quantity: '',
@@ -659,14 +667,54 @@ const viewLogs = async (item, isMod = false) => {
 
 const getReasonLabel = (reason) => {
   const map = {
-    'sale': '🛒 หักจากการขาย',
-    'restock': '➕ เติมสต็อกสินค้า',
-    'adjustment': '🔧 ปรับปรุงจำนวนสต็อก',
-    'waste': '🗑️ สินค้าเสีย/ทิ้ง',
-    'cancel_restore': '🔄 คืนสต็อก (ยกเลิกบิล)',
-    'staff_benefit': '🍴 แจกพนักงาน/เครดิต'
+    'sale': 'หักจากการขาย',
+    'restock': 'เติมสต็อกสินค้า',
+    'adjustment': 'ปรับปรุงจำนวนสต็อก',
+    'waste': 'สินค้าเสีย/ทิ้ง',
+    'cancel_restore': 'คืนสต็อก (ยกเลิกบิล)',
+    'staff_benefit': 'แจกพนักงาน/เครดิต'
   };
   return map[reason] || reason;
+};
+
+const getReasonIconClass = (reason) => {
+  const map = {
+    'sale': 'fa-solid fa-cart-shopping',
+    'restock': 'fa-solid fa-plus',
+    'adjustment': 'fa-solid fa-wrench',
+    'waste': 'fa-solid fa-trash-can',
+    'cancel_restore': 'fa-solid fa-rotate-left',
+    'staff_benefit': 'fa-solid fa-utensils'
+  };
+  return map[reason] || 'fa-solid fa-circle-info';
+};
+
+const getActionIconClass = (type, isMod) => {
+  if (isMod) {
+    return type === 'restock' ? 'fa-solid fa-plus' : 'fa-solid fa-wrench';
+  }
+  const map = {
+    'fry': 'fa-solid fa-fire',
+    'restock': 'fa-solid fa-plus',
+    'waste': 'fa-solid fa-trash-can',
+    'staff_benefit': 'fa-solid fa-user-check',
+    'adjust': 'fa-solid fa-wrench'
+  };
+  return map[type] || 'fa-solid fa-wrench';
+};
+
+const getActionTitleLabel = (type, isMod) => {
+  if (isMod) {
+    return type === 'restock' ? 'เติมสต็อกเครื่องปรุง' : 'ปรับปรุงยอดเครื่องปรุง';
+  }
+  const map = {
+    'fry': 'ทอดสินค้า',
+    'restock': 'เติมสต็อกสินค้า',
+    'waste': 'บันทึกสินค้าเสีย',
+    'staff_benefit': 'บันทึกเครดิตพนักงาน',
+    'adjust': 'ปรับปรุงยอดสต็อก'
+  };
+  return map[type] || 'ปรับปรุงยอดสต็อก';
 };
 
 const formatModifierStock = (item) => {

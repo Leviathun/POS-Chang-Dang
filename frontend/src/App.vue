@@ -8,8 +8,12 @@
       <div class="retro-checker-sidebar right"></div>
 
       <div class="login-card card glass p-6 w-full max-w-sm text-center">
-        <!-- Elephant Emoji with Pulsing Effect -->
-        <div class="brand-logo mb-2" style="font-size: 4.5rem; animation: float 3s ease-in-out infinite;">🐘</div>
+        <!-- Elephant Logo SVG with Pulsing Effect -->
+        <div class="brand-logo mb-2" style="display: flex; justify-content: center; height: 4.5rem; animation: float 3s ease-in-out infinite;">
+          <svg viewBox="0 0 64 64" style="width: 4.5rem; height: 4.5rem; fill: var(--primary);">
+            <path d="M58 28.5c-.8-3.5-3.8-6.1-7.4-6.4C46.8 21.8 38 21 34 23.5c-3.1 1.9-4.8 5-4.8 9.5 0 2.2.4 4.1 1 5.6.8 2 2.2 3.6 4 4.5 1.5.8 3.2 1.2 5 1.2h.8v7.2c0 2 2.7 2.4 3.2 1l2.5-6.5c1 .5 2.1.8 3.3.8h1v5.7c0 2 2.7 2.4 3.2 1l2.5-6.5C57.4 38.6 59 34 58 28.5zm-16.8 3c-2 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zM22 36c-2.3 0-5.8 3-5.8 8.7 0 3 .8 4.2 2 4.2 1.2 0 1.2-3.6 3.8-4.8 2.5-1.2 3.1-4.8 3.1-6.9 0-.7-.4-1.2-1.1-1.2h-2z"/>
+          </svg>
+        </div>
         <h2 class="font-bold text-gradient mb-1" style="font-size: 1.8rem;">
           {{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}
         </h2>
@@ -23,7 +27,7 @@
 
         <!-- Branch Selector -->
         <div v-else-if="branches.length > 0" class="branch-selector mb-xl" style="margin-top: 1.75rem !important;">
-          <label class="branch-label">🏠 เลือกสาขา</label>
+          <label class="branch-label"><i class="fa-solid fa-location-dot" style="margin-right: 6px; color: var(--primary);"></i> เลือกสาขา</label>
           <div class="custom-select-wrapper" @click.stop>
             <div 
               class="custom-select-trigger branch-select" 
@@ -71,7 +75,11 @@
       <aside id="app-sidebar">
         <!-- Brand / Logo -->
         <div class="sidebar-brand">
-          <span class="brand-emoji">🐘</span>
+          <span class="brand-emoji" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;">
+            <svg viewBox="0 0 64 64" style="width: 28px; height: 28px; fill: var(--primary);">
+              <path d="M58 28.5c-.8-3.5-3.8-6.1-7.4-6.4C46.8 21.8 38 21 34 23.5c-3.1 1.9-4.8 5-4.8 9.5 0 2.2.4 4.1 1 5.6.8 2 2.2 3.6 4 4.5 1.5.8 3.2 1.2 5 1.2h.8v7.2c0 2 2.7 2.4 3.2 1l2.5-6.5c1 .5 2.1.8 3.3.8h1v5.7c0 2 2.7 2.4 3.2 1l2.5-6.5C57.4 38.6 59 34 58 28.5zm-16.8 3c-2 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zM22 36c-2.3 0-5.8 3-5.8 8.7 0 3 .8 4.2 2 4.2 1.2 0 1.2-3.6 3.8-4.8 2.5-1.2 3.1-4.8 3.1-6.9 0-.7-.4-1.2-1.1-1.2h-2z"/>
+            </svg>
+          </span>
           <div class="brand-text">
             <span class="brand-name">{{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}</span>
             <span class="brand-tagline">ระบบจัดการร้านค้า POS</span>
@@ -82,7 +90,9 @@
 
         <!-- User profile widget -->
         <div class="sidebar-user" v-if="user">
-          <div class="user-avatar">👤</div>
+          <div class="user-avatar" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;">
+            <i class="fa-solid fa-circle-user" style="font-size: 2.2rem; color: var(--primary);"></i>
+          </div>
           <div class="user-info">
             <div class="user-name">{{ user.name }}</div>
             <div class="user-role-badge" :class="user.role">{{ user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน' }}</div>
@@ -94,23 +104,23 @@
         <!-- Navigation Links -->
         <nav class="sidebar-menu">
           <router-link to="/pos" class="sidebar-item" active-class="active">
-            <span class="sidebar-icon">🏠</span>
+            <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
             <span class="sidebar-label">ขายหน้าร้าน (POS)</span>
           </router-link>
           <router-link to="/menu" class="sidebar-item" active-class="active">
-            <span class="sidebar-icon">📋</span>
+            <span class="sidebar-icon"><i class="fa-solid fa-utensils"></i></span>
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
           </router-link>
           <router-link to="/stock" class="sidebar-item" active-class="active">
-            <span class="sidebar-icon">📦</span>
+            <span class="sidebar-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="sidebar-label">คลังสินค้า/สต็อก</span>
           </router-link>
           <router-link to="/reports" class="sidebar-item" active-class="active">
-            <span class="sidebar-icon">📊</span>
+            <span class="sidebar-icon"><i class="fa-solid fa-chart-line"></i></span>
             <span class="sidebar-label">รายงานยอดขาย</span>
           </router-link>
           <router-link v-if="adminUser" to="/settings" class="sidebar-item" active-class="active">
-            <span class="sidebar-icon">⚙️</span>
+            <span class="sidebar-icon"><i class="fa-solid fa-gear"></i></span>
             <span class="sidebar-label">ตั้งค่าระบบ</span>
           </router-link>
         </nav>
@@ -118,7 +128,7 @@
         <!-- Sidebar Footer / Logout -->
         <div class="sidebar-footer">
           <button class="sidebar-logout-btn" @click="handleLogout">
-            <span class="logout-icon">🚪</span>
+            <span class="logout-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
             <span class="logout-label">ออกจากระบบ</span>
           </button>
         </div>
@@ -128,11 +138,20 @@
       <div class="main-layout">
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
-          <span class="header-title"><span v-if="route.path === '/pos'">🐘 </span>{{ activeTitle }}</span>
+          <span class="header-title" style="display: flex; align-items: center; gap: 6px;">
+            <svg v-if="route.path === '/pos'" viewBox="0 0 64 64" style="width: 24px; height: 24px; fill: var(--primary);">
+              <path d="M58 28.5c-.8-3.5-3.8-6.1-7.4-6.4C46.8 21.8 38 21 34 23.5c-3.1 1.9-4.8 5-4.8 9.5 0 2.2.4 4.1 1 5.6.8 2 2.2 3.6 4 4.5 1.5.8 3.2 1.2 5 1.2h.8v7.2c0 2 2.7 2.4 3.2 1l2.5-6.5c1 .5 2.1.8 3.3.8h1v5.7c0 2 2.7 2.4 3.2 1l2.5-6.5C57.4 38.6 59 34 58 28.5zm-16.8 3c-2 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zM22 36c-2.3 0-5.8 3-5.8 8.7 0 3 .8 4.2 2 4.2 1.2 0 1.2-3.6 3.8-4.8 2.5-1.2 3.1-4.8 3.1-6.9 0-.7-.4-1.2-1.1-1.2h-2z"/>
+            </svg>
+            <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
+            <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
+            <i v-else-if="route.path === '/reports'" class="fa-solid fa-chart-line"></i>
+            <i v-else-if="route.path === '/settings'" class="fa-solid fa-gear"></i>
+            <span>{{ activeTitle }}</span>
+          </span>
           <div class="header-right">
-            <button class="header-btn" id="btn-logout" @click="handleLogout">
-              <span>🚪</span>
-              <span style="font-size: 11px; font-weight: bold; margin-left: 2px;">ออก</span>
+            <button class="header-btn" id="btn-logout" @click="handleLogout" style="display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-right-from-bracket" style="font-size: 14px;"></i>
+              <span style="font-size: 11px; font-weight: bold;">ออก</span>
             </button>
           </div>
         </header>
@@ -158,23 +177,23 @@
         <!-- Bottom Navigation (Visible on Mobile) -->
         <nav id="bottom-nav">
           <router-link to="/pos" class="nav-item" active-class="active" data-page="pos">
-            <span class="nav-icon">🏠</span>
+            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-house"></i></span>
             <span class="nav-label">ขาย</span>
           </router-link>
           <router-link to="/menu" class="nav-item" active-class="active" data-page="menu">
-            <span class="nav-icon">📋</span>
+            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-utensils"></i></span>
             <span class="nav-label">เมนู</span>
           </router-link>
           <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
-            <span class="nav-icon">📦</span>
+            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="nav-label">สต็อก</span>
           </router-link>
           <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
-            <span class="nav-icon">📊</span>
+            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-chart-line"></i></span>
             <span class="nav-label">รายงานยอด</span>
           </router-link>
           <router-link v-if="adminUser" to="/settings" class="nav-item" active-class="active" data-page="settings">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-label">ตั้งค่า</span>
           </router-link>
         </nav>
@@ -185,7 +204,13 @@
     <div id="toast-container">
       <transition-group name="toast-anim">
         <div v-for="t in uiState.toasts" :key="t.id" class="toast" :class="t.type">
-          <span class="toast-icon">{{ getToastIcon(t.type) }}</span>
+          <span class="toast-icon" style="display: inline-flex; align-items: center;">
+            <i v-if="t.type === 'success'" class="fa-solid fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i>
+            <i v-else-if="t.type === 'error'" class="fa-solid fa-circle-xmark" style="color: var(--danger); font-size: 1.2rem;"></i>
+            <i v-else-if="t.type === 'info'" class="fa-solid fa-circle-info" style="color: var(--accent); font-size: 1.2rem;"></i>
+            <i v-else-if="t.type === 'warning'" class="fa-solid fa-triangle-exclamation" style="color: var(--warning); font-size: 1.2rem;"></i>
+            <i v-else class="fa-solid fa-circle-info" style="font-size: 1.2rem;"></i>
+          </span>
           <span class="toast-message">{{ t.message }}</span>
         </div>
       </transition-group>
@@ -262,11 +287,11 @@ const adminUser = computed(() => {
 const activeTitle = computed(() => {
   const titles = {
     '/pos': shopSettings.value.shop_name || 'ร้านไก่ทอดช้างแดง',
-    '/menu': '📋 จัดการเมนู',
-    '/stock': '📦 คลังสินค้า',
-    '/stock/bulk': '📦 คลังสินค้า',
-    '/reports': '📊 รายงานยอดขาย',
-    '/settings': '⚙️ ตั้งค่าระบบ'
+    '/menu': 'จัดการเมนู',
+    '/stock': 'คลังสินค้า',
+    '/stock/bulk': 'คลังสินค้า',
+    '/reports': 'รายงานยอดขาย',
+    '/settings': 'ตั้งค่าระบบ'
   };
   return titles[route.path] || 'ช้างแดง POS';
 });
@@ -341,10 +366,6 @@ const loadSettings = async () => {
   }
 };
 
-const getToastIcon = (type) => {
-  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-  return icons[type] || 'ℹ️';
-};
 
 // Load branches list for login screen
 const loadBranches = async () => {

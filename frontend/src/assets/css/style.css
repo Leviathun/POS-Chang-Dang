@@ -1,6 +1,6 @@
 /* ============================================
    POS ร้านไก่ทอดช้างแดง — Design System
-   Retro Warm 80s Diner Theme (Rimberio Inspired)
+   Retro Warm 80s Diner Theme
    ============================================ */
 
 /* --- Google Font Import --- */
@@ -8,7 +8,7 @@
 
 /* --- CSS Custom Properties --- */
 :root {
-  /* Colors - 80s Diner Retro Warm Theme (Inspired by Rimberio) */
+  /* Colors - 80s Diner Retro Warm Theme */
   --bg-primary: #fff7df;        /* Warm Cream Background */
   --bg-secondary: #fceecc;      /* Slightly Darker Warm Cream */
   --bg-tertiary: #fbe6ba;       /* Medium Warm Cream for Active States */
