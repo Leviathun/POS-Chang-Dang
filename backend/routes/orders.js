@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { getDb, generateOrderNumber } = require('../config/database');
 const { attachUser, requireAuth } = require('../middleware/auth');
-const { generatePromptPayQR } = require('../services/qrcode');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
@@ -252,54 +251,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ─── GET /:id/qr — สร้าง QR Code สำหรับชำระเงิน ────────
-router.get('/:id/qr', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const db = getDb();
 
-    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id));
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        error: 'ไม่พบออเดอร์'
-      });
-    }
-
-    if (order.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        error: 'ออเดอร์นี้ชำระเงินแล้ว'
-      });
-    }
-
-    if (order.status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        error: 'ออเดอร์นี้ถูกยกเลิกแล้ว'
-      });
-    }
-
-    const qrData = await generatePromptPayQR(order.total);
-
-    res.json({
-      success: true,
-      data: {
-        order_id: order.id,
-        order_number: order.order_number,
-        total: order.total,
-        ...qrData
-      }
-    });
-  } catch (error) {
-    console.error('❌ Generate QR error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
 
 // ─── POST /:id/complete — ชำระเงิน/เสร็จสิ้น ───────────
 router.post('/:id/complete', requireAuth, async (req, res) => {
@@ -308,10 +260,10 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
     const { payment_method, cash_received } = req.body;
     const db = getDb();
 
-    if (!payment_method || !['cash', 'qr'].includes(payment_method)) {
+    if (!payment_method || !['cash', 'qr', 'gov'].includes(payment_method)) {
       return res.status(400).json({
         success: false,
-        error: 'กรุณาระบุวิธีชำระเงิน (cash หรือ qr)'
+        error: 'กรุณาระบุวิธีชำระเงิน (cash, qr หรือ gov)'
       });
     }
 
@@ -362,13 +314,14 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
       `).run(payment_method, cash_received || null, cashChange, Number(id));
 
       // บันทึกกิจกรรมพนักงาน
+      const paymentLabel = payment_method === 'cash' ? 'เงินสด' : (payment_method === 'qr' ? 'QR Code' : 'โครงการของรัฐ');
       await db.prepare(`
         INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
         VALUES (?, ?, 'complete_order', ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         req.user.id,
-        `ชำระเงินออเดอร์ ${order.order_number} สำเร็จ (วิธี: ${payment_method === 'cash' ? 'เงินสด' : 'QR Code'})`
+        `ชำระเงินออเดอร์ ${order.order_number} สำเร็จ (วิธี: ${paymentLabel})`
       );
 
       // ดึงรายการสินค้าในออเดอร์

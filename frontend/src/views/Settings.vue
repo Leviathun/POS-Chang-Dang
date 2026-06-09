@@ -57,16 +57,7 @@
         />
       </div>
 
-      <!-- PromptPay ID -->
-      <div class="form-group">
-        <label class="form-label">เบอร์โทรศัพท์/เลขบัตรประชาชน PromptPay (สำหรับสร้าง QR Code คิดเงิน)</label>
-        <input 
-          type="text" 
-          class="form-input" 
-          v-model="shopForm.promptpay_id" 
-          placeholder="เช่น 0891234567 หรือ 1234567890123" 
-        />
-      </div>
+
 
       <!-- Daily Report Send Time -->
       <div class="form-group">
@@ -864,7 +855,6 @@ const handleDeleteBranch = async (id) => {
 // Forms
 const shopForm = ref({
   shop_name: 'ร้านไก่ทอดช้างแดง',
-  promptpay_id: '',
   daily_report_time: '21:00',
   low_stock_threshold: 5,
   line_channel_token: '',
@@ -887,7 +877,6 @@ const loadShopSettings = async () => {
       const data = res.data;
       shopForm.value = {
         shop_name: data.shop_name || 'ร้านไก่ทอดช้างแดง',
-        promptpay_id: data.promptpay_id || '',
         daily_report_time: data.daily_report_time || '21:00',
         low_stock_threshold: Number(data.low_stock_threshold) || 5,
         line_channel_token: data.line_channel_token || '',

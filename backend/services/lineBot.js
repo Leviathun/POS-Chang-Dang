@@ -178,6 +178,15 @@ function formatDailyReport(reportData) {
               { type: 'text', text: `QR: ${payment.qr_count} รายการ`, size: 'xs', color: '#666666', flex: 5 },
               { type: 'text', text: `฿${payment.qr_total.toLocaleString()}`, size: 'xs', align: 'end', flex: 5 }
             ]
+          },
+          {
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'sm',
+            contents: [
+              { type: 'text', text: `โครงการรัฐ: ${payment.gov_count || 0} รายการ`, size: 'xs', color: '#666666', flex: 5 },
+              { type: 'text', text: `฿${(payment.gov_total || 0).toLocaleString()}`, size: 'xs', align: 'end', flex: 5 }
+            ]
           }
         ],
         paddingAll: '20px'

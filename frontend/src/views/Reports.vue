@@ -157,7 +157,7 @@
           <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
           
           <!-- Payment Methods Breakdowns -->
-          <div class="grid grid-2" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-sm); font-size:var(--font-xs);">
+          <div class="grid grid-3" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:var(--space-sm); font-size:var(--font-xs);">
             <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
@@ -171,6 +171,13 @@
                 {{ formatCurrency(dailyReport.qr_sales) }}
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
+            </div>
+            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-landmark" style="color: var(--accent);"></i> โครงการรัฐ</div>
+              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+                {{ formatCurrency(dailyReport.gov_sales) }}
+              </div>
+              <div style="color:var(--text-tertiary);">{{ dailyReport.gov_orders }} บิล</div>
             </div>
           </div>
         </div>
@@ -211,8 +218,8 @@
               </div>
               <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
                 <span style="display: inline-flex; align-items: center; gap: 4px;">
-                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : 'fa-solid fa-hourglass-half'"></i>
-                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : 'รอชำระ' }}
+                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : 'fa-solid fa-hourglass-half'"></i>
+                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : 'รอชำระ' }}
                 </span>
                 <span>เวลา: {{ formatTime(order.created_at) }}</span>
               </div>
@@ -320,8 +327,8 @@
                       {{ order.branch_name || 'ไม่ระบุ' }}
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: center; white-space: nowrap;">
-                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
-                      {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : 'รอชำระ' }}
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
+                      {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : 'รอชำระ' }}
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;" :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">
                       {{ formatCurrency(order.total) }}
@@ -387,8 +394,8 @@
               </div>
               <div class="flex flex-between align-center mt-xs" style="font-size:11px;">
                 <span style="display: inline-flex; align-items: center; gap: 4px;">
-                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : 'fa-solid fa-hourglass-half'"></i>
-                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : 'รอชำระ' }}
+                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : 'fa-solid fa-hourglass-half'"></i>
+                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : 'รอชำระ' }}
                 </span>
                 <div>
                   <span v-if="order.status === 'completed'" class="text-success"><i class="fa-solid fa-circle-check text-success" style="margin-right: 2px;"></i> สำเร็จ</span>
@@ -823,6 +830,8 @@ const dailyReport = ref({
   cash_orders: 0,
   qr_sales: 0,
   qr_orders: 0,
+  gov_sales: 0,
+  gov_orders: 0,
   orders: []
 });
 const topItems = ref([]);
@@ -1116,6 +1125,8 @@ const loadReportData = async () => {
         cash_orders: data.payment_breakdown?.cash_count || 0,
         qr_sales: data.payment_breakdown?.qr_total || 0,
         qr_orders: data.payment_breakdown?.qr_count || 0,
+        gov_sales: data.payment_breakdown?.gov_total || 0,
+        gov_orders: data.payment_breakdown?.gov_count || 0,
         orders: data.orders || []
       };
     } else {
@@ -1127,6 +1138,8 @@ const loadReportData = async () => {
         cash_orders: 0,
         qr_sales: 0,
         qr_orders: 0,
+        gov_sales: 0,
+        gov_orders: 0,
         orders: []
       };
     }
@@ -1348,7 +1361,7 @@ const exportSalesCSV = () => {
     return [
       o.order_number,
       o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : o.payment_method === 'promptpay' ? 'QR Code' : 'รอชำระ',
+      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : 'รอชำระ',
       o.staff_name || 'ระบบ',
       o.branch_name || 'ไม่ระบุ',
       o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
@@ -1377,7 +1390,7 @@ const exportHistoryOrdersCSV = () => {
     return [
       o.order_number,
       o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : o.payment_method === 'promptpay' ? 'QR Code' : 'รอชำระ',
+      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : 'รอชำระ',
       o.staff_name || 'ระบบ',
       o.branch_name || 'ไม่ระบุ',
       o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',

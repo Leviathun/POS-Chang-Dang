@@ -125,7 +125,8 @@ async function handleEvent(event) {
         `📈 ค่าเฉลี่ย/ออเดอร์: ฿${report.avg_order_value.toLocaleString()}`,
         ``,
         `💵 เงินสด: ${report.payment_breakdown.cash_count} รายการ (฿${report.payment_breakdown.cash_total.toLocaleString()})`,
-        `📱 QR: ${report.payment_breakdown.qr_count} รายการ (฿${report.payment_breakdown.qr_total.toLocaleString()})`
+        `📱 QR: ${report.payment_breakdown.qr_count} รายการ (฿${report.payment_breakdown.qr_total.toLocaleString()})`,
+        `🏛️ โครงการรัฐ: ${report.payment_breakdown.gov_count || 0} รายการ (฿${(report.payment_breakdown.gov_total || 0).toLocaleString()})`
       ].join('\n');
 
       await lineBot.replyText(replyToken, message);

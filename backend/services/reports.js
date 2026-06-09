@@ -11,6 +11,7 @@ async function getDailyReport(date, branchId = null) {
   const params1 = [date];
   const params2 = [date];
   const params3 = [date];
+  const params3_gov = [date];
   const params4 = [date];
 
   if (branchId) {
@@ -18,6 +19,7 @@ async function getDailyReport(date, branchId = null) {
     params1.push(branchId);
     params2.push(branchId);
     params3.push(branchId);
+    params3_gov.push(branchId);
     params4.push(branchId);
   }
 
@@ -48,6 +50,14 @@ async function getDailyReport(date, branchId = null) {
     WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
   `).get(params3);
 
+  const govStats = await db.prepare(`
+    SELECT 
+      COUNT(*) as count,
+      COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+  `).get(params3_gov);
+
   // ยอดขายรายชั่วโมง (ระวังการเขียน strftime ใน libSQL/SQLite)
   const hourlyBreakdown = await db.prepare(`
     SELECT 
@@ -72,17 +82,22 @@ async function getDailyReport(date, branchId = null) {
     ORDER BY id DESC
   `).all(params5);
  
+  const breakdownData = {
+    cash_count: cashStats.count,
+    cash_total: cashStats.total,
+    qr_count: qrStats.count,
+    qr_total: qrStats.total,
+    gov_count: govStats.count,
+    gov_total: govStats.total
+  };
+
   return {
     date,
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
-    payment_breakdown: {
-      cash_count: cashStats.count,
-      cash_total: cashStats.total,
-      qr_count: qrStats.count,
-      qr_total: qrStats.total
-    },
+    payment_breakdown: breakdownData,
+    payment: breakdownData, // Compatibility fallback for LINE notification bot
     hourly_breakdown: hourlyBreakdown,
     orders: orders
   };
