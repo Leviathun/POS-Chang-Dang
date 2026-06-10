@@ -4,7 +4,12 @@
     <div class="modal-content">
       <div class="modal-handle"></div>
       <div class="modal-header">
-        <h3>{{ success ? '🎉 ทำรายการสำเร็จ' : '💰 ชำระเงิน' }}</h3>
+        <h3>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <i :class="success ? 'fa-solid fa-circle-check text-success' : 'fa-solid fa-cash-register'"></i>
+            {{ success ? 'ทำรายการสำเร็จ' : 'ชำระเงิน' }}
+          </span>
+        </h3>
         <button v-if="!success" class="modal-close" @click="handleClose">✕</button>
       </div>
 
@@ -22,8 +27,8 @@
               </span>
             </div>
             <div class="mt-2xl w-full">
-              <button class="btn btn-primary btn-xl" @click="finishPayment">
-                🏠 กลับหน้าขาย
+              <button class="btn btn-primary btn-xl" @click="finishPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                <i class="fa-solid fa-house"></i> กลับหน้าขาย
               </button>
             </div>
           </div>
@@ -32,7 +37,7 @@
         <template v-else>
           <!-- Order Summary Card -->
           <div class="card mb-lg">
-            <div class="card-title" style="font-size: var(--font-sm);">📝 สรุปรายการสินค้า</div>
+            <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-receipt" style="margin-right: 6px;"></i> สรุปรายการสินค้า</div>
             <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
               <span>{{ cartItem.item.name }} × {{ cartItem.quantity }}</span>
               <span class="text-accent">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
@@ -49,12 +54,16 @@
             <div class="card-title mb-md">เลือกช่องทางการชำระเงิน</div>
             <div class="payment-methods">
               <button class="payment-method-btn" @click="selectPaymentMethod('cash')">
-                <div class="method-icon">💵</div>
+                <div class="method-icon"><i class="fa-solid fa-money-bill-wave" style="color: var(--success); font-size: 2.2rem;"></i></div>
                 <div class="method-label">เงินสด</div>
               </button>
               <button class="payment-method-btn" @click="selectPaymentMethod('qr')">
-                <div class="method-icon">📱</div>
+                <div class="method-icon"><i class="fa-solid fa-qrcode" style="color: var(--primary); font-size: 2.2rem;"></i></div>
                 <div class="method-label">QR Code</div>
+              </button>
+              <button class="payment-method-btn" @click="selectPaymentMethod('gov')">
+                <div class="method-icon"><i class="fa-solid fa-landmark" style="color: var(--accent); font-size: 2.2rem;"></i></div>
+                <div class="method-label">โครงการรัฐ</div>
               </button>
             </div>
           </div>
@@ -89,8 +98,8 @@
             <div class="keypad">
               <button v-for="num in 9" :key="num" class="keypad-key" @click="pressNum(String(num))">{{ num }}</button>
               <button class="keypad-key key-clear" @click="pressNum('C')">C</button>
-              <button class="keypad-key" @click="pressNum('0')">0</button>
-              <button class="keypad-key key-backspace" @click="pressNum('⌫')">⌫</button>
+              <button class="keypad-key" @click="pressNum('0')">{{ 0 }}</button>
+              <button class="keypad-key key-backspace" @click="pressNum('⌫')"><i class="fa-solid fa-delete-left"></i></button>
             </div>
 
             <div style="padding: 0 var(--space-md);">
@@ -98,31 +107,49 @@
                 class="btn btn-primary btn-xl" 
                 :disabled="Number(enteredAmount) < total"
                 @click="confirmCashPayment"
+                style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
               >
-                ✅ ยืนยันรับเงินสด
+                <i class="fa-solid fa-circle-check"></i> ยืนยันรับเงินสด
               </button>
             </div>
           </div>
 
-          <!-- Step 2B: QR Code Payment (PromptPay) -->
+          <!-- Step 2B: QR Code Payment (Auto-approve / No Image) -->
           <div v-if="paymentMethod === 'qr'" id="qr-section">
-            <div class="qr-section" style="text-align: center;">
-              <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-lg);">
-                กรุณาสแกน QR Code เพื่อชำระเงิน
+            <div class="qr-section" style="text-align: center; padding: var(--space-xl) 0;">
+              <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-md); color: var(--primary); opacity: 0.8;">
+                <i class="fa-solid fa-qrcode"></i>
               </div>
-              
-              <div class="qr-placeholder" style="width: 200px; height: 200px; margin: 0 auto var(--space-lg); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid var(--border-color);">
-                <div v-if="qrLoading" class="spinner"></div>
-                <img v-else-if="qrCodeUrl" :src="qrCodeUrl" alt="PromptPay QR Code" style="width:100%; height:100%; object-fit:contain;" />
-                <div v-else style="color: var(--text-muted); font-size:var(--font-sm);">ไม่สามารถโหลด QR ได้</div>
+              <div style="font-size: var(--font-md); color: var(--text-secondary); margin-bottom: var(--space-lg);">
+                ช่องทางชำระเงินด้วย QR Code / โอนเงินผ่านธนาคาร
               </div>
 
-              <div class="font-bold text-accent mb-lg" style="font-size: var(--font-xl);">
+              <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-2xl);">
                 {{ formatCurrency(total) }}
               </div>
               
-              <button class="btn btn-success btn-xl" @click="confirmQRPayment">
-                ✅ ยืนยันลูกค้าสแกนเรียบร้อย
+              <button class="btn btn-success btn-xl" @click="confirmQRPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);">
+                <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการชำระเงิน
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2C: Government Project Payment -->
+          <div v-if="paymentMethod === 'gov'" id="gov-section">
+            <div class="qr-section" style="text-align: center; padding: var(--space-xl) 0;">
+              <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-md); color: var(--accent); opacity: 0.8;">
+                <i class="fa-solid fa-landmark"></i>
+              </div>
+              <div style="font-size: var(--font-md); color: var(--text-secondary); margin-bottom: var(--space-lg);">
+                ช่องทางชำระเงินด้วย โครงการของรัฐ
+              </div>
+
+              <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-2xl);">
+                {{ formatCurrency(total) }}
+              </div>
+              
+              <button class="btn btn-primary btn-xl" @click="confirmGovPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); background-color: var(--accent) !important; border-color: var(--accent) !important;">
+                <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการโครงการรัฐ
               </button>
             </div>
           </div>
@@ -228,30 +255,12 @@ const createBackendOrder = async () => {
       free_modifiers: props.freeModifiers
     });
     orderId.value = res.data?.id || res.id;
-
-    if (paymentMethod.value === 'qr') {
-      await loadPromptPayQR();
-    }
   } catch (error) {
     console.error(error);
     ui.showToast('ไม่สามารถสร้างรายการสั่งซื้อได้: ' + error.message, 'error');
     paymentMethod.value = null; // Reset selection
   } finally {
     ui.hideLoading();
-  }
-};
-
-// Fetch PromptPay QR Image
-const loadPromptPayQR = async () => {
-  qrLoading.value = true;
-  try {
-    const res = await api.orders.getQR(orderId.value);
-    qrCodeUrl.value = res.data?.qr_url || res.qr_url;
-  } catch (error) {
-    console.error('Failed to load QR:', error);
-    ui.showToast('โหลด QR Code ชำระเงินไม่สำเร็จ', 'error');
-  } finally {
-    qrLoading.value = false;
   }
 };
 
@@ -295,16 +304,37 @@ const confirmQRPayment = async () => {
   ui.showLoading();
   try {
     await api.orders.complete(orderId.value, {
-      payment_method: 'promptpay',
+      payment_method: 'qr',
       cash_received: props.total
     });
 
     success.value = true;
     showConfetti();
-    ui.showToast('ชำระเงิน PromptPay เรียบร้อย!', 'success');
+    ui.showToast('ชำระเงินผ่าน QR Code เรียบร้อย!', 'success');
   } catch (error) {
     console.error(error);
     ui.showToast('ยืนยันชำระคิวอาร์โค้ดไม่สำเร็จ: ' + error.message, 'error');
+  } finally {
+    ui.hideLoading();
+  }
+};
+
+// Government Project Checkout
+const confirmGovPayment = async () => {
+  if (!orderId.value) return;
+  ui.showLoading();
+  try {
+    await api.orders.complete(orderId.value, {
+      payment_method: 'gov',
+      cash_received: props.total
+    });
+
+    success.value = true;
+    showConfetti();
+    ui.showToast('ชำระเงินโครงการของรัฐเรียบร้อย!', 'success');
+  } catch (error) {
+    console.error(error);
+    ui.showToast('ยืนยันชำระโครงการรัฐไม่สำเร็จ: ' + error.message, 'error');
   } finally {
     ui.hideLoading();
   }
@@ -370,7 +400,7 @@ const confirmQRPayment = async () => {
 /* --- Payment Methods --- */
 .payment-methods {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-md);
   padding: var(--space-md);
 }

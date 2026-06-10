@@ -8,14 +8,14 @@
         :class="{ 'active': activeTab === 'sales' }"
         @click="activeTab = 'sales'"
       >
-        📊 ยอดขาย
+        <i class="fa-solid fa-chart-column" style="margin-right: 4px;"></i> ยอดขาย
       </button>
       <button 
         class="category-tab" 
         :class="{ 'active': activeTab === 'order_history' }"
         @click="activeTab = 'order_history'"
       >
-        📋 ประวัติออเดอร์ย้อนหลัง
+        <i class="fa-solid fa-clock-rotate-left" style="margin-right: 4px;"></i> ประวัติออเดอร์ย้อนหลัง
       </button>
       <button 
         v-if="isAdminUser"
@@ -23,7 +23,7 @@
         :class="{ 'active': activeTab === 'expenses' }"
         @click="activeTab = 'expenses'"
       >
-        💸 บันทึกค่าใช้จ่ายประจำวัน
+        <i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่ายประจำวัน
       </button>
       <button 
         v-if="isAdminUser"
@@ -31,7 +31,7 @@
         :class="{ 'active': activeTab === 'top_menus' }"
         @click="activeTab = 'top_menus'"
       >
-        🔥 10 อันดับเมนูขายดี
+        <i class="fa-solid fa-fire" style="margin-right: 4px;"></i> 10 อันดับเมนูขายดี
       </button>
       <button 
         v-if="isAdminUser"
@@ -39,7 +39,7 @@
         :class="{ 'active': activeTab === 'activity_logs' }"
         @click="activeTab = 'activity_logs'"
       >
-        👁️ ประวัติกิจกรรมพนักงาน
+        <i class="fa-solid fa-user-shield" style="margin-right: 4px;"></i> ประวัติกิจกรรมพนักงาน
       </button>
     </div>
 
@@ -55,7 +55,7 @@
             @click="setPeriodMode('daily')"
             style="min-height:32px; font-size:12px; padding: 4px 12px; border-radius: 4px;"
           >
-            📅 รายวัน
+            <i class="fa-solid fa-calendar-day" style="margin-right: 4px;"></i> รายวัน
           </button>
           <button 
             type="button"
@@ -64,7 +64,7 @@
             @click="setPeriodMode('monthly')"
             style="min-height:32px; font-size:12px; padding: 4px 12px; border-radius: 4px;"
           >
-            📅 รายเดือน
+            <i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> รายเดือน
           </button>
           <button 
             type="button"
@@ -73,7 +73,7 @@
             @click="setPeriodMode('yearly')"
             style="min-height:32px; font-size:12px; padding: 4px 12px; border-radius: 4px;"
           >
-            📅 รายปี
+            <i class="fa-solid fa-calendar" style="margin-right: 4px;"></i> รายปี
           </button>
         </div>
 
@@ -139,7 +139,7 @@
 
         <!-- Admin Only: Daily Summary Card -->
         <div v-if="isAdminUser" class="card">
-          <div class="card-title" style="font-size: var(--font-sm);">📊 สรุปยอดวันที่ {{ formatDate(selectedDate) }}</div>
+          <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> สรุปยอดวันที่ {{ formatDate(selectedDate) }}</div>
           
           <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
             <span>ยอดขายทั้งหมด (สุทธิ):</span>
@@ -157,20 +157,27 @@
           <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
           
           <!-- Payment Methods Breakdowns -->
-          <div class="grid grid-2" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-sm); font-size:var(--font-xs);">
+          <div class="grid grid-3" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:var(--space-sm); font-size:var(--font-xs);">
             <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
-              <div style="color:var(--text-secondary);">💵 เงินสด</div>
+              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
                 {{ formatCurrency(dailyReport.cash_sales) }}
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.cash_orders }} บิล</div>
             </div>
             <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
-              <div style="color:var(--text-secondary);">📱 QR Code</div>
+              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-qrcode" style="color: var(--primary);"></i> QR Code</div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
                 {{ formatCurrency(dailyReport.qr_sales) }}
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
+            </div>
+            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-landmark" style="color: var(--accent);"></i> โครงการรัฐ</div>
+              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+                {{ formatCurrency(dailyReport.gov_sales) }}
+              </div>
+              <div style="color:var(--text-tertiary);">{{ dailyReport.gov_orders }} บิล</div>
             </div>
           </div>
         </div>
@@ -178,14 +185,14 @@
         <!-- Today's Transaction Logs (ALL ROLES) -->
         <div class="card">
           <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-            <div class="card-title" style="font-size: var(--font-sm); margin: 0;">📋 รายการบิลประจำวัน</div>
+            <div class="card-title" style="font-size: var(--font-sm); margin: 0;"><i class="fa-solid fa-list" style="margin-right: 6px;"></i> รายการบิลประจำวัน</div>
             <button 
               v-if="dailyReport.orders?.length > 0"
               class="btn btn-sm btn-secondary" 
               style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
               @click="exportSalesCSV"
             >
-              📥 ส่งออกรายงานยอดขาย (CSV)
+              <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกรายงานยอดขาย (CSV)
             </button>
           </div>
           
@@ -205,12 +212,15 @@
                   #{{ order.order_number }}
                 </span>
                 <div>
-                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:11px; margin-right:4px;">❌ ยกเลิก</span>
+                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:11px; margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
                   <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                 </div>
               </div>
               <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
-                <span>{{ order.payment_method === 'cash' ? '💵 เงินสด' : order.payment_method === 'qr' ? '📱 QR Code' : '⏳ รอชำระ' }}</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : 'fa-solid fa-hourglass-half'"></i>
+                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : 'รอชำระ' }}
+                </span>
                 <span>เวลา: {{ formatTime(order.created_at) }}</span>
               </div>
               <div v-if="order.cancel_reason" style="font-size: 11px; color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
@@ -230,10 +240,10 @@
                 <button 
                   v-if="order.status === 'completed'" 
                   class="btn btn-sm" 
-                  style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm);"
+                  style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
                   @click.stop="openVoidModal(order)"
                 >
-                  🚫 ยกเลิกบิลนี้ (Void)
+                  <i class="fa-solid fa-ban"></i> ยกเลิกบิลนี้ (Void)
                 </button>
               </div>
             </div>
@@ -244,7 +254,7 @@
       <!-- Tab: Order History (ประวัติออเดอร์ย้อนหลัง) -->
       <div v-if="activeTab === 'order_history'" class="card">
         <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-          <div class="card-title" style="font-size: var(--font-sm); margin:0;">📋 ประวัติออเดอร์ย้อนหลัง</div>
+          <div class="card-title" style="font-size: var(--font-sm); margin:0;"><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติออเดอร์ย้อนหลัง</div>
           <div class="flex align-center gap-sm" style="flex-wrap: wrap;">
             <button 
               v-if="historyOrders.length > 0"
@@ -252,7 +262,7 @@
               style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
               @click="exportHistoryOrdersCSV"
             >
-              📥 ส่งออกประวัติออเดอร์ (CSV)
+              <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกประวัติออเดอร์ (CSV)
             </button>
             <div class="flex align-center gap-xs">
               <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
@@ -316,25 +326,26 @@
                     <td style="padding: var(--space-sm) var(--space-md);">
                       {{ order.branch_name || 'ไม่ระบุ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                      {{ order.payment_method === 'cash' ? '💵 เงินสด' : order.payment_method === 'qr' ? '📱 QR Code' : '⏳ รอชำระ' }}
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: center; white-space: nowrap;">
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
+                      {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : 'รอชำระ' }}
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;" :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">
                       {{ formatCurrency(order.total) }}
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                      <span v-if="order.status === 'completed'" class="text-success" style="font-size:12px;">✅ สำเร็จ</span>
-                      <span v-else-if="order.status === 'cancelled'" class="text-danger" style="font-size:12px;">❌ ยกเลิก</span>
-                      <span v-else class="text-warning" style="font-size:12px;">⏳ รอชำระ</span>
+                      <span v-if="order.status === 'completed'" class="text-success" style="font-size:12px;"><i class="fa-solid fa-circle-check text-success" style="margin-right: 4px;"></i> สำเร็จ</span>
+                      <span v-else-if="order.status === 'cancelled'" class="text-danger" style="font-size:12px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
+                      <span v-else class="text-warning" style="font-size:12px;"><i class="fa-solid fa-hourglass-half text-warning" style="margin-right: 4px;"></i> รอชำระ</span>
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: center;" @click.stop>
                       <button 
                         v-if="order.status === 'completed'" 
                         class="btn btn-sm" 
-                        style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); padding:4px 8px; font-size:11px; min-height:28px;"
+                        style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); padding:4px 8px; font-size:11px; min-height:28px; display: inline-flex; align-items: center; gap: 4px;"
                         @click="openVoidModal(order)"
                       >
-                        🚫 Void
+                        <i class="fa-solid fa-ban"></i> Void
                       </button>
                       <span v-else>-</span>
                     </td>
@@ -351,8 +362,8 @@
                             <span class="font-bold">{{ formatCurrency(item.subtotal) }}</span>
                           </div>
                         </div>
-                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); font-size:11px; color:#ff3b30;">
-                          ⚠️ <strong>เหตุผลที่ยกเลิก:</strong> {{ order.cancel_reason }}
+                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); font-size:11px; color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
+                          <i class="fa-solid fa-triangle-exclamation text-danger"></i> <strong>เหตุผลที่ยกเลิก:</strong> {{ order.cancel_reason }}
                         </div>
                       </div>
                     </td>
@@ -378,14 +389,17 @@
                 <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
               </div>
               <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary);">
-                <span>👤 {{ order.staff_name || 'ระบบ' }} | 🏪 {{ order.branch_name || 'ไม่ระบุ' }}</span>
+                <span><i class="fa-solid fa-user" style="margin-right: 2px;"></i> {{ order.staff_name || 'ระบบ' }} | <i class="fa-solid fa-store" style="margin-right: 2px;"></i> {{ order.branch_name || 'ไม่ระบุ' }}</span>
                 <span>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}</span>
               </div>
               <div class="flex flex-between align-center mt-xs" style="font-size:11px;">
-                <span>{{ order.payment_method === 'cash' ? '💵 เงินสด' : order.payment_method === 'qr' ? '📱 QR Code' : '⏳ รอชำระ' }}</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : 'fa-solid fa-hourglass-half'"></i>
+                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : 'รอชำระ' }}
+                </span>
                 <div>
-                  <span v-if="order.status === 'completed'" class="text-success">✅ สำเร็จ</span>
-                  <span v-else-if="order.status === 'cancelled'" class="text-danger">❌ ยกเลิก</span>
+                  <span v-if="order.status === 'completed'" class="text-success"><i class="fa-solid fa-circle-check text-success" style="margin-right: 2px;"></i> สำเร็จ</span>
+                  <span v-else-if="order.status === 'cancelled'" class="text-danger"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> ยกเลิก</span>
                 </div>
               </div>
 
@@ -398,17 +412,17 @@
                     <span>{{ formatCurrency(item.subtotal) }}</span>
                   </div>
                 </div>
-                <div v-if="order.cancel_reason" style="font-size:11px; color:#ff3b30; margin-top:4px;">
-                  เหตุผลยกเลิก: {{ order.cancel_reason }}
+                <div v-if="order.cancel_reason" style="font-size:11px; color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-triangle-exclamation text-danger"></i> เหตุผลยกเลิก: {{ order.cancel_reason }}
                 </div>
                 <!-- Void Button inside Mobile Expanded Card -->
                 <button 
                   v-if="order.status === 'completed'" 
                   class="btn btn-sm mt-sm" 
-                  style="width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); min-height:36px; font-size:var(--font-sm);"
+                  style="width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); min-height:36px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
                   @click="openVoidModal(order)"
                 >
-                  🚫 ยกเลิกบิลนี้ (Void)
+                  <i class="fa-solid fa-ban"></i> ยกเลิกบิลนี้ (Void)
                 </button>
               </div>
             </div>
@@ -418,22 +432,22 @@
           <div v-if="totalPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
             <button 
               class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size:12px;"
+              style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
               :disabled="historyCurrentPage === 1" 
               @click="historyCurrentPage--"
             >
-              ◀ ก่อนหน้า
+              <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
             </button>
             <span style="font-size: var(--font-sm); font-weight: bold;">
               หน้า {{ historyCurrentPage }} / {{ totalPages }}
             </span>
             <button 
               class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size:12px;"
+              style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
               :disabled="historyCurrentPage === totalPages" 
               @click="historyCurrentPage++"
             >
-              ถัดไป ▶
+              ถัดไป <i class="fa-solid fa-chevron-right"></i>
             </button>
           </div>
         </div>
@@ -441,7 +455,7 @@
 
       <!-- Tab 2: Expenses (บันทึกค่าใช้จ่ายประจำวัน) -->
       <div v-if="activeTab === 'expenses' && isAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);">💸 บันทึกค่าใช้จ่ายประจำวัน (วันที่ {{ formatDate(selectedDate) }})</div>
+        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 6px;"></i> บันทึกค่าใช้จ่ายประจำวัน (วันที่ {{ formatDate(selectedDate) }})</div>
         
         <!-- Quick Add Expense Form -->
         <div class="expense-form-grid">
@@ -455,15 +469,16 @@
                   :class="{ 'active': isExpenseCategoryDropdownOpen }" 
                   @click="isExpenseCategoryDropdownOpen = !isExpenseCategoryDropdownOpen"
                 >
-                  <span class="custom-select-text">
+                  <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i :class="getExpenseCategoryIcon(expenseForm.category)"></i>
                     {{ selectedExpenseCategoryLabel }}
                   </span>
                 </div>
                 <div v-if="isExpenseCategoryDropdownOpen" class="custom-select-dropdown">
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_materials' }" @click="selectExpenseCategory('raw_materials')">🍗 วัตถุดิบ</div>
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'gas_fuel' }" @click="selectExpenseCategory('gas_fuel')">⛽ แก๊ส/น้ำมัน</div>
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')">📦 บรรจุภัณฑ์/ถุง</div>
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')">📎 อื่นๆ</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_materials' }" @click="selectExpenseCategory('raw_materials')"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> วัตถุดิบ</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'gas_fuel' }" @click="selectExpenseCategory('gas_fuel')"><i class="fa-solid fa-gas-pump" style="margin-right: 4px;"></i> แก๊ส/น้ำมัน</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> บรรจุภัณฑ์/ถุง</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')"><i class="fa-solid fa-paperclip" style="margin-right: 4px;"></i> อื่นๆ</div>
                 </div>
               </div>
             </div>
@@ -471,8 +486,8 @@
             <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." />
           </div>
           <div class="form-group mb-xs">
-            <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0" style="white-space:nowrap;">
-              💾 บันทึก
+            <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0" style="white-space:nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+              <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
           </div>
         </div>
@@ -482,7 +497,7 @@
         
         <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
           <div class="card-title" style="font-size: var(--font-sm); margin: 0;">
-            📅 สมุดบัญชีรายรับ-รายจ่าย (เดือน {{ selectedDate.substring(0, 7) }})
+            <i class="fa-solid fa-book" style="margin-right: 6px;"></i> สมุดบัญชีรายรับ-รายจ่าย (เดือน {{ selectedDate.substring(0, 7) }})
           </div>
           <div style="display:flex; align-items:center; gap:var(--space-sm);">
             <button 
@@ -491,7 +506,7 @@
               style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
               @click="exportExpensesCSV"
             >
-              📥 ส่งออกบัญชี (CSV)
+              <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกบัญชี (CSV)
             </button>
             <div v-if="ledgerLoading" class="spinner spinner-sm"></div>
           </div>
@@ -569,10 +584,10 @@
                   <button 
                     v-if="item.type === 'expense'" 
                     class="btn btn-sm" 
-                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:4px 8px; font-size:11px; border-radius:var(--radius-sm); cursor:pointer;" 
+                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:4px 8px; font-size:11px; border-radius:var(--radius-sm); cursor:pointer; display: inline-flex; align-items: center; justify-content: center;" 
                     @click="handleDeleteExpense(item.id)"
                   >
-                    🗑️
+                    <i class="fa-solid fa-trash-can"></i>
                   </button>
                   <span v-else style="color:var(--text-tertiary); font-size:10px;">-</span>
                 </td>
@@ -600,7 +615,7 @@
                 <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ item.name }}</span>
               </div>
               <div class="flex flex-between align-center mt-xs" style="font-size: 11px; color: var(--text-secondary);">
-                <span>📅 {{ formatDate(item.created_at) }} {{ formatTime(item.created_at) }}</span>
+                <span><i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> {{ formatDate(item.created_at) }} {{ formatTime(item.created_at) }}</span>
                 <div class="flex align-center gap-md">
                   <span v-if="item.income > 0" class="font-bold text-success" style="font-size: var(--font-base);">
                     +{{ formatCurrency(item.income) }}
@@ -614,7 +629,7 @@
                     style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 14px; font-size:13px; border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px;" 
                     @click="handleDeleteExpense(item.id)"
                   >
-                    🗑️
+                    <i class="fa-solid fa-trash-can"></i>
                   </button>
                 </div>
               </div>
@@ -625,7 +640,7 @@
 
       <!-- Tab 3: Top Selling Menus (10 อันดับเมนูขายดีที่สุด) -->
       <div v-if="activeTab === 'top_menus' && isAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);">🔥 10 อันดับเมนูขายดีที่สุด (7 วันที่ผ่านมา)</div>
+        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-fire" style="margin-right: 6px;"></i> 10 อันดับเมนูขายดีที่สุด (7 วันที่ผ่านมา)</div>
         
         <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
           ยังไม่มีข้อมูลการขายในรอบ 7 วันที่ผ่านมา
@@ -653,11 +668,11 @@
 
       <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
       <div v-if="activeTab === 'activity_logs' && isAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);">👁️ ประวัติกิจกรรมพนักงาน (วันที่ {{ formatDate(selectedDate) }})</div>
+        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน (วันที่ {{ formatDate(selectedDate) }})</div>
         
         <!-- Filter dropdown -->
         <div class="form-group mb-md">
-          <label class="form-label font-bold" style="font-size: var(--font-sm);">🔍 กรองประเภทกิจกรรม:</label>
+          <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภทกิจกรรม:</label>
           <div class="custom-select-wrapper" @click.stop>
             <div 
               class="custom-select-trigger" 
@@ -665,18 +680,19 @@
               @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen"
               style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
             >
-              <span class="custom-select-text" style="font-size: var(--font-sm);">
+              <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px;">
+                <i :class="getFilterActionIcon(filterAction)"></i>
                 {{ selectedFilterActionLabel }}
               </span>
             </div>
             <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')">📁 ทั้งหมด</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')">🔑 การลงชื่อเข้าใช้งาน (Login)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')">🛒 การขาย / ออกบิล (Sales)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')">🚫 การยกเลิกบิล (Void)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')">💸 บันทึกค่าใช้จ่าย (Expenses)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')">🔧 จัดการสต็อก / ของเสีย (Stock & Waste)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')">🍴 เครดิตพนักงาน (Staff Credit)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อก / ของเสีย (Stock & Waste)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
             </div>
           </div>
         </div>
@@ -688,14 +704,14 @@
           <div v-for="log in filteredActivityLogs" :key="log.id" class="activity-log-item">
             <div class="log-badge-wrapper">
               <div class="log-badge" :class="log.action">
-                {{ getActionIcon(log.action) }}
+                <i :class="getActionIconClass(log.action)"></i>
               </div>
             </div>
             <div class="log-content-wrapper">
               <div class="log-details">{{ log.details }}</div>
               <div class="log-meta">
-                <span class="log-user">👤 {{ log.staff_name || 'ระบบ' }}</span>
-                <span class="log-time">🕒 {{ formatTime(log.created_at) }}</span>
+                <span class="log-user"><i class="fa-solid fa-user" style="margin-right: 4px;"></i>{{ log.staff_name || 'ระบบ' }}</span>
+                <span class="log-time"><i class="fa-solid fa-clock" style="margin-right: 4px;"></i>{{ formatTime(log.created_at) }}</span>
               </div>
             </div>
           </div>
@@ -708,7 +724,7 @@
       <div class="modal-overlay" @click="showVoidModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
-          <h3>🚫 ยกเลิกบิล #{{ voidOrder?.order_number }}</h3>
+          <h3><i class="fa-solid fa-ban" style="margin-right: 6px;"></i> ยกเลิกบิล #{{ voidOrder?.order_number }}</h3>
           <button class="modal-close" @click="showVoidModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -725,10 +741,10 @@
               :key="preset.value"
               class="btn"
               :class="voidReason === preset.value ? 'btn-primary' : 'btn-secondary'"
-              style="text-align:left; min-height:44px;"
+              style="text-align:left; min-height:44px; display: inline-flex; align-items: center; gap: 8px;"
               @click="voidReason = preset.value"
             >
-              {{ preset.icon }} {{ preset.label }}
+              <i :class="preset.icon"></i> {{ preset.label }}
             </button>
           </div>
 
@@ -742,11 +758,11 @@
             <button class="btn btn-secondary flex-1" @click="showVoidModal = false">ยกเลิก</button>
             <button 
               class="btn flex-1" 
-              style="background:rgba(255,59,48,0.9); color:#fff; border:none;"
+              style="background:rgba(255,59,48,0.9); color:#fff; border:none; display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
               :disabled="!voidReason || (voidReason === 'custom' && !voidCustomReason.trim())"
               @click="handleVoidOrder"
             >
-              ✅ ยืนยันยกเลิกบิล
+              <i class="fa-solid fa-circle-check"></i> ยืนยันยกเลิกบิล
             </button>
           </div>
         </div>
@@ -814,6 +830,8 @@ const dailyReport = ref({
   cash_orders: 0,
   qr_sales: 0,
   qr_orders: 0,
+  gov_sales: 0,
+  gov_orders: 0,
   orders: []
 });
 const topItems = ref([]);
@@ -847,9 +865,9 @@ const voidOrder = ref(null);
 const voidReason = ref('');
 const voidCustomReason = ref('');
 const voidPresets = [
-  { value: 'ลูกค้ายกเลิกออเดอร์', label: 'ลูกค้ายกเลิกออเดอร์', icon: '❌' },
-  { value: 'กรอกข้อมูลผิดพลาด / ทำบิลซ้ำ', label: 'กรอกข้อมูลผิดพลาด / ทำบิลซ้ำ', icon: '✍️' },
-  { value: 'custom', label: 'อื่นๆ (ระบุเอง)', icon: '💬' },
+  { value: 'ลูกค้ายกเลิกออเดอร์', label: 'ลูกค้ายกเลิกออเดอร์', icon: 'fa-solid fa-circle-xmark' },
+  { value: 'กรอกข้อมูลผิดพลาด / ทำบิลซ้ำ', label: 'กรอกข้อมูลผิดพลาด / ทำบิลซ้ำ', icon: 'fa-solid fa-pen-to-square' },
+  { value: 'custom', label: 'อื่นๆ (ระบุเอง)', icon: 'fa-solid fa-circle-question' },
 ];
 
 // Expense form state
@@ -869,13 +887,22 @@ const ledgerLoading = ref(false);
 const isExpenseCategoryDropdownOpen = ref(false);
 const selectedExpenseCategoryLabel = computed(() => {
   const categoryLabels = {
-    raw_materials: '🍗 วัตถุดิบ',
-    gas_fuel: '⛽ แก๊ส/น้ำมัน',
-    packaging: '📦 บรรจุภัณฑ์/ถุง',
-    other: '📎 อื่นๆ'
+    raw_materials: 'วัตถุดิบ',
+    gas_fuel: 'แก๊ส/น้ำมัน',
+    packaging: 'บรรจุภัณฑ์/ถุง',
+    other: 'อื่นๆ'
   };
   return categoryLabels[expenseForm.value.category] || 'เลือกหมวดหมู่...';
 });
+const getExpenseCategoryIcon = (cat) => {
+  const map = {
+    raw_materials: 'fa-solid fa-drumstick-bite',
+    gas_fuel: 'fa-solid fa-gas-pump',
+    packaging: 'fa-solid fa-box',
+    other: 'fa-solid fa-paperclip'
+  };
+  return map[cat] || 'fa-solid fa-folder';
+};
 const selectExpenseCategory = (cat) => {
   expenseForm.value.category = cat;
   isExpenseCategoryDropdownOpen.value = false;
@@ -884,16 +911,28 @@ const selectExpenseCategory = (cat) => {
 const isFilterActionDropdownOpen = ref(false);
 const selectedFilterActionLabel = computed(() => {
   const filterLabels = {
-    all: '📁 ทั้งหมด',
-    login: '🔑 การลงชื่อเข้าใช้งาน (Login)',
-    sales: '🛒 การขาย / ออกบิล (Sales)',
-    cancel: '🚫 การยกเลิกบิล (Void)',
-    expenses: '💸 บันทึกค่าใช้จ่าย (Expenses)',
-    stock: '🔧 จัดการสต็อก / ของเสีย (Stock & Waste)',
-    credit: '🍴 เครดิตพนักงาน (Staff Credit)'
+    all: 'ทั้งหมด',
+    login: 'การลงชื่อเข้าใช้งาน (Login)',
+    sales: 'การขาย / ออกบิล (Sales)',
+    cancel: 'การยกเลิกบิล (Void)',
+    expenses: 'บันทึกค่าใช้จ่าย (Expenses)',
+    stock: 'จัดการสต็อก / ของเสีย (Stock & Waste)',
+    credit: 'เครดิตพนักงาน (Staff Credit)'
   };
-  return filterLabels[filterAction.value] || '📁 ทั้งหมด';
+  return filterLabels[filterAction.value] || 'ทั้งหมด';
 });
+const getFilterActionIcon = (action) => {
+  const map = {
+    all: 'fa-solid fa-folder-open',
+    login: 'fa-solid fa-key',
+    sales: 'fa-solid fa-cart-shopping',
+    cancel: 'fa-solid fa-ban',
+    expenses: 'fa-solid fa-wallet',
+    stock: 'fa-solid fa-boxes-stacked',
+    credit: 'fa-solid fa-user-check'
+  };
+  return map[action] || 'fa-solid fa-folder';
+};
 const selectFilterAction = (action) => {
   filterAction.value = action;
   isFilterActionDropdownOpen.value = false;
@@ -1086,6 +1125,8 @@ const loadReportData = async () => {
         cash_orders: data.payment_breakdown?.cash_count || 0,
         qr_sales: data.payment_breakdown?.qr_total || 0,
         qr_orders: data.payment_breakdown?.qr_count || 0,
+        gov_sales: data.payment_breakdown?.gov_total || 0,
+        gov_orders: data.payment_breakdown?.gov_count || 0,
         orders: data.orders || []
       };
     } else {
@@ -1097,6 +1138,8 @@ const loadReportData = async () => {
         cash_orders: 0,
         qr_sales: 0,
         qr_orders: 0,
+        gov_sales: 0,
+        gov_orders: 0,
         orders: []
       };
     }
@@ -1238,27 +1281,27 @@ const setPeriodMode = (mode) => {
 
 const getCategoryLabel = (cat) => {
   const map = {
-    'raw_materials': '🍗 วัตถุดิบ',
-    'gas_fuel': '⛽ แก๊ส/น้ำมัน',
-    'packaging': '📦 บรรจุภัณฑ์',
-    'other': '📎 อื่นๆ'
+    'raw_materials': 'วัตถุดิบ',
+    'gas_fuel': 'แก๊ส/น้ำมัน',
+    'packaging': 'บรรจุภัณฑ์',
+    'other': 'อื่นๆ'
   };
   return map[cat] || cat;
 };
 
-const getActionIcon = (action) => {
+const getActionIconClass = (action) => {
   const map = {
-    'login': '🔑',
-    'create_order': '🛒',
-    'complete_order': '✅',
-    'cancel_order': '🚫',
-    'adjust_stock': '🔧',
-    'record_waste': '🗑️',
-    'staff_credit': '🍴',
-    'log_expense': '💸',
-    'delete_expense': '🗑️'
+    'login': 'fa-solid fa-key text-warning',
+    'create_order': 'fa-solid fa-cart-shopping text-success',
+    'complete_order': 'fa-solid fa-circle-check text-success',
+    'cancel_order': 'fa-solid fa-ban text-danger',
+    'adjust_stock': 'fa-solid fa-boxes-stacked text-primary',
+    'record_waste': 'fa-solid fa-trash-can text-danger',
+    'staff_credit': 'fa-solid fa-user-check text-primary',
+    'log_expense': 'fa-solid fa-wallet text-danger',
+    'delete_expense': 'fa-solid fa-trash-can text-danger'
   };
-  return map[action] || '📌';
+  return map[action] || 'fa-solid fa-bookmark text-neutral';
 };
 
 onMounted(() => {
@@ -1318,7 +1361,7 @@ const exportSalesCSV = () => {
     return [
       o.order_number,
       o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : o.payment_method === 'promptpay' ? 'QR Code' : 'รอชำระ',
+      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : 'รอชำระ',
       o.staff_name || 'ระบบ',
       o.branch_name || 'ไม่ระบุ',
       o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
@@ -1347,7 +1390,7 @@ const exportHistoryOrdersCSV = () => {
     return [
       o.order_number,
       o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : o.payment_method === 'promptpay' ? 'QR Code' : 'รอชำระ',
+      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : 'รอชำระ',
       o.staff_name || 'ระบบ',
       o.branch_name || 'ไม่ระบุ',
       o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',

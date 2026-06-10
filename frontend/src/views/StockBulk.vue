@@ -5,18 +5,18 @@
     <div class="card mb-lg bulk-header-grid">
       <div class="header-left">
         <router-link to="/stock" class="btn btn-secondary btn-bulk-back">
-          ⬅️ ย้อนกลับ
+          <i class="fa-solid fa-arrow-left" style="margin-right: 4px;"></i> ย้อนกลับ
         </router-link>
       </div>
       <div class="header-center">
-        <h2 class="stock-page-title">📦 จัดการสต็อกด่วน</h2>
+        <h2 class="stock-page-title"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> จัดการสต็อกด่วน</h2>
       </div>
       <div class="header-right">
         <button 
           class="btn btn-primary btn-bulk-save" 
           @click="handleSaveBulkAdjust"
         >
-          💾 บันทึกสต็อกด่วน
+          <i class="fa-solid fa-floppy-disk" style="margin-right: 4px;"></i> บันทึกสต็อกด่วน
         </button>
       </div>
     </div>
@@ -30,20 +30,20 @@
           :class="{ 'active': bulkTab === 'relative' }" 
           @click="setBulkTab('relative')"
         >
-          📥 เพิ่มสต็อก
+          <i class="fa-solid fa-square-plus" style="margin-right: 4px;"></i> เพิ่มสต็อก
         </button>
         <button 
           class="bulk-tab" 
           :class="{ 'active': bulkTab === 'absolute' }" 
           @click="setBulkTab('absolute')"
         >
-          🔧 ปรับปรุงยอด
+          <i class="fa-solid fa-wrench" style="margin-right: 4px;"></i> ปรับปรุงยอด
         </button>
       </div>
 
       <!-- Description Hint Box -->
       <div class="bulk-hint-box mb-lg">
-        <span class="hint-icon">💡</span>
+        <span class="hint-icon"><i class="fa-solid fa-lightbulb"></i></span>
         <div class="hint-text">
           <span v-if="bulkTab === 'relative'">
             <strong>โหมดเพิ่มสต็อก:</strong> พิมพ์จำนวนที่นำเข้าเพิ่ม (เช่น <code>30</code> หรือ <code>+30</code>) หรือจำนวนที่หักออก (เช่น <code>-5</code>) ปล่อยว่างหรือกรอก <code>0</code> หากไม่มีความเปลี่ยนแปลง
@@ -65,9 +65,9 @@
         <div class="bulk-stock-header-row desktop-only">
           <div style="text-align: left; padding-left: var(--space-md);">เมนูอาหาร</div>
           <div style="text-align: center;">ของสดคงเหลือ</div>
-          <div style="text-align: center;">ปรับยอดของสด (🥩)</div>
+          <div style="text-align: center;">ปรับยอดของสด</div>
           <div style="text-align: center;">ทอดสุกคงเหลือ</div>
-          <div style="text-align: center;">ปรับยอดทอดสุก (🍗)</div>
+          <div style="text-align: center;">ปรับยอดทอดสุก</div>
         </div>
 
         <!-- Scrollable content -->
@@ -81,7 +81,7 @@
 
             <!-- Col 2: Raw stock quantity -->
             <div class="bulk-item-current-col text-center">
-              <span class="mobile-label">🥩 คงเหลือ:</span>
+              <span class="mobile-label"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> คงเหลือ:</span>
               <span :class="{ 'text-danger': item.raw_quantity !== null && (item.raw_quantity || 0) <= lowStockThreshold }" style="font-weight: bold; font-size: var(--font-md);">
                 {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? item.raw_quantity + ' ชิ้น' : '-' }}
               </span>
@@ -90,12 +90,12 @@
             <!-- Col 3: Raw stock input -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label">🥩 ปรับยอด:</span>
+                <span class="mobile-label"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> ปรับยอด:</span>
                 <input 
                   type="text" 
                   v-model="item.raw"
                   :disabled="item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin()"
-                  :placeholder="item.raw_quantity === null || item.raw_quantity === undefined ? '🔒 ไม่มี' : (!isAdmin() ? '🔒 ล็อก' : (bulkTab === 'relative' ? '0' : String(item.raw_quantity)))"
+                  :placeholder="item.raw_quantity === null || item.raw_quantity === undefined ? 'ไม่มี' : (!isAdmin() ? 'ล็อก' : (bulkTab === 'relative' ? '0' : String(item.raw_quantity)))"
                   class="form-input"
                   :class="{ 'disabled-input': item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin() }"
                 />
@@ -104,7 +104,7 @@
 
             <!-- Col 4: Cooked stock quantity -->
             <div class="bulk-item-current-col text-center">
-              <span class="mobile-label">🍗 คงเหลือ:</span>
+              <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> คงเหลือ:</span>
               <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }" style="font-weight: bold; font-size: var(--font-md);">
                 {{ item.quantity !== null && item.quantity !== undefined ? item.quantity + ' ชิ้น' : '0 ชิ้น' }}
               </span>
@@ -113,7 +113,7 @@
             <!-- Col 5: Cooked stock input -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label">🍗 ปรับยอด:</span>
+                <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> ปรับยอด:</span>
                 <input 
                   type="text" 
                   v-model="item.cooked"
@@ -135,14 +135,21 @@
                 :class="{ 'active': isReasonDropdownOpen }" 
                 @click="isReasonDropdownOpen = !isReasonDropdownOpen"
               >
-                <span class="custom-select-text">
+                <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <i :class="getBulkReasonIcon(bulkReasonPreset)"></i>
                   {{ selectedReasonLabel }}
                 </span>
               </div>
               <div v-if="isReasonDropdownOpen" class="custom-select-dropdown">
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'นับยอดขาด/เกิน' }" @click="selectReasonPreset('นับยอดขาด/เกิน')">📊 นับยอดขาด/เกิน</div>
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'กรอกผิด' }" @click="selectReasonPreset('กรอกผิด')">✏️ กรอกผิด (แก้ไขยอด)</div>
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'อื่นๆ' }" @click="selectReasonPreset('อื่นๆ')">❓ อื่นๆ</div>
+                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'นับยอดขาด/เกิน' }" @click="selectReasonPreset('นับยอดขาด/เกิน')">
+                  <i class="fa-solid fa-chart-simple" style="margin-right: 4px;"></i> นับยอดขาด/เกิน
+                </div>
+                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'กรอกผิด' }" @click="selectReasonPreset('กรอกผิด')">
+                  <i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> กรอกผิด (แก้ไขยอด)
+                </div>
+                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'อื่นๆ' }" @click="selectReasonPreset('อื่นๆ')">
+                  <i class="fa-solid fa-circle-question" style="margin-right: 4px;"></i> อื่นๆ
+                </div>
               </div>
             </div>
           </div>
@@ -166,7 +173,7 @@
             class="btn btn-primary btn-bulk-save" 
             @click="handleSaveBulkAdjust"
           >
-            💾 บันทึกสต็อกด่วน
+            <i class="fa-solid fa-floppy-disk" style="margin-right: 4px;"></i> บันทึกสต็อกด่วน
           </button>
         </div>
       </div>
@@ -195,12 +202,21 @@ const lowStockThreshold = computed(() => store.lowStockThreshold);
 const isReasonDropdownOpen = ref(false);
 const selectedReasonLabel = computed(() => {
   const reasonLabels = {
-    'นับยอดขาด/เกิน': '📊 นับยอดขาด/เกิน',
-    'กรอกผิด': '✏️ กรอกผิด (แก้ไขยอด)',
-    'อื่นๆ': '❓ อื่นๆ'
+    'นับยอดขาด/เกิน': 'นับยอดขาด/เกิน',
+    'กรอกผิด': 'กรอกผิด (แก้ไขยอด)',
+    'อื่นๆ': 'อื่นๆ'
   };
-  return reasonLabels[bulkReasonPreset.value] || '📊 นับยอดขาด/เกิน';
+  return reasonLabels[bulkReasonPreset.value] || 'นับยอดขาด/เกิน';
 });
+
+const getBulkReasonIcon = (reason) => {
+  const map = {
+    'นับยอดขาด/เกิน': 'fa-solid fa-chart-simple',
+    'กรอกผิด': 'fa-solid fa-pen-to-square',
+    'อื่นๆ': 'fa-solid fa-circle-question'
+  };
+  return map[reason] || 'fa-solid fa-circle-question';
+};
 const selectReasonPreset = (val) => {
   bulkReasonPreset.value = val;
   isReasonDropdownOpen.value = false;
