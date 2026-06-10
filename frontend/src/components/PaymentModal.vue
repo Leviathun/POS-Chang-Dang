@@ -246,7 +246,13 @@ const createBackendOrder = async () => {
   try {
     const items = [];
     props.cart.forEach(({ item, quantity }) => {
-      items.push({ menu_item_id: item.id, quantity });
+      items.push({ 
+        menu_item_id: item.id, 
+        quantity,
+        item_name: item.name,
+        item_price: item.price,
+        options: item.options || null
+      });
     });
 
     const res = await api.orders.create({ 

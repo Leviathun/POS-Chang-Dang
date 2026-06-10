@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 
     const items = await db.prepare(`
       SELECT 
-        mi.id, mi.name, COALESCE(bs.price, mi.price) as price, mi.category_id, mi.active,
+        mi.id, mi.name, COALESCE(bs.price, mi.price) as price, mi.category_id, mi.active, mi.uom,
         c.name as category_name,
         bs.quantity as stock,
         bs.raw_quantity as raw_stock

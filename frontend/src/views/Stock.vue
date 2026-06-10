@@ -74,18 +74,18 @@
                 </td>
                 <!-- Raw Quantity -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" :class="{ 'text-danger': (item.raw_quantity || 0) <= lowStockThreshold }" style="font-weight: bold;">
-                    {{ item.raw_quantity }} ชิ้น
-                    <span v-if="(item.raw_quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) > 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                  <span v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" style="font-weight: bold;">
+                    {{ formatStockQty(item.raw_quantity, item.uom) }}
+                    <span v-if="isItemLowStock(item, item.raw_quantity)" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
                     <span v-if="(item.raw_quantity || 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                   <span v-else style="color: var(--text-tertiary); font-style: italic;">-</span>
                 </td>
                 <!-- Cooked Quantity -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }" style="font-weight: bold;">
-                    {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
-                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                  <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" style="font-weight: bold;">
+                    {{ formatStockQty(item.quantity, item.uom) }}
+                    <span v-if="isItemLowStock(item, item.quantity)" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
                     <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                 </td>
@@ -133,30 +133,30 @@
               <div class="mobile-stock-card-meta">
                 <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-column align-end gap-xs" style="text-align: right;">
                   <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 2px;">
-                    ทอดแล้ว: <strong :class="{ 'text-danger': (item.quantity || 0) <= lowStockThreshold }">{{ item.quantity || 0 }} ชิ้น</strong>
+                    ทอดแล้ว: <strong :class="{ 'text-danger': isItemLowStock(item, item.quantity) }">{{ formatStockQty(item.quantity, item.uom) }}</strong>
                   </div>
                   <div style="font-size: var(--font-sm); color: var(--text-secondary);">
-                    ของสด: <strong :class="{ 'text-danger': (item.raw_quantity || 0) <= lowStockThreshold }">{{ item.raw_quantity || 0 }} ชิ้น</strong>
+                    ของสด: <strong :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }">{{ formatStockQty(item.raw_quantity, item.uom) }}</strong>
                   </div>
                 </div>
                 <div 
                   v-else
                   class="mobile-stock-card-qty"
-                  :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }"
+                  :class="{ 'text-danger': isItemLowStock(item, item.quantity) }"
                 >
-                  {{ item.quantity !== null && item.quantity !== undefined ? item.quantity : 0 }} ชิ้น
+                  {{ formatStockQty(item.quantity, item.uom) }}
                 </div>
                 
                 <div class="mobile-stock-card-badge">
                   <span 
-                    v-if="item.raw_quantity !== null && item.raw_quantity !== undefined && (item.quantity || 0) <= lowStockThreshold && (item.raw_quantity || 0) <= lowStockThreshold"
+                    v-if="item.raw_quantity !== null && item.raw_quantity !== undefined && isItemLowStock(item, item.quantity) && isItemLowStock(item, item.raw_quantity)"
                     class="badge badge-danger badge-sm"
                     style="display: block; font-size: 0.65rem;"
                   >
                     <i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ของใกล้หมดทั้งคู่
                   </span>
                   <span 
-                    v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold && (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) > 0" 
+                    v-else-if="isItemLowStock(item, item.quantity)" 
                     class="badge badge-warning badge-sm"
                     style="display: block; font-size: 0.65rem;"
                   >
@@ -380,20 +380,47 @@
 
           <!-- Quantity input -->
           <div class="form-group">
-            <label class="form-label">
-              <template v-if="activeIsModifier">
-                {{ actionType === 'restock' ? (activeItem?.category === 'sauce_small' ? 'จำนวนซองที่ต้องการเติม *' : 'จำนวนถุงที่ต้องการเติม *') : 'จำนวนรอบเสิร์ฟที่ต้องการปรับ (ใส่ติดลบเพื่อหักออก) *' }}
-              </template>
-              <template v-else>
-                {{ actionType === 'fry' ? 'จำนวนที่ต้องการทอด (ชิ้น) *' : actionType === 'restock' ? 'จำนวนที่ต้องการเติม (ชิ้น) *' : 'จำนวนที่ต้องการหัก (ชิ้น) *' }}
-              </template>
-            </label>
-            <input 
-              type="number" 
-              class="form-input" 
-              v-model.number="actionForm.quantity" 
-              placeholder="ใส่ตัวเลข..." 
-            />
+            <template v-if="!activeIsModifier && activeItem?.uom === 'กรัม' && actionType === 'restock'">
+              <div class="form-group">
+                <label class="form-label">จำนวนถุงที่ต้องการเติม *</label>
+                <input 
+                  type="number" 
+                  class="form-input" 
+                  v-model.number="restockBags" 
+                  placeholder="เช่น 1, 2, 5" 
+                  min="1"
+                />
+              </div>
+              <div class="form-group mt-sm">
+                <label class="form-label">ขนาดบรรจุต่อถุง *</label>
+                <select class="form-input" v-model.number="restockBagCapacity">
+                  <option :value="1000">1 กิโลกรัม (1,000 กรัม)</option>
+                  <option :value="2000">2 กิโลกรัม (2,000 กรัม)</option>
+                </select>
+              </div>
+              <div class="mt-sm p-sm card" style="background: rgba(255, 149, 0, 0.05); border: 1px dashed var(--border-color); text-align: left; font-size: var(--font-sm);">
+                น้ำหนักที่จะเพิ่มเข้าคลัง: <strong>{{ formatStockQty(restockBags * restockBagCapacity, 'กรัม') }}</strong>
+              </div>
+            </template>
+            <template v-else>
+              <label class="form-label">
+                <template v-if="activeIsModifier">
+                  {{ actionType === 'restock' ? (activeItem?.category === 'sauce_small' ? 'จำนวนซองที่ต้องการเติม *' : 'จำนวนถุงที่ต้องการเติม *') : 'จำนวนรอบเสิร์ฟที่ต้องการปรับ (ใส่ติดลบเพื่อหักออก) *' }}
+                </template>
+                <template v-else>
+                  <span v-if="actionType === 'fry'">จำนวนที่ต้องการทอด (ชิ้น) *</span>
+                  <span v-else-if="actionType === 'restock'">จำนวนที่ต้องการเติม ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
+                  <span v-else-if="actionType === 'adjust'">จำนวนที่ต้องการปรับปรุง ({{ activeItem?.uom || 'ชิ้น' }}) * (ใส่ติดลบเพื่อหักออก)</span>
+                  <span v-else>จำนวนที่ต้องการหัก ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
+                </template>
+              </label>
+              <input 
+                type="number" 
+                class="form-input" 
+                v-model.number="actionForm.quantity" 
+                placeholder="ใส่ตัวเลข..." 
+              />
+            </template>
           </div>
 
           <div v-if="!activeIsModifier && actionType === 'fry'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
@@ -532,10 +559,34 @@ const logs = ref([]);
 const logsLoading = ref(false);
 const wastePresets = ['เน่า/เสีย', 'ตกพื้น/เสียหาย'];
 
+// Gram-based restocking states
+const restockBags = ref(1);
+const restockBagCapacity = ref(1000); // default to 1kg (1,000g)
+
 const actionForm = ref({
   quantity: '',
   note: ''
 });
+
+const formatStockQty = (qty, uom) => {
+  if (qty === null || qty === undefined) return '';
+  if (uom === 'กรัม') {
+    if (qty >= 1000) {
+      return `${(qty / 1000).toFixed(2)} กก.`;
+    }
+    return `${qty} ก.`;
+  }
+  return `${qty} ${uom || 'ชิ้น'}`;
+};
+
+const isItemLowStock = (item, qty) => {
+  if (qty === null || qty === undefined) return false;
+  if (qty <= 0) return false;
+  if (item.uom === 'กรัม') {
+    return qty <= 500;
+  }
+  return qty <= lowStockThreshold.value;
+};
 
 // Load System Settings to check Low Stock Threshold
 const loadSettings = async () => {
@@ -588,6 +639,9 @@ const openActionModal = (type, item, isMod = false) => {
     defaultNote = currentUser ? currentUser.name : '';
   }
 
+  restockBags.value = 1;
+  restockBagCapacity.value = 1000;
+
   actionForm.value = {
     quantity: '',
     stock_type: 'cooked',
@@ -600,9 +654,17 @@ const handleSaveAction = async () => {
   ui.showLoading();
   try {
     const itemId = activeItem.value.id;
-    const qty = Number(actionForm.value.quantity) || 0;
-    const note = actionForm.value.note.trim();
+    let qty = Number(actionForm.value.quantity) || 0;
+    let note = actionForm.value.note.trim();
     const stockType = actionForm.value.stock_type;
+
+    if (!activeIsModifier.value && activeItem.value?.uom === 'กรัม' && actionType.value === 'restock') {
+      const bags = Number(restockBags.value) || 0;
+      const cap = Number(restockBagCapacity.value) || 0;
+      qty = bags * cap;
+      const bagDesc = `(เติม ${bags} ถุง ถุงละ ${cap / 1000} กก.)`;
+      note = note ? `${note} ${bagDesc}` : bagDesc;
+    }
 
     let res;
     if (activeIsModifier.value) {

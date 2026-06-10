@@ -79,7 +79,7 @@
                 </td>
                 <!-- Price -->
                 <td style="padding: var(--space-md); text-align: right; font-weight: bold; vertical-align: middle;">
-                  {{ formatCurrency(item.price) }}
+                  {{ formatCurrency(item.price) }} / {{ item.uom || 'ชิ้น' }}
                 </td>
                 <!-- Toggle Active Switch -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
@@ -136,7 +136,7 @@
               
               <!-- Right: Price & Active Switch -->
               <div class="mobile-menu-card-meta">
-                <div class="mobile-menu-card-price">{{ formatCurrency(item.price) }}</div>
+                <div class="mobile-menu-card-price">{{ formatCurrency(item.price) }} / {{ item.uom || 'ชิ้น' }}</div>
                 <div class="mobile-menu-card-status">
                   <label class="toggle-switch" :class="{ 'disabled': !isAdminUser }">
                     <input 
@@ -405,6 +405,33 @@
             </div>
           </div>
 
+          <!-- Unit of Measure Selector -->
+          <div class="form-group">
+            <label class="form-label font-bold">หน่วยนับ *</label>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isUomDropdownOpen }" 
+                @click="isUomDropdownOpen = !isUomDropdownOpen"
+              >
+                <span class="custom-select-text">
+                  {{ itemForm.uom || 'ชิ้น' }}
+                </span>
+              </div>
+              <div v-if="isUomDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  v-for="u in ['ชิ้น', 'กรัม', 'ไม้', 'ถุง']" 
+                  :key="u" 
+                  class="custom-select-option"
+                  :class="{ 'selected': u === itemForm.uom }"
+                  @click="itemForm.uom = u; isUomDropdownOpen = false;"
+                >
+                  {{ u }}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Raw Stock Tracking Toggle (Checkbox) -->
           <div class="form-group flex align-center gap-sm mt-md mb-md">
             <label class="toggle-switch">
@@ -570,6 +597,12 @@ const closeCategoryDropdown = () => {
   isCategoryDropdownOpen.value = false;
 };
 
+// Custom UoM Dropdown States/Helpers
+const isUomDropdownOpen = ref(false);
+const closeUomDropdown = () => {
+  isUomDropdownOpen.value = false;
+};
+
 // States
 const menuItems = computed(() => store.menuItems);
 const categories = computed(() => store.categories);
@@ -585,7 +618,8 @@ const itemForm = ref({
   name: '',
   price: '',
   category_id: '',
-  image_url: ''
+  image_url: '',
+  uom: 'ชิ้น'
 });
 
 // Categories lookup helper
@@ -661,7 +695,8 @@ const openAddModal = () => {
     price: '',
     category_id: categories.value[0]?.id || '',
     image_url: '',
-    track_raw_stock: false
+    track_raw_stock: false,
+    uom: 'ชิ้น'
   };
   showItemModal.value = true;
 };
@@ -674,7 +709,8 @@ const openEditModal = (item) => {
     price: item.price,
     category_id: item.category_id,
     image_url: item.image_url || '',
-    track_raw_stock: item.raw_stock !== null && item.raw_stock !== undefined
+    track_raw_stock: item.raw_stock !== null && item.raw_stock !== undefined,
+    uom: item.uom || 'ชิ้น'
   };
   showItemModal.value = true;
 };
@@ -775,7 +811,8 @@ const handleSaveItem = async () => {
       price: Number(itemForm.value.price) || 0,
       category_id: Number(itemForm.value.category_id),
       image_url: itemForm.value.image_url.trim() || null,
-      track_raw_stock: !!itemForm.value.track_raw_stock
+      track_raw_stock: !!itemForm.value.track_raw_stock,
+      uom: itemForm.value.uom || 'ชิ้น'
     };
 
     let res;
@@ -818,10 +855,12 @@ const loadData = async (force = false) => {
 onMounted(() => {
   loadData();
   window.addEventListener('click', closeCategoryDropdown);
+  window.addEventListener('click', closeUomDropdown);
 });
 
 onUnmounted(() => {
   window.removeEventListener('click', closeCategoryDropdown);
+  window.removeEventListener('click', closeUomDropdown);
 });
 </script>
 

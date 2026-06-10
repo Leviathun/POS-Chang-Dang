@@ -159,6 +159,7 @@ async function initDatabase() {
       image_url TEXT,
       active INTEGER DEFAULT 1,
       sort_order INTEGER DEFAULT 0,
+      uom TEXT DEFAULT 'ชิ้น',
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
@@ -194,7 +195,8 @@ async function initDatabase() {
       item_name TEXT NOT NULL,
       item_price REAL NOT NULL,
       quantity INTEGER NOT NULL,
-      subtotal REAL NOT NULL
+      subtotal REAL NOT NULL,
+      options TEXT
     )`,
     `CREATE TABLE IF NOT EXISTS stock_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -291,7 +293,8 @@ async function initDatabase() {
       item_name TEXT NOT NULL,
       item_price REAL NOT NULL,
       quantity INTEGER NOT NULL,
-      subtotal REAL NOT NULL
+      subtotal REAL NOT NULL,
+      options TEXT
     )`
   ];
 
@@ -323,6 +326,27 @@ async function initDatabase() {
   // Add free_modifiers column to orders if not exists (SQLite-friendly ALTER TABLE)
   try {
     await db.exec("ALTER TABLE orders ADD COLUMN free_modifiers TEXT");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Add uom column to menu_items if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE menu_items ADD COLUMN uom TEXT DEFAULT 'ชิ้น'");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Add options column to order_items if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE order_items ADD COLUMN options TEXT");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Add options column to archived_order_items if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE archived_order_items ADD COLUMN options TEXT");
   } catch (e) {
     // Column already exists, safe to ignore
   }
@@ -630,6 +654,28 @@ async function initDatabase() {
     }
   } catch (e) {
     console.warn('⚠️ Migration timezone_migration_v2 error:', e.message);
+  }
+
+  // Migration: ปรับข้อมูลหน่วยนับสินค้า (uom) เริ่มต้น
+  try {
+    const migrationDone = await db.prepare("SELECT value FROM settings WHERE key = 'uom_initial_migration'").get();
+    if (!migrationDone) {
+      console.log('  🔧 Migration: เริ่มต้นตั้งค่าหน่วยนับสินค้าเริ่มต้น...');
+      
+      // 1. ปรับ ขนมจีบหมู ให้เป็นหน่วย 'ไม้'
+      await db.prepare("UPDATE menu_items SET uom = 'ไม้' WHERE name = 'ขนมจีบหมู'").run();
+      
+      // 2. ปรับสินค้ากลุ่มสามกรอบ ให้เป็นหน่วย 'กรัม'
+      const samKrobCat = await db.prepare("SELECT id FROM categories WHERE name = 'สามกรอบ'").get();
+      if (samKrobCat) {
+        await db.prepare("UPDATE menu_items SET uom = 'กรัม' WHERE category_id = ?").run(samKrobCat.id);
+      }
+      
+      await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('uom_initial_migration', 'done')").run();
+      console.log('  ✅ Migration: ปรับปรุงหน่วยนับเริ่มต้นสำเร็จ');
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration uom_initial_migration error:', e.message);
   }
 
   console.log('  ✅ Cloud/Local Database initialized');

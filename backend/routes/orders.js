@@ -55,19 +55,38 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         // ตรวจสอบสต็อก (ถ้ามีจำกัด)
-        if (menuItem.stock !== null && menuItem.stock < item.quantity) {
-          throw new Error(`เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${menuItem.stock} ชิ้น)`);
+        if (item.options && Array.isArray(item.options.selected_items)) {
+          for (const ingredient of item.options.selected_items) {
+            const ingStock = await db.prepare(`
+              SELECT bs.quantity as stock, mi.name
+              FROM menu_items mi
+              LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
+              WHERE mi.id = ?
+            `).get(branchId, Number(ingredient.id));
+
+            const requiredQty = Number(ingredient.weight) * item.quantity;
+            if (ingStock && ingStock.stock !== null && ingStock.stock < requiredQty) {
+              throw new Error(`วัตถุดิบ "${ingStock.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredQty} ก. แต่เหลือ ${ingStock.stock} ก.)`);
+            }
+          }
+        } else {
+          if (menuItem.stock !== null && menuItem.stock < item.quantity) {
+            throw new Error(`เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${menuItem.stock} ชิ้น)`);
+          }
         }
 
-        const itemSubtotal = menuItem.price * item.quantity;
+        const price = item.item_price !== undefined && item.item_price !== null ? Number(item.item_price) : menuItem.price;
+        const name = item.item_name || menuItem.name;
+        const itemSubtotal = price * item.quantity;
         subtotal += itemSubtotal;
 
         orderItems.push({
           menu_item_id: menuItem.id,
-          item_name: menuItem.name,
-          item_price: menuItem.price,
+          item_name: name,
+          item_price: price,
           quantity: item.quantity,
-          subtotal: itemSubtotal
+          subtotal: itemSubtotal,
+          options: item.options ? JSON.stringify(item.options) : null
         });
       }
 
@@ -110,19 +129,23 @@ router.post('/', requireAuth, async (req, res) => {
 
       // บันทึกรายการสินค้า
       const insertItem = db.prepare(`
-        INSERT INTO order_items (order_id, menu_item_id, item_name, item_price, quantity, subtotal)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO order_items (order_id, menu_item_id, item_name, item_price, quantity, subtotal, options)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
 
       for (const oi of orderItems) {
-        await insertItem.run(orderId, oi.menu_item_id, oi.item_name, oi.item_price, oi.quantity, oi.subtotal);
+        await insertItem.run(orderId, oi.menu_item_id, oi.item_name, oi.item_price, oi.quantity, oi.subtotal, oi.options);
       }
 
       // ดึงข้อมูลออเดอร์ที่สร้าง
       const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
       const savedItems = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId);
+      const parsedItems = savedItems.map(oi => ({
+        ...oi,
+        options: oi.options ? JSON.parse(oi.options) : null
+      }));
 
-      return { ...order, items: savedItems };
+      return { ...order, items: parsedItems };
     });
 
     const order = await createOrder();
@@ -238,9 +261,14 @@ router.get('/:id', async (req, res) => {
       'SELECT * FROM order_items WHERE order_id = ?'
     ).all(Number(id));
 
+    const parsedItems = items.map(oi => ({
+      ...oi,
+      options: oi.options ? JSON.parse(oi.options) : null
+    }));
+
     res.json({
       success: true,
-      data: { ...order, items }
+      data: { ...order, items: parsedItems }
     });
   } catch (error) {
     console.error('❌ Get order error:', error.message);
@@ -347,24 +375,60 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
       `);
 
       for (const oi of orderItems) {
-        const menuItem = await getItem.get(branchId, oi.menu_item_id);
-        if (menuItem && menuItem.stock !== null) {
-          const previousStock = menuItem.stock;
-          const newStock = previousStock - oi.quantity;
+        let optionsObj = null;
+        if (oi.options) {
+          try {
+            optionsObj = JSON.parse(oi.options);
+          } catch (e) {
+            console.error('Failed to parse order item options:', e.message);
+          }
+        }
 
-          await updateStock.run(oi.quantity, branchId, oi.menu_item_id);
+        if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
+          // หักสต็อกตามส่วนผสมและสัดส่วนน้ำหนัก
+          for (const ingredient of optionsObj.selected_items) {
+            const ingItem = await getItem.get(branchId, Number(ingredient.id));
+            if (ingItem && ingItem.stock !== null) {
+              const previousStock = ingItem.stock;
+              const deductAmount = Number(ingredient.weight) * oi.quantity;
+              const newStock = previousStock - deductAmount;
 
-          // บันทึกประวัติสต็อก
-          await insertLog.run(
-            branchId,
-            oi.menu_item_id,
-            -oi.quantity,
-            previousStock,
-            newStock,
-            Number(id),
-            req.user.id,
-            `ขาย ${oi.item_name} x${oi.quantity} (${order.order_number})`
-          );
+              await updateStock.run(deductAmount, branchId, Number(ingredient.id));
+
+              // บันทึกประวัติสต็อก
+              await insertLog.run(
+                branchId,
+                Number(ingredient.id),
+                -deductAmount,
+                previousStock,
+                newStock,
+                Number(id),
+                req.user.id,
+                `ขาย ${oi.item_name} (วัตถุดิบ: ${ingredient.name} ${deductAmount}ก.) (${order.order_number})`
+              );
+            }
+          }
+        } else {
+          // ตัดสต็อกสินค้าชิ้นเดี่ยวปกติ
+          const menuItem = await getItem.get(branchId, oi.menu_item_id);
+          if (menuItem && menuItem.stock !== null) {
+            const previousStock = menuItem.stock;
+            const newStock = previousStock - oi.quantity;
+
+            await updateStock.run(oi.quantity, branchId, oi.menu_item_id);
+
+            // บันทึกประวัติสต็อก
+            await insertLog.run(
+              branchId,
+              oi.menu_item_id,
+              -oi.quantity,
+              previousStock,
+              newStock,
+              Number(id),
+              req.user.id,
+              `ขาย ${oi.item_name} x${oi.quantity} (${order.order_number})`
+            );
+          }
         }
       }
 
@@ -419,8 +483,12 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
       `).get(Number(id));
 
       const items = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(Number(id));
+      const parsedItems = items.map(oi => ({
+        ...oi,
+        options: oi.options ? JSON.parse(oi.options) : null
+      }));
 
-      return { ...updatedOrder, items };
+      return { ...updatedOrder, items: parsedItems };
     });
 
     const result = await completeOrder();

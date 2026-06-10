@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
     const items = await db.prepare(`
       SELECT 
         mi.id, mi.name, mi.price AS global_price, mi.category_id, 
-        mi.image_url, mi.active, mi.sort_order,
+        mi.image_url, mi.active, mi.sort_order, mi.uom,
         mi.created_at, mi.updated_at,
         c.name as category_name,
         COALESCE(bs.price, mi.price) AS price,
@@ -208,7 +208,7 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
 // ─── POST / — สร้างเมนูใหม่ ─────────────────────────────
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order } = req.body;
+    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, uom } = req.body;
 
     if (!name || price === undefined || price === null) {
       return res.status(400).json({
@@ -247,14 +247,15 @@ router.post('/', requireAdmin, async (req, res) => {
     // บันทึกเมนู (ใช้ transaction เพื่อใส่ทั้งเมนูหลักและจำนวนสต็อกสาขา)
     const createMenuWithStock = db.transaction(async () => {
       const result = await db.prepare(`
-        INSERT INTO menu_items (name, price, category_id, image_url, sort_order)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO menu_items (name, price, category_id, image_url, sort_order, uom)
+        VALUES (?, ?, ?, ?, ?, ?)
       `).run(
         name,
         price,
         category_id || null,
         image_url || null,
-        sort_order || 0
+        sort_order || 0,
+        uom || 'ชิ้น'
       );
 
       const newItemId = result.lastInsertRowid;
@@ -303,7 +304,7 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active } = req.body;
+    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active, uom } = req.body;
     const db = getDb();
 
     const item = await db.prepare('SELECT * FROM menu_items WHERE id = ?').get(Number(id));
@@ -335,7 +336,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
       await db.prepare(`
         UPDATE menu_items 
         SET name = ?, price = ?, category_id = ?, image_url = ?, 
-            sort_order = ?, active = ?,
+            sort_order = ?, active = ?, uom = ?,
             updated_at = datetime('now', 'localtime')
         WHERE id = ?
       `).run(
@@ -345,6 +346,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         image_url !== undefined ? image_url : item.image_url,
         sort_order !== undefined ? sort_order : item.sort_order,
         active !== undefined ? active : item.active,
+        uom !== undefined ? uom : item.uom,
         Number(id)
       );
 

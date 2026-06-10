@@ -82,8 +82,8 @@
             <!-- Col 2: Raw stock quantity -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> คงเหลือ:</span>
-              <span :class="{ 'text-danger': item.raw_quantity !== null && (item.raw_quantity || 0) <= lowStockThreshold }" style="font-weight: bold; font-size: var(--font-md);">
-                {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? item.raw_quantity + ' ชิ้น' : '-' }}
+              <span :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" style="font-weight: bold; font-size: var(--font-md);">
+                {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? formatStockQty(item.raw_quantity, item.uom) : '-' }}
               </span>
             </div>
 
@@ -105,8 +105,8 @@
             <!-- Col 4: Cooked stock quantity -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> คงเหลือ:</span>
-              <span :class="{ 'text-danger': (item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= lowStockThreshold }" style="font-weight: bold; font-size: var(--font-md);">
-                {{ item.quantity !== null && item.quantity !== undefined ? item.quantity + ' ชิ้น' : '0 ชิ้น' }}
+              <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" style="font-weight: bold; font-size: var(--font-md);">
+                {{ item.quantity !== null && item.quantity !== undefined ? formatStockQty(item.quantity, item.uom) : formatStockQty(0, item.uom) }}
               </span>
             </div>
 
@@ -198,6 +198,26 @@ const bulkReasonPreset = ref('นับยอดขาด/เกิน');
 const bulkNote = ref('');
 const lowStockThreshold = computed(() => store.lowStockThreshold);
 
+const formatStockQty = (qty, uom) => {
+  if (qty === null || qty === undefined) return '';
+  if (uom === 'กรัม') {
+    if (qty >= 1000) {
+      return `${(qty / 1000).toFixed(2)} กก.`;
+    }
+    return `${qty} ก.`;
+  }
+  return `${qty} ${uom || 'ชิ้น'}`;
+};
+
+const isItemLowStock = (item, qty) => {
+  if (qty === null || qty === undefined) return false;
+  if (qty <= 0) return false;
+  if (item.uom === 'กรัม') {
+    return qty <= 500;
+  }
+  return qty <= lowStockThreshold.value;
+};
+
 // Custom Dropdown logic for StockBulk.vue
 const isReasonDropdownOpen = ref(false);
 const selectedReasonLabel = computed(() => {
@@ -232,6 +252,7 @@ const initializeForm = () => {
       name: item.name,
       quantity: item.quantity,
       raw_quantity: item.raw_quantity,
+      uom: item.uom,
       cooked: '',
       raw: ''
     };
