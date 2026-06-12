@@ -318,77 +318,93 @@
     <!-- Sam Krob Options Modal -->
     <div v-if="showSamKrobModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
       <div class="modal-overlay" @click="showSamKrobModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
-        <div class="modal-header">
-          <h3><i class="fa-solid fa-gears" style="margin-right: 6px;"></i> เลือกผสมสามกรอบ</h3>
-          <button class="modal-close" @click="showSamKrobModal = false">✕</button>
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
+        <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
+          <h3 style="font-size: var(--font-lg); font-weight: 800;"><i class="fa-solid fa-gears" style="margin-right: 6px; color: var(--primary);"></i> เลือกผสมสามกรอบ</h3>
+          <button class="modal-close" @click="showSamKrobModal = false" style="font-size: var(--font-md);">✕</button>
         </div>
-        <div class="modal-body" style="text-align: left;">
-          <div class="mb-md font-bold text-center" style="font-size: var(--font-base);">
+        <div class="modal-body" style="text-align: left; padding: var(--space-lg);">
+          <div class="mb-lg font-extrabold text-center text-primary" style="font-size: var(--font-lg); margin-bottom: 20px;">
             {{ activeSamKrobBaseItem?.name }}
           </div>
 
           <!-- Size Selector -->
-          <div class="form-group mb-lg">
-            <label class="form-label font-bold" style="font-size: var(--font-sm); margin-bottom: var(--space-xs); display: block;">
+          <div class="form-group mb-lg" style="margin-bottom: 24px;">
+            <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 8px; display: block;">
               <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i> เลือกขนาด (Size) *
             </label>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm);">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
               <div 
                 v-for="(config, size) in getSamKrobSizes()" 
                 :key="size"
                 class="card text-center p-sm cursor-pointer"
                 :style="{
-                  border: selectedSamKrobSize === size ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                  border: selectedSamKrobSize === size ? '2.5px solid var(--primary)' : '1px solid var(--border-color)',
                   background: selectedSamKrobSize === size ? 'rgba(139, 3, 19, 0.05)' : 'var(--bg-secondary)',
                   borderRadius: 'var(--radius-md)',
+                  padding: '12px 8px',
                   transition: 'all 0.2s',
-                  boxShadow: selectedSamKrobSize === size ? '0 2px 8px rgba(139, 3, 19, 0.15)' : 'none'
+                  boxShadow: selectedSamKrobSize === size ? '0 4px 12px rgba(139, 3, 19, 0.15)' : 'none'
                 }"
                 @click="selectedSamKrobSize = size"
               >
                 <div class="font-bold" style="font-size: var(--font-sm);">{{ config.name }}</div>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">{{ config.weight }} ก.</div>
-                <div class="font-bold text-accent" style="font-size: var(--font-sm); margin-top: 4px;">฿{{ config.price }}</div>
+                <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">{{ config.weight }} ก.</div>
+                <div class="font-extrabold text-accent" style="font-size: var(--font-md); margin-top: 6px;">฿{{ config.price }}</div>
               </div>
             </div>
           </div>
 
-          <!-- Ingredients Selector -->
-          <div class="form-group mb-lg">
-            <label class="form-label font-bold" style="font-size: var(--font-sm); margin-bottom: var(--space-xs); display: block;">
+          <!-- Mix Toggle Switch -->
+          <div class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: var(--bg-secondary); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <label class="toggle-switch" style="margin: 0; flex-shrink: 0;">
+              <input type="checkbox" v-model="mixSamKrob" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="font-bold text-primary" style="font-size: var(--font-base); cursor: pointer;" @click="mixSamKrob = !mixSamKrob">ผสมวัตถุดิบอื่นเพิ่มเติม (Mix)</span>
+          </div>
+
+          <!-- Ingredients Selector (Conditional on mixSamKrob) -->
+          <div v-if="mixSamKrob" class="form-group mb-lg" style="margin-bottom: 24px;">
+            <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 10px; display: block;">
               <i class="fa-solid fa-list-check" style="margin-right: 4px; color: var(--primary);"></i> เลือกวัตถุดิบผสม (เลือกได้ 1-3 ชนิด) *
             </label>
-            <div class="flex flex-column gap-sm">
+            <div class="flex flex-column gap-sm" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
               <div 
                 v-for="ing in samKrobIngredients" 
                 :key="ing.id"
-                class="flex flex-between align-center p-sm cursor-pointer"
+                class="cursor-pointer"
                 :style="{
-                  border: selectedSamKrobIds.includes(ing.id) ? '1px solid var(--accent)' : '1px solid var(--border-color)',
-                  background: selectedSamKrobIds.includes(ing.id) ? 'rgba(255, 149, 0, 0.03)' : 'var(--bg-primary)',
+                  border: selectedSamKrobIds.includes(ing.id) ? '1.5px solid var(--accent)' : '1px solid var(--border-color)',
+                  background: selectedSamKrobIds.includes(ing.id) ? 'rgba(255, 149, 0, 0.05)' : 'var(--bg-primary)',
                   borderRadius: 'var(--radius-md)',
-                  padding: '10px 12px',
+                  padding: '14px 18px',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  transition: 'all 0.2s',
+                  boxShadow: selectedSamKrobIds.includes(ing.id) ? '0 3px 8px rgba(255, 149, 0, 0.1)' : 'none'
                 }"
                 @click="toggleSamKrobIngredient(ing.id)"
               >
-                <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
+                <!-- Left: Checkbox + Name and Stock stacked vertically -->
+                <div style="display: flex; align-items: center; gap: 14px; flex: 1; text-align: left;">
                   <input 
                     type="checkbox" 
                     :checked="selectedSamKrobIds.includes(ing.id)"
                     @click.stop="toggleSamKrobIngredient(ing.id)"
-                    style="width: 18px; height: 18px; cursor: pointer;"
+                    style="width: 22px; height: 22px; cursor: pointer; flex-shrink: 0;"
                   />
-                  <span class="font-semibold" style="font-size: var(--font-sm);">{{ ing.name }}</span>
-                </div>
-                <div class="text-right">
-                  <div style="font-size: 11px; color: var(--text-tertiary);">
-                    สต็อก: {{ formatStockQty(ing.stock, ing.uom) || '0 ก.' }}
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <span class="font-bold" style="font-size: var(--font-base); color: var(--text-primary);">{{ ing.name }}</span>
+                    <span style="font-size: var(--font-sm); color: var(--text-secondary); font-weight: 500;">
+                      สต็อก: {{ formatStockQty(ing.stock, ing.uom) || '0 ก.' }}
+                    </span>
                   </div>
-                  <div v-if="selectedSamKrobIds.includes(ing.id)" class="text-accent font-bold animate-fade-in" style="font-size: var(--font-xs); margin-top: 2px;">
+                </div>
+                <!-- Right: Added Weight Portion -->
+                <div class="text-right" style="min-width: 80px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end;">
+                  <div v-if="selectedSamKrobIds.includes(ing.id)" class="text-accent font-extrabold animate-fade-in" style="font-size: var(--font-base);">
                     +{{ getPortionWeightPreview(ing.id) }} ก.
                   </div>
                 </div>
@@ -397,22 +413,22 @@
           </div>
 
           <!-- Summary Preview -->
-          <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px;">
-            <div class="font-bold mb-xs" style="font-size: var(--font-xs); color: var(--text-secondary); text-transform: uppercase;">สรุปรายการที่เลือก:</div>
-            <div style="font-size: var(--font-sm); display: flex; justify-content: space-between; align-items: center;">
+          <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
+            <div class="font-bold mb-xs" style="font-size: var(--font-xs); color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
+            <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center;">
               <span>น้ำหนักรวม:</span>
-              <span class="font-bold">{{ getSelectedSizeWeight() }} กรัม</span>
+              <span class="font-extrabold text-primary" style="font-size: var(--font-md);">{{ getSelectedSizeWeight() }} กรัม</span>
             </div>
-            <div style="font-size: var(--font-sm); display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
               <span>ราคา:</span>
-              <span class="font-bold text-accent" style="font-size: var(--font-md);">฿{{ getSelectedSizePrice() }}</span>
+              <span class="font-extrabold text-accent" style="font-size: var(--font-lg);">฿{{ getSelectedSizePrice() }}</span>
             </div>
           </div>
 
           <!-- Confirmation Buttons -->
-          <div class="flex gap-md" style="display: flex; gap: 12px;">
-            <button class="btn btn-secondary flex-1" @click="showSamKrobModal = false">ยกเลิก</button>
-            <button class="btn btn-primary flex-1" @click="confirmSamKrobSelection">ใส่ตะกร้า</button>
+          <div class="flex gap-md" style="display: flex; gap: 14px;">
+            <button class="btn btn-secondary flex-1" @click="showSamKrobModal = false" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" @click="confirmSamKrobSelection" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ใส่ตะกร้า</button>
           </div>
         </div>
       </div>
@@ -455,6 +471,7 @@ const showSamKrobModal = ref(false);
 const activeSamKrobBaseItem = ref(null);
 const selectedSamKrobSize = ref('S');
 const selectedSamKrobIds = ref([]);
+const mixSamKrob = ref(false);
 
 const samKrobIngredients = computed(() => {
   return store.menuItems.filter(item => {
@@ -622,6 +639,7 @@ const addToCart = (item) => {
     activeSamKrobBaseItem.value = item;
     selectedSamKrobSize.value = 'S';
     selectedSamKrobIds.value = [item.id];
+    mixSamKrob.value = false;
     showSamKrobModal.value = true;
     return;
   }
@@ -686,30 +704,44 @@ const incrementCartItem = (cartKey) => {
 };
 
 const confirmSamKrobSelection = () => {
-  if (selectedSamKrobIds.value.length === 0) {
-    ui.showToast('กรุณาเลือกอย่างน้อย 1 วัตถุดิบ', 'warning');
-    return;
-  }
-  
   const sizes = getSamKrobSizes();
   const sizeConfig = sizes[selectedSamKrobSize.value];
-  const ingredientWeight = Number((sizeConfig.weight / selectedSamKrobIds.value.length).toFixed(2));
   
-  const selectedItems = selectedSamKrobIds.value.map(id => {
-    const item = store.menuItems.find(m => m.id === id);
-    return {
-      id: item.id,
-      name: item.name,
-      weight: ingredientWeight
-    };
-  });
+  let selectedItems = [];
+  let customName = '';
+  const baseItem = activeSamKrobBaseItem.value;
+
+  if (mixSamKrob.value) {
+    if (selectedSamKrobIds.value.length === 0) {
+      ui.showToast('กรุณาเลือกอย่างน้อย 1 วัตถุดิบ', 'warning');
+      return;
+    }
+    const ingredientWeight = Number((sizeConfig.weight / selectedSamKrobIds.value.length).toFixed(2));
+    selectedItems = selectedSamKrobIds.value.map(id => {
+      const item = store.menuItems.find(m => m.id === id);
+      return {
+        id: item.id,
+        name: item.name,
+        weight: ingredientWeight
+      };
+    });
+    const ingredientNames = selectedItems.map(i => i.name).join(', ');
+    customName = `${baseItem.name} (ผสม: ${ingredientNames}, ขนาด ${selectedSamKrobSize.value})`;
+  } else {
+    selectedItems = [{
+      id: baseItem.id,
+      name: baseItem.name,
+      weight: sizeConfig.weight
+    }];
+    customName = `${baseItem.name} (ขนาด ${selectedSamKrobSize.value})`;
+  }
   
   // Stock Check
   for (const ingredient of selectedItems) {
     const menuIngredient = store.menuItems.find(m => m.id === ingredient.id);
     if (menuIngredient && menuIngredient.stock !== null && menuIngredient.stock !== undefined) {
       const totalUsedWeight = getCartIngredientWeight(ingredient.id);
-      const requiredAdditionalWeight = ingredientWeight;
+      const requiredAdditionalWeight = ingredient.weight;
       if (totalUsedWeight + requiredAdditionalWeight > menuIngredient.stock) {
         ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${menuIngredient.stock - totalUsedWeight}ก.)`, 'warning');
         return;
@@ -717,11 +749,7 @@ const confirmSamKrobSelection = () => {
     }
   }
   
-  const baseItem = activeSamKrobBaseItem.value;
-  const ingredientNames = selectedItems.map(i => i.name).join(', ');
-  const customName = `${baseItem.name} (ผสม: ${ingredientNames}, ขนาด ${selectedSamKrobSize.value})`;
   const customPrice = sizeConfig.price;
-  
   const customItem = {
     ...baseItem,
     name: customName,
@@ -733,7 +761,9 @@ const confirmSamKrobSelection = () => {
     }
   };
   
-  const sortedIds = [...selectedSamKrobIds.value].sort((a, b) => a - b).join('_');
+  const sortedIds = mixSamKrob.value 
+    ? [...selectedSamKrobIds.value].sort((a, b) => a - b).join('_')
+    : baseItem.id;
   const cartKey = `${baseItem.id}-${selectedSamKrobSize.value}-${sortedIds}`;
   
   const currentCart = new Map(cart.value);
