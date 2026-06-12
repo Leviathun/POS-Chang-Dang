@@ -42,7 +42,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/stock', require('./routes/stock'));
-app.use('/api/free-modifiers', require('./routes/free_modifiers'));
+app.use('/api/modifiers', require('./routes/modifiers'));
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/activities', require('./routes/activities'));
 

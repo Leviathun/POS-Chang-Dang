@@ -168,8 +168,8 @@
         <div class="menu-total-count">
           เครื่องปรุงทั้งหมด: <strong>{{ modifierItems.length }}</strong> รายการ
         </div>
-        <div class="menu-action-buttons">
-          <span style="font-size: var(--font-sm); color: var(--text-tertiary);">สิทธิ์แอดมินในการเปิด/ปิดเครื่องปรุง</span>
+        <div class="menu-modifiers-info">
+          <span>สิทธิ์แอดมินในการเปิด/ปิดเครื่องปรุง</span>
         </div>
       </div>
 
@@ -210,7 +210,6 @@
                 <!-- Category -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <span class="badge" :class="getModifierCategoryClass(item.category)">
-                    <i :class="getModifierCategoryIcon(item.category)" style="margin-right: 4px;"></i>
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </td>
@@ -252,7 +251,6 @@
                 <div class="mobile-menu-card-name">{{ item.name }}</div>
                 <div style="margin-top: 4px;">
                   <span class="badge" :class="getModifierCategoryClass(item.category)">
-                    <i :class="getModifierCategoryIcon(item.category)" style="margin-right: 4px;"></i>
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </div>
@@ -577,7 +575,7 @@ const setTab = (tab) => {
 const loadModifiers = async (force = false) => {
   modifiersLoading.value = true;
   try {
-    const res = await api.freeModifiers.getAll();
+    const res = await api.modifiers.getAll();
     if (res.success) {
       modifierItems.value = res.data || [];
     }
@@ -591,7 +589,7 @@ const loadModifiers = async (force = false) => {
 
 const handleToggleModifierActive = async (item) => {
   try {
-    const res = await api.freeModifiers.toggle(item.id);
+    const res = await api.modifiers.toggle(item.id);
     if (res.success) {
       item.active = item.active === 1 ? 0 : 1;
       ui.showToast(`เปลี่ยนสถานะของ ${item.name} เรียบร้อย`, 'success');
@@ -624,10 +622,10 @@ const getModifierCategoryIcon = (category) => {
 
 const getModifierCategoryClass = (category) => {
   const map = {
-    'sauce_small': 'badge-success',
-    'sauce_large': 'badge-primary',
-    'dipping': 'badge-accent',
-    'powder': 'badge-warning'
+    'sauce_small': 'badge-mod-sauce-small',
+    'sauce_large': 'badge-mod-sauce-large',
+    'dipping': 'badge-mod-dipping',
+    'powder': 'badge-mod-powder'
   };
   return map[category] || 'badge-neutral';
 };
@@ -1067,8 +1065,11 @@ onUnmounted(() => {
   }
   
   .mobile-menu-card.inactive-item {
-    border-color: rgba(110, 78, 55, 0.15);
-    background: rgba(110, 78, 55, 0.02);
+    border-color: rgba(110, 78, 55, 0.1);
+    box-shadow: none;
+  }
+  .mobile-menu-card.inactive-item .mobile-menu-card-body {
+    opacity: 0.55;
   }
 
   .mobile-menu-card-body {
@@ -1178,7 +1179,7 @@ onUnmounted(() => {
 
 .category-tab {
   padding: var(--space-sm) var(--space-lg);
-  background: var(--card-bg);
+  background: #ffffff !important;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
   font-size: var(--font-sm);
@@ -1188,6 +1189,7 @@ onUnmounted(() => {
   transition: all var(--transition-base);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .category-tab:active {
@@ -1195,9 +1197,41 @@ onUnmounted(() => {
 }
 
 .category-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: var(--shadow-glow-primary) !important;
+}
+
+/* Modifier Specific Badges (High Contrast, Distinct Colors) */
+.badge-mod-sauce-small {
+  background: rgba(42, 157, 143, 0.12) !important;
+  color: #1a7167 !important;
+}
+.badge-mod-sauce-large {
+  background: rgba(139, 3, 19, 0.12) !important;
+  color: #8b0313 !important;
+}
+.badge-mod-dipping {
+  background: rgba(214, 90, 49, 0.12) !important;
+  color: #a23e1e !important;
+}
+.badge-mod-powder {
+  background: rgba(138, 43, 226, 0.12) !important;
+  color: #6f2dbd !important;
+}
+
+/* Centered Admin Permission Text style */
+.menu-modifiers-info {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  text-align: right;
+}
+@media (max-width: 768px) {
+  .menu-modifiers-info {
+    text-align: center;
+    width: 100%;
+    margin-top: var(--space-xs);
+  }
 }
 </style>

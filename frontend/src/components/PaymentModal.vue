@@ -188,8 +188,6 @@ const emit = defineEmits(['close', 'success']);
 const paymentMethod = ref(null);
 const enteredAmount = ref('');
 const orderId = ref(null);
-const qrCodeUrl = ref(null);
-const qrLoading = ref(false);
 const success = ref(false);
 
 // Cash Calculations
@@ -227,9 +225,8 @@ const quickAmountOptions = computed(() => {
 });
 
 // Selection Action
-const selectPaymentMethod = async (method) => {
+const selectPaymentMethod = (method) => {
   paymentMethod.value = method;
-  await createBackendOrder();
 };
 
 const handleClose = () => {
@@ -240,34 +237,19 @@ const finishPayment = () => {
   emit('success');
 };
 
-// Create Order in DB
-const createBackendOrder = async () => {
-  ui.showLoading();
-  try {
-    const items = [];
-    props.cart.forEach(({ item, quantity }) => {
-      items.push({ 
-        menu_item_id: item.id, 
-        quantity,
-        item_name: item.name,
-        item_price: item.price,
-        options: item.options || null
-      });
+// Helper to compile cart items for API
+const getCartItems = () => {
+  const items = [];
+  props.cart.forEach(({ item, quantity }) => {
+    items.push({ 
+      menu_item_id: item.id, 
+      quantity,
+      item_name: item.name,
+      item_price: item.price,
+      options: item.options || null
     });
-
-    const res = await api.orders.create({ 
-      items, 
-      note: '',
-      free_modifiers: props.freeModifiers
-    });
-    orderId.value = res.data?.id || res.id;
-  } catch (error) {
-    console.error(error);
-    ui.showToast('ไม่สามารถสร้างรายการสั่งซื้อได้: ' + error.message, 'error');
-    paymentMethod.value = null; // Reset selection
-  } finally {
-    ui.hideLoading();
-  }
+  });
+  return items;
 };
 
 // Cash keypad handler
@@ -284,15 +266,18 @@ const pressNum = (key) => {
 
 // Cash Checkout
 const confirmCashPayment = async () => {
-  if (!orderId.value) return;
   ui.showLoading();
   try {
     const cashVal = Number(enteredAmount.value) || 0;
-    await api.orders.complete(orderId.value, {
+    const res = await api.orders.create({ 
+      items: getCartItems(), 
+      note: '',
+      modifiers: props.freeModifiers,
       payment_method: 'cash',
       cash_received: cashVal
     });
     
+    orderId.value = res.data?.order_number || res.data?.id || res.id;
     success.value = true;
     showConfetti();
     ui.showToast('ชำระเงินสดเรียบร้อย!', 'success');
@@ -306,14 +291,17 @@ const confirmCashPayment = async () => {
 
 // QR Checkout
 const confirmQRPayment = async () => {
-  if (!orderId.value) return;
   ui.showLoading();
   try {
-    await api.orders.complete(orderId.value, {
+    const res = await api.orders.create({ 
+      items: getCartItems(), 
+      note: '',
+      modifiers: props.freeModifiers,
       payment_method: 'qr',
       cash_received: props.total
     });
 
+    orderId.value = res.data?.order_number || res.data?.id || res.id;
     success.value = true;
     showConfetti();
     ui.showToast('ชำระเงินผ่าน QR Code เรียบร้อย!', 'success');
@@ -327,14 +315,17 @@ const confirmQRPayment = async () => {
 
 // Government Project Checkout
 const confirmGovPayment = async () => {
-  if (!orderId.value) return;
   ui.showLoading();
   try {
-    await api.orders.complete(orderId.value, {
+    const res = await api.orders.create({ 
+      items: getCartItems(), 
+      note: '',
+      modifiers: props.freeModifiers,
       payment_method: 'gov',
       cash_received: props.total
     });
 
+    orderId.value = res.data?.order_number || res.data?.id || res.id;
     success.value = true;
     showConfetti();
     ui.showToast('ชำระเงินโครงการของรัฐเรียบร้อย!', 'success');

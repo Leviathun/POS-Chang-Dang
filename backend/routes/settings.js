@@ -143,10 +143,10 @@ router.get('/backup/export', requireAdmin, async (req, res) => {
   try {
     const db = getDb();
     const tables = [
-      'branches', 'users', 'categories', 'menu_items', 'branch_stocks', 
+      'branches', 'users', 'categories', 'menu_items', 
       'orders', 'order_items', 'stock_logs', 'settings', 'expenses', 
-      'activity_logs', 'free_modifiers', 'branch_free_modifier_stocks', 
-      'free_modifier_stock_logs', 'free_modifier_presets', 'archived_orders', 
+      'activity_logs', 'modifiers', 
+      'modifier_stock_logs', 'modifier_presets', 'archived_orders', 
       'archived_order_items'
     ];
     
@@ -189,10 +189,9 @@ router.post('/backup/import', requireAdmin, async (req, res) => {
     const importTx = db.transaction(async () => {
       // 1. ล้างข้อมูลทุกตารางก่อน
       const orderOfDeletion = [
-        'activity_logs', 'free_modifier_stock_logs', 'stock_logs', 
-        'branch_free_modifier_stocks', 'branch_stocks', 'order_items', 
-        'archived_order_items', 'orders', 'archived_orders', 
-        'free_modifier_presets', 'free_modifiers', 'menu_items', 
+        'activity_logs', 'modifier_stock_logs', 'stock_logs', 
+        'order_items', 'archived_order_items', 'orders', 'archived_orders', 
+        'modifier_presets', 'modifiers', 'menu_items', 
         'categories', 'users', 'branches', 'settings', 'expenses'
       ];
 
@@ -206,10 +205,10 @@ router.post('/backup/import', requireAdmin, async (req, res) => {
 
       // 2. เขียนข้อมูลกลับทีละตารางตามลำดับความสัมพันธ์หลักก่อน
       const orderOfInsertion = [
-        'branches', 'users', 'categories', 'menu_items', 'branch_stocks', 
+        'branches', 'users', 'categories', 'menu_items', 
         'orders', 'order_items', 'stock_logs', 'settings', 'expenses', 
-        'activity_logs', 'free_modifiers', 'branch_free_modifier_stocks', 
-        'free_modifier_stock_logs', 'free_modifier_presets', 'archived_orders', 
+        'activity_logs', 'modifiers', 
+        'modifier_stock_logs', 'modifier_presets', 'archived_orders', 
         'archived_order_items'
       ];
 

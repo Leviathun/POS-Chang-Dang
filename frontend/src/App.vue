@@ -13,7 +13,7 @@
           <img src="@/assets/image/Logo POS.png" alt="Logo" style="height: 100%; object-fit: contain;" />
         </div>
         <h2 class="font-bold text-gradient mb-1" style="font-size: 1.8rem;">
-          {{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}
+          ร้านไก่ทอดช้างแดง
         </h2>
         <p class="text-secondary text-sm mb-lg">กรุณาเลือกสาขาและระบุรหัส PIN เพื่อเข้าใช้งาน</p>
 
@@ -77,7 +77,7 @@
             <img src="@/assets/image/Logo POS.png" alt="Logo" style="width: 28px; height: 28px; object-fit: contain;" />
           </span>
           <div class="brand-text">
-            <span class="brand-name">{{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}</span>
+            <span class="brand-name">ร้านไก่ทอดช้างแดง</span>
             <span class="brand-tagline">ระบบจัดการร้านค้า POS</span>
           </div>
         </div>
@@ -280,7 +280,7 @@ const adminUser = computed(() => {
 
 const activeTitle = computed(() => {
   const titles = {
-    '/pos': shopSettings.value.shop_name || 'ร้านไก่ทอดช้างแดง',
+    '/pos': 'ร้านไก่ทอดช้างแดง',
     '/menu': 'จัดการเมนู',
     '/stock': 'คลังสินค้า',
     '/stock/bulk': 'คลังสินค้า',

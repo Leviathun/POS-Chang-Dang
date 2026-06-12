@@ -953,8 +953,8 @@ const onModifiersToggleChange = () => {
 const loadModifiersAndPresets = async () => {
   try {
     const [modRes, presetRes] = await Promise.all([
-      api.freeModifiers.getAll(),
-      api.freeModifiers.getPresets()
+      api.modifiers.getAll(),
+      api.modifiers.getPresets()
     ]);
     if (modRes.success) {
       allModifiers.value = (modRes.data || []).filter(m => m.active);

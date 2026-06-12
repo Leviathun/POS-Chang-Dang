@@ -16,7 +16,7 @@ async function getBranchId(req, db) {
   return branchId;
 }
 
-// ─── GET / — ดึงรายการเครื่องปรุงฟรีพร้อมคลังสินค้าของสาขา ──────────────────
+// ─── GET / — ดึงรายการเครื่องปรุงพร้อมคลังสินค้าของสาขา ──────────────────
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -24,21 +24,18 @@ router.get('/', async (req, res) => {
 
     const items = await db.prepare(`
       SELECT 
-        fm.id, fm.name, fm.category, fm.servings_per_bag, fm.active,
-        COALESCE(bfms.total_servings, 0) as total_servings
-      FROM free_modifiers fm
-      LEFT JOIN branch_free_modifier_stocks bfms 
-        ON bfms.modifier_id = fm.id AND bfms.branch_id = ?
-      WHERE fm.branch_id = ?
-      ORDER BY fm.category ASC, fm.name ASC
-    `).all(branchId, branchId);
+        id, name, category, servings_per_bag, active, total_servings
+      FROM modifiers
+      WHERE branch_id = ?
+      ORDER BY category ASC, name ASC
+    `).all(branchId);
 
     res.json({
       success: true,
       data: items
     });
   } catch (error) {
-    console.error('❌ Get free modifiers error:', error.message);
+    console.error('❌ Get modifiers error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายการซอส/ผงปรุงรส'
@@ -61,7 +58,7 @@ router.post('/restock', requireAuth, async (req, res) => {
 
     const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -75,25 +72,19 @@ router.post('/restock', requireAuth, async (req, res) => {
     const restockTx = db.transaction(async () => {
       // ดึงสต็อกปัจจุบัน
       const currentStock = await db.prepare(
-        'SELECT total_servings FROM branch_free_modifier_stocks WHERE branch_id = ? AND modifier_id = ?'
-      ).get(branchId, modifier.id);
+        'SELECT total_servings FROM modifiers WHERE id = ?'
+      ).get(modifier.id);
 
       const prevServings = currentStock ? currentStock.total_servings : 0;
       const newServings = prevServings + addServings;
 
       // อัปเดตคลัง
-      await db.prepare(`
-        INSERT INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings)
-        VALUES (?, ?, ?)
-        ON CONFLICT(branch_id, modifier_id) DO UPDATE SET
-          total_servings = excluded.total_servings,
-          updated_at = datetime('now', 'localtime')
-      `).run(branchId, modifier.id, newServings);
+      await db.prepare('UPDATE modifiers SET total_servings = ? WHERE id = ?').run(newServings, modifier.id);
 
       // บันทึก Log
       const displayUnit = modifier.category === 'sauce_small' ? 'ซอง' : 'ถุง';
       await db.prepare(`
-        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
@@ -119,7 +110,7 @@ router.post('/restock', requireAuth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Restock free modifier error:', error.message);
+    console.error('❌ Restock modifier error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการเติมคลังสินค้า'
@@ -143,7 +134,7 @@ router.post('/adjust', requireAuth, async (req, res) => {
     const changeQty = Number(quantity);
     const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -153,8 +144,8 @@ router.post('/adjust', requireAuth, async (req, res) => {
 
     const adjustTx = db.transaction(async () => {
       const currentStock = await db.prepare(
-        'SELECT total_servings FROM branch_free_modifier_stocks WHERE branch_id = ? AND modifier_id = ?'
-      ).get(branchId, modifier.id);
+        'SELECT total_servings FROM modifiers WHERE id = ?'
+      ).get(modifier.id);
 
       const prevServings = currentStock ? currentStock.total_servings : 0;
       const newServings = prevServings + changeQty;
@@ -163,16 +154,10 @@ router.post('/adjust', requireAuth, async (req, res) => {
         throw new Error(`สต็อกสินค้า "${modifier.name}" ไม่สามารถปรับให้ติดลบได้ (มีอยู่ ${prevServings} รอบ)`);
       }
 
-      await db.prepare(`
-        INSERT INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings)
-        VALUES (?, ?, ?)
-        ON CONFLICT(branch_id, modifier_id) DO UPDATE SET
-          total_servings = excluded.total_servings,
-          updated_at = datetime('now', 'localtime')
-      `).run(branchId, modifier.id, newServings);
+      await db.prepare('UPDATE modifiers SET total_servings = ? WHERE id = ?').run(newServings, modifier.id);
 
       await db.prepare(`
-        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
@@ -198,7 +183,7 @@ router.post('/adjust', requireAuth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Adjust free modifier error:', error.message);
+    console.error('❌ Adjust modifier error:', error.message);
     res.status(400).json({
       success: false,
       error: error.message || 'เกิดข้อผิดพลาดในการปรับปรุงคลังสินค้า'
@@ -213,7 +198,7 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
     const db = getDb();
     const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -222,7 +207,7 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
     }
 
     const newActive = modifier.active ? 0 : 1;
-    await db.prepare('UPDATE free_modifiers SET active = ? WHERE id = ? AND branch_id = ?').run(newActive, modifier.id, branchId);
+    await db.prepare('UPDATE modifiers SET active = ? WHERE id = ? AND branch_id = ?').run(newActive, modifier.id, branchId);
 
     res.json({
       success: true,
@@ -233,7 +218,7 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Toggle free modifier error:', error.message);
+    console.error('❌ Toggle modifier error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการสลับสถานะเปิด/ปิดการใช้งาน'
@@ -246,7 +231,7 @@ router.get('/presets', async (req, res) => {
   try {
     const db = getDb();
     const branchId = await getBranchId(req, db);
-    const presets = await db.prepare('SELECT * FROM free_modifier_presets WHERE branch_id = ? ORDER BY name ASC').all(branchId);
+    const presets = await db.prepare('SELECT * FROM modifier_presets WHERE branch_id = ? ORDER BY name ASC').all(branchId);
     
     // แปลง modifier_ids string กลับเป็น array
     const formatted = presets.map(p => ({
@@ -282,10 +267,10 @@ router.post('/presets', requireAdmin, async (req, res) => {
 
     const branchId = await getBranchId(req, db);
 
-    const result = await db.prepare('INSERT INTO free_modifier_presets (branch_id, name, modifier_ids, created_at) VALUES (?, ?, ?, datetime("now", "+7 hours"))')
+    const result = await db.prepare('INSERT INTO modifier_presets (branch_id, name, modifier_ids, created_at) VALUES (?, ?, ?, datetime("now", "+7 hours"))')
       .run(branchId, name, JSON.stringify(modifier_ids));
 
-    const newPreset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(result.lastInsertRowid);
+    const newPreset = await db.prepare('SELECT * FROM modifier_presets WHERE id = ?').get(result.lastInsertRowid);
     newPreset.modifier_ids = JSON.parse(newPreset.modifier_ids || '[]');
 
     res.status(201).json({
@@ -309,7 +294,7 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
     const db = getDb();
     const branchId = await getBranchId(req, db);
 
-    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
+    const preset = await db.prepare('SELECT * FROM modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!preset) {
       return res.status(404).json({
         success: false,
@@ -322,12 +307,12 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
     const updatedActive = active !== undefined ? active : preset.active;
 
     await db.prepare(`
-      UPDATE free_modifier_presets 
+      UPDATE modifier_presets 
       SET name = ?, modifier_ids = ?, active = ? 
       WHERE id = ? AND branch_id = ?
     `).run(updatedName, updatedIds, updatedActive, Number(id), branchId);
 
-    const updated = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(Number(id));
+    const updated = await db.prepare('SELECT * FROM modifier_presets WHERE id = ?').get(Number(id));
     updated.modifier_ids = JSON.parse(updated.modifier_ids || '[]');
 
     res.json({
@@ -350,7 +335,7 @@ router.delete('/presets/:id', requireAdmin, async (req, res) => {
     const db = getDb();
     const branchId = await getBranchId(req, db);
 
-    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
+    const preset = await db.prepare('SELECT * FROM modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!preset) {
       return res.status(404).json({
         success: false,
@@ -358,7 +343,7 @@ router.delete('/presets/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    await db.prepare('DELETE FROM free_modifier_presets WHERE id = ? AND branch_id = ?').run(Number(id), branchId);
+    await db.prepare('DELETE FROM modifier_presets WHERE id = ? AND branch_id = ?').run(Number(id), branchId);
 
     res.json({
       success: true,
@@ -381,7 +366,7 @@ router.get('/:id/logs', async (req, res) => {
     const db = getDb();
     const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT id, name FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
+    const modifier = await db.prepare('SELECT id, name FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -390,11 +375,11 @@ router.get('/:id/logs', async (req, res) => {
     }
 
     const logs = await db.prepare(`
-      SELECT fmsl.*, u.name as staff_name
-      FROM free_modifier_stock_logs fmsl
-      LEFT JOIN users u ON u.id = fmsl.staff_id
-      WHERE fmsl.modifier_id = ? AND fmsl.branch_id = ?
-      ORDER BY fmsl.created_at DESC
+      SELECT msl.*, u.name as staff_name
+      FROM modifier_stock_logs msl
+      LEFT JOIN users u ON u.id = msl.staff_id
+      WHERE msl.modifier_id = ? AND msl.branch_id = ?
+      ORDER BY msl.created_at DESC
       LIMIT ?
     `).all(Number(id), branchId, limit);
 
@@ -406,7 +391,7 @@ router.get('/:id/logs', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Get free modifier logs error:', error.message);
+    console.error('❌ Get modifier logs error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการดึงประวัติการปรับปรุงสต็อก'

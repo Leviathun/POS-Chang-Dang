@@ -6,15 +6,22 @@ const { attachUser, requireAuth } = require('../middleware/auth');
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
-// ─── POST / — สร้างออเดอร์ใหม่ ──────────────────────────
+// ─── POST / — สร้างออเดอร์และชำระเงินสำเร็จทันที (Single-step Checkout) ──────
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { items, note, discount, free_modifiers } = req.body;
+    const { items, note, discount, modifiers, free_modifiers, payment_method, cash_received } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ'
+      });
+    }
+
+    if (!payment_method || !['cash', 'qr', 'gov'].includes(payment_method)) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุวิธีชำระเงิน (cash, qr หรือ gov)'
       });
     }
 
@@ -38,13 +45,12 @@ router.post('/', requireAuth, async (req, res) => {
           throw new Error('ข้อมูลสินค้าไม่ถูกต้อง — ต้องระบุ menu_item_id และ quantity');
         }
 
-        // คิวรีดึงเมนูและสต็อกของสาขานี้
+        // คิวรีดึงเมนูและสต็อกของสาขานี้โดยตรงจาก menu_items
         const menuItem = await db.prepare(`
-          SELECT mi.id, mi.name, COALESCE(bs.price, mi.price) as price, mi.active, bs.quantity as stock
-          FROM menu_items mi
-          LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-          WHERE mi.id = ? AND mi.branch_id = ?
-        `).get(branchId, Number(item.menu_item_id), branchId);
+          SELECT id, name, price, active, quantity as stock
+          FROM menu_items
+          WHERE id = ? AND branch_id = ?
+        `).get(Number(item.menu_item_id), branchId);
 
         if (!menuItem) {
           throw new Error(`ไม่พบเมนู ID: ${item.menu_item_id}`);
@@ -58,11 +64,10 @@ router.post('/', requireAuth, async (req, res) => {
         if (item.options && Array.isArray(item.options.selected_items)) {
           for (const ingredient of item.options.selected_items) {
             const ingStock = await db.prepare(`
-              SELECT bs.quantity as stock, mi.name
-              FROM menu_items mi
-              LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-              WHERE mi.id = ? AND mi.branch_id = ?
-            `).get(branchId, Number(ingredient.id), branchId);
+              SELECT quantity as stock, name
+              FROM menu_items
+              WHERE id = ? AND branch_id = ?
+            `).get(Number(ingredient.id), branchId);
 
             const requiredQty = Number(ingredient.weight) * item.quantity;
             if (ingStock && ingStock.stock !== null && ingStock.stock < requiredQty) {
@@ -97,13 +102,23 @@ router.post('/', requireAuth, async (req, res) => {
         throw new Error('ส่วนลดมากกว่ายอดรวม');
       }
 
+      // คำนวณเงินทอน (ถ้าเป็นเงินสด)
+      let cashChange = null;
+      if (payment_method === 'cash') {
+        if (cash_received === undefined || cash_received === null || Number(cash_received) < total) {
+          throw new Error('จำนวนเงินที่รับไม่เพียงพอ');
+        }
+        cashChange = Number(cash_received) - total;
+      }
+
       // สร้างเลขออเดอร์
       const orderNumber = await generateOrderNumber();
 
-      // บันทึกออเดอร์
+      // บันทึกออเดอร์ (สถานะ completed ทันที)
+      const targetModifiers = modifiers || free_modifiers;
       const orderResult = await db.prepare(`
-        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, status, note, free_modifiers, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
         orderNumber,
@@ -111,18 +126,11 @@ router.post('/', requireAuth, async (req, res) => {
         subtotal,
         orderDiscount,
         total,
+        payment_method,
+        cash_received || null,
+        cashChange,
         note || null,
-        free_modifiers ? JSON.stringify(free_modifiers) : null
-      );
-
-      // บันทึกกิจกรรมพนักงาน
-      await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-        VALUES (?, ?, 'create_order', ?, datetime('now', '+7 hours'))
-      `).run(
-        branchId,
-        req.user.id,
-        `สร้างออเดอร์ใหม่สำเร็จ เลขที่ ${orderNumber} ยอดรวม ${total} บาท`
+        targetModifiers ? JSON.stringify(targetModifiers) : null
       );
 
       const orderId = orderResult.lastInsertRowid;
@@ -137,6 +145,133 @@ router.post('/', requireAuth, async (req, res) => {
         await insertItem.run(orderId, oi.menu_item_id, oi.item_name, oi.item_price, oi.quantity, oi.subtotal, oi.options);
       }
 
+      // ─── หักสต็อกสินค้า ───
+      const updateStock = db.prepare(`
+        UPDATE menu_items 
+        SET quantity = quantity - ? 
+        WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL
+      `);
+      const getItem = db.prepare(`
+        SELECT name, quantity as stock 
+        FROM menu_items
+        WHERE id = ? AND branch_id = ?
+      `);
+      const insertLog = db.prepare(`
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
+      `);
+
+      for (const oi of orderItems) {
+        let optionsObj = null;
+        if (oi.options) {
+          try {
+            optionsObj = JSON.parse(oi.options);
+          } catch (e) {
+            console.error('Failed to parse order item options:', e.message);
+          }
+        }
+
+        if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
+          // หักสต็อกตามส่วนผสมและสัดส่วนน้ำหนัก
+          for (const ingredient of optionsObj.selected_items) {
+            const ingItem = await getItem.get(Number(ingredient.id), branchId);
+            if (ingItem && ingItem.stock !== null) {
+              const previousStock = ingItem.stock;
+              const deductAmount = Number(ingredient.weight) * oi.quantity;
+              const newStock = previousStock - deductAmount;
+
+              await updateStock.run(deductAmount, branchId, Number(ingredient.id));
+
+              // บันทึกประวัติสต็อก
+              await insertLog.run(
+                branchId,
+                Number(ingredient.id),
+                -deductAmount,
+                previousStock,
+                newStock,
+                orderId,
+                req.user.id,
+                `ขาย ${oi.item_name} (วัตถุดิบ: ${ingredient.name} ${deductAmount}ก.) (${orderNumber})`
+              );
+            }
+          }
+        } else {
+          // ตัดสต็อกสินค้าชิ้นเดี่ยวปกติ
+          const menuItem = await getItem.get(oi.menu_item_id, branchId);
+          if (menuItem && menuItem.stock !== null) {
+            const previousStock = menuItem.stock;
+            const newStock = previousStock - oi.quantity;
+
+            await updateStock.run(oi.quantity, branchId, oi.menu_item_id);
+
+            // บันทึกประวัติสต็อก
+            await insertLog.run(
+              branchId,
+              oi.menu_item_id,
+              -oi.quantity,
+              previousStock,
+              newStock,
+              orderId,
+              req.user.id,
+              `ขาย ${oi.item_name} x${oi.quantity} (${orderNumber})`
+            );
+          }
+        }
+      }
+
+      // ─── หักสต็อกของเครื่องปรุง (modifiers) ───
+      if (targetModifiers) {
+        try {
+          const selectedModifiers = Array.isArray(targetModifiers) ? targetModifiers : JSON.parse(targetModifiers);
+          if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+            const updateModStock = db.prepare(`
+              UPDATE modifiers
+              SET total_servings = total_servings - 1
+              WHERE branch_id = ? AND id = ? AND total_servings IS NOT NULL
+            `);
+            const getModStock = db.prepare(`
+              SELECT total_servings FROM modifiers
+              WHERE branch_id = ? AND id = ?
+            `);
+            const insertModLog = db.prepare(`
+              INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+              VALUES (?, ?, -1, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
+            `);
+
+            for (const mod of selectedModifiers) {
+              const currentMod = await getModStock.get(branchId, mod.id);
+              if (currentMod && currentMod.total_servings !== null) {
+                const prevModStock = currentMod.total_servings;
+                const newModStock = prevModStock - 1;
+
+                await updateModStock.run(branchId, mod.id);
+                await insertModLog.run(
+                  branchId,
+                  mod.id,
+                  prevModStock,
+                  newModStock,
+                  orderId,
+                  req.user.id,
+                  `ใช้เครื่องปรุง ${mod.name} ในออเดอร์ ${orderNumber}`
+                );
+              }
+            }
+          }
+        } catch (modErr) {
+          console.error('⚠️ Error deducting modifiers stock:', modErr.message);
+        }
+      }
+
+      // บันทึกกิจกรรมพนักงาน (create_order เท่านั้น complete_order ลบออกตาม V2)
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'create_order', ?, datetime('now', '+7 hours'))
+      `).run(
+        branchId,
+        req.user.id,
+        `สร้างออเดอร์และชำระเงินสำเร็จ เลขที่ ${orderNumber} ยอดรวม ${total} บาท`
+      );
+
       // ดึงข้อมูลออเดอร์ที่สร้าง
       const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
       const savedItems = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId);
@@ -145,7 +280,11 @@ router.post('/', requireAuth, async (req, res) => {
         options: oi.options ? JSON.parse(oi.options) : null
       }));
 
-      return { ...order, items: parsedItems };
+      return {
+        ...order,
+        free_modifiers: order.modifiers, // compatibility
+        items: parsedItems
+      };
     });
 
     const order = await createOrder();
@@ -222,10 +361,14 @@ router.get('/', async (req, res) => {
     }
 
     const orders = await db.prepare(sql).all(params);
+    const formattedOrders = orders.map(o => ({
+      ...o,
+      free_modifiers: o.modifiers // Map for compatibility
+    }));
 
     res.json({
       success: true,
-      data: orders
+      data: formattedOrders
     });
   } catch (error) {
     console.error('❌ Get orders error:', error.message);
@@ -268,7 +411,11 @@ router.get('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      data: { ...order, items: parsedItems }
+      data: {
+        ...order,
+        free_modifiers: order.modifiers, // Map for compatibility
+        items: parsedItems
+      }
     });
   } catch (error) {
     console.error('❌ Get order error:', error.message);
@@ -279,232 +426,14 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-
-
-// ─── POST /:id/complete — ชำระเงิน/เสร็จสิ้น ───────────
-router.post('/:id/complete', requireAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { payment_method, cash_received } = req.body;
-    const db = getDb();
-
-    if (!payment_method || !['cash', 'qr', 'gov'].includes(payment_method)) {
-      return res.status(400).json({
-        success: false,
-        error: 'กรุณาระบุวิธีชำระเงิน (cash, qr หรือ gov)'
-      });
-    }
-
-    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id));
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        error: 'ไม่พบออเดอร์'
-      });
-    }
-
-    if (order.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        error: 'ออเดอร์นี้ชำระเงินแล้ว'
-      });
-    }
-
-    if (order.status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        error: 'ออเดอร์นี้ถูกยกเลิกแล้ว'
-      });
-    }
-
-    // คำนวณเงินทอน (ถ้าเป็นเงินสด)
-    let cashChange = null;
-    if (payment_method === 'cash') {
-      if (!cash_received || cash_received < order.total) {
-        return res.status(400).json({
-          success: false,
-          error: 'จำนวนเงินที่รับไม่เพียงพอ'
-        });
-      }
-      cashChange = cash_received - order.total;
-    }
-
-    const branchId = order.branch_id;
-
-    // ใช้ transaction สำหรับอัปเดตออเดอร์ + ตัดสต็อก
-    const completeOrder = db.transaction(async () => {
-      // อัปเดตสถานะออเดอร์
-      await db.prepare(`
-        UPDATE orders 
-        SET status = 'completed', payment_method = ?, cash_received = ?, cash_change = ?
-        WHERE id = ?
-      `).run(payment_method, cash_received || null, cashChange, Number(id));
-
-      // บันทึกกิจกรรมพนักงาน
-      const paymentLabel = payment_method === 'cash' ? 'เงินสด' : (payment_method === 'qr' ? 'QR Code' : 'โครงการของรัฐ');
-      await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-        VALUES (?, ?, 'complete_order', ?, datetime('now', '+7 hours'))
-      `).run(
-        branchId,
-        req.user.id,
-        `ชำระเงินออเดอร์ ${order.order_number} สำเร็จ (วิธี: ${paymentLabel})`
-      );
-
-      // ดึงรายการสินค้าในออเดอร์
-      const orderItems = await db.prepare(
-        'SELECT * FROM order_items WHERE order_id = ?'
-      ).all(Number(id));
-
-      // ตัดสต็อกแยกตามสาขา (เฉพาะที่มีสต็อกคีย์ไว้และไม่เป็น NULL)
-      const updateStock = db.prepare(`
-        UPDATE branch_stocks 
-        SET quantity = quantity - ? 
-        WHERE branch_id = ? AND menu_item_id = ? AND quantity IS NOT NULL
-      `);
-      const getItem = db.prepare(`
-        SELECT mi.id, mi.name, bs.quantity as stock 
-        FROM menu_items mi
-        LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-        WHERE mi.id = ? AND mi.branch_id = ?
-      `);
-      const insertLog = db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
-      `);
-
-      for (const oi of orderItems) {
-        let optionsObj = null;
-        if (oi.options) {
-          try {
-            optionsObj = JSON.parse(oi.options);
-          } catch (e) {
-            console.error('Failed to parse order item options:', e.message);
-          }
-        }
-
-        if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
-          // หักสต็อกตามส่วนผสมและสัดส่วนน้ำหนัก
-          for (const ingredient of optionsObj.selected_items) {
-            const ingItem = await getItem.get(branchId, Number(ingredient.id), branchId);
-            if (ingItem && ingItem.stock !== null) {
-              const previousStock = ingItem.stock;
-              const deductAmount = Number(ingredient.weight) * oi.quantity;
-              const newStock = previousStock - deductAmount;
-
-              await updateStock.run(deductAmount, branchId, Number(ingredient.id));
-
-              // บันทึกประวัติสต็อก
-              await insertLog.run(
-                branchId,
-                Number(ingredient.id),
-                -deductAmount,
-                previousStock,
-                newStock,
-                Number(id),
-                req.user.id,
-                `ขาย ${oi.item_name} (วัตถุดิบ: ${ingredient.name} ${deductAmount}ก.) (${order.order_number})`
-              );
-            }
-          }
-        } else {
-          // ตัดสต็อกสินค้าชิ้นเดี่ยวปกติ
-          const menuItem = await getItem.get(branchId, oi.menu_item_id);
-          if (menuItem && menuItem.stock !== null) {
-            const previousStock = menuItem.stock;
-            const newStock = previousStock - oi.quantity;
-
-            await updateStock.run(oi.quantity, branchId, oi.menu_item_id);
-
-            // บันทึกประวัติสต็อก
-            await insertLog.run(
-              branchId,
-              oi.menu_item_id,
-              -oi.quantity,
-              previousStock,
-              newStock,
-              Number(id),
-              req.user.id,
-              `ขาย ${oi.item_name} x${oi.quantity} (${order.order_number})`
-            );
-          }
-        }
-      }
-
-      // หักสต็อกของซอส/ผง/น้ำจิ้มฟรี (ถ้ามีในออเดอร์)
-      if (order.free_modifiers) {
-        try {
-          const selectedModifiers = JSON.parse(order.free_modifiers);
-          if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
-            const updateModStock = db.prepare(`
-              UPDATE branch_free_modifier_stocks
-              SET total_servings = total_servings - 1
-              WHERE branch_id = ? AND modifier_id = ?
-            `);
-            const getModStock = db.prepare(`
-              SELECT total_servings FROM branch_free_modifier_stocks
-              WHERE branch_id = ? AND modifier_id = ?
-            `);
-            const insertModLog = db.prepare(`
-              INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-              VALUES (?, ?, -1, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
-            `);
-
-            for (const mod of selectedModifiers) {
-              const currentMod = await getModStock.get(branchId, mod.id);
-              const prevModStock = currentMod ? currentMod.total_servings : 0;
-              const newModStock = prevModStock - 1;
-
-              await updateModStock.run(branchId, mod.id);
-              await insertModLog.run(
-                branchId,
-                mod.id,
-                prevModStock,
-                newModStock,
-                Number(id),
-                req.user.id,
-                `ใช้ฟรี ${mod.name} ในออเดอร์ ${order.order_number}`
-              );
-            }
-          }
-        } catch (modErr) {
-          console.error('⚠️ Error deducting free modifiers stock:', modErr.message);
-        }
-      }
-
-      // ดึงออเดอร์ที่อัปเดตแล้ว
-      const updatedOrder = await db.prepare(`
-        SELECT o.*, u.name as staff_name, b.name as branch_name
-        FROM orders o
-        LEFT JOIN users u ON u.id = o.staff_id
-        LEFT JOIN branches b ON b.id = o.branch_id
-        WHERE o.id = ?
-      `).get(Number(id));
-
-      const items = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(Number(id));
-      const parsedItems = items.map(oi => ({
-        ...oi,
-        options: oi.options ? JSON.parse(oi.options) : null
-      }));
-
-      return { ...updatedOrder, items: parsedItems };
-    });
-
-    const result = await completeOrder();
-
-    res.json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    console.error('❌ Complete order error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+// ─── POST /:id/complete — ชำระเงิน/เสร็จสิ้น (Stubbed for backwards-compatibility)
+router.post('/:id/complete', (req, res) => {
+  res.json({
+    success: true,
+    message: 'ชำระเงินเสร็จสิ้นแล้ว (Single-step checkout)'
+  });
 });
+
 // ─── POST /:id/cancel — ยกเลิกออเดอร์ ──────────────────
 router.post('/:id/cancel', requireAuth, async (req, res) => {
   try {
@@ -528,7 +457,6 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
       });
     }
 
-    const wasCompleted = order.status === 'completed';
     const branchId = order.branch_id;
 
     // ใช้ transaction สำหรับยกเลิก + คืนสต็อก
@@ -538,30 +466,62 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
         "UPDATE orders SET status = 'cancelled', cancel_reason = ? WHERE id = ?"
       ).run(reason || null, Number(id));
 
-      // คืนสต็อกเฉพาะเมื่อออเดอร์ถูก complete ไปแล้ว
-      if (wasCompleted) {
-        const orderItems = await db.prepare(
-          'SELECT * FROM order_items WHERE order_id = ?'
-        ).all(Number(id));
+      // คืนสต็อก
+      const orderItems = await db.prepare(
+        'SELECT * FROM order_items WHERE order_id = ?'
+      ).all(Number(id));
 
-        const updateStock = db.prepare(`
-          UPDATE branch_stocks 
-          SET quantity = quantity + ? 
-          WHERE branch_id = ? AND menu_item_id = ? AND quantity IS NOT NULL
-        `);
-        const getItem = db.prepare(`
-          SELECT mi.id, mi.name, bs.quantity as stock 
-          FROM menu_items mi
-          LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-          WHERE mi.id = ? AND mi.branch_id = ?
-        `);
-        const insertLog = db.prepare(`
-          INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-          VALUES (?, ?, ?, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
-        `);
+      const updateStock = db.prepare(`
+        UPDATE menu_items 
+        SET quantity = quantity + ? 
+        WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL
+      `);
+      const getItem = db.prepare(`
+        SELECT name, quantity as stock 
+        FROM menu_items
+        WHERE id = ? AND branch_id = ?
+      `);
+      const insertLog = db.prepare(`
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
+      `);
 
-        for (const oi of orderItems) {
-          const menuItem = await getItem.get(branchId, oi.menu_item_id, branchId);
+      for (const oi of orderItems) {
+        let optionsObj = null;
+        if (oi.options) {
+          try {
+            optionsObj = JSON.parse(oi.options);
+          } catch (e) {
+            console.error('Failed to parse options:', e.message);
+          }
+        }
+
+        if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
+          // คืนสต็อกวัตถุดิบแยกแต่ละส่วนผสม
+          for (const ingredient of optionsObj.selected_items) {
+            const ingItem = await getItem.get(Number(ingredient.id), branchId);
+            if (ingItem && ingItem.stock !== null) {
+              const previousStock = ingItem.stock;
+              const restoreAmount = Number(ingredient.weight) * oi.quantity;
+              const newStock = previousStock + restoreAmount;
+
+              await updateStock.run(restoreAmount, branchId, Number(ingredient.id));
+
+              await insertLog.run(
+                branchId,
+                Number(ingredient.id),
+                restoreAmount,
+                previousStock,
+                newStock,
+                Number(id),
+                req.user.id,
+                `ยกเลิกออเดอร์ ${order.order_number} — คืนวัตถุดิบ ${ingredient.name} ${restoreAmount}ก. (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
+              );
+            }
+          }
+        } else {
+          // คืนสต็อกสินค้าปกติ
+          const menuItem = await getItem.get(oi.menu_item_id, branchId);
           if (menuItem && menuItem.stock !== null) {
             const previousStock = menuItem.stock;
             const newStock = previousStock + oi.quantity;
@@ -580,29 +540,31 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
             );
           }
         }
+      }
 
-        // คืนสต็อกซอส/ผง/น้ำจิ้มฟรี (ถ้ามีในออเดอร์)
-        if (order.free_modifiers) {
-          try {
-            const selectedModifiers = JSON.parse(order.free_modifiers);
-            if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
-              const updateModStock = db.prepare(`
-                UPDATE branch_free_modifier_stocks
-                SET total_servings = total_servings + 1
-                WHERE branch_id = ? AND modifier_id = ?
-              `);
-              const getModStock = db.prepare(`
-                SELECT total_servings FROM branch_free_modifier_stocks
-                WHERE branch_id = ? AND modifier_id = ?
-              `);
-              const insertModLog = db.prepare(`
-                INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-                VALUES (?, ?, 1, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
-              `);
+      // คืนสต็อกซอส/ผง/น้ำจิ้มฟรี (ถ้ามีในออเดอร์)
+      if (order.modifiers) {
+        try {
+          const selectedModifiers = JSON.parse(order.modifiers);
+          if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+            const updateModStock = db.prepare(`
+              UPDATE modifiers
+              SET total_servings = total_servings + 1
+              WHERE branch_id = ? AND id = ? AND total_servings IS NOT NULL
+            `);
+            const getModStock = db.prepare(`
+              SELECT total_servings FROM modifiers
+              WHERE branch_id = ? AND id = ?
+            `);
+            const insertModLog = db.prepare(`
+              INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+              VALUES (?, ?, 1, ?, ?, 'cancel_restore', ?, ?, ?, datetime('now', '+7 hours'))
+            `);
 
-              for (const mod of selectedModifiers) {
-                const currentMod = await getModStock.get(branchId, mod.id);
-                const prevModStock = currentMod ? currentMod.total_servings : 0;
+            for (const mod of selectedModifiers) {
+              const currentMod = await getModStock.get(branchId, mod.id);
+              if (currentMod && currentMod.total_servings !== null) {
+                const prevModStock = currentMod.total_servings;
                 const newModStock = prevModStock + 1;
 
                 await updateModStock.run(branchId, mod.id);
@@ -617,9 +579,9 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
                 );
               }
             }
-          } catch (modErr) {
-            console.error('⚠️ Error restoring free modifiers stock:', modErr.message);
           }
+        } catch (modErr) {
+          console.error('⚠️ Error restoring modifiers stock:', modErr.message);
         }
       }
 
@@ -643,7 +605,11 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
 
       const items = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(Number(id));
 
-      return { ...updatedOrder, items };
+      return {
+        ...updatedOrder,
+        free_modifiers: updatedOrder.modifiers, // Map for compatibility
+        items
+      };
     });
 
     const result = await cancelOrder();

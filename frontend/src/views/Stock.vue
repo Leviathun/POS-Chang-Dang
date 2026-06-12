@@ -599,7 +599,7 @@ const loadSettings = async () => {
 
 const loadModifiersData = async () => {
   try {
-    const res = await api.freeModifiers.getAll();
+    const res = await api.modifiers.getAll();
     if (res.success) {
       modifierItems.value = res.data || [];
     }
@@ -666,9 +666,9 @@ const handleSaveAction = async () => {
     let res;
     if (activeIsModifier.value) {
       if (actionType.value === 'restock') {
-        res = await api.freeModifiers.restock(itemId, qty, note);
+        res = await api.modifiers.restock(itemId, qty, note);
       } else if (actionType.value === 'adjust') {
-        res = await api.freeModifiers.adjust(itemId, qty, 'adjustment', note);
+        res = await api.modifiers.adjust(itemId, qty, 'adjustment', note);
       }
     } else {
       if (actionType.value === 'fry') {
@@ -713,7 +713,7 @@ const viewLogs = async (item, isMod = false) => {
   logsLoading.value = true;
   try {
     const res = isMod
-      ? await api.freeModifiers.getLogs(item.id)
+      ? await api.modifiers.getLogs(item.id)
       : await api.stock.getLogs(item.id);
     logs.value = res.data?.logs || res.data || res || [];
   } catch (e) {

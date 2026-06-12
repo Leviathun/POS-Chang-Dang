@@ -11,7 +11,7 @@ router.get('/branches', async (req, res) => {
   try {
     const db = getDb();
     const branches = await db.prepare(
-      'SELECT id, name, address, phone FROM branches ORDER BY id ASC'
+      'SELECT id, name, address FROM branches ORDER BY id ASC'
     ).all();
 
     res.json({
@@ -300,8 +300,8 @@ router.post('/branches', requireAdmin, async (req, res) => {
     // ทำรายการแบบ transaction เพื่อความปลอดภัย
     const createBranchTx = db.transaction(async () => {
       const result = await db.prepare(
-        'INSERT INTO branches (name, address, phone, created_at) VALUES (?, ?, ?, datetime("now", "+7 hours"))'
-      ).run(name.trim(), address ? address.trim() : null, phone ? phone.trim() : null);
+        'INSERT INTO branches (name, address, created_at) VALUES (?, ?, datetime("now", "+7 hours"))'
+      ).run(name.trim(), address ? address.trim() : null);
 
       const branchId = result.lastInsertRowid;
 
@@ -320,13 +320,21 @@ router.post('/branches', requireAdmin, async (req, res) => {
           categoryMap[cat.id] = catRes.lastInsertRowid;
         }
 
-        // 2. คัดลอก Menu Items
-        const menuItems = await db.prepare('SELECT id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices FROM menu_items WHERE branch_id = ?').all(sourceBranchId);
+        // 2. คัดลอก Menu Items (พร้อมตั้งสต็อกเป็น 0/null ตามต้นฉบับ)
+        const menuItems = await db.prepare(`
+          SELECT name, price, category_id, image_url, active, sort_order, uom, multiple_prices, quantity, raw_quantity 
+          FROM menu_items 
+          WHERE branch_id = ?
+        `).all(sourceBranchId);
+
         for (const item of menuItems) {
           const newCatId = item.category_id ? categoryMap[item.category_id] : null;
-          const menuRes = await db.prepare(`
-            INSERT INTO menu_items (branch_id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          const initialQuantity = item.quantity !== null ? 0 : null;
+          const initialRawQuantity = item.raw_quantity !== null ? 0 : null;
+
+          await db.prepare(`
+            INSERT INTO menu_items (branch_id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices, quantity, raw_quantity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).run(
             branchId,
             item.name,
@@ -336,45 +344,27 @@ router.post('/branches', requireAdmin, async (req, res) => {
             item.active,
             item.sort_order,
             item.uom,
-            item.multiple_prices
+            item.multiple_prices,
+            initialQuantity,
+            initialRawQuantity
           );
-
-          const newItemId = menuRes.lastInsertRowid;
-
-          // ดึงค่า raw_quantity ตั้งต้นจากสาขาอื่น
-          const existingStock = await db.prepare(`
-            SELECT raw_quantity FROM branch_stocks 
-            WHERE menu_item_id = ? AND raw_quantity IS NOT NULL 
-            LIMIT 1
-          `).get(item.id);
-          const rawQuantityVal = existingStock ? 0 : null;
-
-          // บันทึกสต็อกเริ่มต้น 0 สำหรับสาขาใหม่
-          await db.prepare(`
-            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price, multiple_prices)
-            VALUES (?, ?, 0, ?, ?, ?)
-          `).run(branchId, newItemId, rawQuantityVal, item.price, item.multiple_prices);
         }
 
-        // 3. คัดลอก Free Modifiers
-        const modifiers = await db.prepare('SELECT id, name, category, servings_per_bag, active FROM free_modifiers WHERE branch_id = ?').all(sourceBranchId);
+        // 3. คัดลอก Modifiers
+        const modifiers = await db.prepare('SELECT id, name, category, servings_per_bag, active FROM modifiers WHERE branch_id = ?').all(sourceBranchId);
         const modifierMap = {}; // { [oldModifierId]: newModifierId }
         for (const mod of modifiers) {
-          const modRes = await db.prepare(
-            'INSERT INTO free_modifiers (branch_id, name, category, servings_per_bag, active) VALUES (?, ?, ?, ?, ?)'
-          ).run(branchId, mod.name, mod.category, mod.servings_per_bag, mod.active);
+          const modRes = await db.prepare(`
+            INSERT INTO modifiers (branch_id, name, category, servings_per_bag, active, total_servings) 
+            VALUES (?, ?, ?, ?, ?, 0)
+          `).run(branchId, mod.name, mod.category, mod.servings_per_bag, mod.active);
           
           const newModId = modRes.lastInsertRowid;
           modifierMap[mod.id] = newModId;
-
-          // บันทึกสต็อกเริ่มต้น
-          await db.prepare(
-            'INSERT INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings) VALUES (?, ?, 0)'
-          ).run(branchId, newModId);
         }
 
-        // 4. คัดลอก Free Modifier Presets (สูตรสำเร็จ)
-        const presets = await db.prepare('SELECT id, name, modifier_ids, active FROM free_modifier_presets WHERE branch_id = ?').all(sourceBranchId);
+        // 4. คัดลอก Modifier Presets (สูตรสำเร็จ)
+        const presets = await db.prepare('SELECT id, name, modifier_ids, active FROM modifier_presets WHERE branch_id = ?').all(sourceBranchId);
         for (const preset of presets) {
           let newModIds = [];
           try {
@@ -385,7 +375,7 @@ router.post('/branches', requireAdmin, async (req, res) => {
           }
 
           await db.prepare(
-            'INSERT INTO free_modifier_presets (branch_id, name, modifier_ids, active) VALUES (?, ?, ?, ?)'
+            'INSERT INTO modifier_presets (branch_id, name, modifier_ids, active) VALUES (?, ?, ?, ?)'
           ).run(branchId, preset.name, JSON.stringify(newModIds), preset.active);
         }
 
@@ -394,7 +384,7 @@ router.post('/branches', requireAdmin, async (req, res) => {
         for (const s of settings) {
           let val = s.value;
           if (s.key === 'shop_name') {
-            val = name.trim();
+            continue; // Skip shop_name settings key in V2
           } else if (s.key === 'line_channel_token' || s.key === 'line_recipient_id' || s.key === 'line_owner_user_id') {
             val = ''; // เคลียร์ไลน์สำหรับผู้ใช้สาขาใหม่
           }
@@ -455,8 +445,8 @@ router.put('/branches/:id', requireAdmin, async (req, res) => {
     }
 
     await db.prepare(
-      'UPDATE branches SET name = ?, address = ?, phone = ? WHERE id = ?'
-    ).run(name.trim(), address ? address.trim() : null, phone ? phone.trim() : null, Number(id));
+      'UPDATE branches SET name = ?, address = ? WHERE id = ?'
+    ).run(name.trim(), address ? address.trim() : null, Number(id));
 
     // บันทึก Log กิจกรรม
     await db.prepare(`

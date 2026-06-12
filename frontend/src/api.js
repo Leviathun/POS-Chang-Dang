@@ -207,31 +207,31 @@ const settings = {
 
 const freeModifiers = {
   async getAll() {
-    return request('GET', '/api/free-modifiers');
+    return request('GET', '/api/modifiers');
   },
   async restock(modifierId, bags, note) {
-    return request('POST', '/api/free-modifiers/restock', { modifier_id: modifierId, bags, note });
+    return request('POST', '/api/modifiers/restock', { modifier_id: modifierId, bags, note });
   },
   async adjust(modifierId, quantity, reason, note) {
-    return request('POST', '/api/free-modifiers/adjust', { modifier_id: modifierId, quantity, reason, note });
+    return request('POST', '/api/modifiers/adjust', { modifier_id: modifierId, quantity, reason, note });
   },
   async toggle(id) {
-    return request('POST', `/api/free-modifiers/toggle/${id}`);
+    return request('POST', `/api/modifiers/toggle/${id}`);
   },
   async getPresets() {
-    return request('GET', '/api/free-modifiers/presets');
+    return request('GET', '/api/modifiers/presets');
   },
   async createPreset(data) {
-    return request('POST', '/api/free-modifiers/presets', data);
+    return request('POST', '/api/modifiers/presets', data);
   },
   async updatePreset(id, data) {
-    return request('PUT', `/api/free-modifiers/presets/${id}`, data);
+    return request('PUT', `/api/modifiers/presets/${id}`, data);
   },
   async deletePreset(id) {
-    return request('DELETE', `/api/free-modifiers/presets/${id}`);
+    return request('DELETE', `/api/modifiers/presets/${id}`);
   },
   async getLogs(id) {
-    return request('GET', `/api/free-modifiers/${id}/logs`);
+    return request('GET', `/api/modifiers/${id}/logs`);
   },
 };
 
@@ -273,4 +273,5 @@ export default {
   expenses,
   activities,
   freeModifiers,
+  modifiers: freeModifiers,
 };

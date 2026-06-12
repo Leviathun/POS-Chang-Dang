@@ -42,15 +42,7 @@ router.post('/', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).run(branchId, req.user.id, amount, category, note || null, dateVal);
 
-    // Also write to activity log
-    await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-      VALUES (?, ?, 'log_expense', ?, datetime('now', '+7 hours'))
-    `).run(
-      branchId,
-      req.user.id,
-      `บันทึกค่าใช้จ่าย ${amount} บาท หมวดหมู่ ${category}${note ? ` (${note})` : ''}`
-    );
+
 
     res.status(201).json({
       success: true,
@@ -155,15 +147,7 @@ router.delete('/:id', async (req, res) => {
 
     await db.prepare('DELETE FROM expenses WHERE id = ?').run(Number(id));
 
-    // Also write to activity log
-    await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-      VALUES (?, ?, 'delete_expense', ?, datetime('now', '+7 hours'))
-    `).run(
-      branchId,
-      req.user.id,
-      `ลบรายการค่าใช้จ่าย ${expense.amount} บาท (หมวดหมู่ ${expense.category}) ที่บันทึกเมื่อ ${expense.expense_date}`
-    );
+
 
     res.json({
       success: true,

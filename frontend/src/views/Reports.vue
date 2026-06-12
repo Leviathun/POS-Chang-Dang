@@ -44,7 +44,7 @@
     </div>
 
     <!-- Date selector card (hidden on 'top_menus' tab) -->
-    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md">
+    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 50;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
         <div class="flex gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
@@ -87,8 +87,8 @@
             <input 
               v-if="periodMode === 'daily'"
               type="date" 
-              class="form-input p-xs" 
-              style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
+              class="form-input reports-filter-control" 
+              style="max-width: 200px;" 
               v-model="selectedDate" 
               @change="loadReportData"
             />
@@ -96,35 +96,67 @@
             <input 
               v-if="periodMode === 'monthly'"
               type="month" 
-              class="form-input p-xs" 
-              style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
+              class="form-input reports-filter-control" 
+              style="max-width: 200px;" 
               v-model="selectedMonth" 
               @change="loadReportData"
             />
 
-            <select 
-              v-if="periodMode === 'yearly'"
-              class="form-select" 
-              style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px; height: 38px; line-height: 24px; background-position: right 12px center;"
-              v-model="selectedYear" 
-              @change="loadReportData"
-            >
-              <option v-for="y in availableYears" :key="y" :value="String(y)">ปี {{ y }}</option>
-            </select>
+            <!-- Custom Select for Yearly -->
+            <div v-if="periodMode === 'yearly'" class="custom-select-wrapper" style="max-width: 200px;" @click.stop>
+              <div 
+                class="custom-select-trigger reports-filter-control" 
+                :class="{ 'active': isYearDropdownOpen }" 
+                @click="toggleYearDropdown"
+                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
+              >
+                <span class="custom-select-text">{{ selectedYearLabel }}</span>
+              </div>
+              <div v-if="isYearDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  v-for="y in availableYears" 
+                  :key="y" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': selectedYear === String(y) }" 
+                  @click="selectYear(y)"
+                >
+                  ปี {{ y }}
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Branch Selector for Admin -->
-          <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center" style="margin-left: auto;">
+          <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
             <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
-            <select 
-              class="form-select" 
-              style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); min-width: 160px; height: 38px; line-height: 24px; background-position: right 12px center;"
-              v-model="selectedBranchId"
-              @change="onBranchChange"
-            >
-              <option :value="null">ทุกสาขา</option>
-              <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-            </select>
+            <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
+              <div 
+                class="custom-select-trigger reports-filter-control" 
+                :class="{ 'active': isBranchDropdownOpen }" 
+                @click="toggleBranchDropdown"
+                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
+              >
+                <span class="custom-select-text">{{ selectedBranchName }}</span>
+              </div>
+              <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  class="custom-select-option" 
+                  :class="{ 'selected': selectedBranchId === null }" 
+                  @click="selectBranch(null)"
+                >
+                  ทุกสาขา
+                </div>
+                <div 
+                  v-for="b in branches" 
+                  :key="b.id" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': selectedBranchId === b.id }" 
+                  @click="selectBranch(b.id)"
+                >
+                  {{ b.name }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -974,10 +1006,48 @@ const selectHistoryStatus = (status) => {
   loadOrderHistory();
 };
 
+// Custom dropdowns for Branch and Year filter
+const isBranchDropdownOpen = ref(false);
+const isYearDropdownOpen = ref(false);
+
+const selectedBranchName = computed(() => {
+  if (selectedBranchId.value === null) return 'ทุกสาขา';
+  const found = branches.value.find(b => b.id === selectedBranchId.value);
+  return found ? found.name : 'ทุกสาขา';
+});
+
+const selectedYearLabel = computed(() => `ปี ${selectedYear.value}`);
+
+const toggleBranchDropdown = () => {
+  const current = isBranchDropdownOpen.value;
+  closeReportsDropdowns();
+  isBranchDropdownOpen.value = !current;
+};
+
+const toggleYearDropdown = () => {
+  const current = isYearDropdownOpen.value;
+  closeReportsDropdowns();
+  isYearDropdownOpen.value = !current;
+};
+
+const selectBranch = (branchId) => {
+  selectedBranchId.value = branchId;
+  isBranchDropdownOpen.value = false;
+  onBranchChange();
+};
+
+const selectYear = (y) => {
+  selectedYear.value = String(y);
+  isYearDropdownOpen.value = false;
+  loadReportData();
+};
+
 const closeReportsDropdowns = () => {
   isExpenseCategoryDropdownOpen.value = false;
   isFilterActionDropdownOpen.value = false;
   isHistoryStatusDropdownOpen.value = false;
+  isBranchDropdownOpen.value = false;
+  isYearDropdownOpen.value = false;
 };
 
 const loadMonthlyLedger = async () => {
@@ -1455,6 +1525,51 @@ const exportExpensesCSV = () => {
 </script>
 
 <style scoped>
+/* --- Reports Filter Controls --- */
+.reports-filter-control {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important; /* Premium rounded corner 12px */
+  color: var(--text-primary) !important;
+  font-family: var(--font-family) !important;
+  font-size: var(--font-sm) !important;
+  height: 38px !important;
+  line-height: 24px !important;
+  transition: all var(--transition-base) !important;
+}
+
+input.reports-filter-control {
+  padding: 6px var(--space-md) !important;
+}
+
+select.reports-filter-control,
+.custom-select-trigger.reports-filter-control {
+  padding: 6px 36px 6px var(--space-md) !important;
+  background-position: right 12px center !important;
+}
+
+.reports-filter-control:hover {
+  border-color: var(--border-color-focus) !important;
+  background-color: var(--card-bg-hover) !important;
+}
+
+.reports-filter-control:focus {
+  border-color: var(--primary) !important;
+  background-color: var(--card-bg-active) !important;
+  box-shadow: 0 0 0 3px var(--primary-glow) !important;
+  outline: none !important;
+}
+
+.reports-branch-selector {
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .reports-branch-selector {
+    margin-left: 0 !important;
+  }
+}
+
 /* --- Category Tabs --- */
 .category-tabs {
   display: flex;

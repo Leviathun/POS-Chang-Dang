@@ -45,30 +45,32 @@
     <!-- Tab 1: Shop Settings Form -->
     <div v-if="activeTab === 'shop'" class="card">
       <!-- Branch Selector for Admin -->
-      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl" style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-lg);">
+      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl" style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-lg); position: relative; z-index: 10;">
         <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store" style="margin-right: 4px;"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
-        <select 
-          class="form-select" 
-          style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); width: 100%; height: 38px; line-height: 24px; background-position: right 12px center;"
-          v-model="selectedSettingsBranchId"
-          @change="loadShopSettings"
-        >
-          <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-        </select>
+        <div class="custom-select-wrapper" @click.stop>
+          <div 
+            class="custom-select-trigger" 
+            :class="{ 'active': isSettingsBranchDropdownOpen }" 
+            @click="toggleSettingsBranchDropdown"
+            style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-md); width: 100%; height: 38px; line-height: 24px; background-position: right 12px center; display: flex; align-items: center;"
+          >
+            <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
+          </div>
+          <div v-if="isSettingsBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+            <div 
+              v-for="b in branches" 
+              :key="b.id" 
+              class="custom-select-option" 
+              :class="{ 'selected': selectedSettingsBranchId === b.id }" 
+              @click="selectSettingsBranch(b.id)"
+            >
+              {{ b.name }}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
-
-      <!-- Shop Name -->
-      <div class="form-group">
-        <label class="form-label">ชื่อร้านค้า (จะแสดงบนหัวแอปและบิลขาย)</label>
-        <input 
-          type="text" 
-          class="form-input" 
-          v-model="shopForm.shop_name" 
-          placeholder="ระบุชื่อร้านค้า..." 
-        />
-      </div>
 
 
 
@@ -754,10 +756,16 @@ import { ui, formatDate, getUser } from '../helpers';
 // Custom Dropdown logic for Settings.vue
 const isRoleDropdownOpen = ref(false);
 const isBranchDropdownOpen = ref(false);
+const isSettingsBranchDropdownOpen = ref(false);
 
 const selectedUserBranchName = computed(() => {
   const b = branches.value.find(x => x.id === userForm.value.branch_id);
   return b ? b.name + (b.address ? ' — ' + b.address : '') : 'เลือกสาขาที่สังกัด...';
+});
+
+const selectedSettingsBranchName = computed(() => {
+  const b = branches.value.find(x => x.id === selectedSettingsBranchId.value);
+  return b ? b.name : 'เลือกสาขาที่ต้องการตั้งค่า...';
 });
 
 const selectUserRole = (role) => {
@@ -770,9 +778,22 @@ const selectUserBranch = (branchId) => {
   isBranchDropdownOpen.value = false;
 };
 
+const selectSettingsBranch = (branchId) => {
+  selectedSettingsBranchId.value = branchId;
+  isSettingsBranchDropdownOpen.value = false;
+  loadShopSettings();
+};
+
+const toggleSettingsBranchDropdown = () => {
+  const current = isSettingsBranchDropdownOpen.value;
+  closeSettingsDropdowns();
+  isSettingsBranchDropdownOpen.value = !current;
+};
+
 const closeSettingsDropdowns = () => {
   isRoleDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
+  isSettingsBranchDropdownOpen.value = false;
 };
 
 // States
@@ -868,7 +889,6 @@ const handleDeleteBranch = async (id) => {
 
 // Forms
 const shopForm = ref({
-  shop_name: 'ร้านไก่ทอดช้างแดง',
   daily_report_time: '21:00',
   low_stock_threshold: 5,
   line_channel_token: '',
@@ -890,7 +910,6 @@ const loadShopSettings = async () => {
     if (res.success) {
       const data = res.data;
       shopForm.value = {
-        shop_name: data.shop_name || 'ร้านไก่ทอดช้างแดง',
         daily_report_time: data.daily_report_time || '21:00',
         low_stock_threshold: Number(data.low_stock_threshold) || 5,
         line_channel_token: data.line_channel_token || '',
@@ -1048,7 +1067,7 @@ const fileInput = ref(null);
 const loadPresetsData = async () => {
   presetsLoading.value = true;
   try {
-    const res = await api.freeModifiers.getPresets();
+    const res = await api.modifiers.getPresets();
     if (res.success) {
       presets.value = res.data || [];
     }
@@ -1062,7 +1081,7 @@ const loadPresetsData = async () => {
 
 const loadAvailableModifiers = async () => {
   try {
-    const res = await api.freeModifiers.getAll();
+    const res = await api.modifiers.getAll();
     if (res.success) {
       availableModifiers.value = res.data || [];
     }
@@ -1119,9 +1138,9 @@ const handleSavePreset = async () => {
     
     let res;
     if (isEditPresetMode.value) {
-      res = await api.freeModifiers.updatePreset(editPresetId.value, payload);
+      res = await api.modifiers.updatePreset(editPresetId.value, payload);
     } else {
-      res = await api.freeModifiers.createPreset(payload);
+      res = await api.modifiers.createPreset(payload);
     }
     
     if (res.success) {
@@ -1142,7 +1161,7 @@ const handleDeletePreset = async (id) => {
   if (confirm) {
     ui.showLoading();
     try {
-      const res = await api.freeModifiers.deletePreset(id);
+      const res = await api.modifiers.deletePreset(id);
       if (res.success) {
         ui.showToast('ลบสูตรสำเร็จเรียบร้อย', 'success');
         loadPresetsData();
