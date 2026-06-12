@@ -44,6 +44,19 @@
 
     <!-- Tab 1: Shop Settings Form -->
     <div v-if="activeTab === 'shop'" class="card">
+      <!-- Branch Selector for Admin -->
+      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl" style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-lg);">
+        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store" style="margin-right: 4px;"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
+        <select 
+          class="form-select" 
+          style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); width: 100%; height: 38px; line-height: 24px; background-position: right 12px center;"
+          v-model="selectedSettingsBranchId"
+          @change="loadShopSettings"
+        >
+          <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+        </select>
+      </div>
+
       <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
 
       <!-- Shop Name -->
@@ -765,6 +778,7 @@ const closeSettingsDropdowns = () => {
 // States
 const activeTab = ref('shop');
 const currentUser = ref(null);
+const selectedSettingsBranchId = ref(null);
 const users = ref([]);
 const usersLoading = ref(false);
 const showUserModal = ref(false);
@@ -872,7 +886,7 @@ const userForm = ref({
 const loadShopSettings = async () => {
   ui.showLoading();
   try {
-    const res = await api.settings.getAll();
+    const res = await api.settings.getAll(selectedSettingsBranchId.value);
     if (res.success) {
       const data = res.data;
       shopForm.value = {
@@ -896,7 +910,7 @@ const saveShopSettings = async () => {
   ui.showLoading();
   try {
     const promises = Object.entries(shopForm.value).map(([key, val]) => {
-      return api.settings.update(key, String(val));
+      return api.settings.update(key, String(val), selectedSettingsBranchId.value);
     });
     
     await Promise.all(promises);
@@ -1254,6 +1268,9 @@ const handleArchiveOrders = async () => {
 
 onMounted(() => {
   currentUser.value = getUser();
+  if (currentUser.value) {
+    selectedSettingsBranchId.value = currentUser.value.branch_id;
+  }
   loadShopSettings();
   loadBranches();
   loadUsersData();

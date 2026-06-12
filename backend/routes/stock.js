@@ -31,10 +31,11 @@ router.get('/', async (req, res) => {
         bs.quantity as stock,
         bs.raw_quantity as raw_stock
       FROM menu_items mi
-      LEFT JOIN categories c ON c.id = mi.category_id
+      LEFT JOIN categories c ON c.id = mi.category_id AND c.branch_id = ?
       INNER JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
+      WHERE mi.branch_id = ?
       ORDER BY mi.sort_order ASC, mi.id ASC
-    `).all(branchId);
+    `).all(branchId, branchId, branchId);
 
     // เพิ่ม flag low_stock
     const itemsWithFlag = items.map(item => ({
@@ -73,7 +74,7 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
       });
     }
 
-    const item = await db.prepare('SELECT * FROM menu_items WHERE id = ?').get(Number(id));
+    const item = await db.prepare('SELECT * FROM menu_items WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!item) {
       return res.status(404).json({
         success: false,
@@ -177,7 +178,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
       });
     }
 
-    const item = await db.prepare('SELECT * FROM menu_items WHERE id = ?').get(Number(id));
+    const item = await db.prepare('SELECT * FROM menu_items WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!item) {
       return res.status(404).json({
         success: false,
@@ -307,7 +308,7 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
       });
     }
 
-    const item = await db.prepare('SELECT * FROM menu_items WHERE id = ?').get(Number(id));
+    const item = await db.prepare('SELECT * FROM menu_items WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!item) {
       return res.status(404).json({
         success: false,
@@ -428,7 +429,7 @@ router.get('/:id/logs', async (req, res) => {
     }
 
     // ตรวจสอบว่าเมนูมีอยู่
-    const item = await db.prepare('SELECT id, name FROM menu_items WHERE id = ?').get(Number(id));
+    const item = await db.prepare('SELECT id, name FROM menu_items WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!item) {
       return res.status(404).json({
         success: false,
@@ -501,7 +502,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
         const currentCooked = branchStock ? (branchStock.quantity !== null && branchStock.quantity !== undefined ? branchStock.quantity : 0) : 0;
         const currentRaw = branchStock ? (branchStock.raw_quantity !== null && branchStock.raw_quantity !== undefined ? branchStock.raw_quantity : 0) : 0;
 
-        const menuItem = await db.prepare('SELECT name FROM menu_items WHERE id = ?').get(Number(menu_item_id));
+        const menuItem = await db.prepare('SELECT name FROM menu_items WHERE id = ? AND branch_id = ?').get(Number(menu_item_id), branchId);
         if (!menuItem) continue;
 
         let deltaCooked = 0;

@@ -76,10 +76,13 @@ async function getDailyReport(date, branchId = null) {
     params5.push(branchId);
   }
   const orders = await db.prepare(`
-    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, cancel_reason, created_at
-    FROM orders
-    WHERE date(created_at) = ? AND status IN ('completed', 'cancelled')${branchFilter}
-    ORDER BY id DESC
+    SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
+           b.name as branch_name, u.name as staff_name
+    FROM orders o
+    LEFT JOIN branches b ON b.id = o.branch_id
+    LEFT JOIN users u ON u.id = o.staff_id
+    WHERE date(o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+    ORDER BY o.id DESC
   `).all(params5);
  
   const breakdownData = {
@@ -146,10 +149,13 @@ async function getMonthlyReport(month, branchId = null) {
   const paramsOrders = [month];
   if (branchId) paramsOrders.push(branchId);
   const orders = await db.prepare(`
-    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, cancel_reason, created_at
-    FROM orders
-    WHERE strftime('%Y-%m', created_at) = ? AND status IN ('completed', 'cancelled')${branchFilter}
-    ORDER BY id DESC
+    SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
+           b.name as branch_name, u.name as staff_name
+    FROM orders o
+    LEFT JOIN branches b ON b.id = o.branch_id
+    LEFT JOIN users u ON u.id = o.staff_id
+    WHERE strftime('%Y-%m', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+    ORDER BY o.id DESC
   `).all(paramsOrders);
 
   return {
@@ -205,10 +211,13 @@ async function getYearlyReport(year, branchId = null) {
   const paramsOrders = [year];
   if (branchId) paramsOrders.push(branchId);
   const orders = await db.prepare(`
-    SELECT id, order_number, subtotal, discount, total, payment_method, status, note, cancel_reason, created_at
-    FROM orders
-    WHERE strftime('%Y', created_at) = ? AND status IN ('completed', 'cancelled')${branchFilter}
-    ORDER BY id DESC
+    SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
+           b.name as branch_name, u.name as staff_name
+    FROM orders o
+    LEFT JOIN branches b ON b.id = o.branch_id
+    LEFT JOIN users u ON u.id = o.staff_id
+    WHERE strftime('%Y', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+    ORDER BY o.id DESC
   `).all(paramsOrders);
 
   return {

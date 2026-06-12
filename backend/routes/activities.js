@@ -14,7 +14,9 @@ router.get('/', async (req, res) => {
     const db = getDb();
 
     let branchId = req.user.branch_id;
-    if (!branchId) {
+    if (req.query.branch_id) {
+      branchId = Number(req.query.branch_id);
+    } else if (!branchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
       branchId = defaultBranch ? defaultBranch.id : null;
     }

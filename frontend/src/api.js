@@ -156,29 +156,43 @@ const stock = {
 };
 
 const reports = {
-  async daily(date) {
-    return request('GET', `/api/reports/daily?date=${date}`);
+  async daily(date, branchId = null) {
+    let path = `/api/reports/daily?date=${date}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async monthly(month) {
-    return request('GET', `/api/reports/monthly?month=${month}`);
+  async monthly(month, branchId = null) {
+    let path = `/api/reports/monthly?month=${month}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async yearly(year) {
-    return request('GET', `/api/reports/yearly?year=${year}`);
+  async yearly(year, branchId = null) {
+    let path = `/api/reports/yearly?year=${year}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async topItems(days = 7) {
-    return request('GET', `/api/reports/top-items?days=${days}`);
+  async topItems(days = 7, branchId = null) {
+    let path = `/api/reports/top-items?days=${days}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async summary() {
-    return request('GET', '/api/reports/summary');
+  async summary(branchId = null) {
+    let path = '/api/reports/summary';
+    if (branchId) path += `?branch_id=${branchId}`;
+    return request('GET', path);
   },
 };
 
 const settings = {
-  async getAll() {
-    return request('GET', '/api/settings');
+  async getAll(branchId = null) {
+    let path = '/api/settings';
+    if (branchId) path += `?branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async update(key, value) {
-    return request('PUT', '/api/settings', { key, value });
+  async update(key, value, branchId = null) {
+    const body = { key, value };
+    if (branchId) body.branch_id = branchId;
+    return request('PUT', '/api/settings', body);
   },
   async exportBackup() {
     return request('GET', '/api/settings/backup/export');

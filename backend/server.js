@@ -1,3 +1,4 @@
+// Server entry point for POS-Chang-Dang
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 

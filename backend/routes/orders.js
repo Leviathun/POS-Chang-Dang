@@ -43,8 +43,8 @@ router.post('/', requireAuth, async (req, res) => {
           SELECT mi.id, mi.name, COALESCE(bs.price, mi.price) as price, mi.active, bs.quantity as stock
           FROM menu_items mi
           LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-          WHERE mi.id = ?
-        `).get(branchId, Number(item.menu_item_id));
+          WHERE mi.id = ? AND mi.branch_id = ?
+        `).get(branchId, Number(item.menu_item_id), branchId);
 
         if (!menuItem) {
           throw new Error(`ไม่พบเมนู ID: ${item.menu_item_id}`);
@@ -61,8 +61,8 @@ router.post('/', requireAuth, async (req, res) => {
               SELECT bs.quantity as stock, mi.name
               FROM menu_items mi
               LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-              WHERE mi.id = ?
-            `).get(branchId, Number(ingredient.id));
+              WHERE mi.id = ? AND mi.branch_id = ?
+            `).get(branchId, Number(ingredient.id), branchId);
 
             const requiredQty = Number(ingredient.weight) * item.quantity;
             if (ingStock && ingStock.stock !== null && ingStock.stock < requiredQty) {
@@ -367,7 +367,7 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         SELECT mi.id, mi.name, bs.quantity as stock 
         FROM menu_items mi
         LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-        WHERE mi.id = ?
+        WHERE mi.id = ? AND mi.branch_id = ?
       `);
       const insertLog = db.prepare(`
         INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
@@ -387,7 +387,7 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
           // หักสต็อกตามส่วนผสมและสัดส่วนน้ำหนัก
           for (const ingredient of optionsObj.selected_items) {
-            const ingItem = await getItem.get(branchId, Number(ingredient.id));
+            const ingItem = await getItem.get(branchId, Number(ingredient.id), branchId);
             if (ingItem && ingItem.stock !== null) {
               const previousStock = ingItem.stock;
               const deductAmount = Number(ingredient.weight) * oi.quantity;
@@ -553,7 +553,7 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
           SELECT mi.id, mi.name, bs.quantity as stock 
           FROM menu_items mi
           LEFT JOIN branch_stocks bs ON bs.menu_item_id = mi.id AND bs.branch_id = ?
-          WHERE mi.id = ?
+          WHERE mi.id = ? AND mi.branch_id = ?
         `);
         const insertLog = db.prepare(`
           INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
@@ -561,7 +561,7 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
         `);
 
         for (const oi of orderItems) {
-          const menuItem = await getItem.get(branchId, oi.menu_item_id);
+          const menuItem = await getItem.get(branchId, oi.menu_item_id, branchId);
           if (menuItem && menuItem.stock !== null) {
             const previousStock = menuItem.stock;
             const newStock = previousStock + oi.quantity;

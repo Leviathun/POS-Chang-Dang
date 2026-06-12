@@ -305,22 +305,106 @@ router.post('/branches', requireAdmin, async (req, res) => {
 
       const branchId = result.lastInsertRowid;
 
-      // สร้าง stock record เริ่มต้น (0 = เริ่มต้นคุมสต็อกที่ 0 ชิ้น, ของสดอิงตามสาขาอื่นๆ ที่มีอยู่) สำหรับสินค้าทั้งหมดให้กับสาขาใหม่นี้
-      const menuItems = await db.prepare('SELECT id FROM menu_items').all();
-      for (const item of menuItems) {
-        // ตรวจสอบว่ามีสาขาอื่นที่ตั้งค่า raw_quantity ไว้เป็นตัวเลขหรือไม่ (ถ้ามี แสดงว่าตัวนี้เป็นของสด)
-        const existingStock = await db.prepare(`
-          SELECT raw_quantity FROM branch_stocks 
-          WHERE menu_item_id = ? AND raw_quantity IS NOT NULL 
-          LIMIT 1
-        `).get(item.id);
+      // หาสาขาหลัก (เพื่อคัดลอกข้อมูลสินค้า)
+      const sourceBranch = await db.prepare('SELECT id FROM branches WHERE id != ? LIMIT 1').get(branchId);
+      const sourceBranchId = sourceBranch ? sourceBranch.id : null;
 
-        const rawQuantityVal = existingStock ? 0 : null;
+      if (sourceBranchId) {
+        // 1. คัดลอก Categories
+        const categories = await db.prepare('SELECT id, name, sort_order, active FROM categories WHERE branch_id = ?').all(sourceBranchId);
+        const categoryMap = {}; // { [oldCategoryId]: newCategoryId }
+        for (const cat of categories) {
+          const catRes = await db.prepare(
+            'INSERT INTO categories (branch_id, name, sort_order, active) VALUES (?, ?, ?, ?)'
+          ).run(branchId, cat.name, cat.sort_order, cat.active);
+          categoryMap[cat.id] = catRes.lastInsertRowid;
+        }
 
-        await db.prepare(`
-          INSERT OR IGNORE INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity)
-          VALUES (?, ?, 0, ?)
-        `).run(branchId, item.id, rawQuantityVal);
+        // 2. คัดลอก Menu Items
+        const menuItems = await db.prepare('SELECT id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices FROM menu_items WHERE branch_id = ?').all(sourceBranchId);
+        for (const item of menuItems) {
+          const newCatId = item.category_id ? categoryMap[item.category_id] : null;
+          const menuRes = await db.prepare(`
+            INSERT INTO menu_items (branch_id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            branchId,
+            item.name,
+            item.price,
+            newCatId,
+            item.image_url,
+            item.active,
+            item.sort_order,
+            item.uom,
+            item.multiple_prices
+          );
+
+          const newItemId = menuRes.lastInsertRowid;
+
+          // ดึงค่า raw_quantity ตั้งต้นจากสาขาอื่น
+          const existingStock = await db.prepare(`
+            SELECT raw_quantity FROM branch_stocks 
+            WHERE menu_item_id = ? AND raw_quantity IS NOT NULL 
+            LIMIT 1
+          `).get(item.id);
+          const rawQuantityVal = existingStock ? 0 : null;
+
+          // บันทึกสต็อกเริ่มต้น 0 สำหรับสาขาใหม่
+          await db.prepare(`
+            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price, multiple_prices)
+            VALUES (?, ?, 0, ?, ?, ?)
+          `).run(branchId, newItemId, rawQuantityVal, item.price, item.multiple_prices);
+        }
+
+        // 3. คัดลอก Free Modifiers
+        const modifiers = await db.prepare('SELECT id, name, category, servings_per_bag, active FROM free_modifiers WHERE branch_id = ?').all(sourceBranchId);
+        const modifierMap = {}; // { [oldModifierId]: newModifierId }
+        for (const mod of modifiers) {
+          const modRes = await db.prepare(
+            'INSERT INTO free_modifiers (branch_id, name, category, servings_per_bag, active) VALUES (?, ?, ?, ?, ?)'
+          ).run(branchId, mod.name, mod.category, mod.servings_per_bag, mod.active);
+          
+          const newModId = modRes.lastInsertRowid;
+          modifierMap[mod.id] = newModId;
+
+          // บันทึกสต็อกเริ่มต้น
+          await db.prepare(
+            'INSERT INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings) VALUES (?, ?, 0)'
+          ).run(branchId, newModId);
+        }
+
+        // 4. คัดลอก Free Modifier Presets (สูตรสำเร็จ)
+        const presets = await db.prepare('SELECT id, name, modifier_ids, active FROM free_modifier_presets WHERE branch_id = ?').all(sourceBranchId);
+        for (const preset of presets) {
+          let newModIds = [];
+          try {
+            const oldModIds = JSON.parse(preset.modifier_ids || '[]');
+            newModIds = oldModIds.map(oldId => modifierMap[oldId]).filter(id => id !== undefined && id !== null);
+          } catch (e) {
+            console.error('Failed to parse preset modifier_ids:', preset.modifier_ids);
+          }
+
+          await db.prepare(
+            'INSERT INTO free_modifier_presets (branch_id, name, modifier_ids, active) VALUES (?, ?, ?, ?)'
+          ).run(branchId, preset.name, JSON.stringify(newModIds), preset.active);
+        }
+
+        // 5. คัดลอก Settings และปรับปรุงฟิลด์เฉพาะสาขา
+        const settings = await db.prepare('SELECT key, value FROM settings WHERE branch_id = ?').all(sourceBranchId);
+        for (const s of settings) {
+          let val = s.value;
+          if (s.key === 'shop_name') {
+            val = name.trim();
+          } else if (s.key === 'line_channel_token' || s.key === 'line_recipient_id' || s.key === 'line_owner_user_id') {
+            val = ''; // เคลียร์ไลน์สำหรับผู้ใช้สาขาใหม่
+          }
+          await db.prepare(
+            'INSERT INTO settings (branch_id, key, value) VALUES (?, ?, ?)'
+          ).run(branchId, s.key, val);
+        }
+      } else {
+        // ถ้าไม่มีสาขาอื่น (เป็นสาขาแรก) — ให้ Seeder ใน database.js ทำงานอัตโนมัติ
+        console.log('No other branches found to clone menu from.');
       }
 
       // บันทึก Log กิจกรรม

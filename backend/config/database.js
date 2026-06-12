@@ -127,6 +127,203 @@ function getDb() {
 async function initDatabase() {
   const db = getDb();
 
+  // 1. Ensure branches table and default branch exist first (to support Foreign Key constraints)
+  await db.exec(`CREATE TABLE IF NOT EXISTS branches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    address TEXT,
+    phone TEXT,
+    created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+  )`);
+
+  const branchCount = await db.prepare('SELECT COUNT(*) as count FROM branches').get();
+  if (branchCount.count === 0) {
+    await db.prepare('INSERT INTO branches (name, address) VALUES (?, ?)')
+      .run('สาขาหลัก (ช้างแดง)', 'กรุงเทพฯ');
+    console.log('  🏪 สร้างสาขาเริ่มต้น: สาขาหลัก (ช้างแดง)');
+  }
+  const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+  const defaultBranchId = defaultBranch ? defaultBranch.id : 1;
+
+  // 2. RUN SCHEMA MIGRATIONS (Adding branch_id to existing tables)
+  // Check categories
+  let needsCategoriesMig = false;
+  try {
+    const tableInfo = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='categories'").get();
+    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes('branch_id')) {
+      needsCategoriesMig = true;
+    }
+  } catch (e) {}
+
+  if (needsCategoriesMig) {
+    console.log('  🔧 Migration: เริ่มปรับปรุงโครงสร้างตาราง categories...');
+    await db.exec("PRAGMA foreign_keys=OFF");
+    try {
+      await db.exec("DROP TABLE IF EXISTS categories_old");
+      await db.exec("ALTER TABLE categories RENAME TO categories_old");
+      await db.exec(`CREATE TABLE categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        sort_order INTEGER DEFAULT 0,
+        active INTEGER DEFAULT 1,
+        UNIQUE(branch_id, name)
+      )`);
+      await db.prepare(`INSERT INTO categories (id, branch_id, name, sort_order, active)
+        SELECT id, ?, name, sort_order, active FROM categories_old`).run(defaultBranchId);
+      await db.exec("DROP TABLE categories_old");
+      console.log('  ✅ Migration: ปรับปรุงโครงสร้างตาราง categories สำเร็จ');
+    } catch (err) {
+      console.error('  ⚠️ Migration categories error:', err.message);
+    } finally {
+      await db.exec("PRAGMA foreign_keys=ON");
+    }
+  }
+
+  // Check menu_items
+  let needsMenuItemsMig = false;
+  try {
+    const tableInfo = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='menu_items'").get();
+    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes('branch_id')) {
+      needsMenuItemsMig = true;
+    }
+  } catch (e) {}
+
+  if (needsMenuItemsMig) {
+    console.log('  🔧 Migration: เริ่มปรับปรุงโครงสร้างตาราง menu_items...');
+    await db.exec("PRAGMA foreign_keys=OFF");
+    try {
+      await db.exec("DROP TABLE IF EXISTS menu_items_old");
+      await db.exec("ALTER TABLE menu_items RENAME TO menu_items_old");
+      await db.exec(`CREATE TABLE menu_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        price REAL NOT NULL,
+        category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+        image_url TEXT,
+        active INTEGER DEFAULT 1,
+        sort_order INTEGER DEFAULT 0,
+        uom TEXT DEFAULT 'ชิ้น',
+        multiple_prices TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      )`);
+      await db.prepare(`INSERT INTO menu_items (id, branch_id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices, created_at, updated_at)
+        SELECT id, ?, name, price, category_id, image_url, active, sort_order, uom, multiple_prices, created_at, updated_at FROM menu_items_old`).run(defaultBranchId);
+      await db.exec("DROP TABLE menu_items_old");
+      console.log('  ✅ Migration: ปรับปรุงโครงสร้างตาราง menu_items สำเร็จ');
+    } catch (err) {
+      console.error('  ⚠️ Migration menu_items error:', err.message);
+    } finally {
+      await db.exec("PRAGMA foreign_keys=ON");
+    }
+  }
+
+  // Check settings
+  let needsSettingsMig = false;
+  try {
+    const tableInfo = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='settings'").get();
+    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes('branch_id')) {
+      needsSettingsMig = true;
+    }
+  } catch (e) {}
+
+  if (needsSettingsMig) {
+    console.log('  🔧 Migration: เริ่มปรับปรุงโครงสร้างตาราง settings...');
+    await db.exec("PRAGMA foreign_keys=OFF");
+    try {
+      await db.exec("DROP TABLE IF EXISTS settings_old");
+      await db.exec("ALTER TABLE settings RENAME TO settings_old");
+      await db.exec(`CREATE TABLE settings (
+        branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+        key TEXT NOT NULL,
+        value TEXT,
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        PRIMARY KEY (branch_id, key)
+      )`);
+      await db.prepare(`INSERT INTO settings (branch_id, key, value, updated_at)
+        SELECT ?, key, value, updated_at FROM settings_old`).run(defaultBranchId);
+      await db.exec("DROP TABLE settings_old");
+      console.log('  ✅ Migration: ปรับปรุงโครงสร้างตาราง settings สำเร็จ');
+    } catch (err) {
+      console.error('  ⚠️ Migration settings error:', err.message);
+    } finally {
+      await db.exec("PRAGMA foreign_keys=ON");
+    }
+  }
+
+  // Check free_modifiers
+  let needsModifiersMig = false;
+  try {
+    const tableInfo = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='free_modifiers'").get();
+    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes('branch_id')) {
+      needsModifiersMig = true;
+    }
+  } catch (e) {}
+
+  if (needsModifiersMig) {
+    console.log('  🔧 Migration: เริ่มปรับปรุงโครงสร้างตาราง free_modifiers...');
+    await db.exec("PRAGMA foreign_keys=OFF");
+    try {
+      await db.exec("DROP TABLE IF EXISTS free_modifiers_old");
+      await db.exec("ALTER TABLE free_modifiers RENAME TO free_modifiers_old");
+      await db.exec(`CREATE TABLE free_modifiers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL CHECK(category IN ('sauce_small', 'sauce_large', 'dipping', 'powder')),
+        servings_per_bag INTEGER DEFAULT 50,
+        active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        UNIQUE(branch_id, name)
+      )`);
+      await db.prepare(`INSERT INTO free_modifiers (id, branch_id, name, category, servings_per_bag, active, created_at)
+        SELECT id, ?, name, category, servings_per_bag, active, created_at FROM free_modifiers_old`).run(defaultBranchId);
+      await db.exec("DROP TABLE free_modifiers_old");
+      console.log('  ✅ Migration: ปรับปรุงโครงสร้างตาราง free_modifiers สำเร็จ');
+    } catch (err) {
+      console.error('  ⚠️ Migration free_modifiers error:', err.message);
+    } finally {
+      await db.exec("PRAGMA foreign_keys=ON");
+    }
+  }
+
+  // Check free_modifier_presets
+  let needsPresetsMig = false;
+  try {
+    const tableInfo = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='free_modifier_presets'").get();
+    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes('branch_id')) {
+      needsPresetsMig = true;
+    }
+  } catch (e) {}
+
+  if (needsPresetsMig) {
+    console.log('  🔧 Migration: เริ่มปรับปรุงโครงสร้างตาราง free_modifier_presets...');
+    await db.exec("PRAGMA foreign_keys=OFF");
+    try {
+      await db.exec("DROP TABLE IF EXISTS free_modifier_presets_old");
+      await db.exec("ALTER TABLE free_modifier_presets RENAME TO free_modifier_presets_old");
+      await db.exec(`CREATE TABLE free_modifier_presets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        modifier_ids TEXT NOT NULL,
+        active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        UNIQUE(branch_id, name)
+      )`);
+      await db.prepare(`INSERT INTO free_modifier_presets (id, branch_id, name, modifier_ids, active, created_at)
+        SELECT id, ?, name, modifier_ids, active, created_at FROM free_modifier_presets_old`).run(defaultBranchId);
+      await db.exec("DROP TABLE free_modifier_presets_old");
+      console.log('  ✅ Migration: ปรับปรุงโครงสร้างตาราง free_modifier_presets สำเร็จ');
+    } catch (err) {
+      console.error('  ⚠️ Migration free_modifier_presets error:', err.message);
+    } finally {
+      await db.exec("PRAGMA foreign_keys=ON");
+    }
+  }
+
   // ─── Create Tables (Multi-Branch Enabled) ─────────────────
   const tables = [
     `CREATE TABLE IF NOT EXISTS branches (
@@ -147,19 +344,23 @@ async function initDatabase() {
     )`,
     `CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
       sort_order INTEGER DEFAULT 0,
-      active INTEGER DEFAULT 1
+      active INTEGER DEFAULT 1,
+      UNIQUE(branch_id, name)
     )`,
     `CREATE TABLE IF NOT EXISTS menu_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       price REAL NOT NULL,
-      category_id INTEGER REFERENCES categories(id),
+      category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
       image_url TEXT,
       active INTEGER DEFAULT 1,
       sort_order INTEGER DEFAULT 0,
       uom TEXT DEFAULT 'ชิ้น',
+      multiple_prices TEXT DEFAULT NULL,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
@@ -170,6 +371,7 @@ async function initDatabase() {
       quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
       raw_quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
       price REAL DEFAULT NULL,
+      multiple_prices TEXT DEFAULT NULL,
       updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
       UNIQUE(branch_id, menu_item_id)
     )`,
@@ -186,6 +388,8 @@ async function initDatabase() {
       cash_change REAL,
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'cancelled')),
       note TEXT,
+      cancel_reason TEXT,
+      free_modifiers TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS order_items (
@@ -212,9 +416,11 @@ async function initDatabase() {
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+      key TEXT NOT NULL,
       value TEXT,
-      updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      PRIMARY KEY (branch_id, key)
     )`,
     `CREATE TABLE IF NOT EXISTS expenses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -236,11 +442,13 @@ async function initDatabase() {
     )`,
     `CREATE TABLE IF NOT EXISTS free_modifiers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       category TEXT NOT NULL CHECK(category IN ('sauce_small', 'sauce_large', 'dipping', 'powder')),
       servings_per_bag INTEGER DEFAULT 50,
       active INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(branch_id, name)
     )`,
     `CREATE TABLE IF NOT EXISTS branch_free_modifier_stocks (
       branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
@@ -264,10 +472,12 @@ async function initDatabase() {
     )`,
     `CREATE TABLE IF NOT EXISTS free_modifier_presets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       modifier_ids TEXT NOT NULL,
       active INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(branch_id, name)
     )`,
     `CREATE TABLE IF NOT EXISTS archived_orders (
       id INTEGER PRIMARY KEY,
@@ -411,14 +621,14 @@ async function initDatabase() {
     console.warn('⚠️ Migration orders table error:', e.message);
   }
 
-  // Migration: ซ่อมแซม Foreign Key ที่อาจชี้ไปยัง orders_old (เนื่องจากผลกระทบของ SQLite ALTER TABLE RENAME)
+  // Migration: ซ่อมแซม Foreign Key ที่เสียหายจากการเปลี่ยนชื่อตารางใน SQLite (เช่น ชี้ไปยังตาราง _old)
   try {
     const brokenTables = await db.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND (sql LIKE '%orders_old%' OR sql LIKE '%\"orders_old\"%')"
+      "SELECT name FROM sqlite_master WHERE type='table' AND (sql LIKE '%_old%' OR sql LIKE '%\"_old\"%')"
     ).all();
     
     if (brokenTables.length > 0) {
-      console.log(`  🔧 Migration: พบ ${brokenTables.length} ตารางที่มี foreign key เสียหาย (อ้างอิง orders_old):`, brokenTables.map(t => t.name));
+      console.log(`  🔧 Migration: พบ ${brokenTables.length} ตารางที่มี foreign key เสียหาย (อ้างอิงตาราง _old):`, brokenTables.map(t => t.name));
       
       await db.exec("PRAGMA foreign_keys=OFF");
       
@@ -426,9 +636,36 @@ async function initDatabase() {
         const tblName = tbl.name;
         console.log(`  🔧 Migration: กำลังซ่อมแซมตาราง ${tblName}...`);
         
-        await db.exec(`ALTER TABLE ${tblName} RENAME TO ${tblName}_old`);
+        await db.exec(`DROP TABLE IF EXISTS ${tblName}_temp_old`);
+        await db.exec(`ALTER TABLE ${tblName} RENAME TO ${tblName}_temp_old`);
         
-        if (tblName === 'order_items') {
+        if (tblName === 'branch_stocks') {
+          await db.exec(`CREATE TABLE branch_stocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+            menu_item_id INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+            quantity INTEGER DEFAULT NULL,
+            raw_quantity INTEGER DEFAULT NULL,
+            price REAL DEFAULT NULL,
+            multiple_prices TEXT DEFAULT NULL,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            UNIQUE(branch_id, menu_item_id)
+          )`);
+          await db.exec(`INSERT INTO branch_stocks (id, branch_id, menu_item_id, quantity, raw_quantity, price, multiple_prices, updated_at)
+            SELECT id, branch_id, menu_item_id, quantity, raw_quantity, price, multiple_prices, updated_at FROM branch_stocks_temp_old`);
+            
+        } else if (tblName === 'branch_free_modifier_stocks') {
+          await db.exec(`CREATE TABLE branch_free_modifier_stocks (
+            branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+            modifier_id INTEGER NOT NULL REFERENCES free_modifiers(id) ON DELETE CASCADE,
+            total_servings INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            PRIMARY KEY (branch_id, modifier_id)
+          )`);
+          await db.exec(`INSERT INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings, updated_at)
+            SELECT branch_id, modifier_id, total_servings, updated_at FROM branch_free_modifier_stocks_temp_old`);
+            
+        } else if (tblName === 'order_items') {
           await db.exec(`CREATE TABLE order_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -436,10 +673,11 @@ async function initDatabase() {
             item_name TEXT NOT NULL,
             item_price REAL NOT NULL,
             quantity INTEGER NOT NULL,
-            subtotal REAL NOT NULL
+            subtotal REAL NOT NULL,
+            options TEXT
           )`);
-          await db.exec(`INSERT INTO order_items (id, order_id, menu_item_id, item_name, item_price, quantity, subtotal)
-            SELECT id, order_id, menu_item_id, item_name, item_price, quantity, subtotal FROM order_items_old`);
+          await db.exec(`INSERT INTO order_items (id, order_id, menu_item_id, item_name, item_price, quantity, subtotal, options)
+            SELECT id, order_id, menu_item_id, item_name, item_price, quantity, subtotal, options FROM order_items_temp_old`);
             
         } else if (tblName === 'stock_logs') {
           await db.exec(`CREATE TABLE stock_logs (
@@ -456,7 +694,7 @@ async function initDatabase() {
             created_at DATETIME DEFAULT (datetime('now', 'localtime'))
           )`);
           await db.exec(`INSERT INTO stock_logs (id, branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-            SELECT id, branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at FROM stock_logs_old`);
+            SELECT id, branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at FROM stock_logs_temp_old`);
             
         } else if (tblName === 'free_modifier_stock_logs') {
           await db.exec(`CREATE TABLE free_modifier_stock_logs (
@@ -473,10 +711,10 @@ async function initDatabase() {
             created_at DATETIME DEFAULT (datetime('now', 'localtime'))
           )`);
           await db.exec(`INSERT INTO free_modifier_stock_logs (id, branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-            SELECT id, branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at FROM free_modifier_stock_logs_old`);
+            SELECT id, branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at FROM free_modifier_stock_logs_temp_old`);
         }
         
-        await db.exec(`DROP TABLE ${tblName}_old`);
+        await db.exec(`DROP TABLE ${tblName}_temp_old`);
         console.log(`  ✅ Migration: ซ่อมแซมตาราง ${tblName} สำเร็จ`);
       }
       
@@ -528,42 +766,28 @@ async function initDatabase() {
   }
 
   // ─── Seed Default Data ────────────────────────────────────
-  // Seed default branch
-  const branchCount = await db.prepare('SELECT COUNT(*) as count FROM branches').get();
-  if (branchCount.count === 0) {
-    await db.prepare('INSERT INTO branches (name, address) VALUES (?, ?)')
-      .run('สาขาหลัก (ช้างแดง)', 'กรุงเทพฯ');
-    console.log('  🏪 สร้างสาขาเริ่มต้น: สาขาหลัก (ช้างแดง)');
-  }
-  const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-
   // Seed default users
   const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (userCount.count === 0) {
     await db.prepare('INSERT INTO users (name, pin, role, branch_id) VALUES (?, ?, ?, ?)')
-      .run('เจ้าของร้าน', '1234', 'admin', defaultBranch.id);
+      .run('เจ้าของร้าน', '1234', 'admin', defaultBranchId);
     await db.prepare('INSERT INTO users (name, pin, role, branch_id) VALUES (?, ?, ?, ?)')
-      .run('พนักงาน 1', '0000', 'staff', defaultBranch.id);
+      .run('พนักงาน 1', '0000', 'staff', defaultBranchId);
     console.log('  👤 สร้างผู้ใช้เริ่มต้น: เจ้าของร้าน (PIN: 1234), พนักงาน 1 (PIN: 0000)');
   }
 
-  // Seed default categories
-  const catCount = await db.prepare('SELECT COUNT(*) as count FROM categories').get();
-  if (catCount.count === 0) {
-    const insertCat = db.prepare('INSERT INTO categories (name, sort_order) VALUES (?, ?)');
-    await insertCat.run('เมนูหลัก', 1);
-    await insertCat.run('ของทานเล่น', 2);
-    await insertCat.run('เครื่องดื่ม', 3);
-    await insertCat.run('อื่นๆ', 4);
-  }
+  // Seed default categories per branch
+  const branches = await db.prepare('SELECT id FROM branches').all();
 
-  // Seed default settings
-  const settingsCount = await db.prepare('SELECT COUNT(*) as count FROM settings').get();
-  if (settingsCount.count === 0) {
-    const insertSetting = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)');
-    await insertSetting.run('shop_name', process.env.SHOP_NAME || 'ร้านไก่ทอดช้างแดง');
-    await insertSetting.run('daily_report_time', '21:00');
-    await insertSetting.run('low_stock_threshold', '5');
+  for (const b of branches) {
+    const catCount = await db.prepare('SELECT COUNT(*) as count FROM categories WHERE branch_id = ?').get(b.id);
+    if (catCount.count === 0) {
+      const insertCat = db.prepare('INSERT INTO categories (branch_id, name, sort_order) VALUES (?, ?, ?)');
+      await insertCat.run(b.id, 'เมนูหลัก', 1);
+      await insertCat.run(b.id, 'ของทานเล่น', 2);
+      await insertCat.run(b.id, 'เครื่องดื่ม', 3);
+      await insertCat.run(b.id, 'อื่นๆ', 4);
+    }
   }
 
   // Ensure promptpay_id is completely removed from database settings table
@@ -571,6 +795,17 @@ async function initDatabase() {
     await db.prepare("DELETE FROM settings WHERE key = 'promptpay_id'").run();
   } catch (e) {
     // ignore
+  }
+
+  // Seed default settings per branch
+  for (const b of branches) {
+    const settingsCount = await db.prepare('SELECT COUNT(*) as count FROM settings WHERE branch_id = ?').get(b.id);
+    if (settingsCount.count === 0) {
+      const insertSetting = db.prepare('INSERT INTO settings (branch_id, key, value) VALUES (?, ?, ?)');
+      await insertSetting.run(b.id, 'shop_name', process.env.SHOP_NAME || 'ร้านไก่ทอดช้างแดง');
+      await insertSetting.run(b.id, 'daily_report_time', '21:00');
+      await insertSetting.run(b.id, 'low_stock_threshold', '5');
+    }
   }
 
   // Seed default free modifiers (Sync to make sure no items are missing)
@@ -589,16 +824,21 @@ async function initDatabase() {
     { name: 'ผงหม่าล่า', category: 'powder', servings: 50, active: 1 },
     { name: 'ผงฮอตแอนด์สไปซี่', category: 'powder', servings: 50, active: 1 },
     { name: 'ผงวิงส์แซ่บ', category: 'powder', servings: 50, active: 1 },
-    { name: 'ผงปาปริก้า', category: 'powder', servings: 50, active: 1 }
+    { name: 'ผงปาปริก้า', category: 'powder', servings: 50, active: 1 },
+    { name: 'ซอสเปรี้ยว (ขวด)', category: 'dipping', servings: 60, active: 1 },
+    { name: 'ซอสหวาน (ขวด)', category: 'dipping', servings: 60, active: 1 },
+    { name: 'กระเทียมเจียว (ถุง)', category: 'dipping', servings: 50, active: 1 }
   ];
 
   let seededCount = 0;
-  for (const m of defaultModifiers) {
-    const existing = await db.prepare('SELECT id FROM free_modifiers WHERE name = ?').get(m.name);
-    if (!existing) {
-      await db.prepare('INSERT INTO free_modifiers (name, category, servings_per_bag, active) VALUES (?, ?, ?, ?)')
-        .run(m.name, m.category, m.servings, m.active);
-      seededCount++;
+  for (const b of branches) {
+    for (const m of defaultModifiers) {
+      const existing = await db.prepare('SELECT id FROM free_modifiers WHERE branch_id = ? AND name = ?').get(b.id, m.name);
+      if (!existing) {
+        await db.prepare('INSERT INTO free_modifiers (branch_id, name, category, servings_per_bag, active) VALUES (?, ?, ?, ?, ?)')
+          .run(b.id, m.name, m.category, m.servings, m.active);
+        seededCount++;
+      }
     }
   }
   if (seededCount > 0) {
@@ -606,27 +846,26 @@ async function initDatabase() {
   }
 
   // Seed branch Stocks for free modifiers
-  const branches = await db.prepare('SELECT id FROM branches').all();
-  const modifiers = await db.prepare('SELECT id FROM free_modifiers').all();
+  const modifiers = await db.prepare('SELECT id, branch_id FROM free_modifiers').all();
   const insertModStock = db.prepare(`
     INSERT OR IGNORE INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings)
     VALUES (?, ?, 0)
   `);
-  for (const b of branches) {
-    for (const m of modifiers) {
-      await insertModStock.run(b.id, m.id);
-    }
+  for (const m of modifiers) {
+    await insertModStock.run(m.branch_id, m.id);
   }
 
-  // Seed default presets (สูตรสำเร็จ)
-  const presetCount = await db.prepare('SELECT COUNT(*) as count FROM free_modifier_presets').get();
-  if (presetCount.count === 0) {
-    const tomatoBag = await db.prepare("SELECT id FROM free_modifiers WHERE name = 'ซอสมะเขือเทศ (ถุง)'").get();
-    const cheesePowder = await db.prepare("SELECT id FROM free_modifiers WHERE name = 'ผงชีส'").get();
-    if (tomatoBag && cheesePowder) {
-      await db.prepare('INSERT INTO free_modifier_presets (name, modifier_ids) VALUES (?, ?)')
-        .run('มะเขือเทศ + ผงชีส', JSON.stringify([tomatoBag.id, cheesePowder.id]));
-      console.log('  ✨ สร้างสูตรสำเร็จเริ่มต้น (มะเขือเทศ + ผงชีส) สำเร็จ');
+  // Seed default presets (สูตรสำเร็จ) per branch
+  for (const b of branches) {
+    const presetCount = await db.prepare('SELECT COUNT(*) as count FROM free_modifier_presets WHERE branch_id = ?').get(b.id);
+    if (presetCount.count === 0) {
+      const tomatoBag = await db.prepare("SELECT id FROM free_modifiers WHERE branch_id = ? AND name = 'ซอสมะเขือเทศ (ถุง)'").get(b.id);
+      const cheesePowder = await db.prepare("SELECT id FROM free_modifiers WHERE branch_id = ? AND name = 'ผงชีส'").get(b.id);
+      if (tomatoBag && cheesePowder) {
+        await db.prepare('INSERT INTO free_modifier_presets (branch_id, name, modifier_ids) VALUES (?, ?, ?)')
+          .run(b.id, 'มะเขือเทศ + ผงชีส', JSON.stringify([tomatoBag.id, cheesePowder.id]));
+        console.log(`  ✨ สร้างสูตรสำเร็จเริ่มต้น (มะเขือเทศ + ผงชีส) สำหรับสาขา ID ${b.id} สำเร็จ`);
+      }
     }
   }
 

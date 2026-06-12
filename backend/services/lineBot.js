@@ -11,29 +11,29 @@ let client = null;
 /**
  * ตรวจสอบว่า LINE ถูกตั้งค่าแล้วหรือยัง
  */
-function isConfigured() {
-  return !!(config.channelSecret && config.channelAccessToken);
+function isConfigured(token = null) {
+  return !!(token || config.channelAccessToken);
 }
 
 /**
- * สร้าง LINE Client (singleton)
+ * สร้างหรือดึง LINE Client สำหรับ token ที่กำหนด
  */
-function getClient() {
-  if (!client && isConfigured()) {
-    client = new line.messagingApi.MessagingApiClient({
-      channelAccessToken: config.channelAccessToken
-    });
-  }
-  return client;
+function getClient(token = null) {
+  const tokenToUse = token || config.channelAccessToken;
+  if (!tokenToUse) return null;
+  return new line.messagingApi.MessagingApiClient({
+    channelAccessToken: tokenToUse
+  });
 }
 
 /**
  * ตอบกลับข้อความ
  * @param {string} replyToken - Reply token จาก LINE webhook
  * @param {string} text - ข้อความที่ต้องการส่ง
+ * @param {string} [token] - LINE Channel Access Token
  */
-async function replyText(replyToken, text) {
-  const c = getClient();
+async function replyText(replyToken, text, token = null) {
+  const c = getClient(token);
   if (!c) return;
 
   try {
@@ -50,9 +50,10 @@ async function replyText(replyToken, text) {
  * ส่งข้อความหาผู้ใช้
  * @param {string} userId - LINE User ID
  * @param {string} text - ข้อความที่ต้องการส่ง
+ * @param {string} [token] - LINE Channel Access Token
  */
-async function pushText(userId, text) {
-  const c = getClient();
+async function pushText(userId, text, token = null) {
+  const c = getClient(token);
   if (!c) return;
 
   try {
@@ -69,9 +70,10 @@ async function pushText(userId, text) {
  * ส่ง Flex Message หาผู้ใช้
  * @param {string} userId - LINE User ID
  * @param {object} flexContent - เนื้อหา Flex Message
+ * @param {string} [token] - LINE Channel Access Token
  */
-async function pushFlexMessage(userId, flexContent) {
-  const c = getClient();
+async function pushFlexMessage(userId, flexContent, token = null) {
+  const c = getClient(token);
   if (!c) return;
 
   try {
@@ -94,9 +96,10 @@ async function pushFlexMessage(userId, flexContent) {
  */
 function formatDailyReport(reportData) {
   const { date, total_orders, total_revenue, avg_order_value, payment } = reportData;
+  const shopNameText = reportData.shopName || '🍗 ร้านไก่ทอดช้างแดง';
 
   return {
-    altText: `📊 รายงานยอดขายวันที่ ${date}`,
+    altText: `📊 รายงานยอดขายวันที่ ${date} (${shopNameText})`,
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -106,7 +109,7 @@ function formatDailyReport(reportData) {
         contents: [
           {
             type: 'text',
-            text: '🍗 ร้านไก่ทอดช้างแดง',
+            text: shopNameText,
             weight: 'bold',
             size: 'md',
             color: '#FFFFFF'

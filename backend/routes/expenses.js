@@ -28,7 +28,9 @@ router.post('/', async (req, res) => {
     }
 
     let branchId = req.user.branch_id;
-    if (!branchId) {
+    if (req.user.role === 'admin' && req.body.branch_id) {
+      branchId = Number(req.body.branch_id);
+    } else if (!branchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
       branchId = defaultBranch ? defaultBranch.id : null;
     }
@@ -76,7 +78,9 @@ router.get('/', async (req, res) => {
     const db = getDb();
 
     let branchId = req.user.branch_id;
-    if (!branchId) {
+    if (req.user.role === 'admin' && req.query.branch_id) {
+      branchId = Number(req.query.branch_id);
+    } else if (!branchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
       branchId = defaultBranch ? defaultBranch.id : null;
     }

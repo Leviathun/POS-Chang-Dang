@@ -6,11 +6,26 @@ const { attachUser, requireAdmin } = require('../middleware/auth');
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
+// Helper function to get branch ID of logged-in user or first branch (supporting admin override)
+async function getBranchId(req, db) {
+  let branchId = req.user ? req.user.branch_id : null;
+  const paramBranchId = req.query.branch_id || (req.body ? req.body.branch_id : null);
+  if (req.user && req.user.role === 'admin' && paramBranchId) {
+    branchId = Number(paramBranchId);
+  }
+  if (!branchId) {
+    const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+    branchId = defaultBranch ? defaultBranch.id : null;
+  }
+  return branchId;
+}
+
 // ─── GET / — ดึงตั้งค่าทั้งหมด (key-value object) ───────
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
-    const rows = await db.prepare('SELECT key, value, updated_at FROM settings').all();
+    const branchId = await getBranchId(req, db);
+    const rows = await db.prepare('SELECT key, value, updated_at FROM settings WHERE branch_id = ?').all(branchId);
 
     // แปลงเป็น object { key: value }
     const settings = {};
@@ -44,17 +59,18 @@ router.put('/', requireAdmin, async (req, res) => {
     }
 
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
     // ใช้ UPSERT (INSERT OR REPLACE)
     await db.prepare(`
-      INSERT INTO settings (key, value, updated_at) 
-      VALUES (?, ?, datetime('now', 'localtime'))
-      ON CONFLICT(key) DO UPDATE SET 
+      INSERT INTO settings (branch_id, key, value, updated_at) 
+      VALUES (?, ?, ?, datetime('now', 'localtime'))
+      ON CONFLICT(branch_id, key) DO UPDATE SET 
         value = excluded.value,
         updated_at = datetime('now', 'localtime')
-    `).run(key, String(value));
+    `).run(branchId, key, String(value));
 
-    const updated = await db.prepare('SELECT * FROM settings WHERE key = ?').get(key);
+    const updated = await db.prepare('SELECT * FROM settings WHERE branch_id = ? AND key = ?').get(branchId, key);
 
     res.json({
       success: true,
@@ -82,23 +98,24 @@ router.put('/bulk', requireAdmin, async (req, res) => {
     }
 
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
     const updateBulk = db.transaction(async () => {
       const upsert = db.prepare(`
-        INSERT INTO settings (key, value, updated_at) 
-        VALUES (?, ?, datetime('now', 'localtime'))
-        ON CONFLICT(key) DO UPDATE SET 
+        INSERT INTO settings (branch_id, key, value, updated_at) 
+        VALUES (?, ?, ?, datetime('now', 'localtime'))
+        ON CONFLICT(branch_id, key) DO UPDATE SET 
           value = excluded.value,
           updated_at = datetime('now', 'localtime')
       `);
 
       for (const setting of settings) {
         if (!setting.key) continue;
-        await upsert.run(setting.key, String(setting.value));
+        await upsert.run(branchId, setting.key, String(setting.value));
       }
 
       // ดึงค่าทั้งหมดกลับ
-      const rows = await db.prepare('SELECT key, value FROM settings').all();
+      const rows = await db.prepare('SELECT key, value FROM settings WHERE branch_id = ?').all(branchId);
       const result = {};
       for (const row of rows) {
         result[row.key] = row.value;
@@ -267,12 +284,13 @@ router.post('/archive', requireAdmin, async (req, res) => {
     }
 
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
     const archiveTx = db.transaction(async () => {
-      // 1. ดึง ID ออเดอร์ที่อายุเกินกำหนด
+      // 1. ดึง ID ออเดอร์ที่อายุเกินกำหนด เฉพาะสาขานี้
       const ordersToArchive = await db.prepare(`
-        SELECT id FROM orders WHERE created_at < datetime('now', 'localtime', '-' || ? || ' month')
-      `).all(Number(months));
+        SELECT id FROM orders WHERE created_at < datetime('now', 'localtime', '-' || ? || ' month') AND branch_id = ?
+      `).all(Number(months), branchId);
 
       if (ordersToArchive.length === 0) return 0;
 

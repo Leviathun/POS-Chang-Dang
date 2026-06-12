@@ -78,38 +78,54 @@
         </div>
 
         <!-- Date Selector Input depending on Mode -->
-        <div class="flex gap-sm align-center">
-          <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">
-            {{ periodMode === 'daily' ? 'เลือกวัน:' : periodMode === 'monthly' ? 'เลือกเดือน:' : 'เลือกปี:' }}
-          </div>
-          
-          <input 
-            v-if="periodMode === 'daily'"
-            type="date" 
-            class="form-input p-xs" 
-            style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
-            v-model="selectedDate" 
-            @change="loadReportData"
-          />
-          
-          <input 
-            v-if="periodMode === 'monthly'"
-            type="month" 
-            class="form-input p-xs" 
-            style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
-            v-model="selectedMonth" 
-            @change="loadReportData"
-          />
+        <div class="flex flex-wrap gap-md align-center" style="width: 100%;">
+          <div class="flex gap-sm align-center">
+            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">
+              {{ periodMode === 'daily' ? 'เลือกวัน:' : periodMode === 'monthly' ? 'เลือกเดือน:' : 'เลือกปี:' }}
+            </div>
+            
+            <input 
+              v-if="periodMode === 'daily'"
+              type="date" 
+              class="form-input p-xs" 
+              style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
+              v-model="selectedDate" 
+              @change="loadReportData"
+            />
+            
+            <input 
+              v-if="periodMode === 'monthly'"
+              type="month" 
+              class="form-input p-xs" 
+              style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
+              v-model="selectedMonth" 
+              @change="loadReportData"
+            />
 
-          <select 
-            v-if="periodMode === 'yearly'"
-            class="form-select" 
-            style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px; height: 38px; line-height: 24px; background-position: right 12px center;"
-            v-model="selectedYear" 
-            @change="loadReportData"
-          >
-            <option v-for="y in availableYears" :key="y" :value="String(y)">ปี {{ y }}</option>
-          </select>
+            <select 
+              v-if="periodMode === 'yearly'"
+              class="form-select" 
+              style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px; height: 38px; line-height: 24px; background-position: right 12px center;"
+              v-model="selectedYear" 
+              @change="loadReportData"
+            >
+              <option v-for="y in availableYears" :key="y" :value="String(y)">ปี {{ y }}</option>
+            </select>
+          </div>
+
+          <!-- Branch Selector for Admin -->
+          <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center" style="margin-left: auto;">
+            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
+            <select 
+              class="form-select" 
+              style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); min-width: 160px; height: 38px; line-height: 24px; background-position: right 12px center;"
+              v-model="selectedBranchId"
+              @change="onBranchChange"
+            >
+              <option :value="null">ทุกสาขา</option>
+              <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -775,10 +791,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin } from '../helpers';
+import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, getUser } from '../helpers';
 
 // Role check
 const isAdminUser = computed(() => isAdmin());
+
+const branches = ref([]);
+const currentUser = getUser();
+const selectedBranchId = ref(currentUser ? currentUser.branch_id : null);
 
 const activeTab = ref('sales');
 
@@ -964,10 +984,10 @@ const loadMonthlyLedger = async () => {
   ledgerLoading.value = true;
   try {
     const monthVal = selectedDate.value.substring(0, 7);
-    const ordersRes = await api.orders.getAll({ status: 'completed', month: monthVal });
+    const ordersRes = await api.orders.getAll({ status: 'completed', month: monthVal, branch_id: selectedBranchId.value });
     const monthOrders = ordersRes.success ? (ordersRes.data || []) : [];
 
-    const expensesRes = await api.expenses.get({ month: monthVal });
+    const expensesRes = await api.expenses.get({ month: monthVal, branch_id: selectedBranchId.value });
     const monthExpenses = expensesRes.success ? (expensesRes.data || []) : [];
 
     const list = [];
@@ -1020,7 +1040,7 @@ const loadMonthlyLedger = async () => {
 
 const loadReportSummary = async () => {
   try {
-    const res = await api.reports.summary();
+    const res = await api.reports.summary(selectedBranchId.value);
     if (res.success && res.data) {
       summary.value = {
         today_sales: res.data.today?.total_revenue || 0,
@@ -1038,11 +1058,11 @@ const loadExpensesForPeriod = async () => {
   try {
     let res;
     if (periodMode.value === 'daily') {
-      res = await api.expenses.get(selectedDate.value);
+      res = await api.expenses.get({ date: selectedDate.value, branch_id: selectedBranchId.value });
     } else if (periodMode.value === 'monthly') {
-      res = await api.expenses.get({ month: selectedMonth.value });
+      res = await api.expenses.get({ month: selectedMonth.value, branch_id: selectedBranchId.value });
     } else {
-      res = await api.expenses.get({ year: selectedYear.value });
+      res = await api.expenses.get({ year: selectedYear.value, branch_id: selectedBranchId.value });
     }
     if (res.success) {
       expenses.value = res.data || [];
@@ -1055,7 +1075,7 @@ const loadExpensesForPeriod = async () => {
 const loadActivityLogsForPeriod = async () => {
   try {
     let res;
-    const params = {};
+    const params = { branch_id: selectedBranchId.value };
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;
     } else if (periodMode.value === 'monthly') {
@@ -1075,7 +1095,8 @@ const loadActivityLogsForPeriod = async () => {
 const loadOrderHistory = async () => {
   try {
     const params = {
-      limit: 1000
+      limit: 1000,
+      branch_id: selectedBranchId.value
     };
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;
@@ -1108,11 +1129,11 @@ const loadReportData = async () => {
   try {
     let res;
     if (periodMode.value === 'daily') {
-      res = await api.reports.daily(selectedDate.value);
+      res = await api.reports.daily(selectedDate.value, selectedBranchId.value);
     } else if (periodMode.value === 'monthly') {
-      res = await api.reports.monthly(selectedMonth.value);
+      res = await api.reports.monthly(selectedMonth.value, selectedBranchId.value);
     } else {
-      res = await api.reports.yearly(selectedYear.value);
+      res = await api.reports.yearly(selectedYear.value, selectedBranchId.value);
     }
 
     if (res.success && res.data) {
@@ -1163,7 +1184,7 @@ const loadReportData = async () => {
 
 const loadTopItems = async () => {
   try {
-    const res = await api.reports.topItems(7);
+    const res = await api.reports.topItems(7, selectedBranchId.value);
     if (res.success && Array.isArray(res.data)) {
       topItems.value = res.data.map(item => ({
         ...item,
@@ -1304,8 +1325,23 @@ const getActionIconClass = (action) => {
   return map[action] || 'fa-solid fa-bookmark text-neutral';
 };
 
-onMounted(() => {
+const onBranchChange = () => {
+  loadReportSummary();
+  loadTopItems();
+  loadMonthlyLedger();
+  loadReportData();
+};
+
+onMounted(async () => {
   if (isAdmin()) {
+    try {
+      const res = await api.auth.getBranches();
+      if (res.success) {
+        branches.value = res.data || [];
+      }
+    } catch (e) {
+      console.warn('Failed to load branches:', e);
+    }
     loadReportSummary();
     loadTopItems();
     loadMonthlyLedger();

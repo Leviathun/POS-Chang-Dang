@@ -6,17 +6,21 @@ const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
 // Apply attachUser globally to all modifier routes
 router.use(attachUser);
 
+// Helper function to get branch ID of logged-in user or first branch
+async function getBranchId(req, db) {
+  let branchId = req.user ? req.user.branch_id : null;
+  if (!branchId) {
+    const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+    branchId = defaultBranch ? defaultBranch.id : null;
+  }
+  return branchId;
+}
+
 // ─── GET / — ดึงรายการเครื่องปรุงฟรีพร้อมคลังสินค้าของสาขา ──────────────────
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
-    
-    // หาสาขาของผู้ใช้
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
+    const branchId = await getBranchId(req, db);
 
     const items = await db.prepare(`
       SELECT 
@@ -25,8 +29,9 @@ router.get('/', async (req, res) => {
       FROM free_modifiers fm
       LEFT JOIN branch_free_modifier_stocks bfms 
         ON bfms.modifier_id = fm.id AND bfms.branch_id = ?
+      WHERE fm.branch_id = ?
       ORDER BY fm.category ASC, fm.name ASC
-    `).all(branchId);
+    `).all(branchId, branchId);
 
     res.json({
       success: true,
@@ -54,14 +59,9 @@ router.post('/restock', requireAuth, async (req, res) => {
       });
     }
 
-    // หาสาขาของผู้ใช้
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
+    const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ?').get(Number(modifier_id));
+    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -141,15 +141,9 @@ router.post('/adjust', requireAuth, async (req, res) => {
     }
 
     const changeQty = Number(quantity);
+    const branchId = await getBranchId(req, db);
 
-    // หาสาขาของผู้ใช้
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
-
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ?').get(Number(modifier_id));
+    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -217,8 +211,9 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ?').get(Number(id));
+    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -227,7 +222,7 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
     }
 
     const newActive = modifier.active ? 0 : 1;
-    await db.prepare('UPDATE free_modifiers SET active = ? WHERE id = ?').run(newActive, modifier.id);
+    await db.prepare('UPDATE free_modifiers SET active = ? WHERE id = ? AND branch_id = ?').run(newActive, modifier.id, branchId);
 
     res.json({
       success: true,
@@ -250,7 +245,8 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
 router.get('/presets', async (req, res) => {
   try {
     const db = getDb();
-    const presets = await db.prepare('SELECT * FROM free_modifier_presets ORDER BY name ASC').all();
+    const branchId = await getBranchId(req, db);
+    const presets = await db.prepare('SELECT * FROM free_modifier_presets WHERE branch_id = ? ORDER BY name ASC').all(branchId);
     
     // แปลง modifier_ids string กลับเป็น array
     const formatted = presets.map(p => ({
@@ -284,8 +280,10 @@ router.post('/presets', requireAdmin, async (req, res) => {
       });
     }
 
-    const result = await db.prepare('INSERT INTO free_modifier_presets (name, modifier_ids, created_at) VALUES (?, ?, datetime("now", "+7 hours"))')
-      .run(name, JSON.stringify(modifier_ids));
+    const branchId = await getBranchId(req, db);
+
+    const result = await db.prepare('INSERT INTO free_modifier_presets (branch_id, name, modifier_ids, created_at) VALUES (?, ?, ?, datetime("now", "+7 hours"))')
+      .run(branchId, name, JSON.stringify(modifier_ids));
 
     const newPreset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(result.lastInsertRowid);
     newPreset.modifier_ids = JSON.parse(newPreset.modifier_ids || '[]');
@@ -309,8 +307,9 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { name, modifier_ids, active } = req.body;
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
-    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(Number(id));
+    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!preset) {
       return res.status(404).json({
         success: false,
@@ -325,8 +324,8 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
     await db.prepare(`
       UPDATE free_modifier_presets 
       SET name = ?, modifier_ids = ?, active = ? 
-      WHERE id = ?
-    `).run(updatedName, updatedIds, updatedActive, Number(id));
+      WHERE id = ? AND branch_id = ?
+    `).run(updatedName, updatedIds, updatedActive, Number(id), branchId);
 
     const updated = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(Number(id));
     updated.modifier_ids = JSON.parse(updated.modifier_ids || '[]');
@@ -349,8 +348,9 @@ router.delete('/presets/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
-    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(Number(id));
+    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!preset) {
       return res.status(404).json({
         success: false,
@@ -358,7 +358,7 @@ router.delete('/presets/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    await db.prepare('DELETE FROM free_modifier_presets WHERE id = ?').run(Number(id));
+    await db.prepare('DELETE FROM free_modifier_presets WHERE id = ? AND branch_id = ?').run(Number(id), branchId);
 
     res.json({
       success: true,
@@ -379,14 +379,9 @@ router.get('/:id/logs', async (req, res) => {
     const { id } = req.params;
     const limit = parseInt(req.query.limit) || 50;
     const db = getDb();
-    
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
+    const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT id, name FROM free_modifiers WHERE id = ?').get(Number(id));
+    const modifier = await db.prepare('SELECT id, name FROM free_modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
