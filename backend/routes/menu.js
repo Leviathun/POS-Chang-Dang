@@ -29,6 +29,8 @@ router.get('/', async (req, res) => {
         mi.created_at, mi.updated_at,
         c.name as category_name,
         COALESCE(bs.price, mi.price) AS price,
+        mi.multiple_prices AS global_multiple_prices,
+        COALESCE(bs.multiple_prices, mi.multiple_prices) AS multiple_prices,
         bs.quantity as stock,
         bs.raw_quantity as raw_stock
       FROM menu_items mi
@@ -208,7 +210,7 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
 // ─── POST / — สร้างเมนูใหม่ ─────────────────────────────
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, uom } = req.body;
+    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, uom, multiple_prices } = req.body;
 
     if (!name || price === undefined || price === null) {
       return res.status(400).json({
@@ -225,6 +227,7 @@ router.post('/', requireAdmin, async (req, res) => {
     }
 
     const db = getDb();
+    const multPricesStr = multiple_prices ? (typeof multiple_prices === 'string' ? multiple_prices : JSON.stringify(multiple_prices)) : null;
 
     // ตรวจสอบหมวดหมู่ (ถ้าระบุ)
     if (category_id) {
@@ -247,15 +250,16 @@ router.post('/', requireAdmin, async (req, res) => {
     // บันทึกเมนู (ใช้ transaction เพื่อใส่ทั้งเมนูหลักและจำนวนสต็อกสาขา)
     const createMenuWithStock = db.transaction(async () => {
       const result = await db.prepare(`
-        INSERT INTO menu_items (name, price, category_id, image_url, sort_order, uom)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO menu_items (name, price, category_id, image_url, sort_order, uom, multiple_prices)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `).run(
         name,
         price,
         category_id || null,
         image_url || null,
         sort_order || 0,
-        uom || 'ชิ้น'
+        uom || 'ชิ้น',
+        multPricesStr
       );
 
       const newItemId = result.lastInsertRowid;
@@ -263,14 +267,15 @@ router.post('/', requireAdmin, async (req, res) => {
       // ใส่ข้อมูลสต็อกแยกสาขา
       if (branchId) {
         await db.prepare(`
-          INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price)
-          VALUES (?, ?, ?, ?, ?)
+          INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price, multiple_prices)
+          VALUES (?, ?, ?, ?, ?, ?)
         `).run(
           branchId, 
           newItemId, 
           stock !== undefined && stock !== null ? stock : 0,
           track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null,
-          price !== undefined && price !== null ? price : null
+          price !== undefined && price !== null ? price : null,
+          multPricesStr
         );
       }
 
@@ -304,7 +309,7 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active, uom } = req.body;
+    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active, uom, multiple_prices } = req.body;
     const db = getDb();
 
     const item = await db.prepare('SELECT * FROM menu_items WHERE id = ?').get(Number(id));
@@ -332,11 +337,13 @@ router.put('/:id', requireAdmin, async (req, res) => {
       branchId = defaultBranch ? defaultBranch.id : null;
     }
 
+    const multPricesStr = multiple_prices !== undefined ? (multiple_prices ? (typeof multiple_prices === 'string' ? multiple_prices : JSON.stringify(multiple_prices)) : null) : undefined;
+
     const updateMenuWithStock = db.transaction(async () => {
       await db.prepare(`
         UPDATE menu_items 
         SET name = ?, price = ?, category_id = ?, image_url = ?, 
-            sort_order = ?, active = ?, uom = ?,
+            sort_order = ?, active = ?, uom = ?, multiple_prices = ?,
             updated_at = datetime('now', 'localtime')
         WHERE id = ?
       `).run(
@@ -347,6 +354,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         sort_order !== undefined ? sort_order : item.sort_order,
         active !== undefined ? active : item.active,
         uom !== undefined ? uom : item.uom,
+        multPricesStr !== undefined ? multPricesStr : item.multiple_prices,
         Number(id)
       );
 
@@ -374,19 +382,24 @@ router.put('/:id', requireAdmin, async (req, res) => {
           if (price !== undefined) {
             p = price;
           }
+          let mp = stockRow.multiple_prices;
+          if (multPricesStr !== undefined) {
+            mp = multPricesStr;
+          }
           await db.prepare(`
             UPDATE branch_stocks
-            SET quantity = ?, raw_quantity = ?, price = ?, updated_at = datetime('now', 'localtime')
+            SET quantity = ?, raw_quantity = ?, price = ?, multiple_prices = ?, updated_at = datetime('now', 'localtime')
             WHERE branch_id = ? AND menu_item_id = ?
-          `).run(q, rq, p, branchId, Number(id));
+          `).run(q, rq, p, mp, branchId, Number(id));
         } else {
           let q = stock !== undefined && stock !== null ? stock : 0;
           let rq = track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null;
           let p = price !== undefined ? price : null;
+          let mp = multPricesStr !== undefined ? multPricesStr : null;
           await db.prepare(`
-            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price)
-            VALUES (?, ?, ?, ?, ?)
-          `).run(branchId, Number(id), q, rq, p);
+            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price, multiple_prices)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(branchId, Number(id), q, rq, p, mp);
         }
       }
     });

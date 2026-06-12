@@ -1,6 +1,15 @@
-require('dotenv').config();
-const express = require('express');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+// Catch uncaught exceptions and unhandled rejections to prevent server crash on connection timeouts
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Uncaught Exception thrown:', err);
+});
+
+const express = require('express');
 const cors = require('cors');
 const { initDatabase } = require('./config/database');
 
@@ -51,7 +60,9 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Initialize ───────────────────────────────────────────
-initDatabase();
+initDatabase().catch(err => {
+  console.error('❌ Failed to initialize database:', err.message);
+});
 
 // Start cron jobs (daily LINE report)
 try {

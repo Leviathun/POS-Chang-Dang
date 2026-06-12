@@ -79,7 +79,7 @@
                 </td>
                 <!-- Price -->
                 <td style="padding: var(--space-md); text-align: right; font-weight: bold; vertical-align: middle;">
-                  {{ formatCurrency(item.price) }} / {{ item.uom || 'ชิ้น' }}
+                  {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
                 </td>
                 <!-- Toggle Active Switch -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
@@ -136,7 +136,7 @@
               
               <!-- Right: Price & Active Switch -->
               <div class="mobile-menu-card-meta">
-                <div class="mobile-menu-card-price">{{ formatCurrency(item.price) }} / {{ item.uom || 'ชิ้น' }}</div>
+                <div class="mobile-menu-card-price">{{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}</div>
                 <div class="mobile-menu-card-status">
                   <label class="toggle-switch" :class="{ 'disabled': !isAdminUser }">
                     <input 
@@ -366,8 +366,17 @@
             />
           </div>
 
-          <!-- Price -->
-          <div class="form-group">
+          <!-- Multiple Prices Toggle -->
+          <div class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-md);">
+            <label class="toggle-switch" style="margin: 0;">
+              <input type="checkbox" v-model="itemForm.use_multiple_prices" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="font-semibold" style="font-size: var(--font-sm); margin-left: 6px;">ใช้งานหลายราคาตามขนาดไซส์ (S, M, L)</span>
+          </div>
+
+          <!-- Price (Single) -->
+          <div v-if="!itemForm.use_multiple_prices" class="form-group">
             <label class="form-label">ราคาขาย (บาท) *</label>
             <input 
               type="number" 
@@ -376,6 +385,46 @@
               placeholder="เช่น 20" 
               min="0"
             />
+          </div>
+
+          <!-- Prices (Multiple) -->
+          <div v-else class="form-group card p-sm mb-md" style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
+            <label class="form-label font-bold mb-sm" style="margin-bottom: 8px; display: block;"><i class="fa-solid fa-tags" style="margin-right: 4px;"></i> กำหนดราคาตามไซส์ (บาท)</label>
+            <div class="flex flex-column gap-sm" style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: var(--font-sm); min-width: 80px;">เล็ก (S):</span>
+                <input 
+                  type="number" 
+                  class="form-input" 
+                  v-model.number="itemForm.multiple_prices.S" 
+                  placeholder="เช่น 40" 
+                  style="flex: 1;"
+                  min="0"
+                />
+              </div>
+              <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: var(--font-sm); min-width: 80px;">กลาง (M):</span>
+                <input 
+                  type="number" 
+                  class="form-input" 
+                  v-model.number="itemForm.multiple_prices.M" 
+                  placeholder="เช่น 50" 
+                  style="flex: 1;"
+                  min="0"
+                />
+              </div>
+              <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: var(--font-sm); min-width: 80px;">ใหญ่ (L):</span>
+                <input 
+                  type="number" 
+                  class="form-input" 
+                  v-model.number="itemForm.multiple_prices.L" 
+                  placeholder="เช่น 60" 
+                  style="flex: 1;"
+                  min="0"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Category Selector -->
@@ -487,7 +536,7 @@
             <button class="btn btn-secondary flex-1" @click="showItemModal = false">ยกเลิก</button>
             <button 
               class="btn btn-primary flex-1" 
-              :disabled="!itemForm.name || !itemForm.price || !itemForm.category_id"
+              :disabled="!itemForm.name || (!itemForm.price && !itemForm.use_multiple_prices) || !itemForm.category_id"
               @click="handleSaveItem"
             >
               <span style="display: inline-flex; align-items: center; gap: 6px;">
@@ -619,13 +668,32 @@ const itemForm = ref({
   price: '',
   category_id: '',
   image_url: '',
-  uom: 'ชิ้น'
+  uom: 'ชิ้น',
+  use_multiple_prices: false,
+  multiple_prices: { S: '', M: '', L: '' }
 });
 
 // Categories lookup helper
 const getCategoryName = (catId) => {
   const cat = categories.value.find(c => c.id === catId);
   return cat ? cat.name : 'หมวดหมู่อื่นๆ';
+};
+
+const formatItemPrice = (item) => {
+  if (item.multiple_prices) {
+    try {
+      const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
+      if (parsed && typeof parsed === 'object') {
+        const prices = Object.values(parsed).filter(v => v !== null && v !== '');
+        if (prices.length > 0) {
+          return '฿' + prices.join('/');
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+  return formatCurrency(item.price);
 };
 
 // Fallback icon based on category name/id
@@ -696,7 +764,9 @@ const openAddModal = () => {
     category_id: categories.value[0]?.id || '',
     image_url: '',
     track_raw_stock: false,
-    uom: 'ชิ้น'
+    uom: 'ชิ้น',
+    use_multiple_prices: false,
+    multiple_prices: { S: '', M: '', L: '' }
   };
   showItemModal.value = true;
 };
@@ -704,13 +774,34 @@ const openAddModal = () => {
 const openEditModal = (item) => {
   isEditMode.value = true;
   editItemId.value = item.id;
+  
+  let useMult = false;
+  let multPrices = { S: '', M: '', L: '' };
+  if (item.multiple_prices) {
+    try {
+      const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
+      if (parsed && typeof parsed === 'object') {
+        useMult = true;
+        multPrices = {
+          S: parsed.S !== undefined ? parsed.S : '',
+          M: parsed.M !== undefined ? parsed.M : '',
+          L: parsed.L !== undefined ? parsed.L : ''
+        };
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
   itemForm.value = {
     name: item.name,
     price: item.price,
     category_id: item.category_id,
     image_url: item.image_url || '',
     track_raw_stock: item.raw_stock !== null && item.raw_stock !== undefined,
-    uom: item.uom || 'ชิ้น'
+    uom: item.uom || 'ชิ้น',
+    use_multiple_prices: useMult,
+    multiple_prices: multPrices
   };
   showItemModal.value = true;
 };
@@ -806,13 +897,33 @@ const handleDeleteCat = async (catId) => {
 const handleSaveItem = async () => {
   ui.showLoading();
   try {
+    let multiplePricesPayload = null;
+    let basePrice = Number(itemForm.value.price) || 0;
+
+    if (itemForm.value.use_multiple_prices) {
+      const sVal = itemForm.value.multiple_prices.S;
+      const mVal = itemForm.value.multiple_prices.M;
+      const lVal = itemForm.value.multiple_prices.L;
+      
+      multiplePricesPayload = {
+        S: sVal !== '' && sVal !== null && sVal !== undefined ? Number(sVal) : null,
+        M: mVal !== '' && mVal !== null && mVal !== undefined ? Number(mVal) : null,
+        L: lVal !== '' && lVal !== null && lVal !== undefined ? Number(lVal) : null
+      };
+
+      if (multiplePricesPayload.S !== null) {
+        basePrice = multiplePricesPayload.S;
+      }
+    }
+
     const payload = {
       name: itemForm.value.name,
-      price: Number(itemForm.value.price) || 0,
+      price: basePrice,
       category_id: Number(itemForm.value.category_id),
       image_url: itemForm.value.image_url.trim() || null,
       track_raw_stock: !!itemForm.value.track_raw_stock,
-      uom: itemForm.value.uom || 'ชิ้น'
+      uom: itemForm.value.uom || 'ชิ้น',
+      multiple_prices: multiplePricesPayload
     };
 
     let res;

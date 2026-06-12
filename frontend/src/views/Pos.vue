@@ -73,7 +73,7 @@
             <!-- Product Price & Stock in stable container -->
             <div class="pos-item-details">
               <div class="pos-item-price">
-                {{ formatCurrency(item.price) }}<span v-if="item.uom && item.uom !== 'ชิ้น'" style="font-size: 10px; color: var(--text-secondary); font-weight: normal; margin-left: 2px;">/{{ item.uom }}</span>
+                {{ formatItemPrice(item) }}<span v-if="item.uom && item.uom !== 'ชิ้น'" style="font-size: 10px; color: var(--text-secondary); font-weight: normal; margin-left: 2px;">/{{ item.uom }}</span>
               </div>
               <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock" :class="{ 'low-stock': isLowStock(item) }">
                 <span v-if="item.stock <= 0"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
@@ -335,11 +335,7 @@
             </label>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm);">
               <div 
-                v-for="(config, size) in { 
-                  'S': { name: 'เล็ก (S)', weight: 100, price: 40 },
-                  'M': { name: 'กลาง (M)', weight: 120, price: 50 },
-                  'L': { name: 'ใหญ่ (L)', weight: 150, price: 60 }
-                }" 
+                v-for="(config, size) in getSamKrobSizes()" 
                 :key="size"
                 class="card text-center p-sm cursor-pointer"
                 :style="{
@@ -482,21 +478,47 @@ const toggleSamKrobIngredient = (id) => {
   }
 };
 
+const getSamKrobSizes = () => {
+  const baseItem = activeSamKrobBaseItem.value;
+  let itemPrices = { S: 40, M: 50, L: 60 };
+  if (baseItem?.multiple_prices) {
+    try {
+      const parsed = typeof baseItem.multiple_prices === 'string'
+        ? JSON.parse(baseItem.multiple_prices)
+        : baseItem.multiple_prices;
+      if (parsed && typeof parsed === 'object') {
+        itemPrices = {
+          S: parsed.S !== undefined && parsed.S !== null && parsed.S !== '' ? Number(parsed.S) : 40,
+          M: parsed.M !== undefined && parsed.M !== null && parsed.M !== '' ? Number(parsed.M) : 50,
+          L: parsed.L !== undefined && parsed.L !== null && parsed.L !== '' ? Number(parsed.L) : 60
+        };
+      }
+    } catch (e) {
+      console.warn('Error parsing multiple prices in POS:', e);
+    }
+  }
+  return {
+    'S': { name: 'เล็ก (S)', weight: 100, price: itemPrices.S },
+    'M': { name: 'กลาง (M)', weight: 120, price: itemPrices.M },
+    'L': { name: 'ใหญ่ (L)', weight: 150, price: itemPrices.L }
+  };
+};
+
 const getPortionWeightPreview = (id) => {
   if (!selectedSamKrobIds.value.includes(id)) return 0;
-  const sizeMap = { 'S': 100, 'M': 120, 'L': 150 };
-  const totalWeight = sizeMap[selectedSamKrobSize.value] || 100;
+  const sizes = getSamKrobSizes();
+  const totalWeight = sizes[selectedSamKrobSize.value]?.weight || 100;
   return Number((totalWeight / selectedSamKrobIds.value.length).toFixed(2));
 };
 
 const getSelectedSizeWeight = () => {
-  const sizeMap = { 'S': 100, 'M': 120, 'L': 150 };
-  return sizeMap[selectedSamKrobSize.value] || 100;
+  const sizes = getSamKrobSizes();
+  return sizes[selectedSamKrobSize.value]?.weight || 100;
 };
 
 const getSelectedSizePrice = () => {
-  const sizeMap = { 'S': 40, 'M': 50, 'L': 60 };
-  return sizeMap[selectedSamKrobSize.value] || 40;
+  const sizes = getSamKrobSizes();
+  return sizes[selectedSamKrobSize.value]?.price || 40;
 };
 
 // Computed variables
@@ -558,12 +580,26 @@ const getCartIngredientWeight = (ingredientId) => {
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
   if (uom === 'กรัม') {
-    if (qty >= 1000) {
-      return `${(qty / 1000).toFixed(2)} กก.`;
-    }
     return `${qty} ก.`;
   }
   return `${qty} ${uom || 'ชิ้น'}`;
+};
+
+const formatItemPrice = (item) => {
+  if (item.multiple_prices) {
+    try {
+      const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
+      if (parsed && typeof parsed === 'object') {
+        const prices = Object.values(parsed).filter(v => v !== null && v !== '');
+        if (prices.length > 0) {
+          return '฿' + prices.join('/');
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+  return formatCurrency(item.price);
 };
 
 const isOutOfStock = (item) => {
@@ -655,12 +691,8 @@ const confirmSamKrobSelection = () => {
     return;
   }
   
-  const sizeMap = {
-    'S': { weight: 100, price: 40 },
-    'M': { weight: 120, price: 50 },
-    'L': { weight: 150, price: 60 }
-  };
-  const sizeConfig = sizeMap[selectedSamKrobSize.value];
+  const sizes = getSamKrobSizes();
+  const sizeConfig = sizes[selectedSamKrobSize.value];
   const ingredientWeight = Number((sizeConfig.weight / selectedSamKrobIds.value.length).toFixed(2));
   
   const selectedItems = selectedSamKrobIds.value.map(id => {

@@ -351,6 +351,20 @@ async function initDatabase() {
     // Column already exists, safe to ignore
   }
 
+  // Add multiple_prices column to menu_items if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE menu_items ADD COLUMN multiple_prices TEXT DEFAULT NULL");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Add multiple_prices column to branch_stocks if not exists (SQLite-friendly ALTER TABLE)
+  try {
+    await db.exec("ALTER TABLE branch_stocks ADD COLUMN multiple_prices TEXT DEFAULT NULL");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
   // Migration: ปรับปรุงโครงสร้างตาราง orders เพื่อรองรับ payment_method: gov
   try {
     const tableInfo = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'").get();
@@ -676,6 +690,47 @@ async function initDatabase() {
     }
   } catch (e) {
     console.warn('⚠️ Migration uom_initial_migration error:', e.message);
+  }
+
+  // Migration: ตั้งค่าหลายราคา (multiple_prices) สำหรับสินค้ากลุ่มสามกรอบเริ่มต้น
+  try {
+    const migrationDone = await db.prepare("SELECT value FROM settings WHERE key = 'multiple_prices_initial_migration'").get();
+    if (!migrationDone) {
+      console.log('  🔧 Migration: เริ่มต้นตั้งค่าหลายราคาสำหรับสินค้ากลุ่มสามกรอบ...');
+      const samKrobCat = await db.prepare("SELECT id FROM categories WHERE name = 'สามกรอบ'").get();
+      if (samKrobCat) {
+        const defaultMultiplePrices = JSON.stringify({ S: 40, M: 50, L: 60 });
+        await db.prepare("UPDATE menu_items SET multiple_prices = ? WHERE category_id = ?").run(defaultMultiplePrices, samKrobCat.id);
+        await db.prepare("UPDATE branch_stocks SET multiple_prices = ? WHERE menu_item_id IN (SELECT id FROM menu_items WHERE category_id = ?)").run(defaultMultiplePrices, samKrobCat.id);
+      }
+      await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('multiple_prices_initial_migration', 'done')").run();
+      console.log('  ✅ Migration: ตั้งค่าหลายราคาเริ่มต้นสำเร็จ');
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration multiple_prices_initial_migration error:', e.message);
+  }
+
+  // Self-Healing: ตรวจสอบและสร้างข้อมูลสต็อกสาขาที่ขาดหายไปสำหรับ menu_items
+  try {
+    console.log('  🔧 Self-healing: ตรวจสอบและสร้างข้อมูลสต็อกสาขาที่ขาดหายไป...');
+    const branches = await db.prepare("SELECT id FROM branches").all();
+    const menuItems = await db.prepare("SELECT id, price FROM menu_items").all();
+    
+    for (const item of menuItems) {
+      for (const branch of branches) {
+        const stockExists = await db.prepare("SELECT 1 FROM branch_stocks WHERE branch_id = ? AND menu_item_id = ?").get(branch.id, item.id);
+        if (!stockExists) {
+          console.log(`    ➕ เพิ่มข้อมูลสต็อกสาขาที่ขาดหายไป: เมนู ID ${item.id} สาขา ID ${branch.id}`);
+          await db.prepare(`
+            INSERT INTO branch_stocks (branch_id, menu_item_id, quantity, raw_quantity, price, multiple_prices)
+            VALUES (?, ?, 0, NULL, ?, (SELECT multiple_prices FROM menu_items WHERE id = ?))
+          `).run(branch.id, item.id, item.price, item.id);
+        }
+      }
+    }
+    console.log('  ✅ Self-healing: ตรวจสอบและสร้างข้อมูลสต็อกสาขาเสร็จสมบูรณ์');
+  } catch (e) {
+    console.warn('⚠️ Self-healing branch stocks error:', e.message);
   }
 
   console.log('  ✅ Cloud/Local Database initialized');

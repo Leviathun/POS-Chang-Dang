@@ -571,9 +571,6 @@ const actionForm = ref({
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
   if (uom === 'กรัม') {
-    if (qty >= 1000) {
-      return `${(qty / 1000).toFixed(2)} กก.`;
-    }
     return `${qty} ก.`;
   }
   return `${qty} ${uom || 'ชิ้น'}`;
