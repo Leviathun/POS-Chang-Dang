@@ -242,28 +242,93 @@ async function getTopItems(days = 7, branchId = null) {
 
   if (branchId) {
     branchFilter = ' AND o.branch_id = ?';
-    params.unshift(branchId); // ใส่ก่อนด้านหน้าหรือตามตำแหน่ง
+    params.unshift(branchId);
   }
 
-  // ปรับการหาตำแหน่งของ params
   const sql = `
     SELECT 
       oi.item_name,
       oi.menu_item_id,
-      SUM(oi.quantity) as total_qty,
-      SUM(oi.subtotal) as total_revenue
+      oi.quantity,
+      oi.subtotal,
+      oi.options
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
     WHERE o.status = 'completed'
       ${branchFilter}
       AND o.created_at >= datetime('now', 'localtime', ${branchId ? '?' : '?'})
-    GROUP BY oi.menu_item_id, oi.item_name
-    ORDER BY total_qty DESC
-    LIMIT 10
   `;
 
-  const items = await db.prepare(sql).all(params);
-  return items;
+  const allOrderItems = await db.prepare(sql).all(params);
+  const aggregation = {};
+
+  allOrderItems.forEach(oi => {
+    let optionsObj = null;
+    if (oi.options) {
+      try { optionsObj = JSON.parse(oi.options); } catch (e) {}
+    }
+
+    if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
+      const ingredientCount = optionsObj.selected_items.length;
+      const splitRevenue = oi.subtotal / ingredientCount;
+
+      optionsObj.selected_items.forEach(ingredient => {
+        const id = Number(ingredient.id);
+        const name = ingredient.name;
+        const totalWeight = Number(ingredient.weight) * oi.quantity;
+        const portions = oi.quantity;
+
+        if (!aggregation[id]) {
+          aggregation[id] = {
+            menu_item_id: id,
+            item_name: name,
+            total_qty: 0,
+            portion_count: 0,
+            total_revenue: 0,
+            unit: 'กรัม'
+          };
+        }
+        aggregation[id].total_qty += totalWeight;
+        aggregation[id].portion_count += portions;
+        aggregation[id].total_revenue += splitRevenue;
+      });
+    } else {
+      const id = oi.menu_item_id;
+      const name = oi.item_name;
+      const qty = oi.quantity;
+      const subtotal = oi.subtotal;
+
+      if (!aggregation[id]) {
+        aggregation[id] = {
+          menu_item_id: id,
+          item_name: name,
+          total_qty: 0,
+          portion_count: 0,
+          total_revenue: 0,
+          unit: 'ชิ้น'
+        };
+      }
+      aggregation[id].total_qty += qty;
+      aggregation[id].portion_count += qty;
+      aggregation[id].total_revenue += subtotal;
+    }
+  });
+
+  const aggregatedList = Object.values(aggregation);
+  
+  // Sort by portion_count descending to represent popularity fairly
+  aggregatedList.sort((a, b) => b.portion_count - a.portion_count);
+
+  // Take top 10 and map to original property contract
+  const top10 = aggregatedList.slice(0, 10).map(item => ({
+    menu_item_id: item.menu_item_id,
+    item_name: item.item_name,
+    total_qty: item.total_qty,
+    total_revenue: Math.round(item.total_revenue * 100) / 100,
+    unit: item.unit
+  }));
+
+  return top10;
 }
 
 /**

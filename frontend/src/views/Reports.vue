@@ -690,28 +690,115 @@
       </div>
 
       <!-- Tab 3: Top Selling Menus (10 อันดับเมนูขายดีที่สุด) -->
-      <div v-if="activeTab === 'top_menus' && isAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-fire" style="margin-right: 6px;"></i> 10 อันดับเมนูขายดีที่สุด (7 วันที่ผ่านมา)</div>
-        
-        <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
-          ยังไม่มีข้อมูลการขายในรอบ 7 วันที่ผ่านมา
+      <div v-if="activeTab === 'top_menus' && isAdminUser" class="card" style="position:relative; overflow:hidden; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
+        <!-- Header -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: var(--space-md);">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-glow); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 171, 43, 0.3);">
+            <i class="fa-solid fa-fire text-accent animate-pulse" style="font-size: 1.2rem; color: var(--accent);"></i>
+          </div>
+          <div>
+            <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">10 อันดับสินค้าขายดีที่สุด</span>
+            <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">สถิติการใช้วัตถุดิบและเมนูจากการขายจริง</span>
+          </div>
         </div>
-        <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
+
+        <!-- Period Selector (Pills) -->
+        <div style="margin-bottom: var(--space-md);">
+          <div class="pills-container" style="display: inline-flex; gap: var(--space-xs); background: rgba(139, 3, 19, 0.05); padding: 4px; border-radius: var(--radius-full); border: 1px solid rgba(139, 3, 19, 0.12);">
+            <button 
+              v-for="d in [1, 7, 30]" 
+              :key="d"
+              @click="setTopItemsDays(d)"
+              :style="{
+                background: topItemsDays === d ? 'var(--primary)' : 'transparent',
+                color: topItemsDays === d ? 'white' : 'var(--text-secondary)',
+                boxShadow: topItemsDays === d ? 'var(--shadow-sm)' : 'none',
+                fontWeight: topItemsDays === d ? 'bold' : 'normal'
+              }"
+              style="padding: 6px 18px; border-radius: var(--radius-full); font-size: 11px; transition: all 0.2s ease; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 70px;"
+            >
+              {{ d === 1 ? 'วันนี้' : d + ' วัน' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashed Divider -->
+        <div style="border-bottom: 2px dashed var(--border-color-light); margin-bottom: var(--space-lg); width: 100%;"></div>
+        
+        <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: rgba(255, 255, 255, 0.3); border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+          <i class="fa-solid fa-folder-open mb-sm" style="font-size: 2.5rem; opacity: 0.25; display: block; color: var(--text-primary);"></i>
+          ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
+        </div>
+        
+        <div v-else style="display: flex; flex-direction: column; gap: var(--space-xs);">
+          <!-- Top 3 Items Cards -->
           <div 
-            v-for="(item, index) in topItems" 
-            :key="item.menu_item_id" 
-            class="flex flex-between align-center p-xs"
-            style="font-size:var(--font-sm); border-bottom: 1px solid var(--border-color);"
+            v-for="(item, index) in topItems.slice(0, 3)" 
+            :key="item.menu_item_id"
+            class="top-item-card-redesign" 
+            :class="'rank-' + (index + 1) + '-card'"
           >
-            <div class="flex align-center gap-sm">
-              <span class="font-bold" :class="index === 0 ? 'text-accent' : 'text-secondary'">
-                #{{ index + 1 }}
-              </span>
-              <span>{{ item.item_name }}</span>
+            <!-- Left Side: Circle badge/icon -->
+            <div class="rank-badge-circle" :class="'rank-' + (index + 1) + '-badge'">
+              <i v-if="index === 0" class="fa-solid fa-crown"></i>
+              <span v-else>{{ index + 1 }}</span>
             </div>
-            <div>
-              <span class="font-bold">{{ item.total_qty }} ชิ้น</span> | 
-              <span style="font-size:11px; color:var(--text-secondary);">{{ formatCurrency(item.total_sales) }}</span>
+
+            <!-- Middle Side: Name (top) and Type Badge (bottom) -->
+            <div class="card-info-middle">
+              <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
+              <div style="display: flex; align-items: center;">
+                <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
+                <span v-else class="badge-type main">ทั่วไป</span>
+              </div>
+            </div>
+
+            <!-- Right Side: Qty & Sales -->
+            <div class="card-sales-right">
+              <div class="qty-column">
+                <span class="qty-num">{{ Number(item.total_qty).toLocaleString() }}</span>
+                <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
+              </div>
+              <div class="sales-pill">
+                {{ formatCurrency(item.total_sales) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider label for ranks 4-10 -->
+          <div v-if="topItems.length > 3" style="font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding-left: 6px; margin: var(--space-md) 0 var(--space-sm) 0; border-left: 3px solid var(--primary);">
+            อันดับที่ 4 - 10
+          </div>
+
+          <!-- Loop for Ranks 4-10 -->
+          <div 
+            v-for="(item, index) in topItems.slice(3)" 
+            :key="item.menu_item_id"
+            class="top-item-card-redesign rank-other-card"
+          >
+            <!-- Left Side: Circle badge with number -->
+            <div class="rank-badge-circle rank-other-badge">
+              <span>{{ index + 4 }}</span>
+            </div>
+
+            <!-- Middle Side: Name (top) and Type Badge (bottom) -->
+            <div class="card-info-middle">
+              <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
+              <div style="display: flex; align-items: center;">
+                <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
+                <span v-else class="badge-type main">ทั่วไป</span>
+              </div>
+            </div>
+
+            <!-- Right Side: Qty & Sales -->
+            <div class="card-sales-right">
+              <div class="qty-column">
+                <span class="qty-num">{{ Number(item.total_qty).toLocaleString() }}</span>
+                <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
+              </div>
+              <div class="sales-pill">
+                {{ formatCurrency(item.total_sales) }}
+              </div>
             </div>
           </div>
         </div>
@@ -875,7 +962,7 @@ const applyDataFromStore = () => {
     };
   }
   
-  if (store.reportTopItems) {
+  if (store.reportTopItems && topItemsDays.value === 7) {
     topItems.value = store.reportTopItems.map(item => ({
       ...item,
       total_sales: item.total_revenue || 0
@@ -989,6 +1076,11 @@ const dailyReport = ref({
   orders: []
 });
 const topItems = ref([]);
+const topItemsDays = ref(7); // default 7 days
+const setTopItemsDays = (days) => {
+  topItemsDays.value = days;
+  loadTopItems();
+};
 const expenses = ref([]);
 const activityLogs = ref([]);
 const filterAction = ref('all');
@@ -1390,12 +1482,12 @@ const loadReportData = async () => {
 };
 
 const loadTopItems = async () => {
-  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+  if (topItemsDays.value === 7 && isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
     return;
   }
   try {
-    const res = await api.reports.topItems(7, selectedBranchId.value);
+    const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value);
     if (res.success && Array.isArray(res.data)) {
       topItems.value = res.data.map(item => ({
         ...item,
@@ -1405,6 +1497,11 @@ const loadTopItems = async () => {
   } catch (e) {
     console.warn(e);
   }
+};
+
+const getPopularityPercentage = (qty, maxQty) => {
+  if (!maxQty) return 0;
+  return Math.round((qty / maxQty) * 100);
 };
 
 // ── Order Expand & Void ──
@@ -1903,5 +2000,196 @@ select.reports-filter-control,
 
 .log-user, .log-time {
   white-space: nowrap;
+}
+
+/* --- Top Selling Menus Premium Styles --- */
+.podium-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: var(--space-md);
+  margin: var(--space-xl) 0;
+  padding-top: var(--space-xl);
+}
+
+.podium-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-spring);
+  position: relative;
+  overflow: visible;
+}
+
+/* --- Top Selling Menus Premium Styles --- */
+.top-item-card-redesign {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.45);
+  transition: all var(--transition-base);
+  margin-bottom: var(--space-xs);
+}
+
+.top-item-card-redesign:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: translateX(4px);
+}
+
+.rank-1-card {
+  border: 1px solid #ffab2b;
+  box-shadow: 0 2px 10px rgba(255, 171, 43, 0.08);
+}
+.rank-1-card:hover {
+  border-color: #ffab2b !important;
+  box-shadow: 0 4px 16px rgba(255, 171, 43, 0.15);
+}
+
+.rank-2-card {
+  border: 1px solid #bc9e88;
+  box-shadow: 0 2px 8px rgba(188, 158, 136, 0.05);
+}
+.rank-2-card:hover {
+  border-color: #bc9e88 !important;
+  box-shadow: 0 4px 12px rgba(188, 158, 136, 0.1);
+}
+
+.rank-3-card {
+  border: 1px solid #e9c46a;
+  box-shadow: 0 2px 8px rgba(233, 196, 106, 0.05);
+}
+.rank-3-card:hover {
+  border-color: #e9c46a !important;
+  box-shadow: 0 4px 12px rgba(233, 196, 106, 0.1);
+}
+
+.rank-other-card {
+  border: 1px solid var(--border-color);
+}
+.rank-other-card:hover {
+  border-color: var(--primary-light) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Badge Circle Icon */
+.rank-badge-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.rank-1-badge {
+  background: #ffe066;
+  color: #8b0313;
+}
+.rank-2-badge {
+  background: rgba(188, 158, 136, 0.2);
+  color: #6e4e37;
+}
+.rank-3-badge {
+  background: rgba(233, 196, 106, 0.2);
+  color: #6e4e37;
+}
+.rank-other-badge {
+  background: rgba(110, 78, 55, 0.08);
+  border: 1px solid rgba(110, 78, 55, 0.12);
+  color: var(--text-secondary);
+}
+
+/* Middle Layout */
+.card-info-middle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.item-name-text {
+  font-size: var(--font-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.badge-type {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: inline-block;
+}
+
+.badge-type.mixin {
+  background: rgba(42, 157, 143, 0.08);
+  color: var(--success);
+  border: 1px solid rgba(42, 157, 143, 0.15);
+}
+
+.badge-type.main {
+  background: rgba(139, 3, 19, 0.05);
+  color: var(--primary);
+  border: 1px solid rgba(139, 3, 19, 0.1);
+}
+
+/* Right Layout */
+.card-sales-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}
+
+.qty-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 50px;
+}
+
+.qty-num {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.qty-unit {
+  font-size: 9px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sales-pill {
+  background: rgba(139, 3, 19, 0.05);
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  color: var(--primary);
+  font-weight: 700;
+  min-width: 80px;
+  text-align: center;
 }
 </style>
