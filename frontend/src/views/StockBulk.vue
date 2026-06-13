@@ -22,7 +22,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="card p-lg overflow-hidden">
+    <div class="card p-lg overflow-hidden bulk-main-card">
       <!-- Outer Category Tabs: Menu Items vs Modifiers -->
       <div class="category-tabs mb-lg">
         <button 
@@ -226,14 +226,21 @@
             class="bulk-stock-row bulk-modifier-row"
             style="grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr;"
           >
-            <!-- Col 1: Name -->
+            <!-- Col 1: Name & Mobile Badge -->
             <div class="bulk-item-name-col">
-              <div class="font-bold" style="font-size: var(--font-lg);">{{ item.name }}</div>
-              <div class="mobile-only" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px;">ID: {{ item.modifier_id }}</div>
+              <div class="flex flex-between align-center" style="width: 100%; gap: var(--space-xs);">
+                <div>
+                  <div class="font-bold" style="font-size: var(--font-lg); text-align: left;">{{ item.name }}</div>
+                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px; text-align: left;">ID: {{ item.modifier_id }}</div>
+                </div>
+                <span class="badge show-mobile-inline" :class="getModifierCategoryClass(item.category)" style="font-size: 11px; padding: 3px 8px; margin-left: auto;">
+                  {{ getModifierCategoryLabel(item.category) }}
+                </span>
+              </div>
             </div>
 
-            <!-- Col 2: Category Badge -->
-            <div class="flex align-center justify-center font-semibold">
+            <!-- Col 2: Category Badge (Desktop Only) -->
+            <div class="flex align-center justify-center font-semibold hide-mobile">
               <span class="badge" :class="getModifierCategoryClass(item.category)">
                 {{ getModifierCategoryLabel(item.category) }}
               </span>
@@ -937,7 +944,7 @@ onUnmounted(() => {
   
   .bulk-stock-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr !important;
     gap: var(--space-md);
     padding: var(--space-lg);
     background: var(--card-bg);
@@ -978,17 +985,13 @@ onUnmounted(() => {
   }
 
   /* Arrange Modifiers Row on mobile */
-  .bulk-modifier-row > div:nth-child(2) { /* Category Badge */
+  .bulk-modifier-row > div:nth-child(3) { /* Current Stock */
     grid-column: 1;
     grid-row: 2;
   }
-  .bulk-modifier-row > div:nth-child(3) { /* Current Stock */
+  .bulk-modifier-row > div:nth-child(4) { /* Input Value */
     grid-column: 2;
     grid-row: 2;
-  }
-  .bulk-modifier-row > div:nth-child(4) { /* Input Value */
-    grid-column: span 2;
-    grid-row: 3;
     width: 100%;
   }
 
@@ -1043,6 +1046,13 @@ onUnmounted(() => {
     width: 100%;
     padding: 0 var(--space-sm);
     font-size: var(--font-sm);
+  }
+
+  .bulk-main-card {
+    padding: var(--space-md) 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 }
 

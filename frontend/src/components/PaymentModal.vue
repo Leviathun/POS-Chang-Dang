@@ -222,6 +222,7 @@
 import { ref, computed } from 'vue';
 import api from '../api';
 import { ui, formatCurrency, roundUp, showConfetti } from '../helpers';
+import { store } from '../store';
 
 // Props
 const props = defineProps({
@@ -346,6 +347,7 @@ const confirmCashPayment = async () => {
     
     orderId.value = res.data?.order_number || res.data?.id || res.id;
     success.value = true;
+    store.clearReportsCache();
     showConfetti();
     ui.showToast('ชำระเงินสดเรียบร้อย!', 'success');
   } catch (error) {
@@ -370,6 +372,7 @@ const confirmQRPayment = async () => {
 
     orderId.value = res.data?.order_number || res.data?.id || res.id;
     success.value = true;
+    store.clearReportsCache();
     showConfetti();
     ui.showToast('ชำระเงินผ่าน QR Code เรียบร้อย!', 'success');
   } catch (error) {
@@ -394,6 +397,7 @@ const confirmGovPayment = async () => {
 
     orderId.value = res.data?.order_number || res.data?.id || res.id;
     success.value = true;
+    store.clearReportsCache();
     showConfetti();
     ui.showToast('ชำระเงินโครงการของรัฐเรียบร้อย!', 'success');
   } catch (error) {
