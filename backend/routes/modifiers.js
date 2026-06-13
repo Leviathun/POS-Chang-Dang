@@ -267,7 +267,7 @@ router.post('/presets', requireAdmin, async (req, res) => {
 
     const branchId = await getBranchId(req, db);
 
-    const result = await db.prepare('INSERT INTO modifier_presets (branch_id, name, modifier_ids, created_at) VALUES (?, ?, ?, datetime("now", "+7 hours"))')
+    const result = await db.prepare(`INSERT INTO modifier_presets (branch_id, name, modifier_ids, created_at) VALUES (?, ?, ?, datetime('now', '+7 hours'))`)
       .run(branchId, name, JSON.stringify(modifier_ids));
 
     const newPreset = await db.prepare('SELECT * FROM modifier_presets WHERE id = ?').get(result.lastInsertRowid);

@@ -164,7 +164,7 @@ router.post('/users', requireAdmin, async (req, res) => {
     }
 
     const result = await db.prepare(
-      'INSERT INTO users (name, pin, role, branch_id, created_at) VALUES (?, ?, ?, ?, datetime("now", "+7 hours"))'
+      `INSERT INTO users (name, pin, role, branch_id, created_at) VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))`
     ).run(name, String(pin), role || 'staff', targetBranchId);
 
     const user = await db.prepare(
@@ -326,7 +326,7 @@ router.post('/branches', requireAdmin, async (req, res) => {
     // ทำรายการแบบ transaction เพื่อความปลอดภัย
     const createBranchTx = db.transaction(async () => {
       const result = await db.prepare(
-        'INSERT INTO branches (name, address, created_at) VALUES (?, ?, datetime("now", "+7 hours"))'
+        `INSERT INTO branches (name, address, created_at) VALUES (?, ?, datetime('now', '+7 hours'))`
       ).run(name.trim(), address ? address.trim() : null);
 
       const branchId = result.lastInsertRowid;
