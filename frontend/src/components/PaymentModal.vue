@@ -60,22 +60,35 @@
                   <i class="fa-solid fa-receipt" style="color: var(--primary);"></i> รายละเอียดบิลสินค้า
                 </div>
                 
-                <div class="order-items-scroll" style="max-height: 200px; overflow-y: auto; padding-right: var(--space-xs); display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-md);">
-                  <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between align-start" style="font-size: var(--font-sm); padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06);">
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                      <span class="font-bold" style="color: var(--text-primary);">{{ cartItem.item.name }}</span>
+                <div class="order-items-scroll" style="max-height: 300px; overflow-y: auto; padding-right: var(--space-xs); display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-md);">
+                  <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between align-start" style="font-size: var(--font-sm); padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
+                    <div style="display:flex; flex-direction:column; gap:2px; flex: 1; min-width: 0;">
+                      <span class="font-bold" style="color: var(--text-primary); word-break: break-word;">{{ cartItem.item.name }}</span>
                       
                       <!-- Show options details if any -->
-                      <div v-if="cartItem.item.options && cartItem.item.options.selected_items" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
-                        เครื่องปรุง: {{ cartItem.item.options.selected_items.map(i => `${i.name} (${i.weight}ก.)`).join(', ') }}
+                      <div v-if="cartItem.item.options && cartItem.item.options.selected_items" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; word-break: break-word;">
+                        ผสม: {{ cartItem.item.options.selected_items.map(i => `${i.name} (${i.weight}ก.)`).join(', ') }}
                       </div>
                     </div>
-                    <div style="text-align: right; min-width: 120px;">
-                      <span class="font-bold text-accent">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
-                      <br />
-                      <span style="font-size: 11px; color: var(--text-secondary);">จำนวน {{ cartItem.quantity }} ชิ้น × {{ formatCurrency(cartItem.item.price) }}</span>
+                    <div style="text-align: right; flex-shrink: 0; min-width: 80px;">
+                      <span class="font-bold text-accent" style="display: block;">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
+                      <span style="font-size: 11px; color: var(--text-secondary); display: block; margin-top: 2px;">{{ cartItem.quantity }} × {{ formatCurrency(cartItem.item.price) }}</span>
                     </div>
                   </div>
+
+                  <!-- Seasonings at the end of the menu -->
+                  <template v-if="freeModifiers.length > 0">
+                    <div style="border-top: 1px dashed var(--border-color); margin: 4px 0 2px 0;"></div>
+                    <div v-for="mod in freeModifiers" :key="mod.id" class="flex flex-between align-start" style="font-size: var(--font-sm); padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
+                      <div style="display:flex; flex-direction:column; gap:2px; flex: 1; min-width: 0;">
+                        <span style="color: var(--text-secondary); word-break: break-word;">{{ mod.name }}</span>
+                      </div>
+                      <div style="text-align: right; flex-shrink: 0; min-width: 80px;">
+                        <span class="font-bold text-accent" style="display: block;">฿0</span>
+                        <span style="font-size: 11px; color: var(--text-secondary); display: block; margin-top: 2px;">1 × ฿0</span>
+                      </div>
+                    </div>
+                  </template>
                 </div>
 
                 <div style="border-top: 2px dashed var(--border-color); padding-top: var(--space-md); display: flex; justify-content: space-between; align-items: center;">
@@ -140,11 +153,18 @@
 
                   <!-- Quick Amount Selector -->
                   <div class="quick-amounts" style="margin-bottom: var(--space-md); display: flex; gap: var(--space-sm); overflow-x: auto; padding-bottom: var(--space-xs);">
-                    <button class="quick-amount-btn" @click="enteredAmount = total">พอดี ({{ formatCurrency(total) }})</button>
+                    <button 
+                      class="quick-amount-btn" 
+                      :class="{ 'active': Number(enteredAmount) === total }"
+                      @click="enteredAmount = total"
+                    >
+                      พอดี ({{ formatCurrency(total) }})
+                    </button>
                     <button 
                       v-for="amt in quickAmountOptions" 
                       :key="amt" 
                       class="quick-amount-btn"
+                      :class="{ 'active': Number(enteredAmount) === amt }"
                       @click="enteredAmount = amt"
                     >
                       {{ formatCurrency(amt) }}
@@ -489,20 +509,29 @@ const confirmGovPayment = async () => {
 
 .quick-amount-btn {
   padding: var(--space-sm) var(--space-lg);
-  background: rgba(244, 162, 97, 0.08);
-  border: 1px solid rgba(244, 162, 97, 0.15);
+  background: rgba(139, 3, 19, 0.05);
+  border: 1px solid rgba(139, 3, 19, 0.15);
   border-radius: var(--radius-full);
-  color: var(--accent);
+  color: var(--primary);
   font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   transition: var(--transition-base);
   cursor: pointer;
 }
 
+.quick-amount-btn:hover:not(.active) {
+  background: rgba(139, 3, 19, 0.10);
+}
+
+.quick-amount-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: transparent;
+}
+
 .quick-amount-btn:active {
   transform: scale(0.95);
-  background: rgba(244, 162, 97, 0.15);
 }
 
 /* --- Payment Methods --- */

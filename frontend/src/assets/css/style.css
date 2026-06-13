@@ -564,8 +564,9 @@ ul, ol { list-style: none; }
 }
 
 .badge-neutral {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(110, 78, 55, 0.08);
   color: var(--text-secondary);
+  border: 1px solid rgba(110, 78, 55, 0.15);
 }
 
 /* Modifier Specific Badges (High Contrast, Distinct Colors) */

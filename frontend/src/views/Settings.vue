@@ -369,13 +369,12 @@
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th style="padding: var(--space-md);">ชื่อสาขา</th>
                 <th style="padding: var(--space-md);">ที่อยู่</th>
-                <th style="padding: var(--space-md); text-align: center;">เบอร์โทรศัพท์</th>
                 <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="branches.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+                <td colspan="3" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสาขา
                 </td>
               </tr>
@@ -391,9 +390,6 @@
                 </td>
                 <td style="padding: var(--space-md); vertical-align: middle; color: var(--text-secondary);">
                   {{ b.address || '-' }}
-                </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  {{ b.phone || '-' }}
                 </td>
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
@@ -427,11 +423,8 @@
 
           <div class="flex-1" style="min-width: 0;">
             <div class="font-bold text-primary mb-xs" style="font-size: var(--font-base);">{{ b.name }}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">
-              <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
-            </div>
             <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: var(--space-sm);">
-              <i class="fa-solid fa-phone" style="margin-right: 4px; color: var(--primary);"></i> โทร: {{ b.phone || '-' }}
+              <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
             </div>
             <div class="flex gap-sm">
               <button 
@@ -483,16 +476,6 @@
               class="form-input" 
               v-model="branchForm.address" 
               placeholder="ระบุที่ตั้งสาขา..." 
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">เบอร์โทรศัพท์สาขา</label>
-            <input 
-              type="text" 
-              class="form-input" 
-              v-model="branchForm.phone" 
-              placeholder="เช่น 02-123-4567..." 
             />
           </div>
 
@@ -839,8 +822,7 @@ const openAddBranchModal = () => {
   editBranchId.value = null;
   branchForm.value = {
     name: '',
-    address: '',
-    phone: ''
+    address: ''
   };
   showBranchModal.value = true;
 };
@@ -850,8 +832,7 @@ const openEditBranchModal = (b) => {
   editBranchId.value = b.id;
   branchForm.value = {
     name: b.name,
-    address: b.address || '',
-    phone: b.phone || ''
+    address: b.address || ''
   };
   showBranchModal.value = true;
 };
@@ -861,8 +842,7 @@ const handleSaveBranch = async () => {
   try {
     const payload = {
       name: branchForm.value.name,
-      address: branchForm.value.address,
-      phone: branchForm.value.phone
+      address: branchForm.value.address
     };
 
     let res;
