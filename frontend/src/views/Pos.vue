@@ -823,20 +823,46 @@ const handleCheckout = () => {
 
 // Callback when payment completes successfully
 const onPaymentSuccess = async () => {
+  // Deduct stock locally in the store to keep POS stock counts updated instantly
+  cart.value.forEach((cartItem, itemId) => {
+    // Deduct stock for the menu item
+    const mItem = store.menuItems.find(m => m.id === cartItem.item.id);
+    if (mItem && mItem.stock !== null) {
+      store.updateStock(cartItem.item.id, Math.max(0, mItem.stock - cartItem.quantity));
+    }
+    
+    // Deduct ingredients if custom options exist
+    if (cartItem.item.options && Array.isArray(cartItem.item.options.selected_items)) {
+      cartItem.item.options.selected_items.forEach(ing => {
+        const ingItem = store.menuItems.find(m => m.id === Number(ing.id));
+        if (ingItem && ingItem.stock !== null) {
+          const deductAmount = Number(ing.weight) * cartItem.quantity;
+          store.updateStock(ing.id, Math.max(0, ingItem.stock - deductAmount));
+        }
+      });
+    }
+  });
+
+  // Deduct stock for modifiers locally
+  if (selectedModifiers.value && selectedModifiers.value.length > 0) {
+    selectedModifiers.value.forEach(mod => {
+      const currentMod = store.modifiers.find(m => m.id === mod.id);
+      if (currentMod && currentMod.total_servings !== null) {
+        currentMod.total_servings = Math.max(0, currentMod.total_servings - 1);
+      }
+    });
+  }
+
   cart.value = new Map();
   cartExpanded.value = false;
   showPaymentModal.value = false;
   useModifiers.value = false;
   selectedModifiers.value = [];
-  try {
-    ui.showLoading();
-    await store.fetchMenu(true); // Force reload menu to update stock counts!
-    await loadModifiersAndPresets(); // Reload modifier stocks!
-  } catch (e) {
-    console.error(e);
-  } finally {
-    ui.hideLoading();
-  }
+
+  // Revalidate store data in background silently
+  store.fetchMenu(true).catch(() => {});
+  store.fetchStock(true).catch(() => {});
+  store.fetchModifiers(true).catch(() => {});
 };
 
 // Load Menu & Categories from API
@@ -890,8 +916,8 @@ const getIconClass = (categoryId) => {
 // Free Modifiers Logic & State
 const useModifiers = ref(false);
 const selectedModifiers = ref([]);
-const activePresets = ref([]);
-const allModifiers = ref([]);
+const activePresets = computed(() => (store.modifierPresets || []).filter(p => p.active));
+const allModifiers = computed(() => (store.modifiers || []).filter(m => m.active));
 
 const modifierCategories = [
   { key: 'sauce_small', label: 'ซอส (ซองเล็ก)' },
@@ -954,8 +980,6 @@ const onModifiersToggleChange = () => {
 const loadModifiersAndPresets = async () => {
   try {
     await store.fetchModifiers();
-    allModifiers.value = (store.modifiers || []).filter(m => m.active);
-    activePresets.value = (store.modifierPresets || []).filter(p => p.active);
   } catch (e) {
     console.error('Failed to load modifiers/presets:', e);
   }

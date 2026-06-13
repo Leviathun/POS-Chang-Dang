@@ -1,157 +1,212 @@
 <template>
-  <div id="modal-container" class="active" style="display:flex; align-items:flex-end; justify-content:center;">
-    <div class="modal-overlay" @click="handleClose"></div>
+  <div id="modal-container" class="active full-screen-modal">
     <div class="modal-content">
-      <div class="modal-handle"></div>
       <div class="modal-header">
         <h3>
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
+          <span style="display: inline-flex; align-items: center; gap: 8px;">
             <i :class="success ? 'fa-solid fa-circle-check text-success' : 'fa-solid fa-cash-register'"></i>
-            {{ success ? 'ทำรายการสำเร็จ' : 'ชำระเงิน' }}
+            {{ success ? 'ทำรายการสำเร็จ' : 'ชำระเงิน POS' }}
           </span>
         </h3>
         <button v-if="!success" class="modal-close" @click="handleClose">✕</button>
       </div>
 
-      <div class="modal-body">
+      <div class="modal-body flex-1" style="display: flex; flex-direction: column; overflow-y: auto;">
         
         <!-- Step 3: Success Screen -->
-        <div v-if="success" id="success-section">
-          <div class="success-screen">
+        <div v-if="success" id="success-section" class="flex-1" style="display:flex; align-items:center; justify-content:center;">
+          <div class="success-screen card" style="max-width: 480px; width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-2xl); padding: var(--space-3xl); box-shadow: var(--shadow-lg);">
             <div class="success-checkmark">✓</div>
-            <div class="success-title">ชำระเงินสำเร็จ!</div>
-            <div class="success-subtitle">
-              ออเดอร์ #{{ orderId }} — {{ formatCurrency(total) }}
-              <span v-if="paymentMethod === 'cash' && cashChange > 0">
-                <br />เงินทอน: <strong>{{ formatCurrency(cashChange) }}</strong>
-              </span>
+            <div class="success-title text-success" style="font-size: var(--font-2xl); font-weight: var(--font-weight-bold); margin-bottom: var(--space-md);">ชำระเงินสำเร็จ!</div>
+            
+            <div class="success-details card" style="background: rgba(244, 162, 97, 0.03); border: 1px dashed var(--border-color); padding: var(--space-lg); text-align: left; width: 100%; margin: var(--space-lg) 0;">
+              <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+                <span style="color: var(--text-secondary);">เลขที่บิล:</span>
+                <strong style="color: var(--text-primary);">#{{ orderId }}</strong>
+              </div>
+              <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+                <span style="color: var(--text-secondary);">ช่องทางชำระ:</span>
+                <strong style="color: var(--text-primary);">{{ getPaymentMethodLabel(paymentMethod) }}</strong>
+              </div>
+              <div class="flex flex-between mb-sm" style="font-size: var(--font-lg);">
+                <span class="font-bold">ยอดสุทธิ:</span>
+                <strong class="text-accent">{{ formatCurrency(total) }}</strong>
+              </div>
+              <div v-if="paymentMethod === 'cash'" class="flex flex-between mb-sm" style="font-size: var(--font-sm); border-top: 1px solid var(--border-color); padding-top: var(--space-sm); margin-top: var(--space-sm);">
+                <span style="color: var(--text-secondary);">รับเงินมา:</span>
+                <strong style="color: var(--text-primary);">{{ formatCurrency(Number(enteredAmount)) }}</strong>
+              </div>
+              <div v-if="paymentMethod === 'cash' && cashChange > 0" class="flex flex-between" style="font-size: var(--font-lg); color: var(--success);">
+                <span class="font-bold">เงินทอน:</span>
+                <strong style="font-size: var(--font-xl);">{{ formatCurrency(cashChange) }}</strong>
+              </div>
             </div>
-            <div class="mt-2xl w-full">
-              <button class="btn btn-primary btn-xl" @click="finishPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-                <i class="fa-solid fa-house"></i> กลับหน้าขาย
+
+            <div class="w-full">
+              <button class="btn btn-primary btn-xl" @click="finishPayment" style="width:100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-circle-check"></i> เสร็จสิ้น (กลับหน้าขาย)
               </button>
             </div>
           </div>
         </div>
 
         <template v-else>
-          <!-- Order Summary Card -->
-          <div class="card mb-lg">
-            <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-receipt" style="margin-right: 6px;"></i> สรุปรายการสินค้า</div>
-            <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
-              <span>{{ cartItem.item.name }} × {{ cartItem.quantity }}</span>
-              <span class="text-accent">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
-            </div>
-            <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
-            <div class="flex flex-between">
-              <span class="font-bold" style="font-size: var(--font-lg);">รวมทั้งสิ้น</span>
-              <span class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(total) }}</span>
-            </div>
-          </div>
+          <div class="checkout-container">
+            
+            <!-- Top Section: Bill Details -->
+            <div class="checkout-left">
+              <div class="card" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: var(--space-lg) var(--space-xl);">
+                <div class="card-title" style="font-size: var(--font-md); font-weight: var(--font-weight-bold); margin-bottom: var(--space-md); border-bottom: 2px dashed var(--border-color); padding-bottom: var(--space-sm); display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-receipt" style="color: var(--primary);"></i> รายละเอียดบิลสินค้า
+                </div>
+                
+                <div class="order-items-scroll" style="max-height: 200px; overflow-y: auto; padding-right: var(--space-xs); display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-md);">
+                  <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between align-start" style="font-size: var(--font-sm); padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06);">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                      <span class="font-bold" style="color: var(--text-primary);">{{ cartItem.item.name }}</span>
+                      
+                      <!-- Show options details if any -->
+                      <div v-if="cartItem.item.options && cartItem.item.options.selected_items" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
+                        เครื่องปรุง: {{ cartItem.item.options.selected_items.map(i => `${i.name} (${i.weight}ก.)`).join(', ') }}
+                      </div>
+                    </div>
+                    <div style="text-align: right; min-width: 120px;">
+                      <span class="font-bold text-accent">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
+                      <br />
+                      <span style="font-size: 11px; color: var(--text-secondary);">จำนวน {{ cartItem.quantity }} ชิ้น × {{ formatCurrency(cartItem.item.price) }}</span>
+                    </div>
+                  </div>
+                </div>
 
-          <!-- Step 1: Select Payment Method -->
-          <div v-if="!paymentMethod" id="payment-method-section">
-            <div class="card-title mb-md">เลือกช่องทางการชำระเงิน</div>
-            <div class="payment-methods">
-              <button class="payment-method-btn" @click="selectPaymentMethod('cash')">
-                <div class="method-icon"><i class="fa-solid fa-money-bill-wave" style="color: var(--success); font-size: 2.2rem;"></i></div>
-                <div class="method-label">เงินสด</div>
-              </button>
-              <button class="payment-method-btn" @click="selectPaymentMethod('qr')">
-                <div class="method-icon"><i class="fa-solid fa-qrcode" style="color: var(--primary); font-size: 2.2rem;"></i></div>
-                <div class="method-label">QR Code</div>
-              </button>
-              <button class="payment-method-btn" @click="selectPaymentMethod('gov')">
-                <div class="method-icon"><i class="fa-solid fa-landmark" style="color: var(--accent); font-size: 2.2rem;"></i></div>
-                <div class="method-label">โครงการรัฐ</div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Step 2A: Cash Payment -->
-          <div v-if="paymentMethod === 'cash'" id="cash-section">
-            <div class="payment-amount-display">
-              <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-xs);">
-                จำนวนเงินที่รับ
-              </div>
-              <div class="payment-entered">{{ enteredAmount > 0 ? formatCurrency(enteredAmount) : '฿0' }}</div>
-              
-              <div v-if="enteredAmount > 0" class="payment-change" :class="changeClass">
-                {{ changeText }}
+                <div style="border-top: 2px dashed var(--border-color); padding-top: var(--space-md); display: flex; justify-content: space-between; align-items: center;">
+                  <span class="font-bold" style="font-size: var(--font-md);">ยอดชำระทั้งสิ้น</span>
+                  <span class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(total) }}</span>
+                </div>
               </div>
             </div>
 
-            <!-- Quick Amount Selector -->
-            <div class="quick-amounts">
-              <button class="quick-amount-btn" @click="enteredAmount = total">พอดี</button>
-              <button 
-                v-for="amt in quickAmountOptions" 
-                :key="amt" 
-                class="quick-amount-btn"
-                @click="enteredAmount = amt"
-              >
-                {{ formatCurrency(amt) }}
-              </button>
+            <!-- Bottom Section: Payment Actions -->
+            <div class="checkout-right">
+              <div class="card" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: var(--space-lg) var(--space-xl);">
+                
+                <!-- Grouped header showing active channel and change method button -->
+                <div v-if="paymentMethod" class="flex flex-between align-center" style="margin-bottom: var(--space-lg); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
+                  <span class="font-bold text-primary" style="font-size: var(--font-sm);">
+                    <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> ช่องทาง: {{ getPaymentMethodLabel(paymentMethod) }}
+                  </span>
+                  <button class="btn btn-secondary btn-sm" @click="paymentMethod = null" style="font-size: 11px; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-arrow-left"></i> เปลี่ยนช่องทาง
+                  </button>
+                </div>
+
+                <!-- Step 1: Select Payment Method -->
+                <div v-if="!paymentMethod" id="payment-method-section">
+                  <div class="card-title font-bold" style="font-size: var(--font-md); margin-bottom: var(--space-lg);">
+                    เลือกประเภทการชำระเงิน
+                  </div>
+                  <div class="payment-methods">
+                    <button class="payment-method-btn" @click="selectPaymentMethod('cash')">
+                      <div class="method-icon"><i class="fa-solid fa-money-bill-wave" style="color: var(--success); font-size: 2.2rem;"></i></div>
+                      <div class="method-label">เงินสด</div>
+                    </button>
+                    <button class="payment-method-btn" @click="selectPaymentMethod('qr')">
+                      <div class="method-icon"><i class="fa-solid fa-qrcode" style="color: var(--primary); font-size: 2.2rem;"></i></div>
+                      <div class="method-label">QR Code / โอนเงิน</div>
+                    </button>
+                    <button class="payment-method-btn" @click="selectPaymentMethod('gov')">
+                      <div class="method-icon"><i class="fa-solid fa-landmark" style="color: var(--accent); font-size: 2.2rem;"></i></div>
+                      <div class="method-label">โครงการรัฐ</div>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2A: Cash Payment -->
+                <div v-if="paymentMethod === 'cash'" id="cash-section">
+                  <div class="payment-amount-display" style="background: rgba(0,0,0,0.015); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg); border: 1px solid var(--border-color); margin-bottom: var(--space-md); text-align: center;">
+                    <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: var(--space-xs); text-transform: uppercase;">
+                      จำนวนเงินที่รับ
+                    </div>
+                    <div class="payment-entered text-primary" style="font-size: var(--font-3xl); font-weight: var(--font-weight-bold); color: var(--primary);">
+                      {{ enteredAmount > 0 ? formatCurrency(enteredAmount) : '฿0' }}
+                    </div>
+                    
+                    <div v-if="enteredAmount > 0" class="payment-change font-bold" :class="changeClass" style="font-size: var(--font-md); margin-top: var(--space-xs);">
+                      {{ changeText }}
+                    </div>
+                  </div>
+
+                  <!-- Quick Amount Selector -->
+                  <div class="quick-amounts" style="margin-bottom: var(--space-md); display: flex; gap: var(--space-sm); overflow-x: auto; padding-bottom: var(--space-xs);">
+                    <button class="quick-amount-btn" @click="enteredAmount = total">พอดี ({{ formatCurrency(total) }})</button>
+                    <button 
+                      v-for="amt in quickAmountOptions" 
+                      :key="amt" 
+                      class="quick-amount-btn"
+                      @click="enteredAmount = amt"
+                    >
+                      {{ formatCurrency(amt) }}
+                    </button>
+                  </div>
+
+                  <!-- Numeric Keypad -->
+                  <div class="keypad" style="margin-bottom: var(--space-lg); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm);">
+                    <button v-for="num in 9" :key="num" class="keypad-key" @click="pressNum(String(num))">{{ num }}</button>
+                    <button class="keypad-key key-clear" @click="pressNum('C')" style="background: rgba(230, 57, 70, 0.1); color: var(--primary);">C</button>
+                    <button class="keypad-key" @click="pressNum('0')">{{ 0 }}</button>
+                    <button class="keypad-key key-backspace" @click="pressNum('⌫')"><i class="fa-solid fa-delete-left"></i></button>
+                  </div>
+
+                  <div>
+                    <button 
+                      class="btn btn-primary btn-xl" 
+                      :disabled="Number(enteredAmount) < total"
+                      @click="confirmCashPayment"
+                      style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
+                    >
+                      <i class="fa-solid fa-circle-check"></i> ยืนยันรับเงินสด
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2B: QR Code Payment -->
+                <div v-if="paymentMethod === 'qr'" id="qr-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
+                  <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--primary); opacity: 0.9;">
+                    <i class="fa-solid fa-qrcode"></i>
+                  </div>
+                  <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-md);">
+                    ช่องทางชำระเงินด้วย QR Code / โอนเงินผ่านธนาคาร
+                  </div>
+
+                  <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg);">
+                    {{ formatCurrency(total) }}
+                  </div>
+                  
+                  <button class="btn btn-success btn-xl" @click="confirmQRPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการชำระเงิน
+                  </button>
+                </div>
+
+                <!-- Step 2C: Government Project Payment -->
+                <div v-if="paymentMethod === 'gov'" id="gov-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
+                  <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--accent); opacity: 0.9;">
+                    <i class="fa-solid fa-landmark"></i>
+                  </div>
+                  <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-md);">
+                    ช่องทางชำระเงินด้วย โครงการของรัฐ
+                  </div>
+
+                  <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg);">
+                    {{ formatCurrency(total) }}
+                  </div>
+                  
+                  <button class="btn btn-primary btn-xl" @click="confirmGovPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent) !important; border-color: var(--accent) !important;">
+                    <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการโครงการรัฐ
+                  </button>
+                </div>
+
+              </div>
             </div>
 
-            <!-- Numeric Keypad -->
-            <div class="keypad">
-              <button v-for="num in 9" :key="num" class="keypad-key" @click="pressNum(String(num))">{{ num }}</button>
-              <button class="keypad-key key-clear" @click="pressNum('C')">C</button>
-              <button class="keypad-key" @click="pressNum('0')">{{ 0 }}</button>
-              <button class="keypad-key key-backspace" @click="pressNum('⌫')"><i class="fa-solid fa-delete-left"></i></button>
-            </div>
-
-            <div style="padding: 0 var(--space-md);">
-              <button 
-                class="btn btn-primary btn-xl" 
-                :disabled="Number(enteredAmount) < total"
-                @click="confirmCashPayment"
-                style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
-              >
-                <i class="fa-solid fa-circle-check"></i> ยืนยันรับเงินสด
-              </button>
-            </div>
-          </div>
-
-          <!-- Step 2B: QR Code Payment (Auto-approve / No Image) -->
-          <div v-if="paymentMethod === 'qr'" id="qr-section">
-            <div class="qr-section" style="text-align: center; padding: var(--space-xl) 0;">
-              <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-md); color: var(--primary); opacity: 0.8;">
-                <i class="fa-solid fa-qrcode"></i>
-              </div>
-              <div style="font-size: var(--font-md); color: var(--text-secondary); margin-bottom: var(--space-lg);">
-                ช่องทางชำระเงินด้วย QR Code / โอนเงินผ่านธนาคาร
-              </div>
-
-              <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-2xl);">
-                {{ formatCurrency(total) }}
-              </div>
-              
-              <button class="btn btn-success btn-xl" @click="confirmQRPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);">
-                <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการชำระเงิน
-              </button>
-            </div>
-          </div>
-
-          <!-- Step 2C: Government Project Payment -->
-          <div v-if="paymentMethod === 'gov'" id="gov-section">
-            <div class="qr-section" style="text-align: center; padding: var(--space-xl) 0;">
-              <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-md); color: var(--accent); opacity: 0.8;">
-                <i class="fa-solid fa-landmark"></i>
-              </div>
-              <div style="font-size: var(--font-md); color: var(--text-secondary); margin-bottom: var(--space-lg);">
-                ช่องทางชำระเงินด้วย โครงการของรัฐ
-              </div>
-
-              <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-2xl);">
-                {{ formatCurrency(total) }}
-              </div>
-              
-              <button class="btn btn-primary btn-xl" @click="confirmGovPayment" style="display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); background-color: var(--accent) !important; border-color: var(--accent) !important;">
-                <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการโครงการรัฐ
-              </button>
-            </div>
           </div>
         </template>
 
@@ -264,6 +319,15 @@ const pressNum = (key) => {
   }
 };
 
+const getPaymentMethodLabel = (method) => {
+  const map = {
+    'cash': 'เงินสด (Cash)',
+    'qr': 'QR Code / โอนเงิน',
+    'gov': 'โครงการรัฐ'
+  };
+  return map[method] || method;
+};
+
 // Cash Checkout
 const confirmCashPayment = async () => {
   ui.showLoading();
@@ -339,21 +403,63 @@ const confirmGovPayment = async () => {
 </script>
 
 <style scoped>
+/* Scoped Modal Override to Full Screen */
+.full-screen-modal {
+  align-items: center !important;
+}
+
+.modal-content {
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary) !important;
+}
+
+.modal-body {
+  padding: var(--space-md);
+  overflow-y: auto;
+}
+
+/* Center single-column layout */
+.checkout-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Modal close button override */
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--space-xs);
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
 /* --- Payment Section --- */
 .payment-amount-display {
   text-align: center;
-  padding: var(--space-2xl);
-}
-
-.payment-entered {
-  font-size: var(--font-4xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  letter-spacing: 1px;
+  padding: var(--space-xl);
 }
 
 .payment-change {
-  margin-top: var(--space-md);
+  margin-top: var(--space-sm);
   font-size: var(--font-lg);
 }
 
@@ -368,8 +474,6 @@ const confirmGovPayment = async () => {
 .quick-amounts {
   display: flex;
   gap: var(--space-sm);
-  padding: 0 var(--space-md);
-  margin-bottom: var(--space-md);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -378,8 +482,8 @@ const confirmGovPayment = async () => {
 
 .quick-amount-btn {
   padding: var(--space-sm) var(--space-lg);
-  background: rgba(244, 162, 97, 0.1);
-  border: 1px solid rgba(244, 162, 97, 0.2);
+  background: rgba(244, 162, 97, 0.08);
+  border: 1px solid rgba(244, 162, 97, 0.15);
   border-radius: var(--radius-full);
   color: var(--accent);
   font-size: var(--font-sm);
@@ -391,7 +495,7 @@ const confirmGovPayment = async () => {
 
 .quick-amount-btn:active {
   transform: scale(0.95);
-  background: rgba(244, 162, 97, 0.2);
+  background: rgba(244, 162, 97, 0.15);
 }
 
 /* --- Payment Methods --- */
@@ -399,7 +503,7 @@ const confirmGovPayment = async () => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-md);
-  padding: var(--space-md);
+  padding: var(--space-md) 0;
 }
 
 .payment-method-btn {
@@ -410,6 +514,7 @@ const confirmGovPayment = async () => {
   text-align: center;
   transition: all var(--transition-base);
   cursor: pointer;
+  color: var(--text-primary);
 }
 
 .payment-method-btn:active {
@@ -453,6 +558,7 @@ const confirmGovPayment = async () => {
   margin-bottom: var(--space-2xl);
   animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 0 40px var(--success-glow);
+  color: white;
 }
 
 .success-title {
@@ -483,29 +589,21 @@ const confirmGovPayment = async () => {
   animation: confettiFall 1.5s ease forwards;
 }
 
-/* --- QR Code Section --- */
-.qr-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-2xl);
+/* --- Keypad keys --- */
+.keypad-key {
+  padding: var(--space-md) 0;
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-semibold);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-base);
 }
 
-.qr-placeholder {
-  width: 200px;
-  height: 200px;
-  background: white;
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: var(--space-xl);
-}
-
-.qr-placeholder img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: var(--radius-lg);
+.keypad-key:active {
+  transform: scale(0.95);
+  background: var(--border-color);
 }
 </style>

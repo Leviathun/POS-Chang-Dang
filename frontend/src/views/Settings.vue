@@ -1281,7 +1281,9 @@ const handleArchiveOrders = async () => {
 
 onMounted(() => {
   currentUser.value = getUser();
-  if (currentUser.value) {
+  if (sessionStorage.getItem('selected_branch_id')) {
+    selectedSettingsBranchId.value = Number(sessionStorage.getItem('selected_branch_id'));
+  } else if (currentUser.value) {
     selectedSettingsBranchId.value = currentUser.value.branch_id;
   }
   loadShopSettings();

@@ -34,92 +34,155 @@ router.post('/', requireAuth, async (req, res) => {
       branchId = defaultBranch ? defaultBranch.id : null;
     }
 
-    // ใช้ transaction เพื่อความปลอดภัย
-    const createOrder = db.transaction(async () => {
-      // ดึงข้อมูลเมนูและคำนวณราคา
-      const orderItems = [];
-      let subtotal = 0;
+    // รวบรวม IDs ของเมนูและวัตถุดิบทั้งหมดใน cart เพื่อคิวรีครั้งเดียว
+    const menuItemIds = [...new Set(items.map(item => Number(item.menu_item_id)))];
+    const ingredientIds = [];
+    items.forEach(item => {
+      if (item.options && Array.isArray(item.options.selected_items)) {
+        item.options.selected_items.forEach(ing => {
+          ingredientIds.push(Number(ing.id));
+        });
+      }
+    });
+    const uniqueIngredientIds = [...new Set(ingredientIds)];
 
-      for (const item of items) {
-        if (!item.menu_item_id || !item.quantity || item.quantity <= 0) {
-          throw new Error('ข้อมูลสินค้าไม่ถูกต้อง — ต้องระบุ menu_item_id และ quantity');
+    // รวบรวม IDs ของเครื่องปรุงทั้งหมด
+    const modifierIds = [];
+    if (modifiers) {
+      try {
+        const parsedMods = Array.isArray(modifiers) ? modifiers : JSON.parse(modifiers);
+        if (Array.isArray(parsedMods)) {
+          parsedMods.forEach(m => modifierIds.push(Number(m.id)));
         }
+      } catch (e) {}
+    }
+    const uniqueModifierIds = [...new Set(modifierIds)];
 
-        // คิวรีดึงเมนูและสต็อกของสาขานี้โดยตรงจาก menu_items
-        const menuItem = await db.prepare(`
-          SELECT id, name, price, active, quantity as stock
-          FROM menu_items
-          WHERE id = ? AND branch_id = ?
-        `).get(Number(item.menu_item_id), branchId);
+    // ดึงเลขออเดอร์ prefix
+    const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const dateStr = today.getUTCFullYear().toString() +
+      String(today.getUTCMonth() + 1).padStart(2, '0') +
+      String(today.getUTCDate()).padStart(2, '0');
+    const prefix = `CD-${dateStr}-`;
 
-        if (!menuItem) {
-          throw new Error(`ไม่พบเมนู ID: ${item.menu_item_id}`);
-        }
+    // ทำ Parallel Read เพื่อความเร็วสูงสุด (1 round trip)
+    const [dbMenuItems, dbIngredients, dbModifiers, orderCountResult] = await Promise.all([
+      db.prepare(`
+        SELECT id, name, price, active, quantity as stock
+        FROM menu_items
+        WHERE branch_id = ? AND id IN (${menuItemIds.map(() => '?').join(',')})
+      `).all(branchId, ...menuItemIds),
+      uniqueIngredientIds.length > 0 ? db.prepare(`
+        SELECT id, name, quantity as stock
+        FROM menu_items
+        WHERE branch_id = ? AND id IN (${uniqueIngredientIds.map(() => '?').join(',')})
+      `).all(branchId, ...uniqueIngredientIds) : Promise.resolve([]),
+      uniqueModifierIds.length > 0 ? db.prepare(`
+        SELECT id, name, total_servings FROM modifiers
+        WHERE branch_id = ? AND id IN (${uniqueModifierIds.map(() => '?').join(',')})
+      `).all(branchId, ...uniqueModifierIds) : Promise.resolve([]),
+      db.prepare(`
+        SELECT COUNT(*) as count FROM orders WHERE order_number LIKE ?
+      `).get(`${prefix}%`)
+    ]);
 
-        if (!menuItem.active) {
-          throw new Error(`เมนู "${menuItem.name}" ถูกปิดใช้งาน`);
-        }
+    // สร้างข้อมูลและตรวจเช็คธุรกิจใน Memory
+    const orderItems = [];
+    let subtotal = 0;
 
-        // ตรวจสอบสต็อก (ถ้ามีจำกัด)
-        if (item.options && Array.isArray(item.options.selected_items)) {
-          for (const ingredient of item.options.selected_items) {
-            const ingStock = await db.prepare(`
-              SELECT quantity as stock, name
-              FROM menu_items
-              WHERE id = ? AND branch_id = ?
-            `).get(Number(ingredient.id), branchId);
-
-            const requiredQty = Number(ingredient.weight) * item.quantity;
-            if (ingStock && ingStock.stock !== null && ingStock.stock < requiredQty) {
-              throw new Error(`วัตถุดิบ "${ingStock.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredQty} ก. แต่เหลือ ${ingStock.stock} ก.)`);
-            }
-          }
-        } else {
-          if (menuItem.stock !== null && menuItem.stock < item.quantity) {
-            throw new Error(`เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${menuItem.stock} ชิ้น)`);
-          }
-        }
-
-        const price = item.item_price !== undefined && item.item_price !== null ? Number(item.item_price) : menuItem.price;
-        const name = item.item_name || menuItem.name;
-        const itemSubtotal = price * item.quantity;
-        subtotal += itemSubtotal;
-
-        orderItems.push({
-          menu_item_id: menuItem.id,
-          item_name: name,
-          item_price: price,
-          quantity: item.quantity,
-          subtotal: itemSubtotal,
-          options: item.options ? JSON.stringify(item.options) : null
+    for (const item of items) {
+      if (!item.menu_item_id || !item.quantity || item.quantity <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'ข้อมูลสินค้าไม่ถูกต้อง — ต้องระบุ menu_item_id และ quantity'
         });
       }
 
-      const orderDiscount = discount || 0;
-      const total = subtotal - orderDiscount;
-
-      if (total < 0) {
-        throw new Error('ส่วนลดมากกว่ายอดรวม');
+      const menuItem = dbMenuItems.find(m => m.id === Number(item.menu_item_id));
+      if (!menuItem) {
+        return res.status(400).json({
+          success: false,
+          error: `ไม่พบเมนู ID: ${item.menu_item_id}`
+        });
       }
 
-      // คำนวณเงินทอน (ถ้าเป็นเงินสด)
-      let cashChange = null;
-      if (payment_method === 'cash') {
-        if (cash_received === undefined || cash_received === null || Number(cash_received) < total) {
-          throw new Error('จำนวนเงินที่รับไม่เพียงพอ');
+      if (!menuItem.active) {
+        return res.status(400).json({
+          success: false,
+          error: `เมนู "${menuItem.name}" ถูกปิดใช้งาน`
+        });
+      }
+
+      // ตรวจสอบสต็อกของเมนูหรือส่วนผสม
+      if (item.options && Array.isArray(item.options.selected_items)) {
+        for (const ingredient of item.options.selected_items) {
+          const ingStock = dbIngredients.find(i => i.id === Number(ingredient.id));
+          const requiredQty = Number(ingredient.weight) * item.quantity;
+          if (ingStock && ingStock.stock !== null && ingStock.stock < requiredQty) {
+            return res.status(400).json({
+              success: false,
+              error: `วัตถุดิบ "${ingStock.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredQty} ก. แต่เหลือ ${ingStock.stock} ก.)`
+            });
+          }
         }
-        cashChange = Number(cash_received) - total;
+      } else {
+        if (menuItem.stock !== null && menuItem.stock < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            error: `เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${menuItem.stock} ชิ้น)`
+          });
+        }
       }
 
-      // สร้างเลขออเดอร์
-      const orderNumber = await generateOrderNumber();
+      const price = item.item_price !== undefined && item.item_price !== null ? Number(item.item_price) : menuItem.price;
+      const name = item.item_name || menuItem.name;
+      const itemSubtotal = price * item.quantity;
+      subtotal += itemSubtotal;
 
-      // บันทึกออเดอร์ (สถานะ completed ทันที)
-      const targetModifiers = modifiers;
-      const orderResult = await db.prepare(`
-        INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, datetime('now', '+7 hours'))
-      `).run(
+      orderItems.push({
+        menu_item_id: menuItem.id,
+        item_name: name,
+        item_price: price,
+        quantity: item.quantity,
+        subtotal: itemSubtotal,
+        options: item.options ? JSON.stringify(item.options) : null
+      });
+    }
+
+    const orderDiscount = discount || 0;
+    const total = subtotal - orderDiscount;
+
+    if (total < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'ส่วนลดมากกว่ายอดรวม'
+      });
+    }
+
+    // คำนวณเงินทอน (ถ้าเป็นเงินสด)
+    let cashChange = null;
+    if (payment_method === 'cash') {
+      if (cash_received === undefined || cash_received === null || Number(cash_received) < total) {
+        return res.status(400).json({
+          success: false,
+          error: 'จำนวนเงินที่รับไม่เพียงพอ'
+        });
+      }
+      cashChange = Number(cash_received) - total;
+    }
+
+    // สร้างเลขออเดอร์
+    const num = (orderCountResult.count + 1).toString().padStart(3, '0');
+    const orderNumber = `${prefix}${num}`;
+
+    // รวบรวมคำสั่ง SQL เพื่อรันใน Transaction batch เดียว (1 write round trip)
+    const statements = [];
+
+    // 1. บันทึกออเดอร์
+    statements.push({
+      sql: `INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, datetime('now', '+7 hours'))`,
+      args: [
         branchId,
         orderNumber,
         req.user.id,
@@ -130,167 +193,161 @@ router.post('/', requireAuth, async (req, res) => {
         cash_received || null,
         cashChange,
         note || null,
-        targetModifiers ? JSON.stringify(targetModifiers) : null
-      );
+        modifiers ? (typeof modifiers === 'string' ? modifiers : JSON.stringify(modifiers)) : null
+      ]
+    });
 
-      const orderId = orderResult.lastInsertRowid;
+    // 2. บันทึกรายการสินค้าในออเดอร์
+    for (const oi of orderItems) {
+      statements.push({
+        sql: `INSERT INTO order_items (order_id, menu_item_id, item_name, item_price, quantity, subtotal, options)
+              VALUES ((SELECT id FROM orders WHERE order_number = ?), ?, ?, ?, ?, ?, ?)`,
+        args: [
+          orderNumber,
+          oi.menu_item_id,
+          oi.item_name,
+          oi.item_price,
+          oi.quantity,
+          oi.subtotal,
+          oi.options
+        ]
+      });
+    }
 
-      // บันทึกรายการสินค้า
-      const insertItem = db.prepare(`
-        INSERT INTO order_items (order_id, menu_item_id, item_name, item_price, quantity, subtotal, options)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      for (const oi of orderItems) {
-        await insertItem.run(orderId, oi.menu_item_id, oi.item_name, oi.item_price, oi.quantity, oi.subtotal, oi.options);
+    // 3. คำสั่งหักสต็อกและเขียนประวัติสต็อก
+    for (const oi of orderItems) {
+      let optionsObj = null;
+      if (oi.options) {
+        try { optionsObj = JSON.parse(oi.options); } catch (e) {}
       }
 
-      // ─── หักสต็อกสินค้า ───
-      const updateStock = db.prepare(`
-        UPDATE menu_items 
-        SET quantity = quantity - ? 
-        WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL
-      `);
-      const getItem = db.prepare(`
-        SELECT name, quantity as stock 
-        FROM menu_items
-        WHERE id = ? AND branch_id = ?
-      `);
-      const insertLog = db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
-      `);
+      if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
+        for (const ingredient of optionsObj.selected_items) {
+          const ingItem = dbIngredients.find(i => i.id === Number(ingredient.id));
+          if (ingItem && ingItem.stock !== null) {
+            const previousStock = ingItem.stock;
+            const deductAmount = Number(ingredient.weight) * oi.quantity;
+            const newStock = previousStock - deductAmount;
 
-      for (const oi of orderItems) {
-        let optionsObj = null;
-        if (oi.options) {
-          try {
-            optionsObj = JSON.parse(oi.options);
-          } catch (e) {
-            console.error('Failed to parse order item options:', e.message);
-          }
-        }
+            statements.push({
+              sql: `UPDATE menu_items SET quantity = quantity - ? WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
+              args: [deductAmount, branchId, Number(ingredient.id)]
+            });
 
-        if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
-          // หักสต็อกตามส่วนผสมและสัดส่วนน้ำหนัก
-          for (const ingredient of optionsObj.selected_items) {
-            const ingItem = await getItem.get(Number(ingredient.id), branchId);
-            if (ingItem && ingItem.stock !== null) {
-              const previousStock = ingItem.stock;
-              const deductAmount = Number(ingredient.weight) * oi.quantity;
-              const newStock = previousStock - deductAmount;
-
-              await updateStock.run(deductAmount, branchId, Number(ingredient.id));
-
-              // บันทึกประวัติสต็อก
-              await insertLog.run(
+            statements.push({
+              sql: `INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                    VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
+              args: [
                 branchId,
                 Number(ingredient.id),
                 -deductAmount,
                 previousStock,
                 newStock,
-                orderId,
+                orderNumber,
                 req.user.id,
                 `ขาย ${oi.item_name} (วัตถุดิบ: ${ingredient.name} ${deductAmount}ก.) (${orderNumber})`
-              );
-            }
+              ]
+            });
           }
-        } else {
-          // ตัดสต็อกสินค้าชิ้นเดี่ยวปกติ
-          const menuItem = await getItem.get(oi.menu_item_id, branchId);
-          if (menuItem && menuItem.stock !== null) {
-            const previousStock = menuItem.stock;
-            const newStock = previousStock - oi.quantity;
+        }
+      } else {
+        const menuItem = dbMenuItems.find(i => i.id === oi.menu_item_id);
+        if (menuItem && menuItem.stock !== null) {
+          const previousStock = menuItem.stock;
+          const newStock = previousStock - oi.quantity;
 
-            await updateStock.run(oi.quantity, branchId, oi.menu_item_id);
+          statements.push({
+            sql: `UPDATE menu_items SET quantity = quantity - ? WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
+            args: [oi.quantity, branchId, oi.menu_item_id]
+          });
 
-            // บันทึกประวัติสต็อก
-            await insertLog.run(
+          statements.push({
+            sql: `INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                  VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
+            args: [
               branchId,
               oi.menu_item_id,
               -oi.quantity,
               previousStock,
               newStock,
-              orderId,
+              orderNumber,
               req.user.id,
               `ขาย ${oi.item_name} x${oi.quantity} (${orderNumber})`
-            );
-          }
+            ]
+          });
         }
       }
+    }
 
-      // ─── หักสต็อกของเครื่องปรุง (modifiers) ───
-      if (targetModifiers) {
-        try {
-          const selectedModifiers = Array.isArray(targetModifiers) ? targetModifiers : JSON.parse(targetModifiers);
-          if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
-            const updateModStock = db.prepare(`
-              UPDATE modifiers
-              SET total_servings = total_servings - 1
-              WHERE branch_id = ? AND id = ? AND total_servings IS NOT NULL
-            `);
-            const getModStock = db.prepare(`
-              SELECT total_servings FROM modifiers
-              WHERE branch_id = ? AND id = ?
-            `);
-            const insertModLog = db.prepare(`
-              INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-              VALUES (?, ?, -1, ?, ?, 'sale', ?, ?, ?, datetime('now', '+7 hours'))
-            `);
+    // 4. คำสั่งหักสต็อกเครื่องปรุง (Modifiers)
+    if (modifiers) {
+      try {
+        const selectedModifiers = Array.isArray(modifiers) ? modifiers : JSON.parse(modifiers);
+        if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+          for (const mod of selectedModifiers) {
+            const currentMod = dbModifiers.find(m => m.id === Number(mod.id));
+            if (currentMod && currentMod.total_servings !== null) {
+              const prevModStock = currentMod.total_servings;
+              const newModStock = prevModStock - 1;
 
-            for (const mod of selectedModifiers) {
-              const currentMod = await getModStock.get(branchId, mod.id);
-              if (currentMod && currentMod.total_servings !== null) {
-                const prevModStock = currentMod.total_servings;
-                const newModStock = prevModStock - 1;
+              statements.push({
+                sql: `UPDATE modifiers SET total_servings = total_servings - 1 WHERE branch_id = ? AND id = ? AND total_servings IS NOT NULL`,
+                args: [branchId, mod.id]
+              });
 
-                await updateModStock.run(branchId, mod.id);
-                await insertModLog.run(
+              statements.push({
+                sql: `INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                      VALUES (?, ?, -1, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
+                args: [
                   branchId,
                   mod.id,
                   prevModStock,
                   newModStock,
-                  orderId,
+                  orderNumber,
                   req.user.id,
                   `ใช้เครื่องปรุง ${mod.name} ในออเดอร์ ${orderNumber}`
-                );
-              }
+                ]
+              });
             }
           }
-        } catch (modErr) {
-          console.error('⚠️ Error deducting modifiers stock:', modErr.message);
         }
+      } catch (modErr) {
+        console.error('⚠️ Error building modifiers batch:', modErr.message);
       }
+    }
 
-      // บันทึกกิจกรรมพนักงาน (create_order เท่านั้น complete_order ลบออกตาม V2)
-      await db.prepare(`
-        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-        VALUES (?, ?, 'create_order', ?, datetime('now', '+7 hours'))
-      `).run(
+    // 5. บันทึกกิจกรรมพนักงาน
+    statements.push({
+      sql: `INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+            VALUES (?, ?, 'create_order', ?, datetime('now', '+7 hours'))`,
+      args: [
         branchId,
         req.user.id,
         `สร้างออเดอร์และชำระเงินสำเร็จ เลขที่ ${orderNumber} ยอดรวม ${total} บาท`
-      );
-
-      // ดึงข้อมูลออเดอร์ที่สร้าง
-      const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
-      const savedItems = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId);
-      const parsedItems = savedItems.map(oi => ({
-        ...oi,
-        options: oi.options ? JSON.parse(oi.options) : null
-      }));
-
-      return {
-        ...order,
-        items: parsedItems
-      };
+      ]
     });
 
-    const order = await createOrder();
+    // รันธุรกรรมบันทึกทั้งหมดในครั้งเดียว
+    await db.batch(statements);
+
+    // ดึงออเดอร์และรายการสินค้าออกมาตอบกลับ (1 read round trip)
+    const order = await db.prepare('SELECT * FROM orders WHERE order_number = ?').get(orderNumber);
+    if (!order) {
+      throw new Error('ไม่พบข้อมูลบิลที่เพิ่งบันทึกสำเร็จ');
+    }
+
+    const savedItems = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(order.id);
+    const parsedItems = savedItems.map(oi => ({
+      ...oi,
+      options: oi.options ? JSON.parse(oi.options) : null
+    }));
 
     res.status(201).json({
       success: true,
-      data: order
+      data: {
+        ...order,
+        items: parsedItems
+      }
     });
   } catch (error) {
     console.error('❌ Create order error:', error.message);

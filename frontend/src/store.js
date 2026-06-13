@@ -21,8 +21,10 @@ export const store = reactive({
   modifiers: [],
   modifierPresets: [],
   settings: {},
+  settingsBranchId: null,
   branches: [],
   users: [],
+  reportsBranchId: null,
   reportSummary: null,
   reportTopItems: [],
   reportDailyData: null,
@@ -31,6 +33,7 @@ export const store = reactive({
   reportsActivities: [],
   reportsHistory: [],
   reportMonthlyExpenses: [],
+  reportMonthlyOrders: [],
 
   // Fetch Menu & Categories (cached unless forced, refetches in background if cached)
   async fetchMenu(force = false) {
@@ -283,7 +286,7 @@ export const store = reactive({
   },
 
   async fetchSettingsData(branchId = null, force = false) {
-    if (this.settingsLoaded && !force) {
+    if (this.settingsLoaded && !force && this.settingsBranchId === branchId) {
       Promise.all([
         api.settings.getAll(branchId),
         api.auth.getBranches(),
@@ -310,6 +313,7 @@ export const store = reactive({
         if (setRes.success) this.settings = setRes.data || {};
         if (brRes.success) this.branches = brRes.data || [];
         this.users = usrRes.data || usrRes || [];
+        this.settingsBranchId = branchId;
         this.settingsLoaded = true;
       } catch (e) {
         console.error(e);
@@ -323,10 +327,16 @@ export const store = reactive({
   },
 
   async fetchReports(branchId = null, force = false) {
-    const today = new Date().toLocaleDateString('en-CA');
+    const formatter = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const today = formatter.format(new Date());
     const currentMonth = today.substring(0, 7);
     
-    if (this.reportsLoaded && !force) {
+    if (this.reportsLoaded && !force && this.reportsBranchId === branchId) {
       Promise.all([
         api.reports.summary(branchId),
         api.reports.topItems(7, branchId),
@@ -335,8 +345,9 @@ export const store = reactive({
         api.activities.get({ date: today, branch_id: branchId }),
         api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }),
         api.reports.monthly(currentMonth, branchId),
-        api.expenses.get({ month: currentMonth, branch_id: branchId })
-      ]).then(([sum, top, daily, exp, act, hist, monthlyRes, expMonthRes]) => {
+        api.expenses.get({ month: currentMonth, branch_id: branchId }),
+        api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId })
+      ]).then(([sum, top, daily, exp, act, hist, monthlyRes, expMonthRes, monthlyOrdersRes]) => {
         this.reportSummary = sum.success ? sum.data : sum;
         this.reportTopItems = top.success ? (top.data || []) : [];
         this.reportDailyData = daily.success ? daily.data : daily;
@@ -345,6 +356,7 @@ export const store = reactive({
         this.reportsHistory = hist.success ? (hist.data || hist || []) : [];
         this.reportMonthly = monthlyRes.success ? monthlyRes.data : monthlyRes;
         this.reportMonthlyExpenses = expMonthRes.success ? (expMonthRes.data || []) : [];
+        this.reportMonthlyOrders = monthlyOrdersRes.success ? (monthlyOrdersRes.data || []) : [];
       }).catch(e => console.error(e));
       return;
     }
@@ -355,7 +367,7 @@ export const store = reactive({
 
     this.reportsPromise = (async () => {
       try {
-        const [sum, top, daily, exp, act, hist, monthlyRes, expMonthRes] = await Promise.all([
+        const [sum, top, daily, exp, act, hist, monthlyRes, expMonthRes, monthlyOrdersRes] = await Promise.all([
           api.reports.summary(branchId),
           api.reports.topItems(7, branchId),
           api.reports.daily(today, branchId),
@@ -363,7 +375,8 @@ export const store = reactive({
           api.activities.get({ date: today, branch_id: branchId }),
           api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }),
           api.reports.monthly(currentMonth, branchId),
-          api.expenses.get({ month: currentMonth, branch_id: branchId })
+          api.expenses.get({ month: currentMonth, branch_id: branchId }),
+          api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId })
         ]);
         this.reportSummary = sum.success ? sum.data : sum;
         this.reportTopItems = top.success ? (top.data || []) : [];
@@ -373,6 +386,8 @@ export const store = reactive({
         this.reportsHistory = hist.success ? (hist.data || hist || []) : [];
         this.reportMonthly = monthlyRes.success ? monthlyRes.data : monthlyRes;
         this.reportMonthlyExpenses = expMonthRes.success ? (expMonthRes.data || []) : [];
+        this.reportMonthlyOrders = monthlyOrdersRes.success ? (monthlyOrdersRes.data || []) : [];
+        this.reportsBranchId = branchId;
         this.reportsLoaded = true;
       } catch (e) {
         console.error(e);
@@ -388,11 +403,14 @@ export const store = reactive({
   clearSettingsCache() {
     this.settingsLoaded = false;
     this.settingsPromise = null;
+    this.settingsBranchId = null;
   },
 
   clearReportsCache() {
     this.reportsLoaded = false;
     this.reportsPromise = null;
+    this.reportsBranchId = null;
+    this.reportMonthlyOrders = [];
   },
 
   clearAllCache() {
@@ -406,6 +424,8 @@ export const store = reactive({
     this.modifiersPromise = null;
     this.settingsPromise = null;
     this.reportsPromise = null;
+    this.settingsBranchId = null;
+    this.reportsBranchId = null;
     this.menuItems = [];
     this.categories = [];
     this.stockItems = [];
@@ -422,5 +442,6 @@ export const store = reactive({
     this.reportsActivities = [];
     this.reportsHistory = [];
     this.reportMonthlyExpenses = [];
+    this.reportMonthlyOrders = [];
   }
 });

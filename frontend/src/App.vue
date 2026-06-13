@@ -245,7 +245,7 @@ const enteredPin = ref('');
 const pinShake = ref(false);
 const hasCartBar = ref(false); // Can be toggled by child view
 const branches = ref([]);
-const selectedBranch = ref(null);
+const selectedBranch = ref(getUser() ? getUser().branch_id : (sessionStorage.getItem('selected_branch_id') ? Number(sessionStorage.getItem('selected_branch_id')) : null));
 const isLoadingBranches = ref(true);
 
 // Custom dropdown state for branch selector

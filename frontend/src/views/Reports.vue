@@ -824,15 +824,114 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, getUser } from '../helpers';
+import { store } from '../store';
 
 // Role check
 const isAdminUser = computed(() => isAdmin());
 
 const branches = ref([]);
 const currentUser = getUser();
-const selectedBranchId = ref(currentUser ? currentUser.branch_id : null);
+const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
 
 const activeTab = ref('sales');
+
+const isUsingDefaultFilters = () => {
+  return periodMode.value === 'daily' &&
+         selectedDate.value === getToday() &&
+         selectedMonth.value === getToday().substring(0, 7) &&
+         selectedYear.value === getToday().substring(0, 4) &&
+         historyStatusFilter.value === 'all' &&
+         selectedBranchId.value === store.reportsBranchId;
+};
+
+const applyDataFromStore = () => {
+  if (!store.reportsLoaded) return;
+  
+  if (store.reportSummary) {
+    summary.value = {
+      today_sales: store.reportSummary.today?.total_revenue || 0,
+      today_orders: store.reportSummary.today?.total_orders || 0,
+      month_sales: store.reportSummary.month?.total_revenue || 0,
+      month_orders: store.reportSummary.month?.total_orders || 0
+    };
+  }
+  
+  if (store.reportDailyData) {
+    const data = store.reportDailyData;
+    dailyReport.value = {
+      total_sales: data.total_revenue || 0,
+      total_orders: data.total_orders || 0,
+      average_bill: data.avg_order_value || 0,
+      cash_sales: data.payment_breakdown?.cash_total || 0,
+      cash_orders: data.payment_breakdown?.cash_count || 0,
+      qr_sales: data.payment_breakdown?.qr_total || 0,
+      qr_orders: data.payment_breakdown?.qr_count || 0,
+      gov_sales: data.payment_breakdown?.gov_total || 0,
+      gov_orders: data.payment_breakdown?.gov_count || 0,
+      orders: data.orders || []
+    };
+  }
+  
+  if (store.reportTopItems) {
+    topItems.value = store.reportTopItems.map(item => ({
+      ...item,
+      total_sales: item.total_revenue || 0
+    }));
+  }
+  
+  if (periodMode.value === 'daily') {
+    expenses.value = store.reportsExpenses || [];
+    activityLogs.value = store.reportsActivities || [];
+  } else if (periodMode.value === 'monthly') {
+    expenses.value = store.reportMonthlyExpenses || [];
+  }
+  
+  if (periodMode.value === 'daily' && historyStatusFilter.value === 'all') {
+    historyOrders.value = store.reportsHistory || [];
+  }
+  
+  // Ledger
+  const monthOrders = store.reportMonthlyOrders || [];
+  const monthExpenses = store.reportMonthlyExpenses || [];
+  const list = [];
+
+  monthOrders.forEach(o => {
+    list.push({
+      id: o.id,
+      created_at: o.created_at,
+      timestamp: new Date(o.created_at).getTime(),
+      name: `ขายสินค้า (บิล #${o.order_number})`,
+      income: o.total || 0,
+      expense: 0,
+      type: 'order'
+    });
+  });
+
+  monthExpenses.forEach(e => {
+    list.push({
+      id: e.id,
+      created_at: e.created_at,
+      timestamp: new Date(e.created_at).getTime(),
+      name: e.note || getCategoryLabel(e.category),
+      income: 0,
+      expense: e.amount || 0,
+      type: 'expense'
+    });
+  });
+
+  list.sort((a, b) => a.timestamp - b.timestamp);
+
+  let running = 0;
+  const computedList = list.map(item => {
+    running += item.income - item.expense;
+    return {
+      ...item,
+      runningBalance: running
+    };
+  });
+
+  ledgerTransactions.value = computedList.reverse();
+};
 
 // States for Period Mode
 const periodMode = ref('daily'); // 'daily', 'monthly', 'yearly'
@@ -1051,6 +1150,10 @@ const closeReportsDropdowns = () => {
 };
 
 const loadMonthlyLedger = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   ledgerLoading.value = true;
   try {
     const monthVal = selectedDate.value.substring(0, 7);
@@ -1109,6 +1212,10 @@ const loadMonthlyLedger = async () => {
 // ── Data Loading ──
 
 const loadReportSummary = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     const res = await api.reports.summary(selectedBranchId.value);
     if (res.success && res.data) {
@@ -1125,6 +1232,10 @@ const loadReportSummary = async () => {
 };
 
 const loadExpensesForPeriod = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     let res;
     if (periodMode.value === 'daily') {
@@ -1143,6 +1254,10 @@ const loadExpensesForPeriod = async () => {
 };
 
 const loadActivityLogsForPeriod = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     let res;
     const params = { branch_id: selectedBranchId.value };
@@ -1163,6 +1278,10 @@ const loadActivityLogsForPeriod = async () => {
 };
 
 const loadOrderHistory = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     const params = {
       limit: 1000,
@@ -1193,9 +1312,25 @@ const loadOrderHistory = async () => {
 };
 
 const loadReportData = async () => {
-  loading.value = true;
   expandedOrderId.value = null;
   expandedItems.value = [];
+
+  // Check if we can use store cache
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    loading.value = false;
+    
+    // Silent background fetch to update store cache
+    store.fetchReports(selectedBranchId.value, false).then(() => {
+      if (isUsingDefaultFilters() && store.reportsBranchId === selectedBranchId.value) {
+        applyDataFromStore();
+      }
+    }).catch(e => console.error(e));
+    
+    return;
+  }
+
+  loading.value = true;
   try {
     let res;
     if (periodMode.value === 'daily') {
@@ -1253,6 +1388,10 @@ const loadReportData = async () => {
 };
 
 const loadTopItems = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     const res = await api.reports.topItems(7, selectedBranchId.value);
     if (res.success && Array.isArray(res.data)) {
@@ -1304,6 +1443,7 @@ const handleVoidOrder = async () => {
     if (res.success) {
       ui.showToast(`ยกเลิกบิล #${voidOrder.value.order_number} สำเร็จ`, 'success');
       showVoidModal.value = false;
+      store.clearReportsCache(); // Clear store cache!
       loadReportData();
       if (isAdmin()) {
         loadReportSummary();
@@ -1330,6 +1470,7 @@ const handleAddExpense = async () => {
     if (res.success) {
       ui.showToast('บันทึกค่าใช้จ่ายสำเร็จ', 'success');
       expenseForm.value = { amount: null, category: 'raw_materials', note: '' };
+      store.clearReportsCache(); // Clear store cache!
       loadExpensesForPeriod();
       loadActivityLogsForPeriod();
       loadMonthlyLedger();
@@ -1349,6 +1490,7 @@ const handleDeleteExpense = async (id) => {
     const res = await api.expenses.delete(id);
     if (res.success) {
       ui.showToast('ลบค่าใช้จ่ายสำเร็จ', 'success');
+      store.clearReportsCache(); // Clear store cache!
       loadExpensesForPeriod();
       loadActivityLogsForPeriod();
       loadMonthlyLedger();
