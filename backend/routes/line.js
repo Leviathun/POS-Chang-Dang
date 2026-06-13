@@ -175,12 +175,11 @@ async function handleEvent(event) {
 
       // คิวรีดึงข้อมูลสต็อกแยกตามสาขาและชื่อเมนู
       const lowStockItems = await db.prepare(`
-        SELECT mi.name, bs.quantity as stock, b.name as branch_name
+        SELECT mi.name, mi.quantity as stock, b.name as branch_name
         FROM menu_items mi
-        JOIN branch_stocks bs ON bs.menu_item_id = mi.id
-        JOIN branches b ON b.id = bs.branch_id
-        WHERE mi.active = 1 AND bs.quantity IS NOT NULL AND bs.quantity <= ?
-        ORDER BY bs.quantity ASC
+        JOIN branches b ON b.id = mi.branch_id
+        WHERE mi.active = 1 AND mi.quantity IS NOT NULL AND mi.quantity <= ?
+        ORDER BY mi.quantity ASC
       `).all(threshold);
 
       let message;

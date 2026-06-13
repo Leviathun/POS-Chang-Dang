@@ -85,6 +85,20 @@ class DatabaseMock {
       }
     };
   }
+
+  async batch(statements, mode = "write") {
+    const cleanStatements = statements.map(stmt => {
+      if (typeof stmt === 'string') {
+        return stmt.replace(/'localtime'/g, "'+7 hours'");
+      } else {
+        return {
+          sql: stmt.sql.replace(/'localtime'/g, "'+7 hours'"),
+          args: stmt.args
+        };
+      }
+    });
+    return this.client.batch(cleanStatements, mode);
+  }
 }
 
 let dbInstance;
@@ -121,11 +135,31 @@ function getDb() {
   return dbInstance;
 }
 
+
 /**
  * Initialize database schema and seed data
  */
 async function initDatabase() {
   const db = getDb();
+
+  // 1. Ensure branches table and default branch exist first
+  await db.exec(`CREATE TABLE IF NOT EXISTS branches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    address TEXT,
+    created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+  )`);
+
+  const branchCount = await db.prepare('SELECT COUNT(*) as count FROM branches').get();
+  if (branchCount.count === 0) {
+    await db.prepare('INSERT INTO branches (name, address) VALUES (?, ?)')
+      .run('สาขาหลัก (ช้างแดง)', 'กรุงเทพฯ');
+    console.log('  🏪 สร้างสาขาเริ่มต้น: สาขาหลัก (ช้างแดง)');
+  }
+  const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+  const defaultBranchId = defaultBranch ? defaultBranch.id : 1;
+
+
 
   // ─── Create Tables (Multi-Branch Enabled) ─────────────────
   const tables = [
@@ -133,7 +167,6 @@ async function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
       address TEXT,
-      phone TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS users (
@@ -147,30 +180,47 @@ async function initDatabase() {
     )`,
     `CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
       sort_order INTEGER DEFAULT 0,
-      active INTEGER DEFAULT 1
+      active INTEGER DEFAULT 1,
+      UNIQUE(branch_id, name)
     )`,
     `CREATE TABLE IF NOT EXISTS menu_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       price REAL NOT NULL,
-      category_id INTEGER REFERENCES categories(id),
+      category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
       image_url TEXT,
       active INTEGER DEFAULT 1,
       sort_order INTEGER DEFAULT 0,
+      uom TEXT DEFAULT 'ชิ้น',
+      multiple_prices TEXT DEFAULT NULL,
+      quantity INTEGER DEFAULT NULL,
+      raw_quantity INTEGER DEFAULT NULL,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
-    `CREATE TABLE IF NOT EXISTS branch_stocks (
+    `CREATE TABLE IF NOT EXISTS modifiers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
-      menu_item_id INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
-      quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
-      raw_quantity INTEGER DEFAULT NULL, -- NULL = Unlimited
-      price REAL DEFAULT NULL,
-      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
-      UNIQUE(branch_id, menu_item_id)
+      name TEXT NOT NULL,
+      category TEXT NOT NULL CHECK(category IN ('sauce_small', 'sauce_large', 'dipping', 'powder')),
+      servings_per_bag INTEGER DEFAULT 50,
+      total_servings INTEGER DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(branch_id, name)
+    )`,
+    `CREATE TABLE IF NOT EXISTS modifier_presets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      modifier_ids TEXT NOT NULL,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(branch_id, name)
     )`,
     `CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -183,8 +233,10 @@ async function initDatabase() {
       payment_method TEXT CHECK(payment_method IN ('cash', 'qr', 'gov')),
       cash_received REAL,
       cash_change REAL,
-      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'cancelled')),
+      status TEXT DEFAULT 'completed' CHECK(status IN ('completed', 'cancelled')),
       note TEXT,
+      cancel_reason TEXT,
+      modifiers TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS order_items (
@@ -194,7 +246,8 @@ async function initDatabase() {
       item_name TEXT NOT NULL,
       item_price REAL NOT NULL,
       quantity INTEGER NOT NULL,
-      subtotal REAL NOT NULL
+      subtotal REAL NOT NULL,
+      options TEXT
     )`,
     `CREATE TABLE IF NOT EXISTS stock_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -209,10 +262,25 @@ async function initDatabase() {
       note TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
+    `CREATE TABLE IF NOT EXISTS modifier_stock_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      modifier_id INTEGER NOT NULL REFERENCES modifiers(id),
+      change_qty INTEGER NOT NULL,
+      previous_stock INTEGER,
+      new_stock INTEGER,
+      reason TEXT CHECK(reason IN ('sale', 'restock', 'adjustment', 'cancel_restore')),
+      order_id INTEGER REFERENCES orders(id),
+      staff_id INTEGER REFERENCES users(id),
+      note TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
     `CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
+      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+      key TEXT NOT NULL,
       value TEXT,
-      updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      PRIMARY KEY (branch_id, key)
     )`,
     `CREATE TABLE IF NOT EXISTS expenses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -232,41 +300,6 @@ async function initDatabase() {
       details TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
-    `CREATE TABLE IF NOT EXISTS free_modifiers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      category TEXT NOT NULL CHECK(category IN ('sauce_small', 'sauce_large', 'dipping', 'powder')),
-      servings_per_bag INTEGER DEFAULT 50,
-      active INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-    )`,
-    `CREATE TABLE IF NOT EXISTS branch_free_modifier_stocks (
-      branch_id INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
-      modifier_id INTEGER NOT NULL REFERENCES free_modifiers(id) ON DELETE CASCADE,
-      total_servings INTEGER DEFAULT 0,
-      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
-      PRIMARY KEY (branch_id, modifier_id)
-    )`,
-    `CREATE TABLE IF NOT EXISTS free_modifier_stock_logs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      branch_id INTEGER REFERENCES branches(id),
-      modifier_id INTEGER NOT NULL REFERENCES free_modifiers(id),
-      change_qty INTEGER NOT NULL,
-      previous_stock INTEGER,
-      new_stock INTEGER,
-      reason TEXT CHECK(reason IN ('sale', 'restock', 'adjustment', 'cancel_restore')),
-      order_id INTEGER REFERENCES orders(id),
-      staff_id INTEGER REFERENCES users(id),
-      note TEXT,
-      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-    )`,
-    `CREATE TABLE IF NOT EXISTS free_modifier_presets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      modifier_ids TEXT NOT NULL,
-      active INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-    )`,
     `CREATE TABLE IF NOT EXISTS archived_orders (
       id INTEGER PRIMARY KEY,
       branch_id INTEGER,
@@ -281,7 +314,7 @@ async function initDatabase() {
       status TEXT,
       note TEXT,
       cancel_reason TEXT,
-      free_modifiers TEXT,
+      modifiers TEXT,
       created_at DATETIME
     )`,
     `CREATE TABLE IF NOT EXISTS archived_order_items (
@@ -291,162 +324,13 @@ async function initDatabase() {
       item_name TEXT NOT NULL,
       item_price REAL NOT NULL,
       quantity INTEGER NOT NULL,
-      subtotal REAL NOT NULL
+      subtotal REAL NOT NULL,
+      options TEXT
     )`
   ];
 
   for (const table of tables) {
     await db.exec(table);
-  }
-
-  // Add cancel_reason column to orders if not exists (SQLite-friendly ALTER TABLE)
-  try {
-    await db.exec("ALTER TABLE orders ADD COLUMN cancel_reason TEXT");
-  } catch (e) {
-    // Column already exists, safe to ignore
-  }
-
-  // Add raw_quantity column to branch_stocks if not exists (SQLite-friendly ALTER TABLE)
-  try {
-    await db.exec("ALTER TABLE branch_stocks ADD COLUMN raw_quantity INTEGER DEFAULT NULL");
-  } catch (e) {
-    // Column already exists, safe to ignore
-  }
-
-  // Add price column to branch_stocks if not exists (SQLite-friendly ALTER TABLE)
-  try {
-    await db.exec("ALTER TABLE branch_stocks ADD COLUMN price REAL DEFAULT NULL");
-  } catch (e) {
-    // Column already exists, safe to ignore
-  }
-
-  // Add free_modifiers column to orders if not exists (SQLite-friendly ALTER TABLE)
-  try {
-    await db.exec("ALTER TABLE orders ADD COLUMN free_modifiers TEXT");
-  } catch (e) {
-    // Column already exists, safe to ignore
-  }
-
-  // Migration: ปรับปรุงโครงสร้างตาราง orders เพื่อรองรับ payment_method: gov
-  try {
-    const tableInfo = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'").get();
-    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes("'gov'")) {
-      console.log('  🔧 Migration: เริ่มปรับปรุงโครงสร้างตาราง orders เพื่อรองรับ payment_method: gov...');
-      
-      await db.exec("PRAGMA foreign_keys=OFF");
-      
-      // Rename old table
-      await db.exec("ALTER TABLE orders RENAME TO orders_old");
-      
-      // Create new table with updated check constraint
-      await db.exec(`CREATE TABLE orders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        branch_id INTEGER REFERENCES branches(id),
-        order_number TEXT UNIQUE NOT NULL,
-        staff_id INTEGER REFERENCES users(id),
-        subtotal REAL NOT NULL,
-        discount REAL DEFAULT 0,
-        total REAL NOT NULL,
-        payment_method TEXT CHECK(payment_method IN ('cash', 'qr', 'gov')),
-        cash_received REAL,
-        cash_change REAL,
-        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'cancelled')),
-        note TEXT,
-        cancel_reason TEXT,
-        free_modifiers TEXT,
-        created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-      )`);
-      
-      // Copy data from old table
-      await db.exec(`INSERT INTO orders (id, branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, cancel_reason, free_modifiers, created_at)
-        SELECT id, branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, cancel_reason, free_modifiers, created_at 
-        FROM orders_old`);
-      
-      // Drop old table
-      await db.exec("DROP TABLE orders_old");
-      
-      await db.exec("PRAGMA foreign_keys=ON");
-      
-      console.log('  ✅ Migration: ปรับปรุงโครงสร้างตาราง orders สำเร็จ');
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration orders table error:', e.message);
-  }
-
-  // Migration: ซ่อมแซม Foreign Key ที่อาจชี้ไปยัง orders_old (เนื่องจากผลกระทบของ SQLite ALTER TABLE RENAME)
-  try {
-    const brokenTables = await db.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND (sql LIKE '%orders_old%' OR sql LIKE '%\"orders_old\"%')"
-    ).all();
-    
-    if (brokenTables.length > 0) {
-      console.log(`  🔧 Migration: พบ ${brokenTables.length} ตารางที่มี foreign key เสียหาย (อ้างอิง orders_old):`, brokenTables.map(t => t.name));
-      
-      await db.exec("PRAGMA foreign_keys=OFF");
-      
-      for (const tbl of brokenTables) {
-        const tblName = tbl.name;
-        console.log(`  🔧 Migration: กำลังซ่อมแซมตาราง ${tblName}...`);
-        
-        await db.exec(`ALTER TABLE ${tblName} RENAME TO ${tblName}_old`);
-        
-        if (tblName === 'order_items') {
-          await db.exec(`CREATE TABLE order_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-            menu_item_id INTEGER REFERENCES menu_items(id),
-            item_name TEXT NOT NULL,
-            item_price REAL NOT NULL,
-            quantity INTEGER NOT NULL,
-            subtotal REAL NOT NULL
-          )`);
-          await db.exec(`INSERT INTO order_items (id, order_id, menu_item_id, item_name, item_price, quantity, subtotal)
-            SELECT id, order_id, menu_item_id, item_name, item_price, quantity, subtotal FROM order_items_old`);
-            
-        } else if (tblName === 'stock_logs') {
-          await db.exec(`CREATE TABLE stock_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            branch_id INTEGER REFERENCES branches(id),
-            menu_item_id INTEGER NOT NULL REFERENCES menu_items(id),
-            change_qty INTEGER NOT NULL,
-            previous_stock INTEGER,
-            new_stock INTEGER,
-            reason TEXT CHECK(reason IN ('sale', 'restock', 'adjustment', 'waste', 'cancel_restore', 'staff_benefit')),
-            order_id INTEGER REFERENCES orders(id),
-            staff_id INTEGER REFERENCES users(id),
-            note TEXT,
-            created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-          )`);
-          await db.exec(`INSERT INTO stock_logs (id, branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-            SELECT id, branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at FROM stock_logs_old`);
-            
-        } else if (tblName === 'free_modifier_stock_logs') {
-          await db.exec(`CREATE TABLE free_modifier_stock_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            branch_id INTEGER REFERENCES branches(id),
-            modifier_id INTEGER NOT NULL REFERENCES free_modifiers(id),
-            change_qty INTEGER NOT NULL,
-            previous_stock INTEGER,
-            new_stock INTEGER,
-            reason TEXT CHECK(reason IN ('sale', 'restock', 'adjustment', 'cancel_restore')),
-            order_id INTEGER REFERENCES orders(id),
-            staff_id INTEGER REFERENCES users(id),
-            note TEXT,
-            created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-          )`);
-          await db.exec(`INSERT INTO free_modifier_stock_logs (id, branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-            SELECT id, branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at FROM free_modifier_stock_logs_old`);
-        }
-        
-        await db.exec(`DROP TABLE ${tblName}_old`);
-        console.log(`  ✅ Migration: ซ่อมแซมตาราง ${tblName} สำเร็จ`);
-      }
-      
-      await db.exec("PRAGMA foreign_keys=ON");
-      console.log('  ✅ Migration: ซ่อมแซม Foreign Key ทั้งหมดสำเร็จ');
-    }
-  } catch (err) {
-    console.warn('⚠️ Migration foreign keys repair error:', err.message);
   }
 
   // Migration: Fix users with NULL branch_id — assign to first branch
@@ -464,24 +348,11 @@ async function initDatabase() {
     console.warn('⚠️ Migration fix branch_id:', e.message);
   }
 
-  // Migration: Fix branch_stocks with NULL quantity — set to 0
-  try {
-    const updated = await db.prepare(
-      'UPDATE branch_stocks SET quantity = 0 WHERE quantity IS NULL'
-    ).run();
-    if (updated.changes > 0) {
-      console.log(`  🔧 Migration: อัปเดตสต็อก ${updated.changes} รายการที่มีค่า NULL → 0`);
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration fix branch_stocks quantity:', e.message);
-  }
-
   // ─── Create Indexes ───────────────────────────────────────
   const indexes = [
     `CREATE INDEX IF NOT EXISTS idx_orders_branch ON orders(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`,
-    `CREATE INDEX IF NOT EXISTS idx_branch_stocks ON branch_stocks(branch_id, menu_item_id)`,
     `CREATE INDEX IF NOT EXISTS idx_stock_logs_branch ON stock_logs(branch_id)`
   ];
 
@@ -490,42 +361,28 @@ async function initDatabase() {
   }
 
   // ─── Seed Default Data ────────────────────────────────────
-  // Seed default branch
-  const branchCount = await db.prepare('SELECT COUNT(*) as count FROM branches').get();
-  if (branchCount.count === 0) {
-    await db.prepare('INSERT INTO branches (name, address) VALUES (?, ?)')
-      .run('สาขาหลัก (ช้างแดง)', 'กรุงเทพฯ');
-    console.log('  🏪 สร้างสาขาเริ่มต้น: สาขาหลัก (ช้างแดง)');
-  }
-  const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-
   // Seed default users
   const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (userCount.count === 0) {
     await db.prepare('INSERT INTO users (name, pin, role, branch_id) VALUES (?, ?, ?, ?)')
-      .run('เจ้าของร้าน', '1234', 'admin', defaultBranch.id);
+      .run('เจ้าของร้าน', '1234', 'admin', defaultBranchId);
     await db.prepare('INSERT INTO users (name, pin, role, branch_id) VALUES (?, ?, ?, ?)')
-      .run('พนักงาน 1', '0000', 'staff', defaultBranch.id);
+      .run('พนักงาน 1', '0000', 'staff', defaultBranchId);
     console.log('  👤 สร้างผู้ใช้เริ่มต้น: เจ้าของร้าน (PIN: 1234), พนักงาน 1 (PIN: 0000)');
   }
 
-  // Seed default categories
-  const catCount = await db.prepare('SELECT COUNT(*) as count FROM categories').get();
-  if (catCount.count === 0) {
-    const insertCat = db.prepare('INSERT INTO categories (name, sort_order) VALUES (?, ?)');
-    await insertCat.run('เมนูหลัก', 1);
-    await insertCat.run('ของทานเล่น', 2);
-    await insertCat.run('เครื่องดื่ม', 3);
-    await insertCat.run('อื่นๆ', 4);
-  }
+  // Seed default categories per branch
+  const branches = await db.prepare('SELECT id FROM branches').all();
 
-  // Seed default settings
-  const settingsCount = await db.prepare('SELECT COUNT(*) as count FROM settings').get();
-  if (settingsCount.count === 0) {
-    const insertSetting = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)');
-    await insertSetting.run('shop_name', process.env.SHOP_NAME || 'ร้านไก่ทอดช้างแดง');
-    await insertSetting.run('daily_report_time', '21:00');
-    await insertSetting.run('low_stock_threshold', '5');
+  for (const b of branches) {
+    const catCount = await db.prepare('SELECT COUNT(*) as count FROM categories WHERE branch_id = ?').get(b.id);
+    if (catCount.count === 0) {
+      const insertCat = db.prepare('INSERT INTO categories (branch_id, name, sort_order) VALUES (?, ?, ?)');
+      await insertCat.run(b.id, 'เมนูหลัก', 1);
+      await insertCat.run(b.id, 'ของทานเล่น', 2);
+      await insertCat.run(b.id, 'เครื่องดื่ม', 3);
+      await insertCat.run(b.id, 'อื่นๆ', 4);
+    }
   }
 
   // Ensure promptpay_id is completely removed from database settings table
@@ -535,7 +392,17 @@ async function initDatabase() {
     // ignore
   }
 
-  // Seed default free modifiers (Sync to make sure no items are missing)
+  // Seed default settings per branch (without shop_name)
+  for (const b of branches) {
+    const settingsCount = await db.prepare('SELECT COUNT(*) as count FROM settings WHERE branch_id = ?').get(b.id);
+    if (settingsCount.count === 0) {
+      const insertSetting = db.prepare('INSERT INTO settings (branch_id, key, value) VALUES (?, ?, ?)');
+      await insertSetting.run(b.id, 'daily_report_time', '21:00');
+      await insertSetting.run(b.id, 'low_stock_threshold', '5');
+    }
+  }
+
+  // Seed default modifiers
   const defaultModifiers = [
     { name: 'ซอสมะเขือเทศ (ซอง)', category: 'sauce_small', servings: 1, active: 1 },
     { name: 'ซอสพริก (ซอง)', category: 'sauce_small', servings: 1, active: 1 },
@@ -551,86 +418,68 @@ async function initDatabase() {
     { name: 'ผงหม่าล่า', category: 'powder', servings: 50, active: 1 },
     { name: 'ผงฮอตแอนด์สไปซี่', category: 'powder', servings: 50, active: 1 },
     { name: 'ผงวิงส์แซ่บ', category: 'powder', servings: 50, active: 1 },
-    { name: 'ผงปาปริก้า', category: 'powder', servings: 50, active: 1 }
+    { name: 'ผงปาปริก้า', category: 'powder', servings: 50, active: 1 },
+    { name: 'ซอสเปรี้ยว (ขวด)', category: 'sauce_large', servings: 60, active: 1 },
+    { name: 'ซอสหวาน (ขวด)', category: 'sauce_large', servings: 60, active: 1 },
+    { name: 'กระเทียมเจียว (ถุง)', category: 'powder', servings: 50, active: 1 }
   ];
 
   let seededCount = 0;
-  for (const m of defaultModifiers) {
-    const existing = await db.prepare('SELECT id FROM free_modifiers WHERE name = ?').get(m.name);
-    if (!existing) {
-      await db.prepare('INSERT INTO free_modifiers (name, category, servings_per_bag, active) VALUES (?, ?, ?, ?)')
-        .run(m.name, m.category, m.servings, m.active);
-      seededCount++;
+  for (const b of branches) {
+    for (const m of defaultModifiers) {
+      // For Branch ID 2 (สาขารอง หน้าบ้าน), we ONLY allow these 3 modifiers
+      if (b.id === 2 && !['ซอสเปรี้ยว (ขวด)', 'ซอสหวาน (ขวด)', 'กระเทียมเจียว (ถุง)'].includes(m.name)) {
+        continue;
+      }
+
+      const existing = await db.prepare('SELECT id FROM modifiers WHERE branch_id = ? AND name = ?').get(b.id, m.name);
+      if (!existing) {
+        await db.prepare('INSERT INTO modifiers (branch_id, name, category, servings_per_bag, active, total_servings) VALUES (?, ?, ?, ?, ?, 0)')
+          .run(b.id, m.name, m.category, m.servings, m.active);
+        seededCount++;
+      }
     }
   }
   if (seededCount > 0) {
     console.log(`  🧂 สร้างตัวเลือกซอส/ผง/น้ำจิ้มเริ่มต้นเพิ่มเติมสำเร็จ (${seededCount} รายการ)`);
   }
 
-  // Seed branch Stocks for free modifiers
-  const branches = await db.prepare('SELECT id FROM branches').all();
-  const modifiers = await db.prepare('SELECT id FROM free_modifiers').all();
-  const insertModStock = db.prepare(`
-    INSERT OR IGNORE INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings)
-    VALUES (?, ?, 0)
-  `);
-  for (const b of branches) {
-    for (const m of modifiers) {
-      await insertModStock.run(b.id, m.id);
-    }
-  }
-
-  // Seed default presets (สูตรสำเร็จ)
-  const presetCount = await db.prepare('SELECT COUNT(*) as count FROM free_modifier_presets').get();
-  if (presetCount.count === 0) {
-    const tomatoBag = await db.prepare("SELECT id FROM free_modifiers WHERE name = 'ซอสมะเขือเทศ (ถุง)'").get();
-    const cheesePowder = await db.prepare("SELECT id FROM free_modifiers WHERE name = 'ผงชีส'").get();
-    if (tomatoBag && cheesePowder) {
-      await db.prepare('INSERT INTO free_modifier_presets (name, modifier_ids) VALUES (?, ?)')
-        .run('มะเขือเทศ + ผงชีส', JSON.stringify([tomatoBag.id, cheesePowder.id]));
-      console.log('  ✨ สร้างสูตรสำเร็จเริ่มต้น (มะเขือเทศ + ผงชีส) สำเร็จ');
-    }
-  }
-
-  // Migration: ปรับเวลาของข้อมูลประวัติเดิมที่มีอยู่แล้วให้เป็นเวลาไทย (UTC+7)
-  // เนื่องจากก่อนหน้านี้เก็บเวลาตามเขตเวลาเซิร์ฟเวอร์คลาวด์ที่เป็น UTC
+  // Cleanup extra modifiers in Branch 2 (in case they exist from a past seed)
   try {
-    const migrationDone = await db.prepare("SELECT value FROM settings WHERE key = 'timezone_migration_v2'").get();
-    if (!migrationDone) {
-      console.log('  🔧 Migration: เริ่มต้นปรับปรุงประวัติเวลาเดิมให้เป็นเวลาไทย (UTC+7)...');
-      
-      const tablesToUpdate = [
-        { name: 'branches', cols: ['created_at'] },
-        { name: 'users', cols: ['created_at'] },
-        { name: 'menu_items', cols: ['created_at', 'updated_at'] },
-        { name: 'branch_stocks', cols: ['updated_at'] },
-        { name: 'orders', cols: ['created_at'] },
-        { name: 'stock_logs', cols: ['created_at'] },
-        { name: 'settings', cols: ['updated_at'] },
-        { name: 'expenses', cols: ['created_at'] },
-        { name: 'activity_logs', cols: ['created_at'] },
-        { name: 'free_modifiers', cols: ['created_at'] },
-        { name: 'branch_free_modifier_stocks', cols: ['updated_at'] },
-        { name: 'free_modifier_stock_logs', cols: ['created_at'] },
-        { name: 'free_modifier_presets', cols: ['created_at'] }
-      ];
-
-      for (const t of tablesToUpdate) {
-        for (const col of t.cols) {
-          try {
-            await db.exec(`UPDATE ${t.name} SET ${col} = datetime(${col}, '+7 hours') WHERE ${col} IS NOT NULL`);
-          } catch (e) {
-            console.warn(`  ⚠️ ไม่สามารถปรับเวลาตาราง ${t.name} คอลัมน์ ${col}:`, e.message);
-          }
-        }
-      }
-      
-      await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('timezone_migration_v2', 'done')").run();
-      console.log('  ✅ Migration: ปรับปรุงประวัติเวลาเดิมเสร็จสมบูรณ์');
+    const delCount = await db.prepare(`
+      DELETE FROM modifiers 
+      WHERE branch_id = 2 
+        AND name NOT IN ('ซอสเปรี้ยว (ขวด)', 'ซอสหวาน (ขวด)', 'กระเทียมเจียว (ถุง)')
+    `).run();
+    if (delCount.changes > 0) {
+      console.log(`  🧂 Cleaned up ${delCount.changes} extra modifiers from Branch 2`);
     }
   } catch (e) {
-    console.warn('⚠️ Migration timezone_migration_v2 error:', e.message);
+    console.warn('⚠️ Error cleaning up Branch 2 modifiers:', e.message);
   }
+
+  // Seed default presets per branch
+  for (const b of branches) {
+    // For Branch 2, we shouldn't seed 'มะเขือเทศ + ผงชีส' since those modifiers don't exist in Branch 2
+    if (b.id === 2) {
+      try {
+        await db.prepare("DELETE FROM modifier_presets WHERE branch_id = 2").run();
+      } catch (e) {}
+      continue;
+    }
+    const presetCount = await db.prepare('SELECT COUNT(*) as count FROM modifier_presets WHERE branch_id = ?').get(b.id);
+    if (presetCount.count === 0) {
+      const tomatoBag = await db.prepare("SELECT id FROM modifiers WHERE branch_id = ? AND name = 'ซอสมะเขือเทศ (ถุง)'").get(b.id);
+      const cheesePowder = await db.prepare("SELECT id FROM modifiers WHERE branch_id = ? AND name = 'ผงชีส'").get(b.id);
+      if (tomatoBag && cheesePowder) {
+        await db.prepare('INSERT INTO modifier_presets (branch_id, name, modifier_ids) VALUES (?, ?, ?)')
+          .run(b.id, 'มะเขือเทศ + ผงชีส', JSON.stringify([tomatoBag.id, cheesePowder.id]));
+        console.log(`  ✨ สร้างสูตรสำเร็จเริ่มต้น (มะเขือเทศ + ผงชีส) สำหรับสาขา ID ${b.id} สำเร็จ`);
+      }
+    }
+  }
+
+
 
   console.log('  ✅ Cloud/Local Database initialized');
 }

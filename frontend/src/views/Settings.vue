@@ -44,18 +44,33 @@
 
     <!-- Tab 1: Shop Settings Form -->
     <div v-if="activeTab === 'shop'" class="card">
-      <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
-
-      <!-- Shop Name -->
-      <div class="form-group">
-        <label class="form-label">ชื่อร้านค้า (จะแสดงบนหัวแอปและบิลขาย)</label>
-        <input 
-          type="text" 
-          class="form-input" 
-          v-model="shopForm.shop_name" 
-          placeholder="ระบุชื่อร้านค้า..." 
-        />
+      <!-- Branch Selector for Admin -->
+      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl" style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-lg); position: relative; z-index: 10;">
+        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store" style="margin-right: 4px;"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
+        <div class="custom-select-wrapper" @click.stop>
+          <div 
+            class="custom-select-trigger" 
+            :class="{ 'active': isSettingsBranchDropdownOpen }" 
+            @click="toggleSettingsBranchDropdown"
+            style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-md); width: 100%; height: 38px; line-height: 24px; background-position: right 12px center; display: flex; align-items: center;"
+          >
+            <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
+          </div>
+          <div v-if="isSettingsBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+            <div 
+              v-for="b in branches" 
+              :key="b.id" 
+              class="custom-select-option" 
+              :class="{ 'selected': selectedSettingsBranchId === b.id }" 
+              @click="selectSettingsBranch(b.id)"
+            >
+              {{ b.name }}
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
 
 
 
@@ -354,13 +369,12 @@
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th style="padding: var(--space-md);">ชื่อสาขา</th>
                 <th style="padding: var(--space-md);">ที่อยู่</th>
-                <th style="padding: var(--space-md); text-align: center;">เบอร์โทรศัพท์</th>
                 <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="branches.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+                <td colspan="3" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสาขา
                 </td>
               </tr>
@@ -376,9 +390,6 @@
                 </td>
                 <td style="padding: var(--space-md); vertical-align: middle; color: var(--text-secondary);">
                   {{ b.address || '-' }}
-                </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  {{ b.phone || '-' }}
                 </td>
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
@@ -412,11 +423,8 @@
 
           <div class="flex-1" style="min-width: 0;">
             <div class="font-bold text-primary mb-xs" style="font-size: var(--font-base);">{{ b.name }}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">
-              <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
-            </div>
             <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: var(--space-sm);">
-              <i class="fa-solid fa-phone" style="margin-right: 4px; color: var(--primary);"></i> โทร: {{ b.phone || '-' }}
+              <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
             </div>
             <div class="flex gap-sm">
               <button 
@@ -468,16 +476,6 @@
               class="form-input" 
               v-model="branchForm.address" 
               placeholder="ระบุที่ตั้งสาขา..." 
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">เบอร์โทรศัพท์สาขา</label>
-            <input 
-              type="text" 
-              class="form-input" 
-              v-model="branchForm.phone" 
-              placeholder="เช่น 02-123-4567..." 
             />
           </div>
 
@@ -645,12 +643,27 @@
         <div class="form-group">
           <label class="form-label">ย้ายออเดอร์ที่เก่ากว่า: *</label>
           <div class="flex gap-sm archive-inputs-container">
-            <select class="form-input flex-1" v-model.number="archiveMonths" style="min-height:44px; padding: 0 var(--space-sm);">
-              <option :value="1">1 เดือนที่ผ่านมา</option>
-              <option :value="3">3 เดือนที่ผ่านมา</option>
-              <option :value="6">6 เดือนที่ผ่านมา</option>
-              <option :value="12">1 ปีที่ผ่านมา</option>
-            </select>
+            <div class="custom-select-wrapper flex-1" @click.stop style="position: relative; z-index: 5;">
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isArchiveDropdownOpen }" 
+                @click="isArchiveDropdownOpen = !isArchiveDropdownOpen"
+                style="padding: 10px 36px 10px var(--space-md); border-radius: var(--radius-md); width: 100%; min-height: 44px; display: flex; align-items: center;"
+              >
+                <span class="custom-select-text">{{ selectedArchiveMonthsName }}</span>
+              </div>
+              <div v-if="isArchiveDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  v-for="opt in archiveMonthsOptions" 
+                  :key="opt.value" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': archiveMonths === opt.value }" 
+                  @click="selectArchiveMonths(opt.value)"
+                >
+                  {{ opt.label }}
+                </div>
+              </div>
+            </div>
             <button class="btn btn-primary" style="font-weight:bold; min-height:44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" @click="handleArchiveOrders">
               <i class="fa-solid fa-box-archive"></i> เริ่มจัดเก็บออเดอร์เก่า
             </button>
@@ -737,14 +750,21 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
 import { ui, formatDate, getUser } from '../helpers';
+import { store } from '../store';
 
 // Custom Dropdown logic for Settings.vue
 const isRoleDropdownOpen = ref(false);
 const isBranchDropdownOpen = ref(false);
+const isSettingsBranchDropdownOpen = ref(false);
 
 const selectedUserBranchName = computed(() => {
   const b = branches.value.find(x => x.id === userForm.value.branch_id);
   return b ? b.name + (b.address ? ' — ' + b.address : '') : 'เลือกสาขาที่สังกัด...';
+});
+
+const selectedSettingsBranchName = computed(() => {
+  const b = branches.value.find(x => x.id === selectedSettingsBranchId.value);
+  return b ? b.name : 'เลือกสาขาที่ต้องการตั้งค่า...';
 });
 
 const selectUserRole = (role) => {
@@ -757,20 +777,35 @@ const selectUserBranch = (branchId) => {
   isBranchDropdownOpen.value = false;
 };
 
+const selectSettingsBranch = (branchId) => {
+  selectedSettingsBranchId.value = branchId;
+  isSettingsBranchDropdownOpen.value = false;
+  loadShopSettings();
+};
+
+const toggleSettingsBranchDropdown = () => {
+  const current = isSettingsBranchDropdownOpen.value;
+  closeSettingsDropdowns();
+  isSettingsBranchDropdownOpen.value = !current;
+};
+
 const closeSettingsDropdowns = () => {
   isRoleDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
+  isSettingsBranchDropdownOpen.value = false;
+  isArchiveDropdownOpen.value = false;
 };
 
 // States
 const activeTab = ref('shop');
 const currentUser = ref(null);
-const users = ref([]);
+const selectedSettingsBranchId = ref(null);
+const users = computed(() => store.users || []);
 const usersLoading = ref(false);
 const showUserModal = ref(false);
 const isEditUserMode = ref(false);
 const editUserId = ref(null);
-const branches = ref([]);
+const branches = computed(() => store.branches || []);
 
 // Branch CRUD States
 const showBranchModal = ref(false);
@@ -787,8 +822,7 @@ const openAddBranchModal = () => {
   editBranchId.value = null;
   branchForm.value = {
     name: '',
-    address: '',
-    phone: ''
+    address: ''
   };
   showBranchModal.value = true;
 };
@@ -798,8 +832,7 @@ const openEditBranchModal = (b) => {
   editBranchId.value = b.id;
   branchForm.value = {
     name: b.name,
-    address: b.address || '',
-    phone: b.phone || ''
+    address: b.address || ''
   };
   showBranchModal.value = true;
 };
@@ -809,8 +842,7 @@ const handleSaveBranch = async () => {
   try {
     const payload = {
       name: branchForm.value.name,
-      address: branchForm.value.address,
-      phone: branchForm.value.phone
+      address: branchForm.value.address
     };
 
     let res;
@@ -854,7 +886,6 @@ const handleDeleteBranch = async (id) => {
 
 // Forms
 const shopForm = ref({
-  shop_name: 'ร้านไก่ทอดช้างแดง',
   daily_report_time: '21:00',
   low_stock_threshold: 5,
   line_channel_token: '',
@@ -869,25 +900,23 @@ const userForm = ref({
 });
 
 // Load Shop Settings
-const loadShopSettings = async () => {
-  ui.showLoading();
+const loadShopSettings = async (force = false) => {
+  const showOverlay = !store.settingsLoaded || force;
+  if (showOverlay) ui.showLoading();
   try {
-    const res = await api.settings.getAll();
-    if (res.success) {
-      const data = res.data;
-      shopForm.value = {
-        shop_name: data.shop_name || 'ร้านไก่ทอดช้างแดง',
-        daily_report_time: data.daily_report_time || '21:00',
-        low_stock_threshold: Number(data.low_stock_threshold) || 5,
-        line_channel_token: data.line_channel_token || '',
-        line_recipient_id: data.line_recipient_id || ''
-      };
-    }
+    await store.fetchSettingsData(selectedSettingsBranchId.value, force);
+    const data = store.settings || {};
+    shopForm.value = {
+      daily_report_time: data.daily_report_time || '21:00',
+      low_stock_threshold: Number(data.low_stock_threshold) || 5,
+      line_channel_token: data.line_channel_token || '',
+      line_recipient_id: data.line_recipient_id || ''
+    };
   } catch (e) {
     console.error('Failed to load settings:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลตั้งค่าระบบได้', 'error');
   } finally {
-    ui.hideLoading();
+    if (showOverlay) ui.hideLoading();
   }
 };
 
@@ -896,10 +925,11 @@ const saveShopSettings = async () => {
   ui.showLoading();
   try {
     const promises = Object.entries(shopForm.value).map(([key, val]) => {
-      return api.settings.update(key, String(val));
+      return api.settings.update(key, String(val), selectedSettingsBranchId.value);
     });
     
     await Promise.all(promises);
+    await loadShopSettings(true); // Force reload settings to update store cache
     ui.showToast('บันทึกการตั้งค่าร้านสำเร็จแล้ว 🎉', 'success');
   } catch (error) {
     console.error(error);
@@ -910,11 +940,10 @@ const saveShopSettings = async () => {
 };
 
 // Users Logic
-const loadUsersData = async () => {
-  usersLoading.value = true;
+const loadUsersData = async (force = false) => {
+  usersLoading.value = !store.settingsLoaded || force;
   try {
-    const res = await api.auth.getUsers();
-    users.value = res.data || res || [];
+    await store.fetchSettingsData(selectedSettingsBranchId.value, force);
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลพนักงานได้', 'error');
@@ -967,7 +996,7 @@ const handleSaveUser = async () => {
     if (res.success) {
       ui.showToast(isEditUserMode.value ? 'แก้ไขข้อมูลพนักงานสำเร็จ' : 'เพิ่มพนักงานสำเร็จ', 'success');
       showUserModal.value = false;
-      loadUsersData();
+      loadUsersData(true);
     }
   } catch (e) {
     console.error(e);
@@ -985,7 +1014,7 @@ const handleDeleteUser = async (id) => {
       const res = await api.auth.deleteUser(id);
       if (res.success) {
         ui.showToast('ลบพนักงานสำเร็จเรียบร้อย', 'success');
-        loadUsersData();
+        loadUsersData(true);
       }
     } catch (e) {
       console.error(e);
@@ -999,10 +1028,7 @@ const handleDeleteUser = async (id) => {
 // Load branches for user management
 const loadBranches = async () => {
   try {
-    const res = await api.auth.getBranches();
-    if (res.success && Array.isArray(res.data)) {
-      branches.value = res.data;
-    }
+    await store.fetchSettingsData(selectedSettingsBranchId.value);
   } catch (e) {
     console.warn('⚠️ Could not load branches:', e.message);
   }
@@ -1028,16 +1054,29 @@ const presetForm = ref({
 const availableModifiers = ref([]);
 
 // Backup & Archive States
+const isArchiveDropdownOpen = ref(false);
 const archiveMonths = ref(3);
+const archiveMonthsOptions = [
+  { value: 1, label: '1 เดือนที่ผ่านมา' },
+  { value: 3, label: '3 เดือนที่ผ่านมา' },
+  { value: 6, label: '6 เดือนที่ผ่านมา' },
+  { value: 12, label: '1 ปีที่ผ่านมา' }
+];
+const selectedArchiveMonthsName = computed(() => {
+  const opt = archiveMonthsOptions.find(o => o.value === archiveMonths.value);
+  return opt ? opt.label : 'เลือกช่วงเวลา...';
+});
+const selectArchiveMonths = (val) => {
+  archiveMonths.value = val;
+  isArchiveDropdownOpen.value = false;
+};
 const fileInput = ref(null);
 
 const loadPresetsData = async () => {
-  presetsLoading.value = true;
+  presetsLoading.value = !store.modifiersLoaded;
   try {
-    const res = await api.freeModifiers.getPresets();
-    if (res.success) {
-      presets.value = res.data || [];
-    }
+    await store.fetchModifiers();
+    presets.value = store.modifierPresets || [];
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลสูตรสำเร็จได้', 'error');
@@ -1048,10 +1087,8 @@ const loadPresetsData = async () => {
 
 const loadAvailableModifiers = async () => {
   try {
-    const res = await api.freeModifiers.getAll();
-    if (res.success) {
-      availableModifiers.value = res.data || [];
-    }
+    await store.fetchModifiers();
+    availableModifiers.value = store.modifiers || [];
   } catch (e) {
     console.error(e);
   }
@@ -1105,9 +1142,9 @@ const handleSavePreset = async () => {
     
     let res;
     if (isEditPresetMode.value) {
-      res = await api.freeModifiers.updatePreset(editPresetId.value, payload);
+      res = await api.modifiers.updatePreset(editPresetId.value, payload);
     } else {
-      res = await api.freeModifiers.createPreset(payload);
+      res = await api.modifiers.createPreset(payload);
     }
     
     if (res.success) {
@@ -1128,7 +1165,7 @@ const handleDeletePreset = async (id) => {
   if (confirm) {
     ui.showLoading();
     try {
-      const res = await api.freeModifiers.deletePreset(id);
+      const res = await api.modifiers.deletePreset(id);
       if (res.success) {
         ui.showToast('ลบสูตรสำเร็จเรียบร้อย', 'success');
         loadPresetsData();
@@ -1254,6 +1291,11 @@ const handleArchiveOrders = async () => {
 
 onMounted(() => {
   currentUser.value = getUser();
+  if (sessionStorage.getItem('selected_branch_id')) {
+    selectedSettingsBranchId.value = Number(sessionStorage.getItem('selected_branch_id'));
+  } else if (currentUser.value) {
+    selectedSettingsBranchId.value = currentUser.value.branch_id;
+  }
   loadShopSettings();
   loadBranches();
   loadUsersData();
@@ -1383,24 +1425,11 @@ onUnmounted(() => {
 }
 
 /* --- Responsive Visibility Utilities --- */
-.show-mobile-only {
-  display: none !important;
-}
-.hide-mobile {
-  display: block;
-}
-
 @media (max-width: 768px) {
-  .show-mobile-only {
-    display: block !important;
-  }
   .show-mobile-only.mobile-users-list {
     display: flex !important;
     flex-direction: column;
     gap: var(--space-sm);
-  }
-  .hide-mobile {
-    display: none !important;
   }
   .staff-header-card {
     flex-direction: column !important;

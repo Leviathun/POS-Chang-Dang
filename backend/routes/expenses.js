@@ -28,7 +28,9 @@ router.post('/', async (req, res) => {
     }
 
     let branchId = req.user.branch_id;
-    if (!branchId) {
+    if (req.user.role === 'admin' && req.body.branch_id) {
+      branchId = Number(req.body.branch_id);
+    } else if (!branchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
       branchId = defaultBranch ? defaultBranch.id : null;
     }
@@ -40,15 +42,7 @@ router.post('/', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).run(branchId, req.user.id, amount, category, note || null, dateVal);
 
-    // Also write to activity log
-    await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-      VALUES (?, ?, 'log_expense', ?, datetime('now', '+7 hours'))
-    `).run(
-      branchId,
-      req.user.id,
-      `บันทึกค่าใช้จ่าย ${amount} บาท หมวดหมู่ ${category}${note ? ` (${note})` : ''}`
-    );
+
 
     res.status(201).json({
       success: true,
@@ -76,7 +70,9 @@ router.get('/', async (req, res) => {
     const db = getDb();
 
     let branchId = req.user.branch_id;
-    if (!branchId) {
+    if (req.user.role === 'admin' && req.query.branch_id) {
+      branchId = Number(req.query.branch_id);
+    } else if (!branchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
       branchId = defaultBranch ? defaultBranch.id : null;
     }
@@ -151,15 +147,7 @@ router.delete('/:id', async (req, res) => {
 
     await db.prepare('DELETE FROM expenses WHERE id = ?').run(Number(id));
 
-    // Also write to activity log
-    await db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-      VALUES (?, ?, 'delete_expense', ?, datetime('now', '+7 hours'))
-    `).run(
-      branchId,
-      req.user.id,
-      `ลบรายการค่าใช้จ่าย ${expense.amount} บาท (หมวดหมู่ ${expense.category}) ที่บันทึกเมื่อ ${expense.expense_date}`
-    );
+
 
     res.json({
       success: true,

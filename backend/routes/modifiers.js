@@ -6,26 +6,28 @@ const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
 // Apply attachUser globally to all modifier routes
 router.use(attachUser);
 
-// ─── GET / — ดึงรายการเครื่องปรุงฟรีพร้อมคลังสินค้าของสาขา ──────────────────
+// Helper function to get branch ID of logged-in user or first branch
+async function getBranchId(req, db) {
+  let branchId = req.user ? req.user.branch_id : null;
+  if (!branchId) {
+    const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+    branchId = defaultBranch ? defaultBranch.id : null;
+  }
+  return branchId;
+}
+
+// ─── GET / — ดึงรายการเครื่องปรุงพร้อมคลังสินค้าของสาขา ──────────────────
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
-    
-    // หาสาขาของผู้ใช้
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
+    const branchId = await getBranchId(req, db);
 
     const items = await db.prepare(`
       SELECT 
-        fm.id, fm.name, fm.category, fm.servings_per_bag, fm.active,
-        COALESCE(bfms.total_servings, 0) as total_servings
-      FROM free_modifiers fm
-      LEFT JOIN branch_free_modifier_stocks bfms 
-        ON bfms.modifier_id = fm.id AND bfms.branch_id = ?
-      ORDER BY fm.category ASC, fm.name ASC
+        id, name, category, servings_per_bag, active, total_servings
+      FROM modifiers
+      WHERE branch_id = ?
+      ORDER BY category ASC, name ASC
     `).all(branchId);
 
     res.json({
@@ -33,7 +35,7 @@ router.get('/', async (req, res) => {
       data: items
     });
   } catch (error) {
-    console.error('❌ Get free modifiers error:', error.message);
+    console.error('❌ Get modifiers error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายการซอส/ผงปรุงรส'
@@ -54,14 +56,9 @@ router.post('/restock', requireAuth, async (req, res) => {
       });
     }
 
-    // หาสาขาของผู้ใช้
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
+    const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ?').get(Number(modifier_id));
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -75,25 +72,19 @@ router.post('/restock', requireAuth, async (req, res) => {
     const restockTx = db.transaction(async () => {
       // ดึงสต็อกปัจจุบัน
       const currentStock = await db.prepare(
-        'SELECT total_servings FROM branch_free_modifier_stocks WHERE branch_id = ? AND modifier_id = ?'
-      ).get(branchId, modifier.id);
+        'SELECT total_servings FROM modifiers WHERE id = ?'
+      ).get(modifier.id);
 
       const prevServings = currentStock ? currentStock.total_servings : 0;
       const newServings = prevServings + addServings;
 
       // อัปเดตคลัง
-      await db.prepare(`
-        INSERT INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings)
-        VALUES (?, ?, ?)
-        ON CONFLICT(branch_id, modifier_id) DO UPDATE SET
-          total_servings = excluded.total_servings,
-          updated_at = datetime('now', 'localtime')
-      `).run(branchId, modifier.id, newServings);
+      await db.prepare('UPDATE modifiers SET total_servings = ? WHERE id = ?').run(newServings, modifier.id);
 
       // บันทึก Log
       const displayUnit = modifier.category === 'sauce_small' ? 'ซอง' : 'ถุง';
       await db.prepare(`
-        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
@@ -119,7 +110,7 @@ router.post('/restock', requireAuth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Restock free modifier error:', error.message);
+    console.error('❌ Restock modifier error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการเติมคลังสินค้า'
@@ -141,15 +132,9 @@ router.post('/adjust', requireAuth, async (req, res) => {
     }
 
     const changeQty = Number(quantity);
+    const branchId = await getBranchId(req, db);
 
-    // หาสาขาของผู้ใช้
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
-
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ?').get(Number(modifier_id));
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -159,8 +144,8 @@ router.post('/adjust', requireAuth, async (req, res) => {
 
     const adjustTx = db.transaction(async () => {
       const currentStock = await db.prepare(
-        'SELECT total_servings FROM branch_free_modifier_stocks WHERE branch_id = ? AND modifier_id = ?'
-      ).get(branchId, modifier.id);
+        'SELECT total_servings FROM modifiers WHERE id = ?'
+      ).get(modifier.id);
 
       const prevServings = currentStock ? currentStock.total_servings : 0;
       const newServings = prevServings + changeQty;
@@ -169,16 +154,10 @@ router.post('/adjust', requireAuth, async (req, res) => {
         throw new Error(`สต็อกสินค้า "${modifier.name}" ไม่สามารถปรับให้ติดลบได้ (มีอยู่ ${prevServings} รอบ)`);
       }
 
-      await db.prepare(`
-        INSERT INTO branch_free_modifier_stocks (branch_id, modifier_id, total_servings)
-        VALUES (?, ?, ?)
-        ON CONFLICT(branch_id, modifier_id) DO UPDATE SET
-          total_servings = excluded.total_servings,
-          updated_at = datetime('now', 'localtime')
-      `).run(branchId, modifier.id, newServings);
+      await db.prepare('UPDATE modifiers SET total_servings = ? WHERE id = ?').run(newServings, modifier.id);
 
       await db.prepare(`
-        INSERT INTO free_modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+        INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
       `).run(
         branchId,
@@ -204,7 +183,7 @@ router.post('/adjust', requireAuth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Adjust free modifier error:', error.message);
+    console.error('❌ Adjust modifier error:', error.message);
     res.status(400).json({
       success: false,
       error: error.message || 'เกิดข้อผิดพลาดในการปรับปรุงคลังสินค้า'
@@ -217,8 +196,9 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM free_modifiers WHERE id = ?').get(Number(id));
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -227,7 +207,7 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
     }
 
     const newActive = modifier.active ? 0 : 1;
-    await db.prepare('UPDATE free_modifiers SET active = ? WHERE id = ?').run(newActive, modifier.id);
+    await db.prepare('UPDATE modifiers SET active = ? WHERE id = ? AND branch_id = ?').run(newActive, modifier.id, branchId);
 
     res.json({
       success: true,
@@ -238,7 +218,7 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Toggle free modifier error:', error.message);
+    console.error('❌ Toggle modifier error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการสลับสถานะเปิด/ปิดการใช้งาน'
@@ -250,7 +230,8 @@ router.post('/toggle/:id', requireAdmin, async (req, res) => {
 router.get('/presets', async (req, res) => {
   try {
     const db = getDb();
-    const presets = await db.prepare('SELECT * FROM free_modifier_presets ORDER BY name ASC').all();
+    const branchId = await getBranchId(req, db);
+    const presets = await db.prepare('SELECT * FROM modifier_presets WHERE branch_id = ? ORDER BY name ASC').all(branchId);
     
     // แปลง modifier_ids string กลับเป็น array
     const formatted = presets.map(p => ({
@@ -284,10 +265,12 @@ router.post('/presets', requireAdmin, async (req, res) => {
       });
     }
 
-    const result = await db.prepare('INSERT INTO free_modifier_presets (name, modifier_ids, created_at) VALUES (?, ?, datetime("now", "+7 hours"))')
-      .run(name, JSON.stringify(modifier_ids));
+    const branchId = await getBranchId(req, db);
 
-    const newPreset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(result.lastInsertRowid);
+    const result = await db.prepare(`INSERT INTO modifier_presets (branch_id, name, modifier_ids, created_at) VALUES (?, ?, ?, datetime('now', '+7 hours'))`)
+      .run(branchId, name, JSON.stringify(modifier_ids));
+
+    const newPreset = await db.prepare('SELECT * FROM modifier_presets WHERE id = ?').get(result.lastInsertRowid);
     newPreset.modifier_ids = JSON.parse(newPreset.modifier_ids || '[]');
 
     res.status(201).json({
@@ -309,8 +292,9 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { name, modifier_ids, active } = req.body;
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
-    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(Number(id));
+    const preset = await db.prepare('SELECT * FROM modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!preset) {
       return res.status(404).json({
         success: false,
@@ -323,12 +307,12 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
     const updatedActive = active !== undefined ? active : preset.active;
 
     await db.prepare(`
-      UPDATE free_modifier_presets 
+      UPDATE modifier_presets 
       SET name = ?, modifier_ids = ?, active = ? 
-      WHERE id = ?
-    `).run(updatedName, updatedIds, updatedActive, Number(id));
+      WHERE id = ? AND branch_id = ?
+    `).run(updatedName, updatedIds, updatedActive, Number(id), branchId);
 
-    const updated = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(Number(id));
+    const updated = await db.prepare('SELECT * FROM modifier_presets WHERE id = ?').get(Number(id));
     updated.modifier_ids = JSON.parse(updated.modifier_ids || '[]');
 
     res.json({
@@ -349,8 +333,9 @@ router.delete('/presets/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
+    const branchId = await getBranchId(req, db);
 
-    const preset = await db.prepare('SELECT * FROM free_modifier_presets WHERE id = ?').get(Number(id));
+    const preset = await db.prepare('SELECT * FROM modifier_presets WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!preset) {
       return res.status(404).json({
         success: false,
@@ -358,7 +343,7 @@ router.delete('/presets/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    await db.prepare('DELETE FROM free_modifier_presets WHERE id = ?').run(Number(id));
+    await db.prepare('DELETE FROM modifier_presets WHERE id = ? AND branch_id = ?').run(Number(id), branchId);
 
     res.json({
       success: true,
@@ -379,14 +364,9 @@ router.get('/:id/logs', async (req, res) => {
     const { id } = req.params;
     const limit = parseInt(req.query.limit) || 50;
     const db = getDb();
-    
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
+    const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT id, name FROM free_modifiers WHERE id = ?').get(Number(id));
+    const modifier = await db.prepare('SELECT id, name FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -395,11 +375,11 @@ router.get('/:id/logs', async (req, res) => {
     }
 
     const logs = await db.prepare(`
-      SELECT fmsl.*, u.name as staff_name
-      FROM free_modifier_stock_logs fmsl
-      LEFT JOIN users u ON u.id = fmsl.staff_id
-      WHERE fmsl.modifier_id = ? AND fmsl.branch_id = ?
-      ORDER BY fmsl.created_at DESC
+      SELECT msl.*, u.name as staff_name
+      FROM modifier_stock_logs msl
+      LEFT JOIN users u ON u.id = msl.staff_id
+      WHERE msl.modifier_id = ? AND msl.branch_id = ?
+      ORDER BY msl.created_at DESC
       LIMIT ?
     `).all(Number(id), branchId, limit);
 
@@ -411,10 +391,124 @@ router.get('/:id/logs', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Get free modifier logs error:', error.message);
+    console.error('❌ Get modifier logs error:', error.message);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการดึงประวัติการปรับปรุงสต็อก'
+    });
+  }
+});
+
+// ─── POST /bulk-adjust — จัดการสต็อกด่วนเครื่องปรุงแบบกลุ่ม ──────────────────
+router.post('/bulk-adjust', requireAuth, async (req, res) => {
+  try {
+    const { mode, items, reason_preset, note } = req.body;
+    const db = getDb();
+
+    if (!mode || !['relative', 'absolute'].includes(mode)) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุโหมดการปรับปรุง (relative หรือ absolute)'
+      });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุรายการเครื่องปรุงที่ต้องการปรับปรุง'
+      });
+    }
+
+    const branchId = await getBranchId(req, db);
+
+    const bulkTransaction = db.transaction(async () => {
+      for (const item of items) {
+        const { modifier_id } = item;
+        if (!modifier_id) continue;
+
+        const modifier = await db.prepare('SELECT name, total_servings, category, servings_per_bag FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
+        if (!modifier) continue;
+
+        const currentServings = modifier.total_servings || 0;
+        let deltaServings = 0;
+
+        if (item.servings !== undefined && item.servings !== null && item.servings !== '') {
+          const val = Number(item.servings);
+          if (!isNaN(val)) {
+            if (mode === 'relative') {
+              deltaServings = val;
+            } else {
+              deltaServings = val - currentServings;
+            }
+          }
+        }
+
+        if (deltaServings !== 0) {
+          const newServings = currentServings + deltaServings;
+          if (newServings < 0) {
+            throw new Error(`MODIFIER_NEGATIVE:${modifier.name}`);
+          }
+
+          await db.prepare('UPDATE modifiers SET total_servings = ? WHERE id = ?').run(newServings, Number(modifier_id));
+
+          const logReason = mode === 'relative' ? (deltaServings > 0 ? 'restock' : 'adjustment') : 'adjustment';
+          const logNote = mode === 'relative'
+            ? `เติมสต็อกเครื่องปรุงด่วน (Relative) ${deltaServings >= 0 ? '+' : ''}${deltaServings} รอบ`
+            : `ปรับปรุงสต็อกเครื่องปรุงด่วน (Absolute): ปรับจาก ${currentServings} เป็น ${newServings} รอบ [สาเหตุ: ${reason_preset || 'อื่นๆ'}] (${note || 'ไม่ระบุโน้ต'})`;
+
+          await db.prepare(`
+            INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+          `).run(
+            branchId,
+            Number(modifier_id),
+            deltaServings,
+            currentServings,
+            newServings,
+            logReason,
+            req.user.id,
+            logNote
+          );
+
+          await db.prepare(`
+            INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+            VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
+          `).run(
+            branchId,
+            req.user.id,
+            deltaServings > 0 ? 'restock_modifier' : 'adjust_modifier',
+            `ปรับปรุงสต็อกเครื่องปรุง ${modifier.name} ${deltaServings >= 0 ? '+' : ''}${deltaServings} รอบ (ก่อนปรับ: ${currentServings}, หลังปรับ: ${newServings})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
+          );
+        }
+      }
+    });
+
+    try {
+      await bulkTransaction();
+      
+      // Fetch all updated modifiers to return
+      const updatedModifiers = await db.prepare('SELECT id, total_servings FROM modifiers WHERE branch_id = ?').all(branchId);
+
+      res.json({
+        success: true,
+        message: 'ปรับปรุงสต็อกเครื่องปรุงเรียบร้อยแล้ว',
+        updatedModifiers
+      });
+    } catch (txError) {
+      if (txError.message.startsWith('MODIFIER_NEGATIVE:')) {
+        const itemName = txError.message.split(':')[1];
+        return res.status(400).json({
+          success: false,
+          error: `ไม่สามารถปรับสต็อกเครื่องปรุง ${itemName} ให้ติดลบได้`
+        });
+      }
+      throw txError;
+    }
+  } catch (error) {
+    console.error('❌ Bulk adjust modifiers error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการปรับสต็อกเครื่องปรุงแบบกลุ่ม'
     });
   }
 });

@@ -44,7 +44,7 @@
     </div>
 
     <!-- Date selector card (hidden on 'top_menus' tab) -->
-    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md">
+    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 50;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
         <div class="flex gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
@@ -78,38 +78,86 @@
         </div>
 
         <!-- Date Selector Input depending on Mode -->
-        <div class="flex gap-sm align-center">
-          <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">
-            {{ periodMode === 'daily' ? 'เลือกวัน:' : periodMode === 'monthly' ? 'เลือกเดือน:' : 'เลือกปี:' }}
-          </div>
-          
-          <input 
-            v-if="periodMode === 'daily'"
-            type="date" 
-            class="form-input p-xs" 
-            style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
-            v-model="selectedDate" 
-            @change="loadReportData"
-          />
-          
-          <input 
-            v-if="periodMode === 'monthly'"
-            type="month" 
-            class="form-input p-xs" 
-            style="padding: 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px;" 
-            v-model="selectedMonth" 
-            @change="loadReportData"
-          />
+        <div class="flex flex-wrap gap-md align-center" style="width: 100%;">
+          <div class="flex gap-sm align-center">
+            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">
+              {{ periodMode === 'daily' ? 'เลือกวัน:' : periodMode === 'monthly' ? 'เลือกเดือน:' : 'เลือกปี:' }}
+            </div>
+            
+            <input 
+              v-if="periodMode === 'daily'"
+              type="date" 
+              class="form-input reports-filter-control" 
+              style="max-width: 200px;" 
+              v-model="selectedDate" 
+              @change="loadReportData"
+            />
+            
+            <input 
+              v-if="periodMode === 'monthly'"
+              type="month" 
+              class="form-input reports-filter-control" 
+              style="max-width: 200px;" 
+              v-model="selectedMonth" 
+              @change="loadReportData"
+            />
 
-          <select 
-            v-if="periodMode === 'yearly'"
-            class="form-select" 
-            style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-sm); max-width: 200px; height: 38px; line-height: 24px; background-position: right 12px center;"
-            v-model="selectedYear" 
-            @change="loadReportData"
-          >
-            <option v-for="y in availableYears" :key="y" :value="String(y)">ปี {{ y }}</option>
-          </select>
+            <!-- Custom Select for Yearly -->
+            <div v-if="periodMode === 'yearly'" class="custom-select-wrapper" style="max-width: 200px;" @click.stop>
+              <div 
+                class="custom-select-trigger reports-filter-control" 
+                :class="{ 'active': isYearDropdownOpen }" 
+                @click="toggleYearDropdown"
+                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
+              >
+                <span class="custom-select-text">{{ selectedYearLabel }}</span>
+              </div>
+              <div v-if="isYearDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  v-for="y in availableYears" 
+                  :key="y" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': selectedYear === String(y) }" 
+                  @click="selectYear(y)"
+                >
+                  ปี {{ y }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Branch Selector for Admin -->
+          <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
+            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
+            <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
+              <div 
+                class="custom-select-trigger reports-filter-control" 
+                :class="{ 'active': isBranchDropdownOpen }" 
+                @click="toggleBranchDropdown"
+                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
+              >
+                <span class="custom-select-text">{{ selectedBranchName }}</span>
+              </div>
+              <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  class="custom-select-option" 
+                  :class="{ 'selected': selectedBranchId === null }" 
+                  @click="selectBranch(null)"
+                >
+                  ทุกสาขา
+                </div>
+                <div 
+                  v-for="b in branches" 
+                  :key="b.id" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': selectedBranchId === b.id }" 
+                  @click="selectBranch(b.id)"
+                >
+                  {{ b.name }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -173,7 +221,11 @@
               <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
             </div>
             <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-landmark" style="color: var(--accent);"></i> โครงการรัฐ</div>
+              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-landmark" style="color: var(--accent);"></i>
+                <span class="hide-mobile">โครงการรัฐ</span>
+                <span class="show-mobile-inline">รัฐ</span>
+              </div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
                 {{ formatCurrency(dailyReport.gov_sales) }}
               </div>
@@ -280,7 +332,6 @@
                 <div v-if="isHistoryStatusDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
                   <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'all' }" @click="selectHistoryStatus('all')" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
                   <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'completed' }" @click="selectHistoryStatus('completed')" style="padding: 6px 12px; font-size: 12px;">ชำระเงินแล้ว</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'pending' }" @click="selectHistoryStatus('pending')" style="padding: 6px 12px; font-size: 12px;">รอชำระ</div>
                   <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'cancelled' }" @click="selectHistoryStatus('cancelled')" style="padding: 6px 12px; font-size: 12px;">ยกเลิก</div>
                 </div>
               </div>
@@ -293,7 +344,7 @@
         </div>
         <div v-else>
           <!-- Desktop Table (Desktop Only) -->
-          <div class="hide-mobile" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+          <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
             <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-sm);">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
@@ -535,7 +586,7 @@
         </div>
 
         <!-- Ledger Table (Desktop Only) -->
-        <div class="hide-mobile" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
           <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-sm); table-layout: fixed;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
@@ -639,28 +690,115 @@
       </div>
 
       <!-- Tab 3: Top Selling Menus (10 อันดับเมนูขายดีที่สุด) -->
-      <div v-if="activeTab === 'top_menus' && isAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-fire" style="margin-right: 6px;"></i> 10 อันดับเมนูขายดีที่สุด (7 วันที่ผ่านมา)</div>
-        
-        <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
-          ยังไม่มีข้อมูลการขายในรอบ 7 วันที่ผ่านมา
+      <div v-if="activeTab === 'top_menus' && isAdminUser" class="card" style="position:relative; overflow:hidden; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
+        <!-- Header -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: var(--space-md);">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-glow); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 171, 43, 0.3);">
+            <i class="fa-solid fa-fire text-accent animate-pulse" style="font-size: 1.2rem; color: var(--accent);"></i>
+          </div>
+          <div>
+            <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">10 อันดับสินค้าขายดีที่สุด</span>
+            <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">สถิติการใช้วัตถุดิบและเมนูจากการขายจริง</span>
+          </div>
         </div>
-        <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
+
+        <!-- Period Selector (Pills) -->
+        <div style="margin-bottom: var(--space-md);">
+          <div class="pills-container" style="display: inline-flex; gap: var(--space-xs); background: rgba(139, 3, 19, 0.05); padding: 4px; border-radius: var(--radius-full); border: 1px solid rgba(139, 3, 19, 0.12);">
+            <button 
+              v-for="d in [1, 7, 30]" 
+              :key="d"
+              @click="setTopItemsDays(d)"
+              :style="{
+                background: topItemsDays === d ? 'var(--primary)' : 'transparent',
+                color: topItemsDays === d ? 'white' : 'var(--text-secondary)',
+                boxShadow: topItemsDays === d ? 'var(--shadow-sm)' : 'none',
+                fontWeight: topItemsDays === d ? 'bold' : 'normal'
+              }"
+              style="padding: 6px 18px; border-radius: var(--radius-full); font-size: 11px; transition: all 0.2s ease; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 70px;"
+            >
+              {{ d === 1 ? 'วันนี้' : d + ' วัน' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashed Divider -->
+        <div style="border-bottom: 2px dashed var(--border-color-light); margin-bottom: var(--space-lg); width: 100%;"></div>
+        
+        <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: rgba(255, 255, 255, 0.3); border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+          <i class="fa-solid fa-folder-open mb-sm" style="font-size: 2.5rem; opacity: 0.25; display: block; color: var(--text-primary);"></i>
+          ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
+        </div>
+        
+        <div v-else style="display: flex; flex-direction: column; gap: var(--space-xs);">
+          <!-- Top 3 Items Cards -->
           <div 
-            v-for="(item, index) in topItems" 
-            :key="item.menu_item_id" 
-            class="flex flex-between align-center p-xs"
-            style="font-size:var(--font-sm); border-bottom: 1px solid var(--border-color);"
+            v-for="(item, index) in topItems.slice(0, 3)" 
+            :key="item.menu_item_id"
+            class="top-item-card-redesign" 
+            :class="'rank-' + (index + 1) + '-card'"
           >
-            <div class="flex align-center gap-sm">
-              <span class="font-bold" :class="index === 0 ? 'text-accent' : 'text-secondary'">
-                #{{ index + 1 }}
-              </span>
-              <span>{{ item.item_name }}</span>
+            <!-- Left Side: Circle badge/icon -->
+            <div class="rank-badge-circle" :class="'rank-' + (index + 1) + '-badge'">
+              <i v-if="index === 0" class="fa-solid fa-crown"></i>
+              <span v-else>{{ index + 1 }}</span>
             </div>
-            <div>
-              <span class="font-bold">{{ item.total_qty }} ชิ้น</span> | 
-              <span style="font-size:11px; color:var(--text-secondary);">{{ formatCurrency(item.total_sales) }}</span>
+
+            <!-- Middle Side: Name (top) and Type Badge (bottom) -->
+            <div class="card-info-middle">
+              <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
+              <div style="display: flex; align-items: center;">
+                <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
+                <span v-else class="badge-type main">ทั่วไป</span>
+              </div>
+            </div>
+
+            <!-- Right Side: Qty & Sales -->
+            <div class="card-sales-right">
+              <div class="qty-column">
+                <span class="qty-num">{{ Number(item.total_qty).toLocaleString() }}</span>
+                <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
+              </div>
+              <div class="sales-pill">
+                {{ formatCurrency(item.total_sales) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider label for ranks 4-10 -->
+          <div v-if="topItems.length > 3" style="font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding-left: 6px; margin: var(--space-md) 0 var(--space-sm) 0; border-left: 3px solid var(--primary);">
+            อันดับที่ 4 - 10
+          </div>
+
+          <!-- Loop for Ranks 4-10 -->
+          <div 
+            v-for="(item, index) in topItems.slice(3)" 
+            :key="item.menu_item_id"
+            class="top-item-card-redesign rank-other-card"
+          >
+            <!-- Left Side: Circle badge with number -->
+            <div class="rank-badge-circle rank-other-badge">
+              <span>{{ index + 4 }}</span>
+            </div>
+
+            <!-- Middle Side: Name (top) and Type Badge (bottom) -->
+            <div class="card-info-middle">
+              <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
+              <div style="display: flex; align-items: center;">
+                <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
+                <span v-else class="badge-type main">ทั่วไป</span>
+              </div>
+            </div>
+
+            <!-- Right Side: Qty & Sales -->
+            <div class="card-sales-right">
+              <div class="qty-column">
+                <span class="qty-num">{{ Number(item.total_qty).toLocaleString() }}</span>
+                <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
+              </div>
+              <div class="sales-pill">
+                {{ formatCurrency(item.total_sales) }}
+              </div>
             </div>
           </div>
         </div>
@@ -775,12 +913,115 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin } from '../helpers';
+import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, getUser } from '../helpers';
+import { store } from '../store';
 
 // Role check
 const isAdminUser = computed(() => isAdmin());
 
+const branches = ref([]);
+const currentUser = getUser();
+const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
+
 const activeTab = ref('sales');
+
+const isUsingDefaultFilters = () => {
+  return periodMode.value === 'daily' &&
+         selectedDate.value === getToday() &&
+         selectedMonth.value === getToday().substring(0, 7) &&
+         selectedYear.value === getToday().substring(0, 4) &&
+         historyStatusFilter.value === 'all' &&
+         selectedBranchId.value === store.reportsBranchId;
+};
+
+const applyDataFromStore = () => {
+  if (!store.reportsLoaded) return;
+  
+  if (store.reportSummary) {
+    summary.value = {
+      today_sales: store.reportSummary.today?.total_revenue || 0,
+      today_orders: store.reportSummary.today?.total_orders || 0,
+      month_sales: store.reportSummary.month?.total_revenue || 0,
+      month_orders: store.reportSummary.month?.total_orders || 0
+    };
+  }
+  
+  if (store.reportDailyData) {
+    const data = store.reportDailyData;
+    dailyReport.value = {
+      total_sales: data.total_revenue || 0,
+      total_orders: data.total_orders || 0,
+      average_bill: data.avg_order_value || 0,
+      cash_sales: data.payment_breakdown?.cash_total || 0,
+      cash_orders: data.payment_breakdown?.cash_count || 0,
+      qr_sales: data.payment_breakdown?.qr_total || 0,
+      qr_orders: data.payment_breakdown?.qr_count || 0,
+      gov_sales: data.payment_breakdown?.gov_total || 0,
+      gov_orders: data.payment_breakdown?.gov_count || 0,
+      orders: data.orders || []
+    };
+  }
+  
+  if (store.reportTopItems && topItemsDays.value === 7) {
+    topItems.value = store.reportTopItems.map(item => ({
+      ...item,
+      total_sales: item.total_revenue || 0
+    }));
+  }
+  
+  if (periodMode.value === 'daily') {
+    expenses.value = store.reportsExpenses || [];
+    activityLogs.value = store.reportsActivities || [];
+  } else if (periodMode.value === 'monthly') {
+    expenses.value = store.reportMonthlyExpenses || [];
+  }
+  
+  if (periodMode.value === 'daily' && historyStatusFilter.value === 'all') {
+    historyOrders.value = store.reportsHistory || [];
+  }
+  
+  // Ledger
+  const monthOrders = store.reportMonthlyOrders || [];
+  const monthExpenses = store.reportMonthlyExpenses || [];
+  const list = [];
+
+  monthOrders.forEach(o => {
+    list.push({
+      id: o.id,
+      created_at: o.created_at,
+      timestamp: new Date(o.created_at).getTime(),
+      name: `ขายสินค้า (บิล #${o.order_number})`,
+      income: o.total || 0,
+      expense: 0,
+      type: 'order'
+    });
+  });
+
+  monthExpenses.forEach(e => {
+    list.push({
+      id: e.id,
+      created_at: e.created_at,
+      timestamp: new Date(e.created_at).getTime(),
+      name: e.note || getCategoryLabel(e.category),
+      income: 0,
+      expense: e.amount || 0,
+      type: 'expense'
+    });
+  });
+
+  list.sort((a, b) => a.timestamp - b.timestamp);
+
+  let running = 0;
+  const computedList = list.map(item => {
+    running += item.income - item.expense;
+    return {
+      ...item,
+      runningBalance: running
+    };
+  });
+
+  ledgerTransactions.value = computedList.reverse();
+};
 
 // States for Period Mode
 const periodMode = ref('daily'); // 'daily', 'monthly', 'yearly'
@@ -835,6 +1076,11 @@ const dailyReport = ref({
   orders: []
 });
 const topItems = ref([]);
+const topItemsDays = ref(7); // default 7 days
+const setTopItemsDays = (days) => {
+  topItemsDays.value = days;
+  loadTopItems();
+};
 const expenses = ref([]);
 const activityLogs = ref([]);
 const filterAction = ref('all');
@@ -943,7 +1189,6 @@ const selectedHistoryStatusLabel = computed(() => {
   const statusLabels = {
     all: 'ทั้งหมด',
     completed: 'ชำระเงินแล้ว',
-    pending: 'รอชำระ',
     cancelled: 'ยกเลิก'
   };
   return statusLabels[historyStatusFilter.value] || 'ทั้งหมด';
@@ -954,20 +1199,62 @@ const selectHistoryStatus = (status) => {
   loadOrderHistory();
 };
 
+// Custom dropdowns for Branch and Year filter
+const isBranchDropdownOpen = ref(false);
+const isYearDropdownOpen = ref(false);
+
+const selectedBranchName = computed(() => {
+  if (selectedBranchId.value === null) return 'ทุกสาขา';
+  const found = branches.value.find(b => b.id === selectedBranchId.value);
+  return found ? found.name : 'ทุกสาขา';
+});
+
+const selectedYearLabel = computed(() => `ปี ${selectedYear.value}`);
+
+const toggleBranchDropdown = () => {
+  const current = isBranchDropdownOpen.value;
+  closeReportsDropdowns();
+  isBranchDropdownOpen.value = !current;
+};
+
+const toggleYearDropdown = () => {
+  const current = isYearDropdownOpen.value;
+  closeReportsDropdowns();
+  isYearDropdownOpen.value = !current;
+};
+
+const selectBranch = (branchId) => {
+  selectedBranchId.value = branchId;
+  isBranchDropdownOpen.value = false;
+  onBranchChange();
+};
+
+const selectYear = (y) => {
+  selectedYear.value = String(y);
+  isYearDropdownOpen.value = false;
+  loadReportData();
+};
+
 const closeReportsDropdowns = () => {
   isExpenseCategoryDropdownOpen.value = false;
   isFilterActionDropdownOpen.value = false;
   isHistoryStatusDropdownOpen.value = false;
+  isBranchDropdownOpen.value = false;
+  isYearDropdownOpen.value = false;
 };
 
 const loadMonthlyLedger = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   ledgerLoading.value = true;
   try {
     const monthVal = selectedDate.value.substring(0, 7);
-    const ordersRes = await api.orders.getAll({ status: 'completed', month: monthVal });
+    const ordersRes = await api.orders.getAll({ status: 'completed', month: monthVal, branch_id: selectedBranchId.value });
     const monthOrders = ordersRes.success ? (ordersRes.data || []) : [];
 
-    const expensesRes = await api.expenses.get({ month: monthVal });
+    const expensesRes = await api.expenses.get({ month: monthVal, branch_id: selectedBranchId.value });
     const monthExpenses = expensesRes.success ? (expensesRes.data || []) : [];
 
     const list = [];
@@ -1019,8 +1306,12 @@ const loadMonthlyLedger = async () => {
 // ── Data Loading ──
 
 const loadReportSummary = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
-    const res = await api.reports.summary();
+    const res = await api.reports.summary(selectedBranchId.value);
     if (res.success && res.data) {
       summary.value = {
         today_sales: res.data.today?.total_revenue || 0,
@@ -1035,14 +1326,18 @@ const loadReportSummary = async () => {
 };
 
 const loadExpensesForPeriod = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     let res;
     if (periodMode.value === 'daily') {
-      res = await api.expenses.get(selectedDate.value);
+      res = await api.expenses.get({ date: selectedDate.value, branch_id: selectedBranchId.value });
     } else if (periodMode.value === 'monthly') {
-      res = await api.expenses.get({ month: selectedMonth.value });
+      res = await api.expenses.get({ month: selectedMonth.value, branch_id: selectedBranchId.value });
     } else {
-      res = await api.expenses.get({ year: selectedYear.value });
+      res = await api.expenses.get({ year: selectedYear.value, branch_id: selectedBranchId.value });
     }
     if (res.success) {
       expenses.value = res.data || [];
@@ -1053,9 +1348,13 @@ const loadExpensesForPeriod = async () => {
 };
 
 const loadActivityLogsForPeriod = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     let res;
-    const params = {};
+    const params = { branch_id: selectedBranchId.value };
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;
     } else if (periodMode.value === 'monthly') {
@@ -1073,9 +1372,14 @@ const loadActivityLogsForPeriod = async () => {
 };
 
 const loadOrderHistory = async () => {
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
     const params = {
-      limit: 1000
+      limit: 1000,
+      branch_id: selectedBranchId.value
     };
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;
@@ -1102,17 +1406,33 @@ const loadOrderHistory = async () => {
 };
 
 const loadReportData = async () => {
-  loading.value = true;
   expandedOrderId.value = null;
   expandedItems.value = [];
+
+  // Check if we can use store cache
+  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    loading.value = false;
+    
+    // Silent background fetch to update store cache
+    store.fetchReports(selectedBranchId.value, false).then(() => {
+      if (isUsingDefaultFilters() && store.reportsBranchId === selectedBranchId.value) {
+        applyDataFromStore();
+      }
+    }).catch(e => console.error(e));
+    
+    return;
+  }
+
+  loading.value = true;
   try {
     let res;
     if (periodMode.value === 'daily') {
-      res = await api.reports.daily(selectedDate.value);
+      res = await api.reports.daily(selectedDate.value, selectedBranchId.value);
     } else if (periodMode.value === 'monthly') {
-      res = await api.reports.monthly(selectedMonth.value);
+      res = await api.reports.monthly(selectedMonth.value, selectedBranchId.value);
     } else {
-      res = await api.reports.yearly(selectedYear.value);
+      res = await api.reports.yearly(selectedYear.value, selectedBranchId.value);
     }
 
     if (res.success && res.data) {
@@ -1162,8 +1482,12 @@ const loadReportData = async () => {
 };
 
 const loadTopItems = async () => {
+  if (topItemsDays.value === 7 && isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
+    applyDataFromStore();
+    return;
+  }
   try {
-    const res = await api.reports.topItems(7);
+    const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value);
     if (res.success && Array.isArray(res.data)) {
       topItems.value = res.data.map(item => ({
         ...item,
@@ -1173,6 +1497,11 @@ const loadTopItems = async () => {
   } catch (e) {
     console.warn(e);
   }
+};
+
+const getPopularityPercentage = (qty, maxQty) => {
+  if (!maxQty) return 0;
+  return Math.round((qty / maxQty) * 100);
 };
 
 // ── Order Expand & Void ──
@@ -1213,6 +1542,7 @@ const handleVoidOrder = async () => {
     if (res.success) {
       ui.showToast(`ยกเลิกบิล #${voidOrder.value.order_number} สำเร็จ`, 'success');
       showVoidModal.value = false;
+      store.clearReportsCache(); // Clear store cache!
       loadReportData();
       if (isAdmin()) {
         loadReportSummary();
@@ -1239,6 +1569,7 @@ const handleAddExpense = async () => {
     if (res.success) {
       ui.showToast('บันทึกค่าใช้จ่ายสำเร็จ', 'success');
       expenseForm.value = { amount: null, category: 'raw_materials', note: '' };
+      store.clearReportsCache(); // Clear store cache!
       loadExpensesForPeriod();
       loadActivityLogsForPeriod();
       loadMonthlyLedger();
@@ -1258,6 +1589,7 @@ const handleDeleteExpense = async (id) => {
     const res = await api.expenses.delete(id);
     if (res.success) {
       ui.showToast('ลบค่าใช้จ่ายสำเร็จ', 'success');
+      store.clearReportsCache(); // Clear store cache!
       loadExpensesForPeriod();
       loadActivityLogsForPeriod();
       loadMonthlyLedger();
@@ -1304,8 +1636,23 @@ const getActionIconClass = (action) => {
   return map[action] || 'fa-solid fa-bookmark text-neutral';
 };
 
-onMounted(() => {
+const onBranchChange = () => {
+  loadReportSummary();
+  loadTopItems();
+  loadMonthlyLedger();
+  loadReportData();
+};
+
+onMounted(async () => {
   if (isAdmin()) {
+    try {
+      const res = await api.auth.getBranches();
+      if (res.success) {
+        branches.value = res.data || [];
+      }
+    } catch (e) {
+      console.warn('Failed to load branches:', e);
+    }
     loadReportSummary();
     loadTopItems();
     loadMonthlyLedger();
@@ -1350,9 +1697,10 @@ const exportSalesCSV = () => {
   const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
   const rows = dailyReport.value.orders.map(o => {
     let modsText = '';
-    if (o.free_modifiers) {
+    const modsStr = o.modifiers || o.free_modifiers;
+    if (modsStr) {
       try {
-        const parsed = JSON.parse(o.free_modifiers);
+        const parsed = JSON.parse(modsStr);
         if (Array.isArray(parsed)) {
           modsText = parsed.map(m => m.name).join(' | ');
         }
@@ -1379,9 +1727,10 @@ const exportHistoryOrdersCSV = () => {
   const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
   const rows = historyOrders.value.map(o => {
     let modsText = '';
-    if (o.free_modifiers) {
+    const modsStr = o.modifiers || o.free_modifiers;
+    if (modsStr) {
       try {
-        const parsed = JSON.parse(o.free_modifiers);
+        const parsed = JSON.parse(modsStr);
         if (Array.isArray(parsed)) {
           modsText = parsed.map(m => m.name).join(' | ');
         }
@@ -1419,6 +1768,51 @@ const exportExpensesCSV = () => {
 </script>
 
 <style scoped>
+/* --- Reports Filter Controls --- */
+.reports-filter-control {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important; /* Premium rounded corner 12px */
+  color: var(--text-primary) !important;
+  font-family: var(--font-family) !important;
+  font-size: var(--font-sm) !important;
+  height: 38px !important;
+  line-height: 24px !important;
+  transition: all var(--transition-base) !important;
+}
+
+input.reports-filter-control {
+  padding: 6px var(--space-md) !important;
+}
+
+select.reports-filter-control,
+.custom-select-trigger.reports-filter-control {
+  padding: 6px 36px 6px var(--space-md) !important;
+  background-position: right 12px center !important;
+}
+
+.reports-filter-control:hover {
+  border-color: var(--border-color-focus) !important;
+  background-color: var(--card-bg-hover) !important;
+}
+
+.reports-filter-control:focus {
+  border-color: var(--primary) !important;
+  background-color: var(--card-bg-active) !important;
+  box-shadow: 0 0 0 3px var(--primary-glow) !important;
+  outline: none !important;
+}
+
+.reports-branch-selector {
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .reports-branch-selector {
+    margin-left: 0 !important;
+  }
+}
+
 /* --- Category Tabs --- */
 .category-tabs {
   display: flex;
@@ -1468,22 +1862,7 @@ const exportExpensesCSV = () => {
   text-align: center;
 }
 
-/* --- Responsive Utilities --- */
-.show-mobile-only {
-  display: none;
-}
-.hide-mobile {
-  display: block;
-}
 
-@media (max-width: 768px) {
-  .show-mobile-only {
-    display: block;
-  }
-  .hide-mobile {
-    display: none;
-  }
-}
 
 /* --- Expense Form Grid --- */
 .expense-form-grid {
@@ -1621,5 +2000,196 @@ const exportExpensesCSV = () => {
 
 .log-user, .log-time {
   white-space: nowrap;
+}
+
+/* --- Top Selling Menus Premium Styles --- */
+.podium-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: var(--space-md);
+  margin: var(--space-xl) 0;
+  padding-top: var(--space-xl);
+}
+
+.podium-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-spring);
+  position: relative;
+  overflow: visible;
+}
+
+/* --- Top Selling Menus Premium Styles --- */
+.top-item-card-redesign {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.45);
+  transition: all var(--transition-base);
+  margin-bottom: var(--space-xs);
+}
+
+.top-item-card-redesign:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: translateX(4px);
+}
+
+.rank-1-card {
+  border: 1px solid #ffab2b;
+  box-shadow: 0 2px 10px rgba(255, 171, 43, 0.08);
+}
+.rank-1-card:hover {
+  border-color: #ffab2b !important;
+  box-shadow: 0 4px 16px rgba(255, 171, 43, 0.15);
+}
+
+.rank-2-card {
+  border: 1px solid #bc9e88;
+  box-shadow: 0 2px 8px rgba(188, 158, 136, 0.05);
+}
+.rank-2-card:hover {
+  border-color: #bc9e88 !important;
+  box-shadow: 0 4px 12px rgba(188, 158, 136, 0.1);
+}
+
+.rank-3-card {
+  border: 1px solid #e9c46a;
+  box-shadow: 0 2px 8px rgba(233, 196, 106, 0.05);
+}
+.rank-3-card:hover {
+  border-color: #e9c46a !important;
+  box-shadow: 0 4px 12px rgba(233, 196, 106, 0.1);
+}
+
+.rank-other-card {
+  border: 1px solid var(--border-color);
+}
+.rank-other-card:hover {
+  border-color: var(--primary-light) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Badge Circle Icon */
+.rank-badge-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.rank-1-badge {
+  background: #ffe066;
+  color: #8b0313;
+}
+.rank-2-badge {
+  background: rgba(188, 158, 136, 0.2);
+  color: #6e4e37;
+}
+.rank-3-badge {
+  background: rgba(233, 196, 106, 0.2);
+  color: #6e4e37;
+}
+.rank-other-badge {
+  background: rgba(110, 78, 55, 0.08);
+  border: 1px solid rgba(110, 78, 55, 0.12);
+  color: var(--text-secondary);
+}
+
+/* Middle Layout */
+.card-info-middle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.item-name-text {
+  font-size: var(--font-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.badge-type {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: inline-block;
+}
+
+.badge-type.mixin {
+  background: rgba(42, 157, 143, 0.08);
+  color: var(--success);
+  border: 1px solid rgba(42, 157, 143, 0.15);
+}
+
+.badge-type.main {
+  background: rgba(139, 3, 19, 0.05);
+  color: var(--primary);
+  border: 1px solid rgba(139, 3, 19, 0.1);
+}
+
+/* Right Layout */
+.card-sales-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}
+
+.qty-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 50px;
+}
+
+.qty-num {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.qty-unit {
+  font-size: 9px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sales-pill {
+  background: rgba(139, 3, 19, 0.05);
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  color: var(--primary);
+  font-weight: 700;
+  min-width: 80px;
+  text-align: center;
 }
 </style>

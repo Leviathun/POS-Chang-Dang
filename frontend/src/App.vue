@@ -13,7 +13,7 @@
           <img src="@/assets/image/Logo POS.png" alt="Logo" style="height: 100%; object-fit: contain;" />
         </div>
         <h2 class="font-bold text-gradient mb-1" style="font-size: 1.8rem;">
-          {{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}
+          ร้านไก่ทอดช้างแดง
         </h2>
         <p class="text-secondary text-sm mb-lg">กรุณาเลือกสาขาและระบุรหัส PIN เพื่อเข้าใช้งาน</p>
 
@@ -77,7 +77,7 @@
             <img src="@/assets/image/Logo POS.png" alt="Logo" style="width: 28px; height: 28px; object-fit: contain;" />
           </span>
           <div class="brand-text">
-            <span class="brand-name">{{ shopSettings.shop_name || 'ร้านไก่ทอดช้างแดง' }}</span>
+            <span class="brand-name">ร้านไก่ทอดช้างแดง</span>
             <span class="brand-tagline">ระบบจัดการร้านค้า POS</span>
           </div>
         </div>
@@ -245,7 +245,7 @@ const enteredPin = ref('');
 const pinShake = ref(false);
 const hasCartBar = ref(false); // Can be toggled by child view
 const branches = ref([]);
-const selectedBranch = ref(null);
+const selectedBranch = ref(getUser() ? getUser().branch_id : (sessionStorage.getItem('selected_branch_id') ? Number(sessionStorage.getItem('selected_branch_id')) : null));
 const isLoadingBranches = ref(true);
 
 // Custom dropdown state for branch selector
@@ -257,6 +257,15 @@ const selectedBranchName = computed(() => {
 const selectBranch = (id) => {
   selectedBranch.value = id;
   isBranchDropdownOpen.value = false;
+  sessionStorage.setItem('selected_branch_id', String(id));
+  
+  // Clear cache and pre-warm/pre-fetch for the newly selected branch
+  store.clearAllCache();
+  store.fetchMenu(true).catch(() => {});
+  store.fetchStock(true).catch(() => {});
+  store.fetchModifiers(true).catch(() => {});
+  store.fetchSettingsData(id, true).catch(() => {});
+  store.fetchReports(id, true).catch(() => {});
 };
 
 const route = useRoute();
@@ -280,7 +289,7 @@ const adminUser = computed(() => {
 
 const activeTitle = computed(() => {
   const titles = {
-    '/pos': shopSettings.value.shop_name || 'ร้านไก่ทอดช้างแดง',
+    '/pos': 'ร้านไก่ทอดช้างแดง',
     '/menu': 'จัดการเมนู',
     '/stock': 'คลังสินค้า',
     '/stock/bulk': 'คลังสินค้า',
@@ -315,7 +324,6 @@ const submitPin = async () => {
     if (res.success) {
       sessionStorage.setItem('pos_user', JSON.stringify(res.data.user));
       user.value = res.data.user;
-      store.clearAllCache(); // Clear store cache on branch login
       const branchName = res.data.branch ? res.data.branch.name : '';
       ui.showToast(`ยินดีต้อนรับคุณ ${user.value.name} 🎉${branchName ? ' (สาขา: ' + branchName + ')' : ''}`, 'success');
       enteredPin.value = '';
@@ -370,6 +378,15 @@ const loadBranches = async () => {
       branches.value = res.data;
       if (res.data.length > 0 && !selectedBranch.value) {
         selectedBranch.value = res.data[0].id;
+      }
+      if (selectedBranch.value) {
+        sessionStorage.setItem('selected_branch_id', String(selectedBranch.value));
+        // Pre-warm Turso DB connection and preload cache in the background for this default branch
+        store.fetchMenu().catch(() => {});
+        store.fetchStock().catch(() => {});
+        store.fetchModifiers().catch(() => {});
+        store.fetchSettingsData(selectedBranch.value).catch(() => {});
+        store.fetchReports(selectedBranch.value).catch(() => {});
       }
     }
   } catch (e) {

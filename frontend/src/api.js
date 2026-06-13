@@ -26,6 +26,12 @@ async function request(method, path, body, options = {}) {
     } catch (e) { /* ignore */ }
   }
 
+  // Include selected branch id from session for preloading
+  const selectedBranchId = sessionStorage.getItem('selected_branch_id');
+  if (selectedBranchId) {
+    headers['x-branch-id'] = String(selectedBranchId);
+  }
+
   const config = {
     method,
     headers,
@@ -156,29 +162,43 @@ const stock = {
 };
 
 const reports = {
-  async daily(date) {
-    return request('GET', `/api/reports/daily?date=${date}`);
+  async daily(date, branchId = null) {
+    let path = `/api/reports/daily?date=${date}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async monthly(month) {
-    return request('GET', `/api/reports/monthly?month=${month}`);
+  async monthly(month, branchId = null) {
+    let path = `/api/reports/monthly?month=${month}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async yearly(year) {
-    return request('GET', `/api/reports/yearly?year=${year}`);
+  async yearly(year, branchId = null) {
+    let path = `/api/reports/yearly?year=${year}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async topItems(days = 7) {
-    return request('GET', `/api/reports/top-items?days=${days}`);
+  async topItems(days = 7, branchId = null) {
+    let path = `/api/reports/top-items?days=${days}`;
+    if (branchId) path += `&branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async summary() {
-    return request('GET', '/api/reports/summary');
+  async summary(branchId = null) {
+    let path = '/api/reports/summary';
+    if (branchId) path += `?branch_id=${branchId}`;
+    return request('GET', path);
   },
 };
 
 const settings = {
-  async getAll() {
-    return request('GET', '/api/settings');
+  async getAll(branchId = null) {
+    let path = '/api/settings';
+    if (branchId) path += `?branch_id=${branchId}`;
+    return request('GET', path);
   },
-  async update(key, value) {
-    return request('PUT', '/api/settings', { key, value });
+  async update(key, value, branchId = null) {
+    const body = { key, value };
+    if (branchId) body.branch_id = branchId;
+    return request('PUT', '/api/settings', body);
   },
   async exportBackup() {
     return request('GET', '/api/settings/backup/export');
@@ -193,31 +213,34 @@ const settings = {
 
 const freeModifiers = {
   async getAll() {
-    return request('GET', '/api/free-modifiers');
+    return request('GET', '/api/modifiers');
   },
   async restock(modifierId, bags, note) {
-    return request('POST', '/api/free-modifiers/restock', { modifier_id: modifierId, bags, note });
+    return request('POST', '/api/modifiers/restock', { modifier_id: modifierId, bags, note });
   },
   async adjust(modifierId, quantity, reason, note) {
-    return request('POST', '/api/free-modifiers/adjust', { modifier_id: modifierId, quantity, reason, note });
+    return request('POST', '/api/modifiers/adjust', { modifier_id: modifierId, quantity, reason, note });
   },
   async toggle(id) {
-    return request('POST', `/api/free-modifiers/toggle/${id}`);
+    return request('POST', `/api/modifiers/toggle/${id}`);
   },
   async getPresets() {
-    return request('GET', '/api/free-modifiers/presets');
+    return request('GET', '/api/modifiers/presets');
   },
   async createPreset(data) {
-    return request('POST', '/api/free-modifiers/presets', data);
+    return request('POST', '/api/modifiers/presets', data);
   },
   async updatePreset(id, data) {
-    return request('PUT', `/api/free-modifiers/presets/${id}`, data);
+    return request('PUT', `/api/modifiers/presets/${id}`, data);
   },
   async deletePreset(id) {
-    return request('DELETE', `/api/free-modifiers/presets/${id}`);
+    return request('DELETE', `/api/modifiers/presets/${id}`);
   },
   async getLogs(id) {
-    return request('GET', `/api/free-modifiers/${id}/logs`);
+    return request('GET', `/api/modifiers/${id}/logs`);
+  },
+  async bulkAdjust(data) {
+    return request('POST', '/api/modifiers/bulk-adjust', data);
   },
 };
 
@@ -259,4 +282,5 @@ export default {
   expenses,
   activities,
   freeModifiers,
+  modifiers: freeModifiers,
 };

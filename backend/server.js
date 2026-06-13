@@ -1,6 +1,16 @@
-require('dotenv').config();
-const express = require('express');
+// Server entry point for POS-Chang-Dang
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+// Catch uncaught exceptions and unhandled rejections to prevent server crash on connection timeouts
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Uncaught Exception thrown:', err);
+});
+
+const express = require('express');
 const cors = require('cors');
 const { initDatabase } = require('./config/database');
 
@@ -32,7 +42,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/stock', require('./routes/stock'));
-app.use('/api/free-modifiers', require('./routes/free_modifiers'));
+app.use('/api/modifiers', require('./routes/modifiers'));
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/activities', require('./routes/activities'));
 
@@ -51,7 +61,9 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Initialize ───────────────────────────────────────────
-initDatabase();
+initDatabase().catch(err => {
+  console.error('❌ Failed to initialize database:', err.message);
+});
 
 // Start cron jobs (daily LINE report)
 try {

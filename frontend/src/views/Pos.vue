@@ -72,11 +72,13 @@
 
             <!-- Product Price & Stock in stable container -->
             <div class="pos-item-details">
-              <div class="pos-item-price">{{ formatCurrency(item.price) }}</div>
+              <div class="pos-item-price">
+                {{ formatItemPrice(item) }}<span v-if="item.uom && item.uom !== 'ชิ้น'" style="font-size: 10px; color: var(--text-secondary); font-weight: normal; margin-left: 2px;">/{{ item.uom }}</span>
+              </div>
               <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock" :class="{ 'low-stock': isLowStock(item) }">
                 <span v-if="item.stock <= 0"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
-                <span v-else-if="isLowStock(item)"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด (เหลือ {{ item.stock }})</span>
-                <span v-else>เหลือ {{ item.stock }}</span>
+                <span v-else-if="isLowStock(item)"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด (เหลือ {{ formatStockQty(item.stock, item.uom) }})</span>
+                <span v-else>เหลือ {{ formatStockQty(item.stock, item.uom) }}</span>
               </div>
             </div>
           </div>
@@ -116,7 +118,7 @@
             <div class="cart-item-qty">
               <button class="qty-btn minus" @click="removeFromCart(itemId)">−</button>
               <span class="qty-value text-center">{{ cartItem.quantity }}</span>
-              <button class="qty-btn" @click="addToCart(cartItem.item)">+</button>
+              <button class="qty-btn" @click="incrementCartItem(itemId)">+</button>
             </div>
             <div class="cart-item-subtotal">
               {{ formatCurrency(cartItem.item.price * cartItem.quantity) }}
@@ -239,7 +241,7 @@
           <div class="cart-item-qty">
             <button class="qty-btn minus" @click="removeFromCart(itemId)">−</button>
             <span class="qty-value">{{ cartItem.quantity }}</span>
-            <button class="qty-btn" @click="addToCart(cartItem.item)">+</button>
+            <button class="qty-btn" @click="incrementCartItem(itemId)">+</button>
           </div>
           <div class="cart-item-subtotal">
             {{ formatCurrency(cartItem.item.price * cartItem.quantity) }}
@@ -313,6 +315,125 @@
       </div>
     </div>
 
+    <!-- Sam Krob Options Modal -->
+    <div v-if="showSamKrobModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+      <div class="modal-overlay" @click="showSamKrobModal = false"></div>
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
+        <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
+          <h3 style="font-size: var(--font-lg); font-weight: 800;"><i class="fa-solid fa-gears" style="margin-right: 6px; color: var(--primary);"></i> เลือกผสมสามกรอบ</h3>
+          <button class="modal-close" @click="showSamKrobModal = false" style="font-size: var(--font-md);">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: left; padding: var(--space-lg);">
+          <div class="mb-lg font-extrabold text-center text-primary" style="font-size: var(--font-lg); margin-bottom: 20px;">
+            {{ activeSamKrobBaseItem?.name }}
+          </div>
+
+          <!-- Size Selector -->
+          <div class="form-group mb-lg" style="margin-bottom: 24px;">
+            <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 8px; display: block;">
+              <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i> เลือกขนาด (Size) *
+            </label>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div 
+                v-for="(config, size) in getSamKrobSizes()" 
+                :key="size"
+                class="card text-center p-sm cursor-pointer"
+                :style="{
+                  border: selectedSamKrobSize === size ? '2.5px solid var(--primary)' : '1px solid var(--border-color)',
+                  background: selectedSamKrobSize === size ? 'rgba(139, 3, 19, 0.05)' : 'var(--bg-secondary)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px 8px',
+                  transition: 'all 0.2s',
+                  boxShadow: selectedSamKrobSize === size ? '0 4px 12px rgba(139, 3, 19, 0.15)' : 'none'
+                }"
+                @click="selectedSamKrobSize = size"
+              >
+                <div class="font-bold" style="font-size: var(--font-sm);">{{ config.name }}</div>
+                <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">{{ config.weight }} ก.</div>
+                <div class="font-extrabold text-accent" style="font-size: var(--font-md); margin-top: 6px;">฿{{ config.price }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mix Toggle Switch -->
+          <div class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: var(--bg-secondary); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <label class="toggle-switch" style="margin: 0; flex-shrink: 0;">
+              <input type="checkbox" v-model="mixSamKrob" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="font-bold text-primary" style="font-size: var(--font-base); cursor: pointer;" @click="mixSamKrob = !mixSamKrob">ผสมวัตถุดิบอื่นเพิ่มเติม (Mix)</span>
+          </div>
+
+          <!-- Ingredients Selector (Conditional on mixSamKrob) -->
+          <div v-if="mixSamKrob" class="form-group mb-lg" style="margin-bottom: 24px;">
+            <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 10px; display: block;">
+              <i class="fa-solid fa-list-check" style="margin-right: 4px; color: var(--primary);"></i> เลือกวัตถุดิบผสม (เลือกได้ 1-3 ชนิด) *
+            </label>
+            <div class="flex flex-column gap-sm" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+              <div 
+                v-for="ing in samKrobIngredients" 
+                :key="ing.id"
+                class="cursor-pointer"
+                :style="{
+                  border: selectedSamKrobIds.includes(ing.id) ? '1.5px solid var(--accent)' : '1px solid var(--border-color)',
+                  background: selectedSamKrobIds.includes(ing.id) ? 'rgba(255, 149, 0, 0.05)' : 'var(--bg-primary)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'all 0.2s',
+                  boxShadow: selectedSamKrobIds.includes(ing.id) ? '0 3px 8px rgba(255, 149, 0, 0.1)' : 'none'
+                }"
+                @click="toggleSamKrobIngredient(ing.id)"
+              >
+                <!-- Left: Checkbox + Name and Stock stacked vertically -->
+                <div style="display: flex; align-items: center; gap: 14px; flex: 1; text-align: left;">
+                  <input 
+                    type="checkbox" 
+                    :checked="selectedSamKrobIds.includes(ing.id)"
+                    @click.stop="toggleSamKrobIngredient(ing.id)"
+                    style="width: 22px; height: 22px; cursor: pointer; flex-shrink: 0;"
+                  />
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <span class="font-bold" style="font-size: var(--font-base); color: var(--text-primary);">{{ ing.name }}</span>
+                    <span style="font-size: var(--font-sm); color: var(--text-secondary); font-weight: 500;">
+                      สต็อก: {{ formatStockQty(ing.stock, ing.uom) || '0 ก.' }}
+                    </span>
+                  </div>
+                </div>
+                <!-- Right: Added Weight Portion -->
+                <div class="text-right" style="min-width: 80px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end;">
+                  <div v-if="selectedSamKrobIds.includes(ing.id)" class="text-accent font-extrabold animate-fade-in" style="font-size: var(--font-base);">
+                    +{{ getPortionWeightPreview(ing.id) }} ก.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Preview -->
+          <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
+            <div class="font-bold mb-xs" style="font-size: var(--font-xs); color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
+            <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center;">
+              <span>น้ำหนักรวม:</span>
+              <span class="font-extrabold text-primary" style="font-size: var(--font-md);">{{ getSelectedSizeWeight() }} กรัม</span>
+            </div>
+            <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+              <span>ราคา:</span>
+              <span class="font-extrabold text-accent" style="font-size: var(--font-lg);">฿{{ getSelectedSizePrice() }}</span>
+            </div>
+          </div>
+
+          <!-- Confirmation Buttons -->
+          <div class="flex gap-md" style="display: flex; gap: 14px;">
+            <button class="btn btn-secondary flex-1" @click="showSamKrobModal = false" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" @click="confirmSamKrobSelection" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ใส่ตะกร้า</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Payment Component Modal Overlay -->
     <PaymentModal 
       v-if="showPaymentModal"
@@ -344,6 +465,78 @@ const cartExpanded = ref(false);
 const showPaymentModal = ref(false);
 const loading = ref(true);
 const isVisualStaggerActive = ref(true);
+
+// Sam Krob Options Modal State
+const showSamKrobModal = ref(false);
+const activeSamKrobBaseItem = ref(null);
+const selectedSamKrobSize = ref('S');
+const selectedSamKrobIds = ref([]);
+const mixSamKrob = ref(false);
+
+const samKrobIngredients = computed(() => {
+  return store.menuItems.filter(item => {
+    const cat = store.categories.find(c => String(c.id) === String(item.category_id));
+    return cat && cat.name.includes('สามกรอบ') && item.active !== 0 && item.active !== false;
+  });
+});
+
+const toggleSamKrobIngredient = (id) => {
+  const idx = selectedSamKrobIds.value.indexOf(id);
+  if (idx > -1) {
+    if (selectedSamKrobIds.value.length > 1) {
+      selectedSamKrobIds.value.splice(idx, 1);
+    } else {
+      ui.showToast('กรุณาเลือกอย่างน้อย 1 รายการวัตถุดิบ', 'warning');
+    }
+  } else {
+    if (selectedSamKrobIds.value.length < 3) {
+      selectedSamKrobIds.value.push(id);
+    }
+  }
+};
+
+const getSamKrobSizes = () => {
+  const baseItem = activeSamKrobBaseItem.value;
+  let itemPrices = { S: 40, M: 50, L: 60 };
+  if (baseItem?.multiple_prices) {
+    try {
+      const parsed = typeof baseItem.multiple_prices === 'string'
+        ? JSON.parse(baseItem.multiple_prices)
+        : baseItem.multiple_prices;
+      if (parsed && typeof parsed === 'object') {
+        itemPrices = {
+          S: parsed.S !== undefined && parsed.S !== null && parsed.S !== '' ? Number(parsed.S) : 40,
+          M: parsed.M !== undefined && parsed.M !== null && parsed.M !== '' ? Number(parsed.M) : 50,
+          L: parsed.L !== undefined && parsed.L !== null && parsed.L !== '' ? Number(parsed.L) : 60
+        };
+      }
+    } catch (e) {
+      console.warn('Error parsing multiple prices in POS:', e);
+    }
+  }
+  return {
+    'S': { name: 'เล็ก (S)', weight: 100, price: itemPrices.S },
+    'M': { name: 'กลาง (M)', weight: 120, price: itemPrices.M },
+    'L': { name: 'ใหญ่ (L)', weight: 150, price: itemPrices.L }
+  };
+};
+
+const getPortionWeightPreview = (id) => {
+  if (!selectedSamKrobIds.value.includes(id)) return 0;
+  const sizes = getSamKrobSizes();
+  const totalWeight = sizes[selectedSamKrobSize.value]?.weight || 100;
+  return Number((totalWeight / selectedSamKrobIds.value.length).toFixed(2));
+};
+
+const getSelectedSizeWeight = () => {
+  const sizes = getSamKrobSizes();
+  return sizes[selectedSamKrobSize.value]?.weight || 100;
+};
+
+const getSelectedSizePrice = () => {
+  const sizes = getSamKrobSizes();
+  return sizes[selectedSamKrobSize.value]?.price || 40;
+};
 
 // Computed variables
 const filteredMenuItems = computed(() => {
@@ -379,8 +572,51 @@ watch(cartCount, (newVal) => {
 
 // Cart Logic
 const getCartQty = (itemId) => {
-  const cartItem = cart.value.get(itemId);
-  return cartItem ? cartItem.quantity : 0;
+  let count = 0;
+  cart.value.forEach(cartItem => {
+    if (Number(cartItem.item.id) === Number(itemId)) {
+      count += cartItem.quantity;
+    }
+  });
+  return count;
+};
+
+const getCartIngredientWeight = (ingredientId) => {
+  let totalWeight = 0;
+  cart.value.forEach(cartItem => {
+    if (cartItem.item.options && Array.isArray(cartItem.item.options.selected_items)) {
+      const ing = cartItem.item.options.selected_items.find(i => i.id === ingredientId);
+      if (ing) {
+        totalWeight += Number(ing.weight) * cartItem.quantity;
+      }
+    }
+  });
+  return totalWeight;
+};
+
+const formatStockQty = (qty, uom) => {
+  if (qty === null || qty === undefined) return '';
+  if (uom === 'กรัม') {
+    return `${qty} ก.`;
+  }
+  return `${qty} ${uom || 'ชิ้น'}`;
+};
+
+const formatItemPrice = (item) => {
+  if (item.multiple_prices) {
+    try {
+      const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
+      if (parsed && typeof parsed === 'object') {
+        const prices = Object.values(parsed).filter(v => v !== null && v !== '');
+        if (prices.length > 0) {
+          return '฿' + prices.join('/');
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+  return formatCurrency(item.price);
 };
 
 const isOutOfStock = (item) => {
@@ -388,15 +624,31 @@ const isOutOfStock = (item) => {
 };
 
 const isLowStock = (item) => {
-  return item.stock !== null && item.stock !== undefined && item.stock > 0 && item.stock <= store.lowStockThreshold;
+  if (item.stock === null || item.stock === undefined) return false;
+  if (item.stock <= 0) return false;
+  if (item.uom === 'กรัม') {
+    return item.stock <= 500;
+  }
+  return item.stock <= store.lowStockThreshold;
 };
 
 const addToCart = (item) => {
-  const itemId = item.id;
+  // Check if item belongs to the "สามกรอบ" category
+  const cat = store.categories.find(c => String(c.id) === String(item.category_id));
+  if (cat && cat.name.includes('สามกรอบ')) {
+    activeSamKrobBaseItem.value = item;
+    selectedSamKrobSize.value = 'S';
+    selectedSamKrobIds.value = [item.id];
+    mixSamKrob.value = false;
+    showSamKrobModal.value = true;
+    return;
+  }
+
+  const itemId = String(item.id);
   
   // Check stock limit
   if (item.stock !== null && item.stock !== undefined) {
-    const currentQty = getCartQty(itemId);
+    const currentQty = getCartQty(item.id);
     if (currentQty >= item.stock) {
       ui.showToast('สต็อกสินค้านี้ไม่เพียงพอ', 'warning');
       return;
@@ -412,7 +664,119 @@ const addToCart = (item) => {
   cart.value = currentCart;
 
   // Visual feedback animation (flash)
-  const el = document.getElementById(`pos-item-${itemId}`);
+  const el = document.getElementById(`pos-item-${item.id}`);
+  if (el) {
+    el.classList.add('added-flash');
+    setTimeout(() => el.classList.remove('added-flash'), 400);
+  }
+};
+
+const incrementCartItem = (cartKey) => {
+  const currentCart = new Map(cart.value);
+  if (!currentCart.has(cartKey)) return;
+  const cartItem = currentCart.get(cartKey);
+  
+  // Check stock limit
+  if (cartItem.item.options && Array.isArray(cartItem.item.options.selected_items)) {
+    for (const ingredient of cartItem.item.options.selected_items) {
+      const menuIngredient = store.menuItems.find(m => m.id === ingredient.id);
+      if (menuIngredient && menuIngredient.stock !== null && menuIngredient.stock !== undefined) {
+        const totalUsedWeight = getCartIngredientWeight(ingredient.id);
+        const requiredAdditionalWeight = Number(ingredient.weight);
+        if (totalUsedWeight + requiredAdditionalWeight > menuIngredient.stock) {
+          ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ`, 'warning');
+          return;
+        }
+      }
+    }
+  } else {
+    if (cartItem.item.stock !== null && cartItem.item.stock !== undefined) {
+      const currentQty = getCartQty(cartItem.item.id);
+      if (currentQty >= cartItem.item.stock) {
+        ui.showToast('สต็อกสินค้านี้ไม่เพียงพอ', 'warning');
+        return;
+      }
+    }
+  }
+  
+  cartItem.quantity += 1;
+  cart.value = currentCart;
+};
+
+const confirmSamKrobSelection = () => {
+  const sizes = getSamKrobSizes();
+  const sizeConfig = sizes[selectedSamKrobSize.value];
+  
+  let selectedItems = [];
+  let customName = '';
+  const baseItem = activeSamKrobBaseItem.value;
+
+  if (mixSamKrob.value) {
+    if (selectedSamKrobIds.value.length === 0) {
+      ui.showToast('กรุณาเลือกอย่างน้อย 1 วัตถุดิบ', 'warning');
+      return;
+    }
+    const ingredientWeight = Number((sizeConfig.weight / selectedSamKrobIds.value.length).toFixed(2));
+    selectedItems = selectedSamKrobIds.value.map(id => {
+      const item = store.menuItems.find(m => m.id === id);
+      return {
+        id: item.id,
+        name: item.name,
+        weight: ingredientWeight
+      };
+    });
+    const ingredientNames = selectedItems.map(i => i.name).join(', ');
+    customName = `${baseItem.name} (ผสม: ${ingredientNames}, ขนาด ${selectedSamKrobSize.value})`;
+  } else {
+    selectedItems = [{
+      id: baseItem.id,
+      name: baseItem.name,
+      weight: sizeConfig.weight
+    }];
+    customName = `${baseItem.name} (ขนาด ${selectedSamKrobSize.value})`;
+  }
+  
+  // Stock Check
+  for (const ingredient of selectedItems) {
+    const menuIngredient = store.menuItems.find(m => m.id === ingredient.id);
+    if (menuIngredient && menuIngredient.stock !== null && menuIngredient.stock !== undefined) {
+      const totalUsedWeight = getCartIngredientWeight(ingredient.id);
+      const requiredAdditionalWeight = ingredient.weight;
+      if (totalUsedWeight + requiredAdditionalWeight > menuIngredient.stock) {
+        ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${menuIngredient.stock - totalUsedWeight}ก.)`, 'warning');
+        return;
+      }
+    }
+  }
+  
+  const customPrice = sizeConfig.price;
+  const customItem = {
+    ...baseItem,
+    name: customName,
+    price: customPrice,
+    options: {
+      selected_items: selectedItems,
+      size: selectedSamKrobSize.value,
+      total_weight: sizeConfig.weight
+    }
+  };
+  
+  const sortedIds = mixSamKrob.value 
+    ? [...selectedSamKrobIds.value].sort((a, b) => a - b).join('_')
+    : baseItem.id;
+  const cartKey = `${baseItem.id}-${selectedSamKrobSize.value}-${sortedIds}`;
+  
+  const currentCart = new Map(cart.value);
+  if (currentCart.has(cartKey)) {
+    currentCart.get(cartKey).quantity += 1;
+  } else {
+    currentCart.set(cartKey, { item: customItem, quantity: 1 });
+  }
+  cart.value = currentCart;
+  
+  showSamKrobModal.value = false;
+  
+  const el = document.getElementById(`pos-item-${baseItem.id}`);
   if (el) {
     el.classList.add('added-flash');
     setTimeout(() => el.classList.remove('added-flash'), 400);
@@ -459,36 +823,63 @@ const handleCheckout = () => {
 
 // Callback when payment completes successfully
 const onPaymentSuccess = async () => {
+  // Deduct stock locally in the store to keep POS stock counts updated instantly
+  cart.value.forEach((cartItem, itemId) => {
+    // Deduct stock for the menu item
+    const mItem = store.menuItems.find(m => m.id === cartItem.item.id);
+    if (mItem && mItem.stock !== null) {
+      store.updateStock(cartItem.item.id, Math.max(0, mItem.stock - cartItem.quantity));
+    }
+    
+    // Deduct ingredients if custom options exist
+    if (cartItem.item.options && Array.isArray(cartItem.item.options.selected_items)) {
+      cartItem.item.options.selected_items.forEach(ing => {
+        const ingItem = store.menuItems.find(m => m.id === Number(ing.id));
+        if (ingItem && ingItem.stock !== null) {
+          const deductAmount = Number(ing.weight) * cartItem.quantity;
+          store.updateStock(ing.id, Math.max(0, ingItem.stock - deductAmount));
+        }
+      });
+    }
+  });
+
+  // Deduct stock for modifiers locally
+  if (selectedModifiers.value && selectedModifiers.value.length > 0) {
+    selectedModifiers.value.forEach(mod => {
+      const currentMod = store.modifiers.find(m => m.id === mod.id);
+      if (currentMod && currentMod.total_servings !== null) {
+        currentMod.total_servings = Math.max(0, currentMod.total_servings - 1);
+      }
+    });
+  }
+
   cart.value = new Map();
   cartExpanded.value = false;
   showPaymentModal.value = false;
   useModifiers.value = false;
   selectedModifiers.value = [];
-  try {
-    ui.showLoading();
-    await store.fetchMenu(true); // Force reload menu to update stock counts!
-    await loadModifiersAndPresets(); // Reload modifier stocks!
-  } catch (e) {
-    console.error(e);
-  } finally {
-    ui.hideLoading();
-  }
+
+  // Revalidate store data in background silently
+  store.fetchMenu(true).catch(() => {});
+  store.fetchStock(true).catch(() => {});
+  store.fetchModifiers(true).catch(() => {});
 };
 
 // Load Menu & Categories from API
 const loadMenuData = async () => {
   try {
-    await store.fetchMenu();
+    // Load menu and stock in parallel to maximize speed
+    await Promise.all([
+      store.fetchMenu().catch(err => {
+        console.error('Failed to load menu:', err);
+        ui.showToast('ไม่สามารถดึงข้อมูลเมนูร้านค้าได้', 'error');
+      }),
+      store.fetchStock().catch(err => {
+        console.warn('Failed to load stock threshold:', err);
+      })
+    ]);
   } catch (error) {
-    console.error('Failed to load menu:', error);
-    ui.showToast('ไม่สามารถดึงข้อมูลเมนูร้านค้าได้', 'error');
-  }
-  
-  try {
-    // Load stock to fetch the low stock threshold from DB/settings
-    await store.fetchStock();
-  } catch (error) {
-    console.warn('Failed to load stock threshold:', error);
+    console.error('Failed to load initial POS data:', error);
   }
 
   loading.value = false;
@@ -525,8 +916,8 @@ const getIconClass = (categoryId) => {
 // Free Modifiers Logic & State
 const useModifiers = ref(false);
 const selectedModifiers = ref([]);
-const activePresets = ref([]);
-const allModifiers = ref([]);
+const activePresets = computed(() => (store.modifierPresets || []).filter(p => p.active));
+const allModifiers = computed(() => (store.modifiers || []).filter(m => m.active));
 
 const modifierCategories = [
   { key: 'sauce_small', label: 'ซอส (ซองเล็ก)' },
@@ -588,16 +979,7 @@ const onModifiersToggleChange = () => {
 
 const loadModifiersAndPresets = async () => {
   try {
-    const [modRes, presetRes] = await Promise.all([
-      api.freeModifiers.getAll(),
-      api.freeModifiers.getPresets()
-    ]);
-    if (modRes.success) {
-      allModifiers.value = (modRes.data || []).filter(m => m.active);
-    }
-    if (presetRes.success) {
-      activePresets.value = (presetRes.data || []).filter(p => p.active);
-    }
+    await store.fetchModifiers();
   } catch (e) {
     console.error('Failed to load modifiers/presets:', e);
   }

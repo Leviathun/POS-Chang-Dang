@@ -564,8 +564,27 @@ ul, ol { list-style: none; }
 }
 
 .badge-neutral {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(110, 78, 55, 0.08);
   color: var(--text-secondary);
+  border: 1px solid rgba(110, 78, 55, 0.15);
+}
+
+/* Modifier Specific Badges (High Contrast, Distinct Colors) */
+.badge-mod-sauce-small {
+  background: rgba(42, 157, 143, 0.12) !important;
+  color: #1a7167 !important;
+}
+.badge-mod-sauce-large {
+  background: rgba(139, 3, 19, 0.12) !important;
+  color: #8b0313 !important;
+}
+.badge-mod-dipping {
+  background: rgba(214, 90, 49, 0.12) !important;
+  color: #a23e1e !important;
+}
+.badge-mod-powder {
+  background: rgba(138, 43, 226, 0.12) !important;
+  color: #6f2dbd !important;
 }
 
 .badge-sm {
@@ -1102,5 +1121,26 @@ input[type="date"] {
 .custom-select-option.selected {
   background-color: var(--primary);
   color: white;
+}
+
+/* --- Responsive Utilities --- */
+.show-mobile-only,
+.show-mobile-inline {
+  display: none !important;
+}
+.hide-mobile {
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .show-mobile-only {
+    display: block !important;
+  }
+  .show-mobile-inline {
+    display: inline !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
 }
 

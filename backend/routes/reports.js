@@ -10,6 +10,17 @@ function getThailandDate() {
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
+// Helper to get branch filter (isolating by user branch by default)
+function getBranchFilter(req) {
+  let branchId = req.user ? req.user.branch_id : null;
+  if (req.query.branch_id) {
+    if (req.user && req.user.role === 'admin') {
+      branchId = Number(req.query.branch_id);
+    }
+  }
+  return branchId;
+}
+
 // ─── GET /daily — รายงานยอดขายรายวัน ────────────────────
 router.get('/daily', async (req, res) => {
   try {
@@ -22,12 +33,7 @@ router.get('/daily', async (req, res) => {
         String(today.getUTCDate()).padStart(2, '0');
     }
 
-    // กรองตามสาขา (พนักงานเห็นเฉพาะสาขาตนเอง, แอดมินฟิลเตอร์ได้อิสระ)
-    let branchId = req.query.branch_id ? Number(req.query.branch_id) : null;
-    if (req.user && req.user.role !== 'admin') {
-      branchId = req.user.branch_id;
-    }
-
+    const branchId = getBranchFilter(req);
     const report = await reportsService.getDailyReport(date, branchId);
 
     res.json({
@@ -54,12 +60,7 @@ router.get('/monthly', async (req, res) => {
         String(today.getUTCMonth() + 1).padStart(2, '0');
     }
 
-    // กรองตามสาขา
-    let branchId = req.query.branch_id ? Number(req.query.branch_id) : null;
-    if (req.user && req.user.role !== 'admin') {
-      branchId = req.user.branch_id;
-    }
-
+    const branchId = getBranchFilter(req);
     const report = await reportsService.getMonthlyReport(month, branchId);
 
     res.json({
@@ -84,12 +85,7 @@ router.get('/yearly', async (req, res) => {
       year = String(today.getUTCFullYear());
     }
 
-    // กรองตามสาขา
-    let branchId = req.query.branch_id ? Number(req.query.branch_id) : null;
-    if (req.user && req.user.role !== 'admin') {
-      branchId = req.user.branch_id;
-    }
-
+    const branchId = getBranchFilter(req);
     const report = await reportsService.getYearlyReport(year, branchId);
 
     res.json({
@@ -109,13 +105,7 @@ router.get('/yearly', async (req, res) => {
 router.get('/top-items', async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
-
-    // กรองตามสาขา
-    let branchId = req.query.branch_id ? Number(req.query.branch_id) : null;
-    if (req.user && req.user.role !== 'admin') {
-      branchId = req.user.branch_id;
-    }
-
+    const branchId = getBranchFilter(req);
     const items = await reportsService.getTopItems(days, branchId);
 
     res.json({
@@ -134,12 +124,7 @@ router.get('/top-items', async (req, res) => {
 // ─── GET /summary — ภาพรวม (วันนี้ + สัปดาห์ + เดือน) ──
 router.get('/summary', async (req, res) => {
   try {
-    // กรองตามสาขา
-    let branchId = req.query.branch_id ? Number(req.query.branch_id) : null;
-    if (req.user && req.user.role !== 'admin') {
-      branchId = req.user.branch_id;
-    }
-
+    const branchId = getBranchFilter(req);
     const summary = await reportsService.getSummary(branchId);
 
     res.json({
