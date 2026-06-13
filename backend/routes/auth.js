@@ -510,7 +510,7 @@ router.delete('/branches/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    // ลบสาขาและข้อมูล stocks (เนื่องจากมี CASCADE ใน branch_stocks และตารางอื่นที่เกี่ยวข้อง)
+    // ลบสาขาและข้อมูลเมนู/สต็อก (เนื่องจากมี CASCADE ใน menu_items และตารางอื่นที่เกี่ยวข้อง)
     await db.prepare('DELETE FROM branches WHERE id = ?').run(Number(id));
 
     // บันทึก Log กิจกรรมในส่วนกลาง (ไม่มีสาขาให้ระบุให้ระบุ NULL หรือสาขาแรกที่ยังเหลืออยู่)

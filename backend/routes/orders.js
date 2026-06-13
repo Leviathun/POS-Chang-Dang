@@ -9,7 +9,7 @@ router.use(attachUser);
 // ─── POST / — สร้างออเดอร์และชำระเงินสำเร็จทันที (Single-step Checkout) ──────
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { items, note, discount, modifiers, free_modifiers, payment_method, cash_received } = req.body;
+    const { items, note, discount, modifiers, payment_method, cash_received } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -115,7 +115,7 @@ router.post('/', requireAuth, async (req, res) => {
       const orderNumber = await generateOrderNumber();
 
       // บันทึกออเดอร์ (สถานะ completed ทันที)
-      const targetModifiers = modifiers || free_modifiers;
+      const targetModifiers = modifiers;
       const orderResult = await db.prepare(`
         INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, datetime('now', '+7 hours'))
@@ -282,7 +282,6 @@ router.post('/', requireAuth, async (req, res) => {
 
       return {
         ...order,
-        free_modifiers: order.modifiers, // compatibility
         items: parsedItems
       };
     });
@@ -361,10 +360,7 @@ router.get('/', async (req, res) => {
     }
 
     const orders = await db.prepare(sql).all(params);
-    const formattedOrders = orders.map(o => ({
-      ...o,
-      free_modifiers: o.modifiers // Map for compatibility
-    }));
+    const formattedOrders = orders;
 
     res.json({
       success: true,
@@ -413,7 +409,6 @@ router.get('/:id', async (req, res) => {
       success: true,
       data: {
         ...order,
-        free_modifiers: order.modifiers, // Map for compatibility
         items: parsedItems
       }
     });
@@ -607,7 +602,6 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
 
       return {
         ...updatedOrder,
-        free_modifiers: updatedOrder.modifiers, // Map for compatibility
         items
       };
     });

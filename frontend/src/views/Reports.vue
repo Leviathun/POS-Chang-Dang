@@ -1456,9 +1456,10 @@ const exportSalesCSV = () => {
   const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
   const rows = dailyReport.value.orders.map(o => {
     let modsText = '';
-    if (o.free_modifiers) {
+    const modsStr = o.modifiers || o.free_modifiers;
+    if (modsStr) {
       try {
-        const parsed = JSON.parse(o.free_modifiers);
+        const parsed = JSON.parse(modsStr);
         if (Array.isArray(parsed)) {
           modsText = parsed.map(m => m.name).join(' | ');
         }
@@ -1485,9 +1486,10 @@ const exportHistoryOrdersCSV = () => {
   const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
   const rows = historyOrders.value.map(o => {
     let modsText = '';
-    if (o.free_modifiers) {
+    const modsStr = o.modifiers || o.free_modifiers;
+    if (modsStr) {
       try {
-        const parsed = JSON.parse(o.free_modifiers);
+        const parsed = JSON.parse(modsStr);
         if (Array.isArray(parsed)) {
           modsText = parsed.map(m => m.name).join(' | ');
         }
