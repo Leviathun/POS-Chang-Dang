@@ -660,12 +660,27 @@
         <div class="form-group">
           <label class="form-label">ย้ายออเดอร์ที่เก่ากว่า: *</label>
           <div class="flex gap-sm archive-inputs-container">
-            <select class="form-input flex-1" v-model.number="archiveMonths" style="min-height:44px; padding: 0 var(--space-sm);">
-              <option :value="1">1 เดือนที่ผ่านมา</option>
-              <option :value="3">3 เดือนที่ผ่านมา</option>
-              <option :value="6">6 เดือนที่ผ่านมา</option>
-              <option :value="12">1 ปีที่ผ่านมา</option>
-            </select>
+            <div class="custom-select-wrapper flex-1" @click.stop style="position: relative; z-index: 5;">
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isArchiveDropdownOpen }" 
+                @click="isArchiveDropdownOpen = !isArchiveDropdownOpen"
+                style="padding: 10px 36px 10px var(--space-md); border-radius: var(--radius-md); width: 100%; min-height: 44px; display: flex; align-items: center;"
+              >
+                <span class="custom-select-text">{{ selectedArchiveMonthsName }}</span>
+              </div>
+              <div v-if="isArchiveDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  v-for="opt in archiveMonthsOptions" 
+                  :key="opt.value" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': archiveMonths === opt.value }" 
+                  @click="selectArchiveMonths(opt.value)"
+                >
+                  {{ opt.label }}
+                </div>
+              </div>
+            </div>
             <button class="btn btn-primary" style="font-weight:bold; min-height:44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" @click="handleArchiveOrders">
               <i class="fa-solid fa-box-archive"></i> เริ่มจัดเก็บออเดอร์เก่า
             </button>
@@ -752,6 +767,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
 import { ui, formatDate, getUser } from '../helpers';
+import { store } from '../store';
 
 // Custom Dropdown logic for Settings.vue
 const isRoleDropdownOpen = ref(false);
@@ -794,18 +810,19 @@ const closeSettingsDropdowns = () => {
   isRoleDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
   isSettingsBranchDropdownOpen.value = false;
+  isArchiveDropdownOpen.value = false;
 };
 
 // States
 const activeTab = ref('shop');
 const currentUser = ref(null);
 const selectedSettingsBranchId = ref(null);
-const users = ref([]);
+const users = computed(() => store.users || []);
 const usersLoading = ref(false);
 const showUserModal = ref(false);
 const isEditUserMode = ref(false);
 const editUserId = ref(null);
-const branches = ref([]);
+const branches = computed(() => store.branches || []);
 
 // Branch CRUD States
 const showBranchModal = ref(false);
@@ -947,7 +964,6 @@ const loadUsersData = async (force = false) => {
   usersLoading.value = !store.settingsLoaded || force;
   try {
     await store.fetchSettingsData(selectedSettingsBranchId.value, force);
-    users.value = store.users || [];
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลพนักงานได้', 'error');
@@ -1033,7 +1049,6 @@ const handleDeleteUser = async (id) => {
 const loadBranches = async () => {
   try {
     await store.fetchSettingsData(selectedSettingsBranchId.value);
-    branches.value = store.branches || [];
   } catch (e) {
     console.warn('⚠️ Could not load branches:', e.message);
   }
@@ -1059,7 +1074,22 @@ const presetForm = ref({
 const availableModifiers = ref([]);
 
 // Backup & Archive States
+const isArchiveDropdownOpen = ref(false);
 const archiveMonths = ref(3);
+const archiveMonthsOptions = [
+  { value: 1, label: '1 เดือนที่ผ่านมา' },
+  { value: 3, label: '3 เดือนที่ผ่านมา' },
+  { value: 6, label: '6 เดือนที่ผ่านมา' },
+  { value: 12, label: '1 ปีที่ผ่านมา' }
+];
+const selectedArchiveMonthsName = computed(() => {
+  const opt = archiveMonthsOptions.find(o => o.value === archiveMonths.value);
+  return opt ? opt.label : 'เลือกช่วงเวลา...';
+});
+const selectArchiveMonths = (val) => {
+  archiveMonths.value = val;
+  isArchiveDropdownOpen.value = false;
+};
 const fileInput = ref(null);
 
 const loadPresetsData = async () => {
@@ -1415,24 +1445,11 @@ onUnmounted(() => {
 }
 
 /* --- Responsive Visibility Utilities --- */
-.show-mobile-only {
-  display: none !important;
-}
-.hide-mobile {
-  display: block;
-}
-
 @media (max-width: 768px) {
-  .show-mobile-only {
-    display: block !important;
-  }
   .show-mobile-only.mobile-users-list {
     display: flex !important;
     flex-direction: column;
     gap: var(--space-sm);
-  }
-  .hide-mobile {
-    display: none !important;
   }
   .staff-header-card {
     flex-direction: column !important;

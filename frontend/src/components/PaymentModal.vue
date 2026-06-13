@@ -115,7 +115,10 @@
                     </button>
                     <button class="payment-method-btn" @click="selectPaymentMethod('gov')">
                       <div class="method-icon"><i class="fa-solid fa-landmark" style="color: var(--accent); font-size: 2.2rem;"></i></div>
-                      <div class="method-label">โครงการรัฐ</div>
+                      <div class="method-label">
+                        <span class="hide-mobile">โครงการรัฐ</span>
+                        <span class="show-mobile-inline">รัฐ</span>
+                      </div>
                     </button>
                   </div>
                 </div>

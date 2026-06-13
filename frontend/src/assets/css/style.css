@@ -1122,3 +1122,24 @@ input[type="date"] {
   color: white;
 }
 
+/* --- Responsive Utilities --- */
+.show-mobile-only,
+.show-mobile-inline {
+  display: none !important;
+}
+.hide-mobile {
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .show-mobile-only {
+    display: block !important;
+  }
+  .show-mobile-inline {
+    display: inline !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+}
+

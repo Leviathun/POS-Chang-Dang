@@ -221,7 +221,11 @@
               <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
             </div>
             <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-landmark" style="color: var(--accent);"></i> โครงการรัฐ</div>
+              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-landmark" style="color: var(--accent);"></i>
+                <span class="hide-mobile">โครงการรัฐ</span>
+                <span class="show-mobile-inline">รัฐ</span>
+              </div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
                 {{ formatCurrency(dailyReport.gov_sales) }}
               </div>
@@ -328,7 +332,6 @@
                 <div v-if="isHistoryStatusDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
                   <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'all' }" @click="selectHistoryStatus('all')" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
                   <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'completed' }" @click="selectHistoryStatus('completed')" style="padding: 6px 12px; font-size: 12px;">ชำระเงินแล้ว</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'pending' }" @click="selectHistoryStatus('pending')" style="padding: 6px 12px; font-size: 12px;">รอชำระ</div>
                   <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'cancelled' }" @click="selectHistoryStatus('cancelled')" style="padding: 6px 12px; font-size: 12px;">ยกเลิก</div>
                 </div>
               </div>
@@ -1094,7 +1097,6 @@ const selectedHistoryStatusLabel = computed(() => {
   const statusLabels = {
     all: 'ทั้งหมด',
     completed: 'ชำระเงินแล้ว',
-    pending: 'รอชำระ',
     cancelled: 'ยกเลิก'
   };
   return statusLabels[historyStatusFilter.value] || 'ทั้งหมด';
@@ -1763,22 +1765,7 @@ select.reports-filter-control,
   text-align: center;
 }
 
-/* --- Responsive Utilities --- */
-.show-mobile-only {
-  display: none;
-}
-.hide-mobile {
-  display: block;
-}
 
-@media (max-width: 768px) {
-  .show-mobile-only {
-    display: block;
-  }
-  .hide-mobile {
-    display: none;
-  }
-}
 
 /* --- Expense Form Grid --- */
 .expense-form-grid {

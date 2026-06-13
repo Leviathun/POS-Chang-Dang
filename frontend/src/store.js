@@ -288,13 +288,22 @@ export const store = reactive({
   async fetchSettingsData(branchId = null, force = false) {
     if (this.settingsLoaded && !force && this.settingsBranchId === branchId) {
       Promise.all([
-        api.settings.getAll(branchId),
-        api.auth.getBranches(),
-        api.auth.getUsers()
+        api.settings.getAll(branchId).catch(e => {
+          console.error('fetchSettingsData background - settings.getAll error:', e);
+          return { success: false, data: {} };
+        }),
+        api.auth.getBranches().catch(e => {
+          console.error('fetchSettingsData background - auth.getBranches error:', e);
+          return { success: false, data: [] };
+        }),
+        api.auth.getUsers().catch(e => {
+          console.error('fetchSettingsData background - auth.getUsers error:', e);
+          return { success: false, data: [] };
+        })
       ]).then(([setRes, brRes, usrRes]) => {
-        if (setRes.success) this.settings = setRes.data || {};
-        if (brRes.success) this.branches = brRes.data || [];
-        this.users = usrRes.data || usrRes || [];
+        if (setRes && setRes.success) this.settings = setRes.data || {};
+        if (brRes && brRes.success) this.branches = brRes.data || [];
+        this.users = (usrRes && usrRes.data) ? usrRes.data : (Array.isArray(usrRes) ? usrRes : []);
       }).catch(e => console.error(e));
       return;
     }
@@ -306,13 +315,22 @@ export const store = reactive({
     this.settingsPromise = (async () => {
       try {
         const [setRes, brRes, usrRes] = await Promise.all([
-          api.settings.getAll(branchId),
-          api.auth.getBranches(),
-          api.auth.getUsers()
+          api.settings.getAll(branchId).catch(e => {
+            console.error('fetchSettingsData - settings.getAll error:', e);
+            return { success: false, data: {} };
+          }),
+          api.auth.getBranches().catch(e => {
+            console.error('fetchSettingsData - auth.getBranches error:', e);
+            return { success: false, data: [] };
+          }),
+          api.auth.getUsers().catch(e => {
+            console.error('fetchSettingsData - auth.getUsers error:', e);
+            return { success: false, data: [] };
+          })
         ]);
-        if (setRes.success) this.settings = setRes.data || {};
-        if (brRes.success) this.branches = brRes.data || [];
-        this.users = usrRes.data || usrRes || [];
+        if (setRes && setRes.success) this.settings = setRes.data || {};
+        if (brRes && brRes.success) this.branches = brRes.data || [];
+        this.users = (usrRes && usrRes.data) ? usrRes.data : (Array.isArray(usrRes) ? usrRes : []);
         this.settingsBranchId = branchId;
         this.settingsLoaded = true;
       } catch (e) {
