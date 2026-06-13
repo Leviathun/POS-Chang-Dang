@@ -28,6 +28,24 @@ async function attachUser(req, res, next) {
       }
     }
 
+    // Support branch preloading before user logs in
+    const branchHeaderId = req.headers['x-branch-id'] || req.query.branch_id;
+    if (branchHeaderId) {
+      const bId = Number(branchHeaderId);
+      if (!isNaN(bId)) {
+        if (!req.user) {
+          req.user = {
+            id: 0,
+            name: 'Guest',
+            role: 'guest',
+            branch_id: bId
+          };
+        } else {
+          req.user.branch_id = bId;
+        }
+      }
+    }
+
     next();
   } catch (error) {
     console.error('❌ Auth middleware error:', error.message);

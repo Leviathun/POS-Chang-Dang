@@ -842,17 +842,18 @@ const onPaymentSuccess = async () => {
 // Load Menu & Categories from API
 const loadMenuData = async () => {
   try {
-    await store.fetchMenu();
+    // Load menu and stock in parallel to maximize speed
+    await Promise.all([
+      store.fetchMenu().catch(err => {
+        console.error('Failed to load menu:', err);
+        ui.showToast('ไม่สามารถดึงข้อมูลเมนูร้านค้าได้', 'error');
+      }),
+      store.fetchStock().catch(err => {
+        console.warn('Failed to load stock threshold:', err);
+      })
+    ]);
   } catch (error) {
-    console.error('Failed to load menu:', error);
-    ui.showToast('ไม่สามารถดึงข้อมูลเมนูร้านค้าได้', 'error');
-  }
-  
-  try {
-    // Load stock to fetch the low stock threshold from DB/settings
-    await store.fetchStock();
-  } catch (error) {
-    console.warn('Failed to load stock threshold:', error);
+    console.error('Failed to load initial POS data:', error);
   }
 
   loading.value = false;
@@ -952,16 +953,9 @@ const onModifiersToggleChange = () => {
 
 const loadModifiersAndPresets = async () => {
   try {
-    const [modRes, presetRes] = await Promise.all([
-      api.modifiers.getAll(),
-      api.modifiers.getPresets()
-    ]);
-    if (modRes.success) {
-      allModifiers.value = (modRes.data || []).filter(m => m.active);
-    }
-    if (presetRes.success) {
-      activePresets.value = (presetRes.data || []).filter(p => p.active);
-    }
+    await store.fetchModifiers();
+    allModifiers.value = (store.modifiers || []).filter(m => m.active);
+    activePresets.value = (store.modifierPresets || []).filter(p => p.active);
   } catch (e) {
     console.error('Failed to load modifiers/presets:', e);
   }

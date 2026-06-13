@@ -597,12 +597,10 @@ const loadSettings = async () => {
   }
 };
 
-const loadModifiersData = async () => {
+const loadModifiersData = async (force = false) => {
   try {
-    const res = await api.modifiers.getAll();
-    if (res.success) {
-      modifierItems.value = res.data || [];
-    }
+    await store.fetchModifiers(force);
+    modifierItems.value = store.modifiers || [];
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลคลังซอส/ผงปรุงรสได้', 'error');
@@ -610,11 +608,11 @@ const loadModifiersData = async () => {
 };
 
 const loadStockData = async (force = false) => {
-  loading.value = true;
+  loading.value = !store.stockLoaded || force;
   try {
     await Promise.all([
       store.fetchStock(force),
-      loadModifiersData()
+      loadModifiersData(force)
     ]);
   } catch (e) {
     console.error(e);
@@ -683,20 +681,28 @@ const handleSaveAction = async () => {
     }
 
     if (res.success) {
-      store.clearMenuCache();
       let successMsg = 'บันทึกยอดคลังเรียบร้อย';
       if (activeIsModifier.value) {
         successMsg = actionType.value === 'restock' ? 'เติมสต็อกเครื่องปรุงสำเร็จ' : 'ปรับสต็อกเครื่องปรุงสำเร็จ';
+        if (res.data) {
+          const mId = res.data.modifier_id;
+          const idx = modifierItems.value.findIndex(m => m.id === mId);
+          if (idx !== -1) {
+            modifierItems.value[idx].total_servings = res.data.total_servings;
+          }
+        }
       } else {
         if (actionType.value === 'fry') {
           successMsg = `ทอดสุกสำเร็จ: หักของสดไป ${qty} ชิ้น และเพิ่มของทอดพร้อมขาย`;
         } else {
           successMsg = actionType.value === 'restock' ? 'เติมสต็อกสำเร็จ' : 'ปรับสต็อกสำเร็จ';
         }
+        if (res.data) {
+          store.updateStock(res.data.id, res.data.stock, res.data.raw_stock);
+        }
       }
       ui.showToast(successMsg, 'success');
       showActionModal.value = false;
-      loadStockData(true);
     }
   } catch (e) {
     console.error(e);
@@ -824,7 +830,7 @@ const getModifierCategoryClass = (category) => {
 
 onMounted(() => {
   loadSettings();
-  loadStockData(true);
+  loadStockData(false);
 });
 </script>
 

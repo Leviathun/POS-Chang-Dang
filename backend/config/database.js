@@ -85,6 +85,20 @@ class DatabaseMock {
       }
     };
   }
+
+  async batch(statements, mode = "write") {
+    const cleanStatements = statements.map(stmt => {
+      if (typeof stmt === 'string') {
+        return stmt.replace(/'localtime'/g, "'+7 hours'");
+      } else {
+        return {
+          sql: stmt.sql.replace(/'localtime'/g, "'+7 hours'"),
+          args: stmt.args
+        };
+      }
+    });
+    return this.client.batch(cleanStatements, mode);
+  }
 }
 
 let dbInstance;

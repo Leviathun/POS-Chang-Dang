@@ -195,7 +195,7 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    await db.prepare('UPDATE categories SET active = 0 WHERE id = ? AND branch_id = ?').run(Number(id), branchId);
+    await db.prepare('DELETE FROM categories WHERE id = ? AND branch_id = ?').run(Number(id), branchId);
 
     res.json({
       success: true,
@@ -388,17 +388,21 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    // ลบข้อมูลที่เกี่ยวข้องทั้งหมดใน transaction
-    const deleteMenu = db.transaction(async () => {
-      // ตัดความเชื่อมโยงกับ order_items (เก็บประวัติออเดอร์ไว้ แต่เอา FK ออก)
-      await db.prepare('UPDATE order_items SET menu_item_id = NULL WHERE menu_item_id = ?').run(Number(id));
-      // ลบ stock_logs ที่เกี่ยวข้อง
-      await db.prepare('DELETE FROM stock_logs WHERE menu_item_id = ? AND branch_id = ?').run(Number(id), branchId);
-      // ลบเมนูออกจาก database
-      await db.prepare('DELETE FROM menu_items WHERE id = ? AND branch_id = ?').run(Number(id), branchId);
-    });
-
-    await deleteMenu();
+    // ลบข้อมูลที่เกี่ยวข้องทั้งหมดใน batch transaction (ลดจำนวน HTTP round trips ไปยัง Turso)
+    await db.batch([
+      {
+        sql: 'UPDATE order_items SET menu_item_id = NULL WHERE menu_item_id = ?',
+        args: [Number(id)]
+      },
+      {
+        sql: 'DELETE FROM stock_logs WHERE menu_item_id = ? AND branch_id = ?',
+        args: [Number(id), branchId]
+      },
+      {
+        sql: 'DELETE FROM menu_items WHERE id = ? AND branch_id = ?',
+        args: [Number(id), branchId]
+      }
+    ]);
 
     res.json({
       success: true,

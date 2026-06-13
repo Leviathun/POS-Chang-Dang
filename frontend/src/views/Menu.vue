@@ -717,8 +717,7 @@ const handleToggleActive = async (item) => {
   try {
     const res = await api.menu.toggle(item.id);
     if (res.success) {
-      item.active = item.active === 1 ? 0 : 1;
-      store.clearMenuCache(); // Clear cache to keep it in sync!
+      store.updateMenuItem(res.data || res);
       ui.showToast(`เปลี่ยนสถานะของ ${item.name} เรียบร้อย`, 'success');
     }
   } catch (error) {
@@ -735,8 +734,8 @@ const handleDeleteItem = async (id) => {
     try {
       const res = await api.menu.delete(id);
       if (res.success) {
+        store.deleteMenuItem(id);
         ui.showToast('ลบเมนูอาหารเรียบร้อยแล้ว', 'success');
-        loadData(true);
       }
     } catch (e) {
       console.error(e);
@@ -852,9 +851,9 @@ const handleCreateCat = async () => {
   try {
     const res = await api.menu.createCategory({ name: catForm.value.name });
     if (res.success) {
+      store.addCategory(res.data || res);
       ui.showToast(`เพิ่มหมวดหมู่ ${catForm.value.name} สำเร็จ`, 'success');
       catForm.value.name = ''; // Clear input
-      loadData(true);
     }
   } catch (e) {
     console.error(e);
@@ -879,8 +878,8 @@ const handleDeleteCat = async (catId) => {
     try {
       const res = await api.menu.deleteCategory(catId);
       if (res.success) {
+        store.deleteCategory(catId);
         ui.showToast('ลบหมวดหมู่เรียบร้อยแล้ว', 'success');
-        loadData(true);
       }
     } catch (e) {
       console.error(e);
@@ -932,9 +931,13 @@ const handleSaveItem = async () => {
     }
 
     if (res.success) {
+      if (isEditMode.value) {
+        store.updateMenuItem(res.data || res);
+      } else {
+        store.addMenuItem(res.data || res);
+      }
       ui.showToast(isEditMode.value ? 'แก้ไขเมนูสำเร็จ' : 'เพิ่มเมนูอาหารสำเร็จ', 'success');
       showItemModal.value = false;
-      loadData(true);
     }
   } catch (e) {
     console.error(e);

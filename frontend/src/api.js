@@ -26,6 +26,12 @@ async function request(method, path, body, options = {}) {
     } catch (e) { /* ignore */ }
   }
 
+  // Include selected branch id from session for preloading
+  const selectedBranchId = sessionStorage.getItem('selected_branch_id');
+  if (selectedBranchId) {
+    headers['x-branch-id'] = String(selectedBranchId);
+  }
+
   const config = {
     method,
     headers,

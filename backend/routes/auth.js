@@ -247,7 +247,7 @@ router.put('/users/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── DELETE /users/:id — ปิดใช้งานผู้ใช้ (soft delete) ──
+// ─── DELETE /users/:id — ลบผู้ใช้ (hard delete) ──────────
 router.delete('/users/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -269,11 +269,37 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    await db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(Number(id));
+    // ลบผู้ใช้โดยตัดการเชื่อมโยง Foreign Key ในประวัติก่อน
+    await db.batch([
+      {
+        sql: 'UPDATE orders SET staff_id = NULL WHERE staff_id = ?',
+        args: [Number(id)]
+      },
+      {
+        sql: 'UPDATE expenses SET staff_id = NULL WHERE staff_id = ?',
+        args: [Number(id)]
+      },
+      {
+        sql: 'UPDATE activity_logs SET user_id = NULL WHERE user_id = ?',
+        args: [Number(id)]
+      },
+      {
+        sql: 'UPDATE stock_logs SET staff_id = NULL WHERE staff_id = ?',
+        args: [Number(id)]
+      },
+      {
+        sql: 'UPDATE modifier_stock_logs SET staff_id = NULL WHERE staff_id = ?',
+        args: [Number(id)]
+      },
+      {
+        sql: 'DELETE FROM users WHERE id = ?',
+        args: [Number(id)]
+      }
+    ]);
 
     res.json({
       success: true,
-      data: { message: 'ปิดใช้งานผู้ใช้สำเร็จ' }
+      data: { message: 'ลบข้อมูลพนักงานสำเร็จเรียบร้อย' }
     });
   } catch (error) {
     console.error('❌ Delete user error:', error.message);

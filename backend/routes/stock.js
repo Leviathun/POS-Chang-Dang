@@ -596,9 +596,18 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
 
     try {
       await bulkTransaction();
+      
+      // Fetch all updated stock values to return
+      const updatedItems = await db.prepare(`
+        SELECT id, quantity as stock, raw_quantity as raw_stock 
+        FROM menu_items 
+        WHERE branch_id = ?
+      `).all(branchId);
+
       res.json({
         success: true,
-        message: 'ปรับปรุงสต็อกเรียบร้อยแล้ว'
+        message: 'ปรับปรุงสต็อกเรียบร้อยแล้ว',
+        updatedItems
       });
     } catch (txError) {
       if (txError.message === 'FORBIDDEN_RAW') {

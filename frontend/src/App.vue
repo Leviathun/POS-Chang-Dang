@@ -257,6 +257,13 @@ const selectedBranchName = computed(() => {
 const selectBranch = (id) => {
   selectedBranch.value = id;
   isBranchDropdownOpen.value = false;
+  sessionStorage.setItem('selected_branch_id', String(id));
+  
+  // Clear cache and pre-warm/pre-fetch for the newly selected branch
+  store.clearAllCache();
+  store.fetchMenu(true).catch(() => {});
+  store.fetchStock(true).catch(() => {});
+  store.fetchModifiers(true).catch(() => {});
 };
 
 const route = useRoute();
@@ -315,7 +322,6 @@ const submitPin = async () => {
     if (res.success) {
       sessionStorage.setItem('pos_user', JSON.stringify(res.data.user));
       user.value = res.data.user;
-      store.clearAllCache(); // Clear store cache on branch login
       const branchName = res.data.branch ? res.data.branch.name : '';
       ui.showToast(`ยินดีต้อนรับคุณ ${user.value.name} 🎉${branchName ? ' (สาขา: ' + branchName + ')' : ''}`, 'success');
       enteredPin.value = '';
@@ -370,6 +376,13 @@ const loadBranches = async () => {
       branches.value = res.data;
       if (res.data.length > 0 && !selectedBranch.value) {
         selectedBranch.value = res.data[0].id;
+      }
+      if (selectedBranch.value) {
+        sessionStorage.setItem('selected_branch_id', String(selectedBranch.value));
+        // Pre-warm Turso DB connection and preload cache in the background for this default branch
+        store.fetchMenu().catch(() => {});
+        store.fetchStock().catch(() => {});
+        store.fetchModifiers().catch(() => {});
       }
     }
   } catch (e) {
