@@ -264,6 +264,8 @@ const selectBranch = (id) => {
   store.fetchMenu(true).catch(() => {});
   store.fetchStock(true).catch(() => {});
   store.fetchModifiers(true).catch(() => {});
+  store.fetchSettingsData(id, true).catch(() => {});
+  store.fetchReports(id, true).catch(() => {});
 };
 
 const route = useRoute();
@@ -383,6 +385,8 @@ const loadBranches = async () => {
         store.fetchMenu().catch(() => {});
         store.fetchStock().catch(() => {});
         store.fetchModifiers().catch(() => {});
+        store.fetchSettingsData(selectedBranch.value).catch(() => {});
+        store.fetchReports(selectedBranch.value).catch(() => {});
       }
     }
   } catch (e) {

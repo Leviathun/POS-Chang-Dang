@@ -820,10 +820,10 @@ const getModifierCategoryLabel = (category) => {
 
 const getModifierCategoryClass = (category) => {
   const map = {
-    'sauce_small': 'badge-neutral',
-    'sauce_large': 'badge-primary',
-    'dipping': 'badge-accent',
-    'powder': 'badge-warning'
+    'sauce_small': 'badge-mod-sauce-small',
+    'sauce_large': 'badge-mod-sauce-large',
+    'dipping': 'badge-mod-dipping',
+    'powder': 'badge-mod-powder'
   };
   return map[category] || 'badge-neutral';
 };

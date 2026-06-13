@@ -903,24 +903,23 @@ const userForm = ref({
 });
 
 // Load Shop Settings
-const loadShopSettings = async () => {
-  ui.showLoading();
+const loadShopSettings = async (force = false) => {
+  const showOverlay = !store.settingsLoaded || force;
+  if (showOverlay) ui.showLoading();
   try {
-    const res = await api.settings.getAll(selectedSettingsBranchId.value);
-    if (res.success) {
-      const data = res.data;
-      shopForm.value = {
-        daily_report_time: data.daily_report_time || '21:00',
-        low_stock_threshold: Number(data.low_stock_threshold) || 5,
-        line_channel_token: data.line_channel_token || '',
-        line_recipient_id: data.line_recipient_id || ''
-      };
-    }
+    await store.fetchSettingsData(selectedSettingsBranchId.value, force);
+    const data = store.settings || {};
+    shopForm.value = {
+      daily_report_time: data.daily_report_time || '21:00',
+      low_stock_threshold: Number(data.low_stock_threshold) || 5,
+      line_channel_token: data.line_channel_token || '',
+      line_recipient_id: data.line_recipient_id || ''
+    };
   } catch (e) {
     console.error('Failed to load settings:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลตั้งค่าระบบได้', 'error');
   } finally {
-    ui.hideLoading();
+    if (showOverlay) ui.hideLoading();
   }
 };
 
@@ -933,6 +932,7 @@ const saveShopSettings = async () => {
     });
     
     await Promise.all(promises);
+    await loadShopSettings(true); // Force reload settings to update store cache
     ui.showToast('บันทึกการตั้งค่าร้านสำเร็จแล้ว 🎉', 'success');
   } catch (error) {
     console.error(error);
@@ -943,11 +943,11 @@ const saveShopSettings = async () => {
 };
 
 // Users Logic
-const loadUsersData = async () => {
-  usersLoading.value = true;
+const loadUsersData = async (force = false) => {
+  usersLoading.value = !store.settingsLoaded || force;
   try {
-    const res = await api.auth.getUsers();
-    users.value = res.data || res || [];
+    await store.fetchSettingsData(selectedSettingsBranchId.value, force);
+    users.value = store.users || [];
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลพนักงานได้', 'error');
@@ -1000,7 +1000,7 @@ const handleSaveUser = async () => {
     if (res.success) {
       ui.showToast(isEditUserMode.value ? 'แก้ไขข้อมูลพนักงานสำเร็จ' : 'เพิ่มพนักงานสำเร็จ', 'success');
       showUserModal.value = false;
-      loadUsersData();
+      loadUsersData(true);
     }
   } catch (e) {
     console.error(e);
@@ -1018,7 +1018,7 @@ const handleDeleteUser = async (id) => {
       const res = await api.auth.deleteUser(id);
       if (res.success) {
         ui.showToast('ลบพนักงานสำเร็จเรียบร้อย', 'success');
-        loadUsersData();
+        loadUsersData(true);
       }
     } catch (e) {
       console.error(e);
@@ -1032,10 +1032,8 @@ const handleDeleteUser = async (id) => {
 // Load branches for user management
 const loadBranches = async () => {
   try {
-    const res = await api.auth.getBranches();
-    if (res.success && Array.isArray(res.data)) {
-      branches.value = res.data;
-    }
+    await store.fetchSettingsData(selectedSettingsBranchId.value);
+    branches.value = store.branches || [];
   } catch (e) {
     console.warn('⚠️ Could not load branches:', e.message);
   }
@@ -1065,12 +1063,10 @@ const archiveMonths = ref(3);
 const fileInput = ref(null);
 
 const loadPresetsData = async () => {
-  presetsLoading.value = true;
+  presetsLoading.value = !store.modifiersLoaded;
   try {
-    const res = await api.modifiers.getPresets();
-    if (res.success) {
-      presets.value = res.data || [];
-    }
+    await store.fetchModifiers();
+    presets.value = store.modifierPresets || [];
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลสูตรสำเร็จได้', 'error');
@@ -1081,10 +1077,8 @@ const loadPresetsData = async () => {
 
 const loadAvailableModifiers = async () => {
   try {
-    const res = await api.modifiers.getAll();
-    if (res.success) {
-      availableModifiers.value = res.data || [];
-    }
+    await store.fetchModifiers();
+    availableModifiers.value = store.modifiers || [];
   } catch (e) {
     console.error(e);
   }

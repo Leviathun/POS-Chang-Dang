@@ -239,6 +239,9 @@ const freeModifiers = {
   async getLogs(id) {
     return request('GET', `/api/modifiers/${id}/logs`);
   },
+  async bulkAdjust(data) {
+    return request('POST', '/api/modifiers/bulk-adjust', data);
+  },
 };
 
 const expenses = {

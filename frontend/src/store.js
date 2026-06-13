@@ -9,13 +9,28 @@ export const store = reactive({
   menuLoaded: false,
   stockLoaded: false,
   modifiersLoaded: false,
+  settingsLoaded: false,
+  reportsLoaded: false,
 
   menuPromise: null,
   stockPromise: null,
   modifiersPromise: null,
+  settingsPromise: null,
+  reportsPromise: null,
 
   modifiers: [],
   modifierPresets: [],
+  settings: {},
+  branches: [],
+  users: [],
+  reportSummary: null,
+  reportTopItems: [],
+  reportDailyData: null,
+  reportMonthly: null,
+  reportsExpenses: [],
+  reportsActivities: [],
+  reportsHistory: [],
+  reportMonthlyExpenses: [],
 
   // Fetch Menu & Categories (cached unless forced, refetches in background if cached)
   async fetchMenu(force = false) {
@@ -267,17 +282,145 @@ export const store = reactive({
     this.modifiersPromise = null;
   },
 
+  async fetchSettingsData(branchId = null, force = false) {
+    if (this.settingsLoaded && !force) {
+      Promise.all([
+        api.settings.getAll(branchId),
+        api.auth.getBranches(),
+        api.auth.getUsers()
+      ]).then(([setRes, brRes, usrRes]) => {
+        if (setRes.success) this.settings = setRes.data || {};
+        if (brRes.success) this.branches = brRes.data || [];
+        this.users = usrRes.data || usrRes || [];
+      }).catch(e => console.error(e));
+      return;
+    }
+
+    if (this.settingsPromise && !force) {
+      return this.settingsPromise;
+    }
+
+    this.settingsPromise = (async () => {
+      try {
+        const [setRes, brRes, usrRes] = await Promise.all([
+          api.settings.getAll(branchId),
+          api.auth.getBranches(),
+          api.auth.getUsers()
+        ]);
+        if (setRes.success) this.settings = setRes.data || {};
+        if (brRes.success) this.branches = brRes.data || [];
+        this.users = usrRes.data || usrRes || [];
+        this.settingsLoaded = true;
+      } catch (e) {
+        console.error(e);
+        throw e;
+      } finally {
+        this.settingsPromise = null;
+      }
+    })();
+
+    return this.settingsPromise;
+  },
+
+  async fetchReports(branchId = null, force = false) {
+    const today = new Date().toLocaleDateString('en-CA');
+    const currentMonth = today.substring(0, 7);
+    
+    if (this.reportsLoaded && !force) {
+      Promise.all([
+        api.reports.summary(branchId),
+        api.reports.topItems(7, branchId),
+        api.reports.daily(today, branchId),
+        api.expenses.get({ date: today, branch_id: branchId }),
+        api.activities.get({ date: today, branch_id: branchId }),
+        api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }),
+        api.reports.monthly(currentMonth, branchId),
+        api.expenses.get({ month: currentMonth, branch_id: branchId })
+      ]).then(([sum, top, daily, exp, act, hist, monthlyRes, expMonthRes]) => {
+        this.reportSummary = sum.success ? sum.data : sum;
+        this.reportTopItems = top.success ? (top.data || []) : [];
+        this.reportDailyData = daily.success ? daily.data : daily;
+        this.reportsExpenses = exp.success ? (exp.data || []) : [];
+        this.reportsActivities = act.success ? (act.data || []) : [];
+        this.reportsHistory = hist.success ? (hist.data || hist || []) : [];
+        this.reportMonthly = monthlyRes.success ? monthlyRes.data : monthlyRes;
+        this.reportMonthlyExpenses = expMonthRes.success ? (expMonthRes.data || []) : [];
+      }).catch(e => console.error(e));
+      return;
+    }
+
+    if (this.reportsPromise && !force) {
+      return this.reportsPromise;
+    }
+
+    this.reportsPromise = (async () => {
+      try {
+        const [sum, top, daily, exp, act, hist, monthlyRes, expMonthRes] = await Promise.all([
+          api.reports.summary(branchId),
+          api.reports.topItems(7, branchId),
+          api.reports.daily(today, branchId),
+          api.expenses.get({ date: today, branch_id: branchId }),
+          api.activities.get({ date: today, branch_id: branchId }),
+          api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }),
+          api.reports.monthly(currentMonth, branchId),
+          api.expenses.get({ month: currentMonth, branch_id: branchId })
+        ]);
+        this.reportSummary = sum.success ? sum.data : sum;
+        this.reportTopItems = top.success ? (top.data || []) : [];
+        this.reportDailyData = daily.success ? daily.data : daily;
+        this.reportsExpenses = exp.success ? (exp.data || []) : [];
+        this.reportsActivities = act.success ? (act.data || []) : [];
+        this.reportsHistory = hist.success ? (hist.data || hist || []) : [];
+        this.reportMonthly = monthlyRes.success ? monthlyRes.data : monthlyRes;
+        this.reportMonthlyExpenses = expMonthRes.success ? (expMonthRes.data || []) : [];
+        this.reportsLoaded = true;
+      } catch (e) {
+        console.error(e);
+        throw e;
+      } finally {
+        this.reportsPromise = null;
+      }
+    })();
+
+    return this.reportsPromise;
+  },
+
+  clearSettingsCache() {
+    this.settingsLoaded = false;
+    this.settingsPromise = null;
+  },
+
+  clearReportsCache() {
+    this.reportsLoaded = false;
+    this.reportsPromise = null;
+  },
+
   clearAllCache() {
     this.menuLoaded = false;
     this.stockLoaded = false;
     this.modifiersLoaded = false;
+    this.settingsLoaded = false;
+    this.reportsLoaded = false;
     this.menuPromise = null;
     this.stockPromise = null;
     this.modifiersPromise = null;
+    this.settingsPromise = null;
+    this.reportsPromise = null;
     this.menuItems = [];
     this.categories = [];
     this.stockItems = [];
     this.modifiers = [];
     this.modifierPresets = [];
+    this.settings = {};
+    this.branches = [];
+    this.users = [];
+    this.reportSummary = null;
+    this.reportTopItems = [];
+    this.reportDailyData = null;
+    this.reportMonthly = null;
+    this.reportsExpenses = [];
+    this.reportsActivities = [];
+    this.reportsHistory = [];
+    this.reportMonthlyExpenses = [];
   }
 });
