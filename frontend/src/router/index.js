@@ -5,7 +5,7 @@ import Stock from '../views/Stock.vue'
 import StockBulk from '../views/StockBulk.vue'
 import Reports from '../views/Reports.vue'
 import Settings from '../views/Settings.vue'
-import { getUser, isAdmin } from '../helpers'
+import { isAdmin } from '../helpers'
 
 const routes = [
   {

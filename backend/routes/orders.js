@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, generateOrderNumber } = require('../config/database');
+const { getDb } = require('../config/database');
 const { attachUser, requireAuth } = require('../middleware/auth');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
@@ -27,12 +27,8 @@ router.post('/', requireAuth, async (req, res) => {
 
     const db = getDb();
 
-    // หาสาขาของผู้ใช้
-    let branchId = req.user ? req.user.branch_id : null;
-    if (!branchId) {
-      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
-    }
+    // หาสาขาของผู้ใช้ (ดึงตรงจาก req.user ที่มีค่าอยู่เสมอเนื่องจากผ่าน requireAuth)
+    const branchId = req.user ? req.user.branch_id : 1;
 
     // รวบรวม IDs ของเมนูและวัตถุดิบทั้งหมดใน cart เพื่อคิวรีครั้งเดียว
     const menuItemIds = [...new Set(items.map(item => Number(item.menu_item_id)))];
@@ -178,10 +174,11 @@ router.post('/', requireAuth, async (req, res) => {
     // รวบรวมคำสั่ง SQL เพื่อรันใน Transaction batch เดียว (1 write round trip)
     const statements = [];
 
-    // 1. บันทึกออเดอร์
+    // 1. บันทึกออเดอร์ (ดึง id และ created_at กลับมาทันทีในขั้นตอน batch)
     statements.push({
       sql: `INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, datetime('now', '+7 hours'))`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, datetime('now', '+7 hours'))
+            RETURNING id, created_at`,
       args: [
         branchId,
         orderNumber,
@@ -327,25 +324,51 @@ router.post('/', requireAuth, async (req, res) => {
       ]
     });
 
-    // รันธุรกรรมบันทึกทั้งหมดในครั้งเดียว
-    await db.batch(statements);
-
-    // ดึงออเดอร์และรายการสินค้าออกมาตอบกลับ (1 read round trip)
-    const order = await db.prepare('SELECT * FROM orders WHERE order_number = ?').get(orderNumber);
-    if (!order) {
-      throw new Error('ไม่พบข้อมูลบิลที่เพิ่งบันทึกสำเร็จ');
+    // รันธุรกรรมบันทึกทั้งหมดในครั้งเดียว (ได้ผลลัพธ์ของคำสั่งแรกกลับมาทันที)
+    const batchResults = await db.batch(statements);
+    const orderResult = batchResults[0];
+    const insertedOrderRow = orderResult && orderResult.rows && orderResult.rows[0];
+    if (!insertedOrderRow) {
+      throw new Error('ไม่สามารถบันทึกบิลลงในฐานข้อมูลได้');
     }
 
-    const savedItems = await db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(order.id);
-    const parsedItems = savedItems.map(oi => ({
-      ...oi,
+    const orderId = Number(insertedOrderRow.id);
+    const createdAt = insertedOrderRow.created_at;
+
+    // ประกอบออบเจ็กต์ข้อมูลออเดอร์ขากลับจากหน่วยความจำโดยไม่ต้องคิวรีซ้ำ (เซฟไปอีก 2 round trips)
+    const mockOrder = {
+      id: orderId,
+      branch_id: branchId,
+      order_number: orderNumber,
+      staff_id: req.user.id,
+      subtotal,
+      discount: orderDiscount,
+      total,
+      payment_method,
+      cash_received: cash_received || null,
+      cash_change: cashChange,
+      status: 'completed',
+      note: note || null,
+      cancel_reason: null,
+      modifiers: modifiers ? (typeof modifiers === 'string' ? modifiers : JSON.stringify(modifiers)) : null,
+      created_at: createdAt
+    };
+
+    const parsedItems = orderItems.map((oi) => ({
+      id: null, // order_items id ไม่จำเป็นสำหรับการแสดงผลหน้าชำระเงินสำเร็จ
+      order_id: orderId,
+      menu_item_id: oi.menu_item_id,
+      item_name: oi.item_name,
+      item_price: oi.item_price,
+      quantity: oi.quantity,
+      subtotal: oi.subtotal,
       options: oi.options ? JSON.parse(oi.options) : null
     }));
 
     res.status(201).json({
       success: true,
       data: {
-        ...order,
+        ...mockOrder,
         items: parsedItems
       }
     });
