@@ -113,25 +113,35 @@ function getDb() {
 
     let client;
     if (dbUrl) {
-      const dbPath = path.join(__dirname, '..', '..', 'data', 'pos_replica.db');
-      const dir = path.dirname(dbPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      console.log('  🗄️  Connecting to Turso Cloud DB via Embedded Replica:', `file:${dbPath}`);
-      client = createClient({
-        url: `file:${dbPath}`,
-        syncUrl: dbUrl,
-        authToken: dbToken,
-        syncInterval: 60000 // Automatically sync every 60 seconds
-      });
+      if (process.env.VERCEL) {
+        // Direct cloud connection for Serverless environments (which have no persistent disk)
+        console.log('  🗄️  Connecting directly to Turso Cloud DB (Serverless Mode):', dbUrl);
+        client = createClient({
+          url: dbUrl,
+          authToken: dbToken
+        });
+      } else {
+        // Embedded Replica for persistent servers / local development (instant read speed)
+        const dbPath = path.join(__dirname, '..', '..', 'data', 'pos_replica.db');
+        const dir = path.dirname(dbPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        console.log('  🗄️  Connecting to Turso Cloud DB via Embedded Replica (Persistent Mode):', `file:${dbPath}`);
+        client = createClient({
+          url: `file:${dbPath}`,
+          syncUrl: dbUrl,
+          authToken: dbToken,
+          syncInterval: 60000 // Automatically sync every 60 seconds
+        });
 
-      // Trigger initial sync on startup asynchronously to not block server boot
-      client.sync().then(() => {
-        console.log('  🔄 Initial Turso Cloud DB sync completed successfully');
-      }).catch(e => {
-        console.warn('  ⚠️ Initial Turso Cloud DB sync failed (operating offline?):', e.message);
-      });
+        // Trigger initial sync on startup asynchronously to not block server boot
+        client.sync().then(() => {
+          console.log('  🔄 Initial Turso Cloud DB sync completed successfully');
+        }).catch(e => {
+          console.warn('  ⚠️ Initial Turso Cloud DB sync failed (operating offline?):', e.message);
+        });
+      }
     } else {
       // Local fallback using a local SQLite file via @libsql/client
       const dbPath = path.join(__dirname, '..', '..', 'data', 'pos.db');
