@@ -1,7 +1,7 @@
 {
   "version": 2,
   "outputDirectory": "dist",
-  "regions": ["nrt1"],
+  "regions": ["hnd1"],
   "rewrites": [
     {
       "source": "/api/line/webhook",
