@@ -61,9 +61,14 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Initialize ───────────────────────────────────────────
-initDatabase().catch(err => {
-  console.error('❌ Failed to initialize database:', err.message);
-});
+// Skip automatic database initialization on Vercel to prevent a cold-start query storm
+if (!process.env.VERCEL) {
+  initDatabase().catch(err => {
+    console.error('❌ Failed to initialize database:', err.message);
+  });
+} else {
+  console.log('  🗄️  Serverless Mode (Vercel): Skipping automatic database initialization.');
+}
 
 // Start cron jobs (daily LINE report)
 try {
