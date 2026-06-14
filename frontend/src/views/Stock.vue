@@ -540,7 +540,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../api';
-import { ui, formatDateTime, isAdmin, getUser } from '../helpers';
+import { ui, formatDateTime, getUser } from '../helpers';
 
 import { store } from '../store';
 

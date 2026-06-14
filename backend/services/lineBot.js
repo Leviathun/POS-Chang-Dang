@@ -9,13 +9,6 @@ const config = {
 let client = null;
 
 /**
- * ตรวจสอบว่า LINE ถูกตั้งค่าแล้วหรือยัง
- */
-function isConfigured(token = null) {
-  return !!(token || config.channelAccessToken);
-}
-
-/**
  * สร้างหรือดึง LINE Client สำหรับ token ที่กำหนด
  */
 function getClient(token = null) {
@@ -43,26 +36,6 @@ async function replyText(replyToken, text, token = null) {
     });
   } catch (error) {
     console.error('❌ LINE replyText error:', error.message);
-  }
-}
-
-/**
- * ส่งข้อความหาผู้ใช้
- * @param {string} userId - LINE User ID
- * @param {string} text - ข้อความที่ต้องการส่ง
- * @param {string} [token] - LINE Channel Access Token
- */
-async function pushText(userId, text, token = null) {
-  const c = getClient(token);
-  if (!c) return;
-
-  try {
-    await c.pushMessage({
-      to: userId,
-      messages: [{ type: 'text', text }]
-    });
-  } catch (error) {
-    console.error('❌ LINE pushText error:', error.message);
   }
 }
 
@@ -219,10 +192,8 @@ function formatTopItems(items) {
 
 module.exports = {
   config,
-  isConfigured,
   getClient,
   replyText,
-  pushText,
   pushFlexMessage,
   formatDailyReport,
   formatTopItems

@@ -113,10 +113,24 @@ function getDb() {
 
     let client;
     if (dbUrl) {
-      console.log('  🗄️  Connecting to Turso Cloud DB:', dbUrl);
+      const dbPath = path.join(__dirname, '..', '..', 'data', 'pos_replica.db');
+      const dir = path.dirname(dbPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      console.log('  🗄️  Connecting to Turso Cloud DB via Embedded Replica:', `file:${dbPath}`);
       client = createClient({
-        url: dbUrl,
-        authToken: dbToken
+        url: `file:${dbPath}`,
+        syncUrl: dbUrl,
+        authToken: dbToken,
+        syncInterval: 60000 // Automatically sync every 60 seconds
+      });
+
+      // Trigger initial sync on startup asynchronously to not block server boot
+      client.sync().then(() => {
+        console.log('  🔄 Initial Turso Cloud DB sync completed successfully');
+      }).catch(e => {
+        console.warn('  ⚠️ Initial Turso Cloud DB sync failed (operating offline?):', e.message);
       });
     } else {
       // Local fallback using a local SQLite file via @libsql/client
@@ -163,12 +177,6 @@ async function initDatabase() {
 
   // ─── Create Tables (Multi-Branch Enabled) ─────────────────
   const tables = [
-    `CREATE TABLE IF NOT EXISTS branches (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      address TEXT,
-      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-    )`,
     `CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       branch_id INTEGER REFERENCES branches(id),
@@ -484,25 +492,4 @@ async function initDatabase() {
   console.log('  ✅ Cloud/Local Database initialized');
 }
 
-/**
- * Generate order number: CD-YYYYMMDD-NNN
- */
-async function generateOrderNumber() {
-  const db = getDb();
-  const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
-  const dateStr = today.getUTCFullYear().toString() +
-    String(today.getUTCMonth() + 1).padStart(2, '0') +
-    String(today.getUTCDate()).padStart(2, '0');
-
-  const prefix = `CD-${dateStr}-`;
-
-  const result = await db.prepare(
-    `SELECT COUNT(*) as count FROM orders 
-     WHERE order_number LIKE ?`
-  ).get(`${prefix}%`);
-
-  const num = (result.count + 1).toString().padStart(3, '0');
-  return `${prefix}${num}`;
-}
-
-module.exports = { getDb, initDatabase, generateOrderNumber };
+module.exports = { getDb, initDatabase };

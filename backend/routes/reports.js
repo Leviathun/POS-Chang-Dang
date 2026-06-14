@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { attachUser, requireAdmin } = require('../middleware/auth');
+const { attachUser } = require('../middleware/auth');
 const reportsService = require('../services/reports');
 
 function getThailandDate() {

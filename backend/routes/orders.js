@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, generateOrderNumber } = require('../config/database');
+const { getDb } = require('../config/database');
 const { attachUser, requireAuth } = require('../middleware/auth');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route

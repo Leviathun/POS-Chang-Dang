@@ -256,7 +256,7 @@ async function getTopItems(days = 7, branchId = null) {
     JOIN orders o ON o.id = oi.order_id
     WHERE o.status = 'completed'
       ${branchFilter}
-      AND o.created_at >= datetime('now', 'localtime', ${branchId ? '?' : '?'})
+      AND o.created_at >= datetime('now', 'localtime', ?)
   `;
 
   const allOrderItems = await db.prepare(sql).all(params);

@@ -85,13 +85,6 @@ export function formatDateTime(dateStr) {
   return formatDate(dateStr) + ' ' + formatTime(dateStr);
 }
 
-export function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = String(str);
-  return div.innerHTML;
-}
-
 export function getToday() {
   const formatter = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'Asia/Bangkok',
@@ -164,7 +157,6 @@ export default {
   formatDate,
   formatTime,
   formatDateTime,
-  escapeHtml,
   getToday,
   getCurrentMonth,
   getUser,

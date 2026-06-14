@@ -1041,7 +1041,7 @@ const getBranchName = (branchId) => {
 };
 
 // Presets States & Logic
-const presets = ref([]);
+const presets = computed(() => store.modifierPresets || []);
 const presetsLoading = ref(false);
 const showPresetModal = ref(false);
 const isEditPresetMode = ref(false);
@@ -1051,7 +1051,7 @@ const presetForm = ref({
   modifier_ids: [],
   active: true
 });
-const availableModifiers = ref([]);
+const availableModifiers = computed(() => store.modifiers || []);
 
 // Backup & Archive States
 const isArchiveDropdownOpen = ref(false);
@@ -1072,11 +1072,10 @@ const selectArchiveMonths = (val) => {
 };
 const fileInput = ref(null);
 
-const loadPresetsData = async () => {
-  presetsLoading.value = !store.modifiersLoaded;
+const loadPresetsData = async (force = false) => {
+  presetsLoading.value = !store.modifiersLoaded || force;
   try {
-    await store.fetchModifiers();
-    presets.value = store.modifierPresets || [];
+    await store.fetchModifiers(force);
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลสูตรสำเร็จได้', 'error');
@@ -1088,7 +1087,6 @@ const loadPresetsData = async () => {
 const loadAvailableModifiers = async () => {
   try {
     await store.fetchModifiers();
-    availableModifiers.value = store.modifiers || [];
   } catch (e) {
     console.error(e);
   }
@@ -1150,7 +1148,7 @@ const handleSavePreset = async () => {
     if (res.success) {
       ui.showToast(isEditPresetMode.value ? 'แก้ไขสูตรเครื่องปรุงสำเร็จ' : 'เพิ่มสูตรเครื่องปรุงใหม่สำเร็จ', 'success');
       showPresetModal.value = false;
-      loadPresetsData();
+      loadPresetsData(true);
     }
   } catch (e) {
     console.error(e);
@@ -1168,7 +1166,7 @@ const handleDeletePreset = async (id) => {
       const res = await api.modifiers.deletePreset(id);
       if (res.success) {
         ui.showToast('ลบสูตรสำเร็จเรียบร้อย', 'success');
-        loadPresetsData();
+        loadPresetsData(true);
       }
     } catch (e) {
       console.error(e);

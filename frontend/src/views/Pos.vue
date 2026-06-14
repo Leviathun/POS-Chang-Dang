@@ -979,7 +979,7 @@ const onModifiersToggleChange = () => {
 
 const loadModifiersAndPresets = async () => {
   try {
-    await store.fetchModifiers();
+    await store.fetchModifiers(false);
   } catch (e) {
     console.error('Failed to load modifiers/presets:', e);
   }

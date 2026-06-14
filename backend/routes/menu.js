@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireAdmin } = require('../middleware/auth');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);

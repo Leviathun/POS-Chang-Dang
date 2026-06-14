@@ -129,14 +129,8 @@ const orders = {
   async getById(id) {
     return request('GET', `/api/orders/${id}`);
   },
-  async complete(id, data) {
-    return request('POST', `/api/orders/${id}/complete`, data);
-  },
   async cancel(id, reason) {
     return request('POST', `/api/orders/${id}/cancel`, { reason });
-  },
-  async getQR(id) {
-    return request('GET', `/api/orders/${id}/qr`);
   },
 };
 
