@@ -61,13 +61,14 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Initialize ───────────────────────────────────────────
-// Skip automatic database initialization on Vercel to prevent a cold-start query storm
-if (!process.env.VERCEL) {
+// Skip automatic database initialization in production or cloud deployment to prevent a cold-start query storm
+const skipDbInit = process.env.VERCEL || process.env.SKIP_INIT_DB === 'true' || process.env.NODE_ENV === 'production';
+if (!skipDbInit) {
   initDatabase().catch(err => {
     console.error('❌ Failed to initialize database:', err.message);
   });
 } else {
-  console.log('  🗄️  Serverless Mode (Vercel): Skipping automatic database initialization.');
+  console.log('  🗄️  Production/Serverless Mode: Skipping automatic database initialization.');
 }
 
 // Start cron jobs (daily LINE report)
