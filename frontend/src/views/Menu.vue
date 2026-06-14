@@ -553,7 +553,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, isAdmin } from '../helpers';
+import { ui, formatCurrency, isAdmin, compressImage } from '../helpers';
 
 import { store } from '../store';
 
@@ -814,16 +814,21 @@ const triggerFileInput = () => {
 const handleFileChange = (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  
-  if (file.size > 2 * 1024 * 1024) { // limit 2MB
-    ui.showToast('ขนาดไฟล์รูปภาพห้ามเกิน 2MB', 'error');
-    return;
-  }
 
   const reader = new FileReader();
-  reader.onload = (event) => {
-    itemForm.value.image_url = event.target.result;
-    ui.showToast('อัปโหลดและแปลงรูปภาพเรียบร้อย', 'success');
+  reader.onload = async (event) => {
+    try {
+      ui.showLoading();
+      // บีบอัดรูปภาพให้กว้าง/ยาวสูงสุด 300px และลดคุณภาพเป็น JPEG 0.7
+      const compressedBase64 = await compressImage(event.target.result);
+      itemForm.value.image_url = compressedBase64;
+      ui.showToast('อัปโหลดและบีบอัดรูปภาพเรียบร้อย', 'success');
+    } catch (err) {
+      console.error(err);
+      ui.showToast('บีบอัดรูปภาพล้มเหลว', 'error');
+    } finally {
+      ui.hideLoading();
+    }
   };
   reader.readAsDataURL(file);
 };
@@ -834,9 +839,19 @@ const handlePaste = (e) => {
     if (item.kind === 'file' && item.type.startsWith('image/')) {
       const file = item.getAsFile();
       const reader = new FileReader();
-      reader.onload = (event) => {
-        itemForm.value.image_url = event.target.result;
-        ui.showToast('วางรูปภาพเรียบร้อยแล้ว', 'success');
+      reader.onload = async (event) => {
+        try {
+          ui.showLoading();
+          // บีบอัดรูปภาพที่วางจากคลิปบอร์ด
+          const compressedBase64 = await compressImage(event.target.result);
+          itemForm.value.image_url = compressedBase64;
+          ui.showToast('วางและบีบอัดรูปภาพเรียบร้อยแล้ว', 'success');
+        } catch (err) {
+          console.error(err);
+          ui.showToast('บีบอัดรูปภาพล้มเหลว', 'error');
+        } finally {
+          ui.hideLoading();
+        }
       };
       reader.readAsDataURL(file);
       e.preventDefault();
@@ -952,10 +967,61 @@ const handleImageError = () => {
   ui.showToast('ลิงก์รูปภาพที่ใส่อ่านไม่ได้ กรุณาตรวจสอบ URL', 'warning');
 };
 
+// ระบบค้นหาและบีบอัดรูปภาพเดิมในฐานข้อมูลเพื่อลดขนาด
+const autoCompressExistingImages = async () => {
+  // หาเมนูที่มีรูปภาพเป็น base64 ขนาดใหญ่กว่า 100KB (100,000 ตัวอักษร)
+  const itemsToCompress = menuItems.value.filter(item => 
+    item.image_url && 
+    typeof item.image_url === 'string' && 
+    item.image_url.startsWith('data:image/') && 
+    item.image_url.length > 100000
+  );
+
+  if (itemsToCompress.length === 0) return;
+
+  console.log(`[Auto-Migration] Found ${itemsToCompress.length} large images to compress.`);
+  
+  for (const item of itemsToCompress) {
+    try {
+      console.log(`[Auto-Migration] Compressing image for: ${item.name} (${item.image_url.length} chars)`);
+      const compressed = await compressImage(item.image_url);
+      
+      // บันทึกกลับลงฐานข้อมูล
+      await api.menu.update(item.id, {
+        name: item.name,
+        price: item.price,
+        category_id: item.category_id,
+        image_url: compressed,
+        active: item.active,
+        sort_order: item.sort_order,
+        uom: item.uom,
+        multiple_prices: item.multiple_prices,
+        stock: item.stock,
+        raw_stock: item.raw_stock,
+        track_raw_stock: item.raw_stock !== null
+      });
+
+      // อัปเดตข้อมูลใน Pinia Store ทันที
+      const storeItem = store.menuItems.find(m => m.id === item.id);
+      if (storeItem) {
+        storeItem.image_url = compressed;
+      }
+      console.log(`[Auto-Migration] Successfully compressed image for ${item.name}. New length: ${compressed.length} chars.`);
+    } catch (err) {
+      console.error(`[Auto-Migration] Failed to compress image for ${item.name}:`, err);
+    }
+  }
+  ui.showToast(`บีบอัดรูปภาพสินค้าเดิมเรียบร้อยแล้ว ปิดหน้านี้และสลับไปหน้าอื่นได้เลยครับ`, 'success');
+};
+
 // Load initial data
 const loadData = async (force = false) => {
   try {
     await store.fetchMenu(force);
+    if (isAdminUser.value) {
+      // รันการบีบอัดรูปภาพหลังบ้านแบบเบื้องหลัง (Background Migration)
+      autoCompressExistingImages();
+    }
   } catch (e) {
     console.error('Failed to load menu data:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลเมนูอาหารได้', 'error');
