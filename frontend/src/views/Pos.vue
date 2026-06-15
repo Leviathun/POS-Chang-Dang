@@ -315,48 +315,51 @@
       </div>
     </div>
 
-    <!-- Sam Krob Options Modal -->
-    <div v-if="showSamKrobModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
-      <div class="modal-overlay" @click="showSamKrobModal = false"></div>
+    <!-- Unified Options Modal -->
+    <div v-if="showOptionsModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+      <div class="modal-overlay" @click="showOptionsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
         <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
-          <h3 style="font-size: var(--font-lg); font-weight: 800;"><i class="fa-solid fa-gears" style="margin-right: 6px; color: var(--primary);"></i> เลือกผสมสามกรอบ</h3>
-          <button class="modal-close" @click="showSamKrobModal = false" style="font-size: var(--font-md);">✕</button>
+          <h3 style="font-size: var(--font-lg); font-weight: 800;">
+            <i :class="isSamKrobItem ? 'fa-solid fa-gears' : 'fa-solid fa-tags'" style="margin-right: 6px; color: var(--primary);"></i> 
+            {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : 'เลือกขนาด (Size)' }}
+          </h3>
+          <button class="modal-close" @click="showOptionsModal = false" style="font-size: var(--font-md);">✕</button>
         </div>
         <div class="modal-body" style="text-align: left; padding: var(--space-lg);">
           <div class="mb-lg font-extrabold text-center text-primary" style="font-size: var(--font-lg); margin-bottom: 20px;">
-            {{ activeSamKrobBaseItem?.name }}
+            {{ activeModalItem?.name }}
           </div>
 
           <!-- Size Selector -->
           <div class="form-group mb-lg" style="margin-bottom: 24px;">
             <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 8px; display: block;">
-              <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i> เลือกขนาด (Size) *
+              <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i> เลือกขนาด *
             </label>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
               <div 
-                v-for="(config, size) in getSamKrobSizes()" 
+                v-for="(config, size) in getAvailableSizes()" 
                 :key="size"
                 class="card text-center p-sm cursor-pointer"
                 :style="{
-                  border: selectedSamKrobSize === size ? '2.5px solid var(--primary)' : '1px solid var(--border-color)',
-                  background: selectedSamKrobSize === size ? 'rgba(139, 3, 19, 0.05)' : 'var(--bg-secondary)',
+                  border: selectedSize === size ? '2.5px solid var(--primary)' : '1px solid var(--border-color)',
+                  background: selectedSize === size ? 'rgba(139, 3, 19, 0.05)' : 'var(--bg-secondary)',
                   borderRadius: 'var(--radius-md)',
                   padding: '12px 8px',
                   transition: 'all 0.2s',
-                  boxShadow: selectedSamKrobSize === size ? '0 4px 12px rgba(139, 3, 19, 0.15)' : 'none'
+                  boxShadow: selectedSize === size ? '0 4px 12px rgba(139, 3, 19, 0.15)' : 'none'
                 }"
-                @click="selectedSamKrobSize = size"
+                @click="selectedSize = size"
               >
                 <div class="font-bold" style="font-size: var(--font-sm);">{{ config.name }}</div>
-                <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">{{ config.weight }} ก.</div>
+                <div v-if="isSamKrobItem" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">{{ config.weight }} ก.</div>
                 <div class="font-extrabold text-accent" style="font-size: var(--font-md); margin-top: 6px;">฿{{ config.price }}</div>
               </div>
             </div>
           </div>
 
-          <!-- Mix Toggle Switch -->
-          <div class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: var(--bg-secondary); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <!-- Mix Toggle Switch (SamKrob Only) -->
+          <div v-if="isSamKrobItem" class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: var(--bg-secondary); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
             <label class="toggle-switch" style="margin: 0; flex-shrink: 0;">
               <input type="checkbox" v-model="mixSamKrob" />
               <span class="toggle-slider"></span>
@@ -364,8 +367,8 @@
             <span class="font-bold text-primary" style="font-size: var(--font-base); cursor: pointer;" @click="mixSamKrob = !mixSamKrob">ผสมวัตถุดิบอื่นเพิ่มเติม (Mix)</span>
           </div>
 
-          <!-- Ingredients Selector (Conditional on mixSamKrob) -->
-          <div v-if="mixSamKrob" class="form-group mb-lg" style="margin-bottom: 24px;">
+          <!-- Ingredients Selector (SamKrob Only & mixSamKrob enabled) -->
+          <div v-if="isSamKrobItem && mixSamKrob" class="form-group mb-lg" style="margin-bottom: 24px;">
             <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 10px; display: block;">
               <i class="fa-solid fa-list-check" style="margin-right: 4px; color: var(--primary);"></i> เลือกวัตถุดิบผสม (เลือกได้ 1-3 ชนิด) *
             </label>
@@ -387,7 +390,7 @@
                 }"
                 @click="toggleSamKrobIngredient(ing.id)"
               >
-                <!-- Left: Checkbox + Name and Stock stacked vertically -->
+                <!-- Left: Checkbox + Name and Stock -->
                 <div style="display: flex; align-items: center; gap: 14px; flex: 1; text-align: left;">
                   <input 
                     type="checkbox" 
@@ -416,8 +419,10 @@
           <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
             <div class="font-bold mb-xs" style="font-size: var(--font-xs); color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
             <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center;">
-              <span>น้ำหนักรวม:</span>
-              <span class="font-extrabold text-primary" style="font-size: var(--font-md);">{{ getSelectedSizeWeight() }} กรัม</span>
+              <span>{{ isSamKrobItem ? 'น้ำหนักรวม:' : 'ขนาด:' }}</span>
+              <span class="font-extrabold text-primary" style="font-size: var(--font-md);">
+                {{ isSamKrobItem ? getSelectedSizeWeight() + ' กรัม' : (selectedSize === 'S' ? 'เล็ก (S)' : selectedSize === 'M' ? 'กลาง (M)' : 'ใหญ่ (L)') }}
+              </span>
             </div>
             <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
               <span>ราคา:</span>
@@ -427,8 +432,8 @@
 
           <!-- Confirmation Buttons -->
           <div class="flex gap-md" style="display: flex; gap: 14px;">
-            <button class="btn btn-secondary flex-1" @click="showSamKrobModal = false" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ยกเลิก</button>
-            <button class="btn btn-primary flex-1" @click="confirmSamKrobSelection" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ใส่ตะกร้า</button>
+            <button class="btn btn-secondary flex-1" @click="showOptionsModal = false" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" @click="confirmSelection" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ใส่ตะกร้า</button>
           </div>
         </div>
       </div>
@@ -466,12 +471,18 @@ const showPaymentModal = ref(false);
 const loading = ref(true);
 const isVisualStaggerActive = ref(true);
 
-// Sam Krob Options Modal State
-const showSamKrobModal = ref(false);
-const activeSamKrobBaseItem = ref(null);
-const selectedSamKrobSize = ref('S');
+// Consolidated Options Modal State
+const showOptionsModal = ref(false);
+const activeModalItem = ref(null);
+const selectedSize = ref('S');
 const selectedSamKrobIds = ref([]);
 const mixSamKrob = ref(false);
+
+const isSamKrobItem = computed(() => {
+  if (!activeModalItem.value) return false;
+  const cat = store.categories.find(c => String(c.id) === String(activeModalItem.value.category_id));
+  return !!(cat && cat.name.includes('สามกรอบ'));
+});
 
 const samKrobIngredients = computed(() => {
   return store.menuItems.filter(item => {
@@ -495,47 +506,83 @@ const toggleSamKrobIngredient = (id) => {
   }
 };
 
-const getSamKrobSizes = () => {
-  const baseItem = activeSamKrobBaseItem.value;
-  let itemPrices = { S: 40, M: 50, L: 60 };
-  if (baseItem?.multiple_prices) {
+const isMultiplePricesItem = (item) => {
+  if (!item || !item.multiple_prices) return false;
+  try {
+    const parsed = typeof item.multiple_prices === 'string'
+      ? JSON.parse(item.multiple_prices)
+      : item.multiple_prices;
+    if (parsed && typeof parsed === 'object') {
+      return (
+        (parsed.S !== undefined && parsed.S !== null && parsed.S !== '') ||
+        (parsed.M !== undefined && parsed.M !== null && parsed.M !== '') ||
+        (parsed.L !== undefined && parsed.L !== null && parsed.L !== '')
+      );
+    }
+  } catch (e) {
+    console.warn('Error parsing multiple prices:', e);
+  }
+  return false;
+};
+
+// Unified helper to get sizes, names, weights, prices for both SamKrob and general S/M/L items
+const getAvailableSizes = () => {
+  const baseItem = activeModalItem.value;
+  if (!baseItem) return {};
+
+  const isSamKrob = isSamKrobItem.value;
+
+  // S/M/L default prices for SamKrob (40, 50, 60)
+  let itemPrices = isSamKrob ? { S: 40, M: 50, L: 60 } : {};
+  
+  if (baseItem.multiple_prices) {
     try {
       const parsed = typeof baseItem.multiple_prices === 'string'
         ? JSON.parse(baseItem.multiple_prices)
         : baseItem.multiple_prices;
       if (parsed && typeof parsed === 'object') {
-        itemPrices = {
-          S: parsed.S !== undefined && parsed.S !== null && parsed.S !== '' ? Number(parsed.S) : 40,
-          M: parsed.M !== undefined && parsed.M !== null && parsed.M !== '' ? Number(parsed.M) : 50,
-          L: parsed.L !== undefined && parsed.L !== null && parsed.L !== '' ? Number(parsed.L) : 60
-        };
+        if (isSamKrob) {
+          itemPrices = {
+            S: parsed.S !== undefined && parsed.S !== null && parsed.S !== '' ? Number(parsed.S) : 40,
+            M: parsed.M !== undefined && parsed.M !== null && parsed.M !== '' ? Number(parsed.M) : 50,
+            L: parsed.L !== undefined && parsed.L !== null && parsed.L !== '' ? Number(parsed.L) : 60
+          };
+        } else {
+          // For general S/M/L, only return keys that have defined prices
+          const prices = {};
+          if (parsed.S !== undefined && parsed.S !== null && parsed.S !== '') prices.S = Number(parsed.S);
+          if (parsed.M !== undefined && parsed.M !== null && parsed.M !== '') prices.M = Number(parsed.M);
+          if (parsed.L !== undefined && parsed.L !== null && parsed.L !== '') prices.L = Number(parsed.L);
+          itemPrices = prices;
+        }
       }
     } catch (e) {
-      console.warn('Error parsing multiple prices in POS:', e);
+      console.warn('Error parsing multiple prices:', e);
     }
   }
-  return {
-    'S': { name: 'เล็ก (S)', weight: 100, price: itemPrices.S },
-    'M': { name: 'กลาง (M)', weight: 120, price: itemPrices.M },
-    'L': { name: 'ใหญ่ (L)', weight: 150, price: itemPrices.L }
-  };
+
+  const sizes = {};
+  if (itemPrices.S !== undefined) sizes.S = { name: 'เล็ก (S)', weight: 100, price: itemPrices.S };
+  if (itemPrices.M !== undefined) sizes.M = { name: 'กลาง (M)', weight: 120, price: itemPrices.M };
+  if (itemPrices.L !== undefined) sizes.L = { name: 'ใหญ่ (L)', weight: 150, price: itemPrices.L };
+  return sizes;
 };
 
 const getPortionWeightPreview = (id) => {
   if (!selectedSamKrobIds.value.includes(id)) return 0;
-  const sizes = getSamKrobSizes();
-  const totalWeight = sizes[selectedSamKrobSize.value]?.weight || 100;
+  const sizes = getAvailableSizes();
+  const totalWeight = sizes[selectedSize.value]?.weight || 100;
   return Number((totalWeight / selectedSamKrobIds.value.length).toFixed(2));
 };
 
 const getSelectedSizeWeight = () => {
-  const sizes = getSamKrobSizes();
-  return sizes[selectedSamKrobSize.value]?.weight || 100;
+  const sizes = getAvailableSizes();
+  return sizes[selectedSize.value]?.weight || 100;
 };
 
 const getSelectedSizePrice = () => {
-  const sizes = getSamKrobSizes();
-  return sizes[selectedSamKrobSize.value]?.price || 40;
+  const sizes = getAvailableSizes();
+  return sizes[selectedSize.value]?.price || 0;
 };
 
 // Computed variables
@@ -635,13 +682,27 @@ const isLowStock = (item) => {
 const addToCart = (item) => {
   // Check if item belongs to the "สามกรอบ" category
   const cat = store.categories.find(c => String(c.id) === String(item.category_id));
-  if (cat && cat.name.includes('สามกรอบ')) {
-    activeSamKrobBaseItem.value = item;
-    selectedSamKrobSize.value = 'S';
+  const isSamKrob = !!(cat && cat.name.includes('สามกรอบ'));
+
+  if (isSamKrob) {
+    activeModalItem.value = item;
+    selectedSize.value = 'S';
     selectedSamKrobIds.value = [item.id];
     mixSamKrob.value = false;
-    showSamKrobModal.value = true;
+    showOptionsModal.value = true;
     return;
+  }
+
+  // Check if it's a general S/M/L item
+  if (isMultiplePricesItem(item)) {
+    activeModalItem.value = item;
+    const prices = getAvailableSizes();
+    const availableSizes = Object.keys(prices);
+    if (availableSizes.length > 0) {
+      selectedSize.value = availableSizes.includes('S') ? 'S' : availableSizes[0];
+      showOptionsModal.value = true;
+      return;
+    }
   }
 
   const itemId = String(item.id);
@@ -703,69 +764,103 @@ const incrementCartItem = (cartKey) => {
   cart.value = currentCart;
 };
 
-const confirmSamKrobSelection = () => {
-  const sizes = getSamKrobSizes();
-  const sizeConfig = sizes[selectedSamKrobSize.value];
-  
+const confirmSelection = () => {
+  const baseItem = activeModalItem.value;
+  if (!baseItem) return;
+
+  const sizes = getAvailableSizes();
+  const sizeConfig = sizes[selectedSize.value];
+  if (!sizeConfig) {
+    ui.showToast('ราคาของขนาดที่เลือกไม่ถูกต้อง', 'warning');
+    return;
+  }
+
+  const isSamKrob = isSamKrobItem.value;
   let selectedItems = [];
   let customName = '';
-  const baseItem = activeSamKrobBaseItem.value;
+  let cartKey = '';
+  let customItem = null;
 
-  if (mixSamKrob.value) {
-    if (selectedSamKrobIds.value.length === 0) {
-      ui.showToast('กรุณาเลือกอย่างน้อย 1 วัตถุดิบ', 'warning');
-      return;
+  if (isSamKrob) {
+    if (mixSamKrob.value) {
+      if (selectedSamKrobIds.value.length === 0) {
+        ui.showToast('กรุณาเลือกอย่างน้อย 1 วัตถุดิบ', 'warning');
+        return;
+      }
+      const ingredientWeight = Number((sizeConfig.weight / selectedSamKrobIds.value.length).toFixed(2));
+      selectedItems = selectedSamKrobIds.value.map(id => {
+        const item = store.menuItems.find(m => m.id === id);
+        return {
+          id: item.id,
+          name: item.name,
+          weight: ingredientWeight
+        };
+      });
+      const ingredientNames = selectedItems.map(i => i.name).join(', ');
+      customName = `${baseItem.name} (ผสม: ${ingredientNames}, ขนาด ${selectedSize.value})`;
+    } else {
+      selectedItems = [{
+        id: baseItem.id,
+        name: baseItem.name,
+        weight: sizeConfig.weight
+      }];
+      customName = `${baseItem.name} (ขนาด ${selectedSize.value})`;
     }
-    const ingredientWeight = Number((sizeConfig.weight / selectedSamKrobIds.value.length).toFixed(2));
-    selectedItems = selectedSamKrobIds.value.map(id => {
-      const item = store.menuItems.find(m => m.id === id);
-      return {
-        id: item.id,
-        name: item.name,
-        weight: ingredientWeight
-      };
-    });
-    const ingredientNames = selectedItems.map(i => i.name).join(', ');
-    customName = `${baseItem.name} (ผสม: ${ingredientNames}, ขนาด ${selectedSamKrobSize.value})`;
+
+    // Stock Check
+    for (const ingredient of selectedItems) {
+      const menuIngredient = store.menuItems.find(m => m.id === ingredient.id);
+      if (menuIngredient && menuIngredient.stock !== null && menuIngredient.stock !== undefined) {
+        const totalUsedWeight = getCartIngredientWeight(ingredient.id);
+        const requiredAdditionalWeight = ingredient.weight;
+        if (totalUsedWeight + requiredAdditionalWeight > menuIngredient.stock) {
+          ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${menuIngredient.stock - totalUsedWeight}ก.)`, 'warning');
+          return;
+        }
+      }
+    }
+
+    customItem = {
+      ...baseItem,
+      name: customName,
+      price: sizeConfig.price,
+      options: {
+        selected_items: selectedItems,
+        size: selectedSize.value,
+        total_weight: sizeConfig.weight
+      }
+    };
+
+    const sortedIds = mixSamKrob.value 
+      ? [...selectedSamKrobIds.value].sort((a, b) => a - b).join('_')
+      : baseItem.id;
+    cartKey = `${baseItem.id}-${selectedSize.value}-${sortedIds}`;
+
   } else {
-    selectedItems = [{
-      id: baseItem.id,
-      name: baseItem.name,
-      weight: sizeConfig.weight
-    }];
-    customName = `${baseItem.name} (ขนาด ${selectedSamKrobSize.value})`;
-  }
-  
-  // Stock Check
-  for (const ingredient of selectedItems) {
-    const menuIngredient = store.menuItems.find(m => m.id === ingredient.id);
-    if (menuIngredient && menuIngredient.stock !== null && menuIngredient.stock !== undefined) {
-      const totalUsedWeight = getCartIngredientWeight(ingredient.id);
-      const requiredAdditionalWeight = ingredient.weight;
-      if (totalUsedWeight + requiredAdditionalWeight > menuIngredient.stock) {
-        ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${menuIngredient.stock - totalUsedWeight}ก.)`, 'warning');
+    // General SML Item
+    if (baseItem.stock !== null && baseItem.stock !== undefined) {
+      const currentQty = getCartQty(baseItem.id);
+      if (currentQty >= baseItem.stock) {
+        ui.showToast('สต็อกสินค้านี้ไม่เพียงพอ', 'warning');
         return;
       }
     }
+
+    const sizeLabel = selectedSize.value === 'S' ? 'S' : selectedSize.value === 'M' ? 'M' : 'L';
+    customName = `${baseItem.name} (ขนาด ${sizeLabel})`;
+
+    customItem = {
+      ...baseItem,
+      name: customName,
+      price: sizeConfig.price,
+      options: {
+        size: selectedSize.value
+      }
+    };
+
+    cartKey = `${baseItem.id}-${selectedSize.value}`;
   }
-  
-  const customPrice = sizeConfig.price;
-  const customItem = {
-    ...baseItem,
-    name: customName,
-    price: customPrice,
-    options: {
-      selected_items: selectedItems,
-      size: selectedSamKrobSize.value,
-      total_weight: sizeConfig.weight
-    }
-  };
-  
-  const sortedIds = mixSamKrob.value 
-    ? [...selectedSamKrobIds.value].sort((a, b) => a - b).join('_')
-    : baseItem.id;
-  const cartKey = `${baseItem.id}-${selectedSamKrobSize.value}-${sortedIds}`;
-  
+
   const currentCart = new Map(cart.value);
   if (currentCart.has(cartKey)) {
     currentCart.get(cartKey).quantity += 1;
@@ -773,9 +868,9 @@ const confirmSamKrobSelection = () => {
     currentCart.set(cartKey, { item: customItem, quantity: 1 });
   }
   cart.value = currentCart;
-  
-  showSamKrobModal.value = false;
-  
+
+  showOptionsModal.value = false;
+
   const el = document.getElementById(`pos-item-${baseItem.id}`);
   if (el) {
     el.classList.add('added-flash');
