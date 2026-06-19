@@ -192,7 +192,10 @@
                 </div>
 
                 <!-- Step 2B: QR Code Payment -->
-                <div v-if="paymentMethod === 'qr'" id="qr-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
+                <div v-if="paymentMethod === 'qr'" id="qr-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; padding: var(--space-md) 0;">
+                  <div class="qr-code-display" style="margin-bottom: var(--space-md); width: 100%; max-width: 480px; display: flex; justify-content: center;">
+                    <img src="@/assets/image/qr.png" alt="Payment QR Code" style="max-width: 480px; width: 100%; max-height: 480px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); object-fit: contain;" />
+                  </div>
                   <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--primary); opacity: 0.9;">
                     <i class="fa-solid fa-qrcode"></i>
                   </div>
