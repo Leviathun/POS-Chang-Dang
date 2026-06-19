@@ -411,8 +411,6 @@ router.post('/branches', requireAdmin, async (req, res) => {
           let val = s.value;
           if (s.key === 'shop_name') {
             continue; // Skip shop_name settings key in V2
-          } else if (s.key === 'line_channel_token' || s.key === 'line_recipient_id' || s.key === 'line_owner_user_id') {
-            val = ''; // เคลียร์ไลน์สำหรับผู้ใช้สาขาใหม่
           }
           await db.prepare(
             'INSERT INTO settings (branch_id, key, value) VALUES (?, ?, ?)'

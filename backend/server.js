@@ -20,15 +20,6 @@ const PORT = process.env.PORT || 3000;
 // ─── Middleware ────────────────────────────────────────────
 app.use(cors());
 
-// LINE webhook needs raw body for signature verification
-// Must be registered BEFORE express.json()
-try {
-  const lineRouter = require('./routes/line');
-  app.use('/api/line', lineRouter);
-} catch (e) {
-  console.log('⚠️  LINE integration not configured (this is OK for development)');
-}
-
 // JSON parser for all other routes
 app.use(express.json({ limit: '10mb' }));
 
@@ -69,13 +60,6 @@ if (!skipDbInit) {
   });
 } else {
   console.log('  🗄️  Production/Serverless Mode: Skipping automatic database initialization.');
-}
-
-// Start cron jobs (daily LINE report)
-try {
-  require('./services/cron');
-} catch (e) {
-  console.log('⚠️  Cron jobs not started:', e.message);
 }
 
 // ─── Start Server ─────────────────────────────────────────

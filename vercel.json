@@ -4,10 +4,6 @@
   "regions": ["hnd1"],
   "rewrites": [
     {
-      "source": "/api/line/webhook",
-      "destination": "/api/index.js"
-    },
-    {
       "source": "/api/:path*",
       "destination": "/api/index.js"
     },

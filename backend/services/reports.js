@@ -100,7 +100,7 @@ async function getDailyReport(date, branchId = null) {
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
     payment_breakdown: breakdownData,
-    payment: breakdownData, // Compatibility fallback for LINE notification bot
+    payment: breakdownData,
     hourly_breakdown: hourlyBreakdown,
     orders: orders
   };
