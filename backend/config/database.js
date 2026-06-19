@@ -415,7 +415,6 @@ async function initDatabase() {
     const settingsCount = await db.prepare('SELECT COUNT(*) as count FROM settings WHERE branch_id = ?').get(b.id);
     if (settingsCount.count === 0) {
       const insertSetting = db.prepare('INSERT INTO settings (branch_id, key, value) VALUES (?, ?, ?)');
-      await insertSetting.run(b.id, 'daily_report_time', '21:00');
       await insertSetting.run(b.id, 'low_stock_threshold', '5');
     }
   }

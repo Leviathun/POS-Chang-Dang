@@ -74,16 +74,6 @@
 
 
 
-      <!-- Daily Report Send Time -->
-      <div class="form-group">
-        <label class="form-label">เวลาส่งรายงานแจ้งเตือน LINE ประจำวัน (ส่งอัตโนมัติทุกวัน)</label>
-        <input 
-          type="time" 
-          class="form-input" 
-          v-model="shopForm.daily_report_time" 
-        />
-      </div>
-
       <!-- Low Stock Threshold -->
       <div class="form-group">
         <label class="form-label">จุดเตือนสต็อกวัตถุดิบใกล้หมด (ชิ้น)</label>
@@ -93,32 +83,6 @@
           v-model.number="shopForm.low_stock_threshold" 
           placeholder="เช่น 5" 
           min="1"
-        />
-      </div>
-
-      <!-- LINE Notify Integration Settings -->
-      <div class="divider" style="margin: var(--space-xl) 0 12px; height:1px; background:var(--border-color);"></div>
-      <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-comment" style="margin-right: 6px;"></i> LINE Messaging Integration</div>
-      <p style="font-size: var(--font-xs); color:var(--text-secondary); margin-bottom: var(--space-lg); line-height: 1.45;">
-        ระบบจะส่งรายงานผลการขายและยอดขายรวมถึงรายการบิลเข้าหากลุ่ม LINE ของเจ้าของร้านแบบอัตโนมัติ 
-      </p>
-
-      <div class="form-group">
-        <label class="form-label">LINE Channel Access Token</label>
-        <input 
-          type="password" 
-          class="form-input" 
-          v-model="shopForm.line_channel_token" 
-          placeholder="ใส่ Channel Access Token จาก LINE Console..." 
-        />
-      </div>
-      <div class="form-group">
-        <label class="form-label">LINE User/Group ID (ผู้รับแจ้งเตือน)</label>
-        <input 
-          type="text" 
-          class="form-input" 
-          v-model="shopForm.line_recipient_id" 
-          placeholder="ใส่ User ID หรือ Group ID..." 
         />
       </div>
 
@@ -886,10 +850,7 @@ const handleDeleteBranch = async (id) => {
 
 // Forms
 const shopForm = ref({
-  daily_report_time: '21:00',
-  low_stock_threshold: 5,
-  line_channel_token: '',
-  line_recipient_id: ''
+  low_stock_threshold: 5
 });
 
 const userForm = ref({
@@ -907,10 +868,7 @@ const loadShopSettings = async (force = false) => {
     await store.fetchSettingsData(selectedSettingsBranchId.value, force);
     const data = store.settings || {};
     shopForm.value = {
-      daily_report_time: data.daily_report_time || '21:00',
-      low_stock_threshold: Number(data.low_stock_threshold) || 5,
-      line_channel_token: data.line_channel_token || '',
-      line_recipient_id: data.line_recipient_id || ''
+      low_stock_threshold: Number(data.low_stock_threshold) || 5
     };
   } catch (e) {
     console.error('Failed to load settings:', e);
