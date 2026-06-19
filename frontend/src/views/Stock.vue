@@ -570,10 +570,11 @@ const actionForm = ref({
 
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
+  const roundedQty = Math.round(Number(qty) * 100) / 100;
   if (uom === 'กรัม') {
-    return `${qty} ก.`;
+    return `${roundedQty} ก.`;
   }
-  return `${qty} ${uom || 'ชิ้น'}`;
+  return `${roundedQty} ${uom || 'ชิ้น'}`;
 };
 
 const isItemLowStock = (item, qty) => {
@@ -789,7 +790,7 @@ const formatModifierStock = (item) => {
   }
   const servingsPerBag = item.servings_per_bag || 50;
   const bags = Math.floor(item.total_servings / servingsPerBag);
-  const servings = item.total_servings % servingsPerBag;
+  const servings = Math.round((item.total_servings % servingsPerBag) * 100) / 100;
   
   let text = '';
   if (bags > 0) text += `${bags} ถุง`;

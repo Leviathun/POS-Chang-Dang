@@ -93,7 +93,7 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
     const restock = db.transaction(async () => {
       const prev = isRaw ? item.raw_quantity : item.quantity;
       const previousVal = prev !== null && prev !== undefined ? prev : 0;
-      const newVal = previousVal + quantity;
+      const newVal = Math.round((previousVal + quantity) * 100) / 100;
 
       if (isRaw) {
         await db.prepare(`
@@ -192,7 +192,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
       });
     }
 
-    const newVal = currentQty + quantity;
+    const newVal = Math.round((currentQty + quantity) * 100) / 100;
     if (newVal < 0) {
       return res.status(400).json({
         success: false,
@@ -320,8 +320,8 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
     }
 
     const fryChicken = db.transaction(async () => {
-      const newRawStock = item.raw_quantity - quantity;
-      const newCookedStock = item.quantity + quantity;
+      const newRawStock = Math.round((item.raw_quantity - quantity) * 100) / 100;
+      const newCookedStock = Math.round((item.quantity + quantity) * 100) / 100;
 
       // 1. อัปเดตสต็อกใน menu_items
       await db.prepare(`
@@ -488,7 +488,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             if (mode === 'relative') {
               deltaCooked = val;
             } else {
-              deltaCooked = val - currentCooked;
+              deltaCooked = Math.round((val - currentCooked) * 100) / 100;
             }
           }
         }
@@ -499,13 +499,13 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             if (mode === 'relative') {
               deltaRaw = val;
             } else {
-              deltaRaw = val - currentRaw;
+              deltaRaw = Math.round((val - currentRaw) * 100) / 100;
             }
           }
         }
 
         if (deltaCooked !== 0) {
-          const newCooked = currentCooked + deltaCooked;
+          const newCooked = Math.round((currentCooked + deltaCooked) * 100) / 100;
           if (newCooked < 0) {
             throw new Error(`STOCK_NEGATIVE_COOKED:${menuItem.name}`);
           }
@@ -551,7 +551,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             throw new Error('FORBIDDEN_RAW');
           }
 
-          const newRaw = currentRaw + deltaRaw;
+          const newRaw = Math.round((currentRaw + deltaRaw) * 100) / 100;
           if (newRaw < 0) {
             throw new Error(`STOCK_NEGATIVE_RAW:${menuItem.name}`);
           }

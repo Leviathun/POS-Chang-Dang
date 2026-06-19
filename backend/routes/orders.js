@@ -117,7 +117,7 @@ router.post('/', requireAuth, async (req, res) => {
           if (ingStock && ingStock.stock !== null && ingStock.stock < requiredQty) {
             return res.status(400).json({
               success: false,
-              error: `วัตถุดิบ "${ingStock.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredQty} ก. แต่เหลือ ${ingStock.stock} ก.)`
+              error: `วัตถุดิบ "${ingStock.name}" สต็อกไม่เพียงพอ (ต้องการ ${Math.round(requiredQty * 100) / 100} ก. แต่เหลือ ${Math.round(ingStock.stock * 100) / 100} ก.)`
             });
           }
         }
@@ -125,7 +125,7 @@ router.post('/', requireAuth, async (req, res) => {
         if (menuItem.stock !== null && menuItem.stock < item.quantity) {
           return res.status(400).json({
             success: false,
-            error: `เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${menuItem.stock} ชิ้น)`
+            error: `เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${Math.round(menuItem.stock * 100) / 100} ชิ้น)`
           });
         }
       }
@@ -224,10 +224,10 @@ router.post('/', requireAuth, async (req, res) => {
           if (ingItem && ingItem.stock !== null) {
             const previousStock = ingItem.stock;
             const deductAmount = Number(ingredient.weight) * oi.quantity;
-            const newStock = previousStock - deductAmount;
+            const newStock = Math.round((previousStock - deductAmount) * 100) / 100;
 
             statements.push({
-              sql: `UPDATE menu_items SET quantity = quantity - ? WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
+              sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
               args: [deductAmount, branchId, Number(ingredient.id)]
             });
 
@@ -251,10 +251,10 @@ router.post('/', requireAuth, async (req, res) => {
         const menuItem = dbMenuItems.find(i => i.id === oi.menu_item_id);
         if (menuItem && menuItem.stock !== null) {
           const previousStock = menuItem.stock;
-          const newStock = previousStock - oi.quantity;
+          const newStock = Math.round((previousStock - oi.quantity) * 100) / 100;
 
           statements.push({
-            sql: `UPDATE menu_items SET quantity = quantity - ? WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
+            sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
             args: [oi.quantity, branchId, oi.menu_item_id]
           });
 

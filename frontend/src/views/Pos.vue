@@ -643,10 +643,11 @@ const getCartIngredientWeight = (ingredientId) => {
 
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
+  const roundedQty = Math.round(Number(qty) * 100) / 100;
   if (uom === 'กรัม') {
-    return `${qty} ก.`;
+    return `${roundedQty} ก.`;
   }
-  return `${qty} ${uom || 'ชิ้น'}`;
+  return `${roundedQty} ${uom || 'ชิ้น'}`;
 };
 
 const formatItemPrice = (item) => {
@@ -814,7 +815,7 @@ const confirmSelection = () => {
         const totalUsedWeight = getCartIngredientWeight(ingredient.id);
         const requiredAdditionalWeight = ingredient.weight;
         if (totalUsedWeight + requiredAdditionalWeight > menuIngredient.stock) {
-          ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${menuIngredient.stock - totalUsedWeight}ก.)`, 'warning');
+          ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${Math.round((menuIngredient.stock - totalUsedWeight) * 100) / 100}ก.)`, 'warning');
           return;
         }
       }

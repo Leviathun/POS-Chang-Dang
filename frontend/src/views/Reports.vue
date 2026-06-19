@@ -767,7 +767,7 @@
             <!-- Right Side: Qty & Sales -->
             <div class="card-sales-right">
               <div class="qty-column">
-                <span class="qty-num">{{ Number(item.total_qty).toLocaleString() }}</span>
+                <span class="qty-num">{{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}</span>
                 <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
               </div>
               <div class="sales-pill">
@@ -804,7 +804,7 @@
             <!-- Right Side: Qty & Sales -->
             <div class="card-sales-right">
               <div class="qty-column">
-                <span class="qty-num">{{ Number(item.total_qty).toLocaleString() }}</span>
+                <span class="qty-num">{{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}</span>
                 <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
               </div>
               <div class="sales-pill">
