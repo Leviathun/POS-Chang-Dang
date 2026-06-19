@@ -18,10 +18,10 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
 
-    if (!payment_method || !['cash', 'qr', 'gov'].includes(payment_method)) {
+    if (!payment_method || !['cash', 'qr', 'gov', 'delivery'].includes(payment_method)) {
       return res.status(400).json({
         success: false,
-        error: 'กรุณาระบุวิธีชำระเงิน (cash, qr หรือ gov)'
+        error: 'กรุณาระบุวิธีชำระเงิน (cash, qr, gov หรือ delivery)'
       });
     }
 
