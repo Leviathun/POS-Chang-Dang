@@ -423,8 +423,8 @@
             </template>
           </div>
 
-          <div v-if="!activeIsModifier && activeItem?.name?.includes('แร็ปไก่') && (actionType === 'restock' || (actionType === 'adjust' && actionForm.quantity > 0))" style="font-size: 13px; color: #ff3b30; margin-top: -6px; margin-bottom: var(--space-md); text-align: left; font-weight: bold; line-height: 1.3;">
-            * การเพิ่มจะหัก "ไก่ไร้กระดูก" 1 ชิ้น อัตโนมัติ
+          <div v-if="!activeIsModifier && (activeItem?.name?.includes('แร็ปไก่') || isLinkedBun(activeItem)) && (actionType === 'restock' || actionType === 'adjust')" style="font-size: 13px; color: #ff3b30; margin-top: -6px; margin-bottom: var(--space-md); text-align: left; font-weight: bold; line-height: 1.3;">
+            {{ getLinkageWarningText(activeItem) }}
           </div>
 
           <div v-if="!activeIsModifier && actionType === 'fry'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
@@ -588,6 +588,53 @@ const isItemLowStock = (item, qty) => {
     return qty <= 500;
   }
   return qty <= lowStockThreshold.value;
+};
+
+const getSteamedCounterpartName = (name) => {
+  if (!name) return '';
+  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
+    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม')) {
+      return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
+    }
+    if (name.includes('หมู')) {
+      return 'ซาลาเปาไส้หมูสับ';
+    }
+    if (name.includes('ถั่วดำ')) {
+      return 'ซาลาเปาไส้ถั่วดำ';
+    }
+    if (name.includes('ครีม')) {
+      return 'ซาลาเปาไส้ครีม';
+    }
+    if (name.includes('หมั่นโถ')) {
+      return 'หมั่นโถว';
+    }
+  }
+  return '';
+};
+
+const isLinkedBun = (item) => {
+  if (!item || !item.name) return false;
+  return !!getSteamedCounterpartName(item.name);
+};
+
+const getLinkageWarningText = (item) => {
+  if (!item) return '';
+  let isDeduct = true; // default to deduct
+  if (actionType.value === 'adjust') {
+    const val = Number(actionForm.value.quantity);
+    if (!isNaN(val) && actionForm.value.quantity !== '' && actionForm.value.quantity !== null) {
+      if (val < 0) {
+        isDeduct = false;
+      }
+    }
+  }
+
+  const targetName = item.name.includes('แร็ปไก่') ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
+  if (!targetName) return '';
+
+  return isDeduct 
+    ? `* การเพิ่มจะหัก "${targetName}" 1 ชิ้น อัตโนมัติ`
+    : `* การลบจะเพิ่ม "${targetName}" 1 ชิ้น อัตโนมัติ`;
 };
 
 // Load System Settings to check Low Stock Threshold

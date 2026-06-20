@@ -360,16 +360,17 @@
             />
           </div>
 
-          <!-- Multiple Prices Toggle -->
+          <!-- Multiple Prices Toggle (SML) -->
           <div class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-md);">
             <label class="toggle-switch" style="margin: 0;">
-              <input type="checkbox" v-model="itemForm.use_multiple_prices" />
+              <input type="checkbox" v-model="itemForm.use_multiple_prices" @change="onSmlToggleChange" />
               <span class="toggle-slider"></span>
             </label>
             <span class="font-semibold" style="font-size: var(--font-sm); margin-left: 6px;">
-              {{ isBunCategory ? 'ใช้งานหลายราคาตามการปรุง (นึ่ง, ทอด, ปิ้ง)' : 'ใช้งานหลายราคาตามขนาดไซส์ (S, M, L)' }}
+              ใช้งานหลายราคาตามขนาดไซส์ (S, M, L)
             </span>
           </div>
+
 
           <!-- Price (Single) -->
           <div v-if="!itemForm.use_multiple_prices" class="form-group">
@@ -387,38 +388,38 @@
           <div v-else class="form-group card p-sm mb-md" style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
             <label class="form-label font-bold mb-sm" style="margin-bottom: 8px; display: block;">
               <i class="fa-solid fa-tags" style="margin-right: 4px;"></i> 
-              {{ isBunCategory ? 'กำหนดราคาตามการปรุง (บาท)' : 'กำหนดราคาตามไซส์ (บาท)' }}
+              กำหนดราคาตามไซส์ (บาท)
             </label>
             <div class="flex flex-column gap-sm" style="display: flex; flex-direction: column; gap: 8px;">
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">{{ isBunCategory ? 'นึ่ง (S):' : 'เล็ก (S):' }}</span>
+                <span style="font-size: var(--font-sm); min-width: 80px;">เล็ก (S):</span>
                 <input 
                   type="number" 
                   class="form-input" 
                   v-model.number="itemForm.multiple_prices.S" 
-                  :placeholder="isBunCategory ? 'เช่น 15' : 'เช่น 40'" 
+                  placeholder="เช่น 40" 
                   style="flex: 1;"
                   min="0"
                 />
               </div>
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">{{ isBunCategory ? 'ทอด (M):' : 'กลาง (M):' }}</span>
+                <span style="font-size: var(--font-sm); min-width: 80px;">กลาง (M):</span>
                 <input 
                   type="number" 
                   class="form-input" 
                   v-model.number="itemForm.multiple_prices.M" 
-                  :placeholder="isBunCategory ? 'เช่น 20' : 'เช่น 50'" 
+                  placeholder="เช่น 50" 
                   style="flex: 1;"
                   min="0"
                 />
               </div>
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">{{ isBunCategory ? 'ปิ้ง (L):' : 'ใหญ่ (L):' }}</span>
+                <span style="font-size: var(--font-sm); min-width: 80px;">ใหญ่ (L):</span>
                 <input 
                   type="number" 
                   class="form-input" 
                   v-model.number="itemForm.multiple_prices.L" 
-                  :placeholder="isBunCategory ? 'เช่น 20' : 'เช่น 60'" 
+                  placeholder="เช่น 60" 
                   style="flex: 1;"
                   min="0"
                 />
@@ -674,6 +675,7 @@ const itemForm = ref({
   image_url: '',
   uom: 'ชิ้น',
   use_multiple_prices: false,
+  use_cooking_options: false,
   multiple_prices: { S: '', M: '', L: '' }
 });
 
@@ -688,6 +690,9 @@ const formatItemPrice = (item) => {
     try {
       const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
       if (parsed && typeof parsed === 'object') {
+        if (parsed.cooking_options) {
+          return formatCurrency(item.price);
+        }
         const prices = Object.values(parsed).filter(v => v !== null && v !== '');
         if (prices.length > 0) {
           return '฿' + prices.join('/');
@@ -758,6 +763,18 @@ const openCatModal = () => {
   showCatModal.value = true;
 };
 
+const onSmlToggleChange = () => {
+  if (itemForm.value.use_multiple_prices) {
+    itemForm.value.use_cooking_options = false;
+  }
+};
+
+const onCookingToggleChange = () => {
+  if (itemForm.value.use_cooking_options) {
+    itemForm.value.use_multiple_prices = false;
+  }
+};
+
 const openAddModal = () => {
   isEditMode.value = false;
   editItemId.value = null;
@@ -769,6 +786,7 @@ const openAddModal = () => {
     track_raw_stock: false,
     uom: 'ชิ้น',
     use_multiple_prices: false,
+    use_cooking_options: false,
     multiple_prices: { S: '', M: '', L: '' }
   };
   showItemModal.value = true;
@@ -779,17 +797,22 @@ const openEditModal = (item) => {
   editItemId.value = item.id;
   
   let useMult = false;
+  let useCooking = false;
   let multPrices = { S: '', M: '', L: '' };
   if (item.multiple_prices) {
     try {
       const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
       if (parsed && typeof parsed === 'object') {
-        useMult = true;
-        multPrices = {
-          S: parsed.S !== undefined ? parsed.S : '',
-          M: parsed.M !== undefined ? parsed.M : '',
-          L: parsed.L !== undefined ? parsed.L : ''
-        };
+        if (parsed.cooking_options) {
+          useCooking = true;
+        } else {
+          useMult = true;
+          multPrices = {
+            S: parsed.S !== undefined ? parsed.S : '',
+            M: parsed.M !== undefined ? parsed.M : '',
+            L: parsed.L !== undefined ? parsed.L : ''
+          };
+        }
       }
     } catch (e) {
       console.warn(e);
@@ -804,6 +827,7 @@ const openEditModal = (item) => {
     track_raw_stock: item.raw_stock !== null && item.raw_stock !== undefined,
     uom: item.uom || 'ชิ้น',
     use_multiple_prices: useMult,
+    use_cooking_options: useCooking,
     multiple_prices: multPrices
   };
   showItemModal.value = true;
@@ -932,6 +956,10 @@ const handleSaveItem = async () => {
       if (multiplePricesPayload.S !== null) {
         basePrice = multiplePricesPayload.S;
       }
+    } else if (itemForm.value.use_cooking_options) {
+      multiplePricesPayload = {
+        cooking_options: true
+      };
     }
 
     const payload = {

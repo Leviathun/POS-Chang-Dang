@@ -148,8 +148,8 @@
                   :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0')"
                   class="form-input"
                 />
-                <div v-if="item.name.includes('แร็ปไก่')" style="font-size: 13px; color: #ff3b30; margin-top: 6px; text-align: center; font-weight: bold; line-height: 1.3;">
-                  * การเพิ่มจะหัก "ไก่ไร้กระดูก" 1 ชิ้น อัตโนมัติ
+                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" style="font-size: 13px; color: #ff3b30; margin-top: 6px; text-align: center; font-weight: bold; line-height: 1.3;">
+                  {{ getLinkageWarningText(item) }}
                 </div>
               </div>
             </div>
@@ -365,6 +365,62 @@ const isItemLowStock = (item, qty) => {
     return qty <= 500;
   }
   return qty <= lowStockThreshold.value;
+};
+
+const getSteamedCounterpartName = (name) => {
+  if (!name) return '';
+  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
+    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม')) {
+      return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
+    }
+    if (name.includes('หมู')) {
+      return 'ซาลาเปาไส้หมูสับ';
+    }
+    if (name.includes('ถั่วดำ')) {
+      return 'ซาลาเปาไส้ถั่วดำ';
+    }
+    if (name.includes('ครีม')) {
+      return 'ซาลาเปาไส้ครีม';
+    }
+    if (name.includes('หมั่นโถ')) {
+      return 'หมั่นโถว';
+    }
+  }
+  return '';
+};
+
+const isLinkedBun = (item) => {
+  if (!item || !item.name) return false;
+  return !!getSteamedCounterpartName(item.name);
+};
+
+const getLinkageWarningText = (item) => {
+  if (!item || !item.name) return '';
+  let isDeduct = true; // default to deduct
+  if (bulkTab.value === 'relative') {
+    const val = Number(item.cooked);
+    if (!isNaN(val) && item.cooked !== '' && item.cooked !== null && item.cooked !== undefined) {
+      if (val < 0) {
+        isDeduct = false;
+      }
+    }
+  } else {
+    // absolute
+    const val = Number(item.cooked);
+    if (!isNaN(val) && item.cooked !== '' && item.cooked !== null && item.cooked !== undefined) {
+      const current = item.quantity || 0;
+      if (val < current) {
+        isDeduct = false;
+      }
+    }
+  }
+
+  const targetName = item.name.includes('แร็ปไก่') ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
+  if (!targetName) return '';
+
+  return isDeduct 
+    ? `* การเพิ่มจะหัก "${targetName}" 1 ชิ้น อัตโนมัติ`
+    : `* การลบจะคืน "${targetName}" 1 ชิ้น อัตโนมัติ`;
 };
 
 // Custom Dropdown logic for StockBulk.vue

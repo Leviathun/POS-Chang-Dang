@@ -3,6 +3,28 @@ const router = express.Router();
 const { getDb } = require('../config/database');
 const { attachUser, requireAuth } = require('../middleware/auth');
 
+const getBunLinkageName = (name) => {
+  if (!name) return null;
+  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
+    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม')) {
+      return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
+    }
+    if (name.includes('หมู')) {
+      return 'ซาลาเปาไส้หมูสับ';
+    }
+    if (name.includes('ถั่วดำ')) {
+      return 'ซาลาเปาไส้ถั่วดำ';
+    }
+    if (name.includes('ครีม')) {
+      return 'ซาลาเปาไส้ครีม';
+    }
+    if (name.includes('หมั่นโถ')) {
+      return 'หมั่นโถว';
+    }
+  }
+  return null;
+};
+
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
@@ -156,6 +178,40 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
         }
       }
 
+      // Auto-deduct steamed bun when restocking fried/grilled bun
+      const steamedBunName = getBunLinkageName(item.name);
+      if (!isRaw && steamedBunName && quantity > 0) {
+        const steamedItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(branchId, steamedBunName);
+        if (steamedItem && steamedItem.quantity !== null && steamedItem.quantity !== undefined) {
+          const prevSteamedStock = steamedItem.quantity;
+          const deductSteamed = quantity;
+          const newSteamedStock = Math.round((prevSteamedStock - deductSteamed) * 100) / 100;
+
+          if (newSteamedStock < 0) {
+            throw new Error(`STOCK_NEGATIVE_BUN:${steamedItem.name}:${prevSteamedStock}:${deductSteamed}`);
+          }
+
+          await db.prepare(`
+            UPDATE menu_items
+            SET quantity = ?, updated_at = datetime('now', 'localtime')
+            WHERE id = ? AND branch_id = ?
+          `).run(newSteamedStock, steamedItem.id, branchId);
+
+          await db.prepare(`
+            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+            VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
+          `).run(
+            branchId,
+            steamedItem.id,
+            -deductSteamed,
+            prevSteamedStock,
+            newSteamedStock,
+            req.user.id,
+            `หักอัตโนมัติจากการเติมสต็อก ${item.name} +${quantity} ชิ้น`
+          );
+        }
+      }
+
       return newVal;
     });
 
@@ -172,7 +228,7 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Restock error:', error.message);
-    if (error.message && error.message.startsWith('STOCK_NEGATIVE_CHICKEN:')) {
+    if (error.message && (error.message.startsWith('STOCK_NEGATIVE_CHICKEN:') || error.message.startsWith('STOCK_NEGATIVE_BUN:'))) {
       const parts = error.message.split(':');
       const name = parts[1];
       const prev = parts[2];
@@ -309,6 +365,42 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         }
       }
 
+      // Auto-adjust steamed bun when adjusting fried/grilled bun stock
+      const steamedBunName = getBunLinkageName(item.name);
+      if (!isRaw && steamedBunName && quantity !== 0) {
+        const steamedItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(branchId, steamedBunName);
+        if (steamedItem && steamedItem.quantity !== null && steamedItem.quantity !== undefined) {
+          const prevSteamedStock = steamedItem.quantity;
+          const deductSteamed = quantity;
+          const newSteamedStock = Math.round((prevSteamedStock - deductSteamed) * 100) / 100;
+
+          if (newSteamedStock < 0) {
+            throw new Error(`STOCK_NEGATIVE_BUN:${steamedItem.name}:${prevSteamedStock}:${deductSteamed}`);
+          }
+
+          await db.prepare(`
+            UPDATE menu_items
+            SET quantity = ?, updated_at = datetime('now', 'localtime')
+            WHERE id = ? AND branch_id = ?
+          `).run(newSteamedStock, steamedItem.id, branchId);
+
+          await db.prepare(`
+            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+            VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
+          `).run(
+            branchId,
+            steamedItem.id,
+            -deductSteamed,
+            prevSteamedStock,
+            newSteamedStock,
+            req.user.id,
+            deductSteamed > 0 
+              ? `หักอัตโนมัติจากการปรับปรุงสต็อก ${item.name} +${deductSteamed} ชิ้น`
+              : `คืนอัตโนมัติจากการปรับปรุงสต็อก ${item.name} ${deductSteamed} ชิ้น`
+          );
+        }
+      }
+
       // บันทึกกิจกรรมพนักงาน
       let actionLabel = isRaw ? 'adjust_raw_stock' : 'adjust_stock';
       if (reason === 'waste') actionLabel = isRaw ? 'record_raw_waste' : 'record_waste';
@@ -347,7 +439,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Adjust stock error:', error.message);
-    if (error.message && error.message.startsWith('STOCK_NEGATIVE_CHICKEN:')) {
+    if (error.message && (error.message.startsWith('STOCK_NEGATIVE_CHICKEN:') || error.message.startsWith('STOCK_NEGATIVE_BUN:'))) {
       const parts = error.message.split(':');
       const name = parts[1];
       const prev = parts[2];
@@ -667,6 +759,42 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
               );
             }
           }
+
+          // Auto-adjust steamed bun when adjusting fried/grilled bun stock in bulk adjust
+          const steamedBunName = getBunLinkageName(menuItem.name);
+          if (steamedBunName && deltaCooked !== 0) {
+            const steamedItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(branchId, steamedBunName);
+            if (steamedItem && steamedItem.quantity !== null && steamedItem.quantity !== undefined) {
+              const prevSteamedStock = steamedItem.quantity;
+              const deductSteamed = deltaCooked;
+              const newSteamedStock = Math.round((prevSteamedStock - deductSteamed) * 100) / 100;
+
+              if (newSteamedStock < 0) {
+                throw new Error(`STOCK_NEGATIVE_BUN:${steamedItem.name}:${prevSteamedStock}:${deductSteamed}`);
+              }
+
+              await db.prepare(`
+                UPDATE menu_items
+                SET quantity = ?, updated_at = datetime('now', 'localtime')
+                WHERE id = ? AND branch_id = ?
+              `).run(newSteamedStock, steamedItem.id, branchId);
+
+              await db.prepare(`
+                INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
+                VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
+              `).run(
+                branchId,
+                steamedItem.id,
+                -deductSteamed,
+                prevSteamedStock,
+                newSteamedStock,
+                req.user.id,
+                deductSteamed > 0
+                  ? `หักอัตโนมัติจากการเพิ่มสต็อก ${menuItem.name} +${deductSteamed} ชิ้น`
+                  : `คืนอัตโนมัติจากการลดสต็อก ${menuItem.name} ${deductSteamed} ชิ้น`
+              );
+            }
+          }
         }
 
         if (deltaRaw !== 0) {
@@ -733,7 +861,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
         updatedItems
       });
     } catch (txError) {
-      if (txError.message.startsWith('STOCK_NEGATIVE_CHICKEN:')) {
+      if (txError.message.startsWith('STOCK_NEGATIVE_CHICKEN:') || txError.message.startsWith('STOCK_NEGATIVE_BUN:')) {
         const parts = txError.message.split(':');
         const name = parts[1];
         const prev = parts[2];

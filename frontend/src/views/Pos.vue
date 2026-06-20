@@ -321,8 +321,8 @@
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
         <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
           <h3 style="font-size: var(--font-lg); font-weight: 800;">
-            <i :class="isSamKrobItem ? 'fa-solid fa-gears' : isBunItem ? 'fa-solid fa-fire-burner' : 'fa-solid fa-tags'" style="margin-right: 6px; color: var(--primary);"></i> 
-            {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : isBunItem ? 'เลือกวิธีการปรุง' : 'เลือกขนาด (Size)' }}
+            <i :class="isSamKrobItem ? 'fa-solid fa-gears' : 'fa-solid fa-tags'" style="margin-right: 6px; color: var(--primary);"></i> 
+            {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : 'เลือกขนาด (Size)' }}
           </h3>
           <button class="modal-close" @click="showOptionsModal = false" style="font-size: var(--font-md);">✕</button>
         </div>
@@ -334,8 +334,8 @@
           <!-- Size Selector -->
           <div class="form-group mb-lg" style="margin-bottom: 24px;">
             <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 8px; display: block;">
-              <i :class="isBunItem ? 'fa-solid fa-fire-burner' : 'fa-solid fa-weight-scale'" style="margin-right: 4px; color: var(--primary);"></i>
-              {{ isBunItem ? 'เลือกวิธีการปรุง *' : 'เลือกขนาด *' }}
+              <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i>
+              เลือกขนาด *
             </label>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
               <div 
@@ -420,9 +420,9 @@
           <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
             <div class="font-bold mb-xs" style="font-size: var(--font-xs); color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
             <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center;">
-              <span>{{ isSamKrobItem ? 'น้ำหนักรวม:' : isBunItem ? 'วิธีปรุง:' : 'ขนาด:' }}</span>
+              <span>{{ isSamKrobItem ? 'น้ำหนักรวม:' : 'ขนาด:' }}</span>
               <span class="font-extrabold text-primary" style="font-size: var(--font-md);">
-                {{ isSamKrobItem ? getSelectedSizeWeight() + ' กรัม' : isBunItem ? (selectedSize === 'S' ? 'นึ่ง' : selectedSize === 'M' ? 'ทอด' : 'ปิ้ง') : (selectedSize === 'S' ? 'เล็ก (S)' : selectedSize === 'M' ? 'กลาง (M)' : 'ใหญ่ (L)') }}
+                {{ isSamKrobItem ? getSelectedSizeWeight() + ' กรัม' : (selectedSize === 'S' ? 'เล็ก (S)' : selectedSize === 'M' ? 'กลาง (M)' : 'ใหญ่ (L)') }}
               </span>
             </div>
             <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
@@ -532,35 +532,84 @@ const isMultiplePricesItem = (item) => {
   return false;
 };
 
+const isCookingOptionItem = (item) => {
+  if (!item || !item.multiple_prices) return false;
+  try {
+    const parsed = typeof item.multiple_prices === 'string'
+      ? JSON.parse(item.multiple_prices)
+      : item.multiple_prices;
+    return !!(parsed && parsed.cooking_options === true);
+  } catch (e) {
+    console.warn('Error parsing cooking options:', e);
+  }
+  return false;
+};
+
+const getBunPrice = (item, size) => {
+  if (!item || !item.multiple_prices) return item.price;
+  try {
+    const parsed = typeof item.multiple_prices === 'string'
+      ? JSON.parse(item.multiple_prices)
+      : item.multiple_prices;
+    if (parsed && parsed[size] !== undefined && parsed[size] !== null && parsed[size] !== '') {
+      return Number(parsed[size]);
+    }
+  } catch (e) {
+    console.error('Error parsing bun price:', e);
+  }
+  return item.price;
+};
+
+const addBunToCartDirect = (item, size) => {
+  // Check stock limit of the base item
+  if (item.stock !== null && item.stock !== undefined) {
+    const currentQty = getCartQty(item.id);
+    if (currentQty >= item.stock) {
+      ui.showToast('สต็อกสินค้านี้ไม่เพียงพอ', 'warning');
+      return;
+    }
+  }
+
+  // Get option price and label
+  const price = getBunPrice(item, size);
+  const bunMethodLabel = size === 'S' ? 'นึ่ง' : size === 'M' ? 'ทอด' : 'ปิ้ง';
+  const customName = `${item.name} (${bunMethodLabel})`;
+  const cartKey = `${item.id}-${size}`;
+
+  const customItem = {
+    ...item,
+    name: customName,
+    price: price,
+    options: {
+      cooking_method: bunMethodLabel,
+      size: size
+    }
+  };
+
+  const currentCart = new Map(cart.value);
+  if (currentCart.has(cartKey)) {
+    currentCart.get(cartKey).quantity += 1;
+  } else {
+    currentCart.set(cartKey, { item: customItem, quantity: 1 });
+  }
+  cart.value = currentCart;
+
+  ui.showToast(`เพิ่ม ${customName} เข้าตะกร้าแล้ว`, 'success');
+
+  // Trigger card flash animation
+  const el = document.getElementById(`pos-item-${item.id}`);
+  if (el) {
+    el.classList.add('added-flash');
+    setTimeout(() => el.classList.remove('added-flash'), 400);
+  }
+};
+
 // Unified helper to get sizes, names, weights, prices for both SamKrob and general S/M/L items
 const getAvailableSizes = () => {
   const baseItem = activeModalItem.value;
   if (!baseItem) return {};
 
   const isSamKrob = isSamKrobItem.value;
-  const isBun = isBunItem.value;
-
-  if (isBun) {
-    let parsed = {};
-    if (baseItem.multiple_prices) {
-      try {
-        parsed = typeof baseItem.multiple_prices === 'string'
-          ? JSON.parse(baseItem.multiple_prices)
-          : baseItem.multiple_prices;
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-    const priceS = (parsed && parsed.S !== undefined && parsed.S !== null && parsed.S !== '') ? Number(parsed.S) : baseItem.price;
-    const priceM = (parsed && parsed.M !== undefined && parsed.M !== null && parsed.M !== '') ? Number(parsed.M) : baseItem.price;
-    const priceL = (parsed && parsed.L !== undefined && parsed.L !== null && parsed.L !== '') ? Number(parsed.L) : baseItem.price;
-    
-    return {
-      S: { name: 'นึ่ง', weight: 1, price: priceS },
-      M: { name: 'ทอด', weight: 1, price: priceM },
-      L: { name: 'ปิ้ง', weight: 1, price: priceL }
-    };
-  }
 
   // S/M/L default prices for SamKrob (40, 50, 60)
   let itemPrices = isSamKrob ? { S: 40, M: 50, L: 60 } : {};
@@ -685,6 +734,9 @@ const formatItemPrice = (item) => {
     try {
       const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
       if (parsed && typeof parsed === 'object') {
+        if (parsed.cooking_options) {
+          return formatCurrency(item.price);
+        }
         const prices = Object.values(parsed).filter(v => v !== null && v !== '');
         if (prices.length > 0) {
           return '฿' + prices.join('/');
@@ -725,12 +777,7 @@ const addToCart = (item) => {
     return;
   }
 
-  if (isBun) {
-    activeModalItem.value = item;
-    selectedSize.value = 'S'; // Default to Steamed
-    showOptionsModal.value = true;
-    return;
-  }
+
 
   // Check if it's a general S/M/L item
   if (isMultiplePricesItem(item)) {
@@ -885,33 +932,17 @@ const confirmSelection = () => {
       }
     }
 
-    const isBun = isBunItem.value;
-    if (isBun) {
-      const bunMethodLabel = selectedSize.value === 'S' ? 'นึ่ง' : selectedSize.value === 'M' ? 'ทอด' : 'ปิ้ง';
-      customName = `${baseItem.name} (${bunMethodLabel})`;
+    const sizeLabel = selectedSize.value === 'S' ? 'S' : selectedSize.value === 'M' ? 'M' : 'L';
+    customName = `${baseItem.name} (ขนาด ${sizeLabel})`;
 
-      customItem = {
-        ...baseItem,
-        name: customName,
-        price: sizeConfig.price,
-        options: {
-          cooking_method: bunMethodLabel,
-          size: selectedSize.value
-        }
-      };
-    } else {
-      const sizeLabel = selectedSize.value === 'S' ? 'S' : selectedSize.value === 'M' ? 'M' : 'L';
-      customName = `${baseItem.name} (ขนาด ${sizeLabel})`;
-
-      customItem = {
-        ...baseItem,
-        name: customName,
-        price: sizeConfig.price,
-        options: {
-          size: selectedSize.value
-        }
-      };
-    }
+    customItem = {
+      ...baseItem,
+      name: customName,
+      price: sizeConfig.price,
+      options: {
+        size: selectedSize.value
+      }
+    };
 
     cartKey = `${baseItem.id}-${selectedSize.value}`;
   }
@@ -1789,5 +1820,86 @@ input:checked + .slider-toggle:before {
 .preset-btn:hover {
   background: rgba(139, 3, 19, 0.05);
   border-color: var(--primary);
+}
+
+/* --- Bun Direct Cooking Button Styles --- */
+.pos-item.has-cooking-options {
+  min-height: 310px !important;
+  padding-bottom: var(--space-md) !important;
+}
+
+@media (min-width: 768px) {
+  .pos-item.has-cooking-options {
+    min-height: 410px !important;
+  }
+}
+
+.bun-cooking-buttons {
+  width: 100%;
+  margin-top: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bun-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-extrabold);
+  font-size: 1.1rem !important; /* Larger readable size */
+  cursor: pointer;
+  transition: all var(--transition-base);
+  user-select: none;
+  width: 100%;
+  height: 45px; /* Taller finger touch target */
+}
+
+/* Steam Button */
+.bun-btn.steam {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  border: 1.5px solid rgba(139, 3, 19, 0.2);
+}
+
+.bun-btn.steam:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+}
+
+/* Fry Button */
+.bun-btn.fry {
+  background: rgba(247, 148, 29, 0.08);
+  color: #d05b00;
+  border: 1.5px solid rgba(247, 148, 29, 0.2);
+}
+
+.bun-btn.fry:hover:not(:disabled) {
+  background: #f7941d;
+  color: white;
+}
+
+/* Grill Button */
+.bun-btn.grill {
+  background: rgba(139, 90, 43, 0.08);
+  color: #7d4b27;
+  border: 1.5px solid rgba(139, 90, 43, 0.2);
+}
+
+.bun-btn.grill:hover:not(:disabled) {
+  background: #8b5a2b;
+  color: white;
+}
+
+.bun-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.bun-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>

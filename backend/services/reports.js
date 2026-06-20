@@ -318,8 +318,10 @@ async function getTopItems(days = 7, branchId = null) {
       const qty = oi.quantity;
       const subtotal = oi.subtotal;
 
-      if (!aggregation[id]) {
-        aggregation[id] = {
+      const aggKey = `${id}-${name}`;
+
+      if (!aggregation[aggKey]) {
+        aggregation[aggKey] = {
           menu_item_id: id,
           item_name: name,
           total_qty: 0,
@@ -328,9 +330,9 @@ async function getTopItems(days = 7, branchId = null) {
           unit: uomMap[id] || 'ชิ้น'
         };
       }
-      aggregation[id].total_qty += qty;
-      aggregation[id].portion_count += qty;
-      aggregation[id].total_revenue += subtotal;
+      aggregation[aggKey].total_qty += qty;
+      aggregation[aggKey].portion_count += qty;
+      aggregation[aggKey].total_revenue += subtotal;
     }
   });
 
