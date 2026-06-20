@@ -12,6 +12,7 @@ async function getDailyReport(date, branchId = null) {
   const params2 = [date];
   const params3 = [date];
   const params3_gov = [date];
+  const params3_delivery = [date];
   const params4 = [date];
 
   if (branchId) {
@@ -20,6 +21,7 @@ async function getDailyReport(date, branchId = null) {
     params2.push(branchId);
     params3.push(branchId);
     params3_gov.push(branchId);
+    params3_delivery.push(branchId);
     params4.push(branchId);
   }
 
@@ -58,6 +60,14 @@ async function getDailyReport(date, branchId = null) {
     WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
   `).get(params3_gov);
 
+  const deliveryStats = await db.prepare(`
+    SELECT 
+      COUNT(*) as count,
+      COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+  `).get(params3_delivery);
+
   // ยอดขายรายชั่วโมง (ระวังการเขียน strftime ใน libSQL/SQLite)
   const hourlyBreakdown = await db.prepare(`
     SELECT 
@@ -91,7 +101,9 @@ async function getDailyReport(date, branchId = null) {
     qr_count: qrStats.count,
     qr_total: qrStats.total,
     gov_count: govStats.count,
-    gov_total: govStats.total
+    gov_total: govStats.total,
+    delivery_count: deliveryStats.count,
+    delivery_total: deliveryStats.total
   };
 
   return {
@@ -260,6 +272,14 @@ async function getTopItems(days = 7, branchId = null) {
   `;
 
   const allOrderItems = await db.prepare(sql).all(params);
+  
+  // Fetch UOM map from menu_items to dynamic assign correct unit of measure
+  const dbMenuItems = await db.prepare('SELECT id, uom FROM menu_items').all();
+  const uomMap = {};
+  dbMenuItems.forEach(item => {
+    uomMap[item.id] = item.uom;
+  });
+
   const aggregation = {};
 
   allOrderItems.forEach(oi => {
@@ -285,7 +305,7 @@ async function getTopItems(days = 7, branchId = null) {
             total_qty: 0,
             portion_count: 0,
             total_revenue: 0,
-            unit: 'กรัม'
+            unit: uomMap[id] || 'กรัม'
           };
         }
         aggregation[id].total_qty += totalWeight;
@@ -298,19 +318,21 @@ async function getTopItems(days = 7, branchId = null) {
       const qty = oi.quantity;
       const subtotal = oi.subtotal;
 
-      if (!aggregation[id]) {
-        aggregation[id] = {
+      const aggKey = `${id}-${name}`;
+
+      if (!aggregation[aggKey]) {
+        aggregation[aggKey] = {
           menu_item_id: id,
           item_name: name,
           total_qty: 0,
           portion_count: 0,
           total_revenue: 0,
-          unit: 'ชิ้น'
+          unit: uomMap[id] || 'ชิ้น'
         };
       }
-      aggregation[id].total_qty += qty;
-      aggregation[id].portion_count += qty;
-      aggregation[id].total_revenue += subtotal;
+      aggregation[aggKey].total_qty += qty;
+      aggregation[aggKey].portion_count += qty;
+      aggregation[aggKey].total_revenue += subtotal;
     }
   });
 

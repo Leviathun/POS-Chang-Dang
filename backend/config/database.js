@@ -248,7 +248,7 @@ async function initDatabase() {
       subtotal REAL NOT NULL,
       discount REAL DEFAULT 0,
       total REAL NOT NULL,
-      payment_method TEXT CHECK(payment_method IN ('cash', 'qr', 'gov')),
+      payment_method TEXT CHECK(payment_method IN ('cash', 'qr', 'gov', 'delivery')),
       cash_received REAL,
       cash_change REAL,
       status TEXT DEFAULT 'completed' CHECK(status IN ('completed', 'cancelled')),

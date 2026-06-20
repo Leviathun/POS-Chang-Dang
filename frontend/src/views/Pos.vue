@@ -334,7 +334,8 @@
           <!-- Size Selector -->
           <div class="form-group mb-lg" style="margin-bottom: 24px;">
             <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 8px; display: block;">
-              <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i> เลือกขนาด *
+              <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i>
+              เลือกขนาด *
             </label>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
               <div 
@@ -484,6 +485,12 @@ const isSamKrobItem = computed(() => {
   return !!(cat && cat.name.includes('สามกรอบ'));
 });
 
+const isBunItem = computed(() => {
+  if (!activeModalItem.value) return false;
+  const cat = store.categories.find(c => String(c.id) === String(activeModalItem.value.category_id));
+  return !!(cat && cat.name.includes('ซาลาเปา'));
+});
+
 const samKrobIngredients = computed(() => {
   return store.menuItems.filter(item => {
     const cat = store.categories.find(c => String(c.id) === String(item.category_id));
@@ -523,6 +530,78 @@ const isMultiplePricesItem = (item) => {
     console.warn('Error parsing multiple prices:', e);
   }
   return false;
+};
+
+const isCookingOptionItem = (item) => {
+  if (!item || !item.multiple_prices) return false;
+  try {
+    const parsed = typeof item.multiple_prices === 'string'
+      ? JSON.parse(item.multiple_prices)
+      : item.multiple_prices;
+    return !!(parsed && parsed.cooking_options === true);
+  } catch (e) {
+    console.warn('Error parsing cooking options:', e);
+  }
+  return false;
+};
+
+const getBunPrice = (item, size) => {
+  if (!item || !item.multiple_prices) return item.price;
+  try {
+    const parsed = typeof item.multiple_prices === 'string'
+      ? JSON.parse(item.multiple_prices)
+      : item.multiple_prices;
+    if (parsed && parsed[size] !== undefined && parsed[size] !== null && parsed[size] !== '') {
+      return Number(parsed[size]);
+    }
+  } catch (e) {
+    console.error('Error parsing bun price:', e);
+  }
+  return item.price;
+};
+
+const addBunToCartDirect = (item, size) => {
+  // Check stock limit of the base item
+  if (item.stock !== null && item.stock !== undefined) {
+    const currentQty = getCartQty(item.id);
+    if (currentQty >= item.stock) {
+      ui.showToast('สต็อกสินค้านี้ไม่เพียงพอ', 'warning');
+      return;
+    }
+  }
+
+  // Get option price and label
+  const price = getBunPrice(item, size);
+  const bunMethodLabel = size === 'S' ? 'นึ่ง' : size === 'M' ? 'ทอด' : 'ปิ้ง';
+  const customName = `${item.name} (${bunMethodLabel})`;
+  const cartKey = `${item.id}-${size}`;
+
+  const customItem = {
+    ...item,
+    name: customName,
+    price: price,
+    options: {
+      cooking_method: bunMethodLabel,
+      size: size
+    }
+  };
+
+  const currentCart = new Map(cart.value);
+  if (currentCart.has(cartKey)) {
+    currentCart.get(cartKey).quantity += 1;
+  } else {
+    currentCart.set(cartKey, { item: customItem, quantity: 1 });
+  }
+  cart.value = currentCart;
+
+  ui.showToast(`เพิ่ม ${customName} เข้าตะกร้าแล้ว`, 'success');
+
+  // Trigger card flash animation
+  const el = document.getElementById(`pos-item-${item.id}`);
+  if (el) {
+    el.classList.add('added-flash');
+    setTimeout(() => el.classList.remove('added-flash'), 400);
+  }
 };
 
 // Unified helper to get sizes, names, weights, prices for both SamKrob and general S/M/L items
@@ -643,10 +722,11 @@ const getCartIngredientWeight = (ingredientId) => {
 
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
+  const roundedQty = Math.round(Number(qty) * 100) / 100;
   if (uom === 'กรัม') {
-    return `${qty} ก.`;
+    return `${roundedQty} ก.`;
   }
-  return `${qty} ${uom || 'ชิ้น'}`;
+  return `${roundedQty} ${uom || 'ชิ้น'}`;
 };
 
 const formatItemPrice = (item) => {
@@ -654,6 +734,9 @@ const formatItemPrice = (item) => {
     try {
       const parsed = typeof item.multiple_prices === 'string' ? JSON.parse(item.multiple_prices) : item.multiple_prices;
       if (parsed && typeof parsed === 'object') {
+        if (parsed.cooking_options) {
+          return formatCurrency(item.price);
+        }
         const prices = Object.values(parsed).filter(v => v !== null && v !== '');
         if (prices.length > 0) {
           return '฿' + prices.join('/');
@@ -683,6 +766,7 @@ const addToCart = (item) => {
   // Check if item belongs to the "สามกรอบ" category
   const cat = store.categories.find(c => String(c.id) === String(item.category_id));
   const isSamKrob = !!(cat && cat.name.includes('สามกรอบ'));
+  const isBun = !!(cat && cat.name.includes('ซาลาเปา'));
 
   if (isSamKrob) {
     activeModalItem.value = item;
@@ -692,6 +776,8 @@ const addToCart = (item) => {
     showOptionsModal.value = true;
     return;
   }
+
+
 
   // Check if it's a general S/M/L item
   if (isMultiplePricesItem(item)) {
@@ -814,7 +900,7 @@ const confirmSelection = () => {
         const totalUsedWeight = getCartIngredientWeight(ingredient.id);
         const requiredAdditionalWeight = ingredient.weight;
         if (totalUsedWeight + requiredAdditionalWeight > menuIngredient.stock) {
-          ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${menuIngredient.stock - totalUsedWeight}ก.)`, 'warning');
+          ui.showToast(`วัตถุดิบ "${menuIngredient.name}" สต็อกไม่เพียงพอ (ต้องการ ${requiredAdditionalWeight}ก. แต่เหลือ ${Math.round((menuIngredient.stock - totalUsedWeight) * 100) / 100}ก.)`, 'warning');
           return;
         }
       }
@@ -837,7 +923,7 @@ const confirmSelection = () => {
     cartKey = `${baseItem.id}-${selectedSize.value}-${sortedIds}`;
 
   } else {
-    // General SML Item
+    // General SML / Bun Item
     if (baseItem.stock !== null && baseItem.stock !== undefined) {
       const currentQty = getCartQty(baseItem.id);
       if (currentQty >= baseItem.stock) {
@@ -1734,5 +1820,86 @@ input:checked + .slider-toggle:before {
 .preset-btn:hover {
   background: rgba(139, 3, 19, 0.05);
   border-color: var(--primary);
+}
+
+/* --- Bun Direct Cooking Button Styles --- */
+.pos-item.has-cooking-options {
+  min-height: 310px !important;
+  padding-bottom: var(--space-md) !important;
+}
+
+@media (min-width: 768px) {
+  .pos-item.has-cooking-options {
+    min-height: 410px !important;
+  }
+}
+
+.bun-cooking-buttons {
+  width: 100%;
+  margin-top: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bun-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-extrabold);
+  font-size: 1.1rem !important; /* Larger readable size */
+  cursor: pointer;
+  transition: all var(--transition-base);
+  user-select: none;
+  width: 100%;
+  height: 45px; /* Taller finger touch target */
+}
+
+/* Steam Button */
+.bun-btn.steam {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  border: 1.5px solid rgba(139, 3, 19, 0.2);
+}
+
+.bun-btn.steam:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+}
+
+/* Fry Button */
+.bun-btn.fry {
+  background: rgba(247, 148, 29, 0.08);
+  color: #d05b00;
+  border: 1.5px solid rgba(247, 148, 29, 0.2);
+}
+
+.bun-btn.fry:hover:not(:disabled) {
+  background: #f7941d;
+  color: white;
+}
+
+/* Grill Button */
+.bun-btn.grill {
+  background: rgba(139, 90, 43, 0.08);
+  color: #7d4b27;
+  border: 1.5px solid rgba(139, 90, 43, 0.2);
+}
+
+.bun-btn.grill:hover:not(:disabled) {
+  background: #8b5a2b;
+  color: white;
+}
+
+.bun-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.bun-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>

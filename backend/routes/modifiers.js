@@ -438,13 +438,13 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             if (mode === 'relative') {
               deltaServings = val;
             } else {
-              deltaServings = val - currentServings;
+              deltaServings = Math.round((val - currentServings) * 100) / 100;
             }
           }
         }
 
         if (deltaServings !== 0) {
-          const newServings = currentServings + deltaServings;
+          const newServings = Math.round((currentServings + deltaServings) * 100) / 100;
           if (newServings < 0) {
             throw new Error(`MODIFIER_NEGATIVE:${modifier.name}`);
           }

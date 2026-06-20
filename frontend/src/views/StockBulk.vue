@@ -123,7 +123,7 @@
                   type="text" 
                   v-model="item.raw"
                   :disabled="item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin()"
-                  :placeholder="item.raw_quantity === null || item.raw_quantity === undefined ? 'ไม่มี' : (!isAdmin() ? 'ล็อก' : (bulkTab === 'relative' ? '0' : String(item.raw_quantity)))"
+                  :placeholder="item.raw_quantity === null || item.raw_quantity === undefined ? 'ไม่มี' : (!isAdmin() ? 'ล็อก' : (bulkTab === 'relative' ? '0' : String(Math.round(item.raw_quantity * 100) / 100)))"
                   class="form-input"
                   :class="{ 'disabled-input': item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin() }"
                 />
@@ -142,12 +142,15 @@
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
                 <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> ปรับยอด:</span>
-                <input 
+                 <input 
                   type="text" 
                   v-model="item.cooked"
-                  :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(item.quantity) : '0')"
+                  :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0')"
                   class="form-input"
                 />
+                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" style="font-size: 13px; color: #ff3b30; margin-top: 6px; text-align: center; font-weight: bold; line-height: 1.3;">
+                  {{ getLinkageWarningText(item) }}
+                </div>
               </div>
             </div>
           </div>
@@ -263,7 +266,7 @@
                 <input 
                   type="text" 
                   v-model="item.value"
-                  :placeholder="bulkTab === 'relative' ? '0' : String(item.total_servings)"
+                  :placeholder="bulkTab === 'relative' ? '0' : String(Math.round(item.total_servings * 100) / 100)"
                   class="form-input"
                 />
               </div>
@@ -348,10 +351,11 @@ const lowStockThreshold = computed(() => store.lowStockThreshold);
 
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
+  const roundedQty = Math.round(Number(qty) * 100) / 100;
   if (uom === 'กรัม') {
-    return `${qty} ก.`;
+    return `${roundedQty} ก.`;
   }
-  return `${qty} ${uom || 'ชิ้น'}`;
+  return `${roundedQty} ${uom || 'ชิ้น'}`;
 };
 
 const isItemLowStock = (item, qty) => {
@@ -361,6 +365,62 @@ const isItemLowStock = (item, qty) => {
     return qty <= 500;
   }
   return qty <= lowStockThreshold.value;
+};
+
+const getSteamedCounterpartName = (name) => {
+  if (!name) return '';
+  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
+    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม')) {
+      return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
+    }
+    if (name.includes('หมู')) {
+      return 'ซาลาเปาไส้หมูสับ';
+    }
+    if (name.includes('ถั่วดำ')) {
+      return 'ซาลาเปาไส้ถั่วดำ';
+    }
+    if (name.includes('ครีม')) {
+      return 'ซาลาเปาไส้ครีม';
+    }
+    if (name.includes('หมั่นโถ')) {
+      return 'หมั่นโถว';
+    }
+  }
+  return '';
+};
+
+const isLinkedBun = (item) => {
+  if (!item || !item.name) return false;
+  return !!getSteamedCounterpartName(item.name);
+};
+
+const getLinkageWarningText = (item) => {
+  if (!item || !item.name) return '';
+  let isDeduct = true; // default to deduct
+  if (bulkTab.value === 'relative') {
+    const val = Number(item.cooked);
+    if (!isNaN(val) && item.cooked !== '' && item.cooked !== null && item.cooked !== undefined) {
+      if (val < 0) {
+        isDeduct = false;
+      }
+    }
+  } else {
+    // absolute
+    const val = Number(item.cooked);
+    if (!isNaN(val) && item.cooked !== '' && item.cooked !== null && item.cooked !== undefined) {
+      const current = item.quantity || 0;
+      if (val < current) {
+        isDeduct = false;
+      }
+    }
+  }
+
+  const targetName = item.name.includes('แร็ปไก่') ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
+  if (!targetName) return '';
+
+  return isDeduct 
+    ? `* การเพิ่มจะหัก "${targetName}" 1 ชิ้น อัตโนมัติ`
+    : `* การลบจะคืน "${targetName}" 1 ชิ้น อัตโนมัติ`;
 };
 
 // Custom Dropdown logic for StockBulk.vue
@@ -414,11 +474,11 @@ const getModifierCategoryClass = (category) => {
 const formatModifierStockShort = (item) => {
   if (!item) return '';
   if (item.category === 'sauce_small') {
-    return `${item.total_servings} ซอง`;
+    return `${Math.round(item.total_servings * 100) / 100} ซอง`;
   }
   const servingsPerBag = item.servings_per_bag || 50;
   const bags = Math.floor(item.total_servings / servingsPerBag);
-  const servings = item.total_servings % servingsPerBag;
+  const servings = Math.round((item.total_servings % servingsPerBag) * 100) / 100;
   
   let text = '';
   if (bags > 0) text += `${bags} ถุง`;
@@ -477,8 +537,8 @@ const setBulkTab = (tab) => {
   
   bulkFormItems.value.forEach(item => {
     if (tab === 'absolute') {
-      item.cooked = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
-      item.raw = item.raw_quantity !== null && item.raw_quantity !== undefined ? item.raw_quantity : 0;
+      item.cooked = item.quantity !== null && item.quantity !== undefined ? Math.round(item.quantity * 100) / 100 : 0;
+      item.raw = item.raw_quantity !== null && item.raw_quantity !== undefined ? Math.round(item.raw_quantity * 100) / 100 : 0;
     } else {
       item.cooked = '';
       item.raw = '';
@@ -487,7 +547,7 @@ const setBulkTab = (tab) => {
 
   bulkModifiersFormItems.value.forEach(item => {
     if (tab === 'absolute') {
-      item.value = item.total_servings;
+      item.value = item.total_servings !== null && item.total_servings !== undefined ? Math.round(item.total_servings * 100) / 100 : 0;
     } else {
       item.value = '';
     }

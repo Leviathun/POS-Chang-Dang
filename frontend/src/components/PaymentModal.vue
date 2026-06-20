@@ -133,6 +133,13 @@
                         <span class="show-mobile-inline">รัฐ</span>
                       </div>
                     </button>
+                    <button class="payment-method-btn" @click="selectPaymentMethod('delivery')">
+                      <div class="method-icon"><i class="fa-solid fa-motorcycle" style="color: #ff9500; font-size: 2.2rem;"></i></div>
+                      <div class="method-label">
+                        <span class="hide-mobile">เดลิเวอรี</span>
+                        <span class="show-mobile-inline">เดลิ</span>
+                      </div>
+                    </button>
                   </div>
                 </div>
 
@@ -227,6 +234,24 @@
                   
                   <button class="btn btn-primary btn-xl" @click="confirmGovPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent) !important; border-color: var(--accent) !important;">
                     <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการโครงการรัฐ
+                  </button>
+                </div>
+
+                <!-- Step 2D: Delivery App Payment -->
+                <div v-if="paymentMethod === 'delivery'" id="delivery-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
+                  <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: #ff9500; opacity: 0.9;">
+                    <i class="fa-solid fa-motorcycle"></i>
+                  </div>
+                  <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-md);">
+                    ช่องทางชำระเงินด้วย เดลิเวอรี (Delivery App)
+                  </div>
+
+                  <div class="font-bold mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg); color: #ff9500;">
+                    {{ formatCurrency(total) }}
+                  </div>
+                  
+                  <button class="btn btn-primary btn-xl" @click="confirmDeliveryPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: #ff9500 !important; border-color: #ff9500 !important;">
+                    <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการเดลิเวอรี
                   </button>
                 </div>
 
@@ -350,7 +375,8 @@ const getPaymentMethodLabel = (method) => {
   const map = {
     'cash': 'เงินสด (Cash)',
     'qr': 'QR Code / โอนเงิน',
-    'gov': 'โครงการรัฐ'
+    'gov': 'โครงการรัฐ',
+    'delivery': 'เดลิเวอรี'
   };
   return map[method] || method;
 };
@@ -426,6 +452,31 @@ const confirmGovPayment = async () => {
   } catch (error) {
     console.error(error);
     ui.showToast('ยืนยันชำระโครงการรัฐไม่สำเร็จ: ' + error.message, 'error');
+  } finally {
+    ui.hideLoading();
+  }
+};
+
+// Delivery App Checkout
+const confirmDeliveryPayment = async () => {
+  ui.showLoading();
+  try {
+    const res = await api.orders.create({ 
+      items: getCartItems(), 
+      note: '',
+      modifiers: props.freeModifiers,
+      payment_method: 'delivery',
+      cash_received: props.total
+    });
+
+    orderId.value = res.data?.order_number || res.data?.id || res.id;
+    success.value = true;
+    store.clearReportsCache();
+    showConfetti();
+    ui.showToast('ชำระเงินผ่านเดลิเวอรีเรียบร้อย!', 'success');
+  } catch (error) {
+    console.error(error);
+    ui.showToast('ยืนยันชำระเดลิเวอรีไม่สำเร็จ: ' + error.message, 'error');
   } finally {
     ui.hideLoading();
   }
