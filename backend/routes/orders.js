@@ -62,7 +62,7 @@ router.post('/', requireAuth, async (req, res) => {
     const prefix = `CD-${dateStr}-`;
 
     // ทำ Parallel Read เพื่อความเร็วสูงสุด (1 round trip)
-    const [dbMenuItems, dbIngredients, dbModifiers, orderCountResult] = await Promise.all([
+    const [dbMenuItems, dbIngredients, dbModifiers, orderCountResult, chickenItem] = await Promise.all([
       db.prepare(`
         SELECT id, name, price, active, quantity as stock
         FROM menu_items
@@ -79,7 +79,10 @@ router.post('/', requireAuth, async (req, res) => {
       `).all(branchId, ...uniqueModifierIds) : Promise.resolve([]),
       db.prepare(`
         SELECT COUNT(*) as count FROM orders WHERE order_number LIKE ?
-      `).get(`${prefix}%`)
+      `).get(`${prefix}%`),
+      db.prepare(`
+        SELECT id, name, quantity as stock FROM menu_items WHERE branch_id = ? AND name = ?
+      `).get(branchId, 'ไก่ไร้กระดูก')
     ]);
 
     // สร้างข้อมูลและตรวจเช็คธุรกิจใน Memory
@@ -126,6 +129,17 @@ router.post('/', requireAuth, async (req, res) => {
           return res.status(400).json({
             success: false,
             error: `เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${Math.round(menuItem.stock * 100) / 100} ชิ้น)`
+          });
+        }
+      }
+
+      // ตรวจสอบสต็อกไก่ไร้กระดูก สำหรับแร็ปไก่
+      if (menuItem.name.includes('แร็ปไก่') && chickenItem && chickenItem.stock !== null) {
+        const requiredChicken = item.quantity;
+        if (chickenItem.stock < requiredChicken) {
+          return res.status(400).json({
+            success: false,
+            error: `วัตถุดิบ "ไก่ไร้กระดูก" สต็อกไม่เพียงพอสำหรับเมนูแร็ปไก่ (ต้องการ ${requiredChicken} ชิ้น แต่เหลือ ${chickenItem.stock} ชิ้น)`
           });
         }
       }
@@ -270,6 +284,35 @@ router.post('/', requireAuth, async (req, res) => {
               orderNumber,
               req.user.id,
               `ขาย ${oi.item_name} x${oi.quantity} (${orderNumber})`
+            ]
+          });
+        }
+
+        // Auto-deduct ไก่ไร้กระดูก if this item is แร็ปไก่
+        if (menuItem && menuItem.name.includes('แร็ปไก่') && chickenItem && chickenItem.stock !== null) {
+          const previousChickenStock = chickenItem.stock;
+          const deductChickenAmount = oi.quantity * 1;
+          const newChickenStock = Math.round((previousChickenStock - deductChickenAmount) * 100) / 100;
+          
+          chickenItem.stock = newChickenStock;
+
+          statements.push({
+            sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
+            args: [deductChickenAmount, branchId, chickenItem.id]
+          });
+
+          statements.push({
+            sql: `INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                  VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
+            args: [
+              branchId,
+              chickenItem.id,
+              -deductChickenAmount,
+              previousChickenStock,
+              newChickenStock,
+              orderNumber,
+              req.user.id,
+              `ขาย ${oi.item_name} x${oi.quantity} (หัก ไก่ไร้กระดูก x${deductChickenAmount}) (${orderNumber})`
             ]
           });
         }
@@ -613,6 +656,29 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
               req.user.id,
               `ยกเลิกออเดอร์ ${order.order_number} — คืนสต็อก ${oi.item_name} x${oi.quantity} (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
             );
+          }
+
+          // คืนสต็อกไก่ไร้กระดูก สำหรับเมนูแร็ปไก่
+          if (oi.item_name && oi.item_name.includes('แร็ปไก่')) {
+            const chickenItem = await db.prepare('SELECT id, quantity as stock FROM menu_items WHERE branch_id = ? AND name = ?').get(branchId, 'ไก่ไร้กระดูก');
+            if (chickenItem && chickenItem.stock !== null) {
+              const previousChickenStock = chickenItem.stock;
+              const restoreChickenAmount = oi.quantity * 1;
+              const newChickenStock = previousChickenStock + restoreChickenAmount;
+
+              await updateStock.run(restoreChickenAmount, branchId, chickenItem.id);
+
+              await insertLog.run(
+                branchId,
+                chickenItem.id,
+                restoreChickenAmount,
+                previousChickenStock,
+                newChickenStock,
+                Number(id),
+                req.user.id,
+                `ยกเลิกออเดอร์ ${order.order_number} — คืนวัตถุดิบ ไก่ไร้กระดูก x${restoreChickenAmount} (เหตุผล: ${reason || 'ไม่ได้ระบุ'})`
+              );
+            }
           }
         }
       }

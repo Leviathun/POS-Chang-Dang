@@ -286,23 +286,13 @@
           <!-- Create Category Form -->
           <div class="form-group">
             <label class="form-label font-bold"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มหมวดหมู่ใหม่</label>
-            <div class="flex gap-sm">
-              <input 
-                type="text" 
-                class="form-input" 
-                v-model="catForm.name" 
-                placeholder="เช่น ของหวาน, ทานเล่น" 
-                style="flex: 1;"
-              />
-              <button 
-                class="btn btn-primary btn-sm" 
-                :disabled="!catForm.name" 
-                @click="handleCreateCat"
-                style="padding: 0 var(--space-md);"
-              >
-                บันทึก
-              </button>
-            </div>
+            <input 
+              type="text" 
+              class="form-input" 
+              v-model="catForm.name" 
+              placeholder="เช่น ของหวาน, ทานเล่น" 
+              style="width: 100%;"
+            />
           </div>
 
           <!-- List of Existing Categories -->
@@ -335,7 +325,13 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn btn-secondary btn-block" @click="showCatModal = false">ปิดหน้าต่าง</button>
+            <button 
+              class="btn btn-primary btn-block" 
+              :disabled="!catForm.name" 
+              @click="handleCreateCat"
+            >
+              บันทึก
+            </button>
           </div>
         </div>
       </div>
@@ -370,7 +366,9 @@
               <input type="checkbox" v-model="itemForm.use_multiple_prices" />
               <span class="toggle-slider"></span>
             </label>
-            <span class="font-semibold" style="font-size: var(--font-sm); margin-left: 6px;">ใช้งานหลายราคาตามขนาดไซส์ (S, M, L)</span>
+            <span class="font-semibold" style="font-size: var(--font-sm); margin-left: 6px;">
+              {{ isBunCategory ? 'ใช้งานหลายราคาตามการปรุง (นึ่ง, ทอด, ปิ้ง)' : 'ใช้งานหลายราคาตามขนาดไซส์ (S, M, L)' }}
+            </span>
           </div>
 
           <!-- Price (Single) -->
@@ -387,37 +385,40 @@
 
           <!-- Prices (Multiple) -->
           <div v-else class="form-group card p-sm mb-md" style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
-            <label class="form-label font-bold mb-sm" style="margin-bottom: 8px; display: block;"><i class="fa-solid fa-tags" style="margin-right: 4px;"></i> กำหนดราคาตามไซส์ (บาท)</label>
+            <label class="form-label font-bold mb-sm" style="margin-bottom: 8px; display: block;">
+              <i class="fa-solid fa-tags" style="margin-right: 4px;"></i> 
+              {{ isBunCategory ? 'กำหนดราคาตามการปรุง (บาท)' : 'กำหนดราคาตามไซส์ (บาท)' }}
+            </label>
             <div class="flex flex-column gap-sm" style="display: flex; flex-direction: column; gap: 8px;">
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">เล็ก (S):</span>
+                <span style="font-size: var(--font-sm); min-width: 80px;">{{ isBunCategory ? 'นึ่ง (S):' : 'เล็ก (S):' }}</span>
                 <input 
                   type="number" 
                   class="form-input" 
                   v-model.number="itemForm.multiple_prices.S" 
-                  placeholder="เช่น 40" 
+                  :placeholder="isBunCategory ? 'เช่น 15' : 'เช่น 40'" 
                   style="flex: 1;"
                   min="0"
                 />
               </div>
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">กลาง (M):</span>
+                <span style="font-size: var(--font-sm); min-width: 80px;">{{ isBunCategory ? 'ทอด (M):' : 'กลาง (M):' }}</span>
                 <input 
                   type="number" 
                   class="form-input" 
                   v-model.number="itemForm.multiple_prices.M" 
-                  placeholder="เช่น 50" 
+                  :placeholder="isBunCategory ? 'เช่น 20' : 'เช่น 50'" 
                   style="flex: 1;"
                   min="0"
                 />
               </div>
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">ใหญ่ (L):</span>
+                <span style="font-size: var(--font-sm); min-width: 80px;">{{ isBunCategory ? 'ปิ้ง (L):' : 'ใหญ่ (L):' }}</span>
                 <input 
                   type="number" 
                   class="form-input" 
                   v-model.number="itemForm.multiple_prices.L" 
-                  placeholder="เช่น 60" 
+                  :placeholder="isBunCategory ? 'เช่น 20' : 'เช่น 60'" 
                   style="flex: 1;"
                   min="0"
                 />
@@ -653,6 +654,11 @@ const closeUomDropdown = () => {
 // States
 const menuItems = computed(() => store.menuItems);
 const categories = computed(() => store.categories);
+const isBunCategory = computed(() => {
+  if (!itemForm.value.category_id) return false;
+  const cat = categories.value.find(c => String(c.id) === String(itemForm.value.category_id));
+  return !!(cat && cat.name.includes('ซาลาเปา'));
+});
 const loading = ref(true);
 const showCatModal = ref(false);
 const showItemModal = ref(false);

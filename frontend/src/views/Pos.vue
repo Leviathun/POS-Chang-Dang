@@ -321,8 +321,8 @@
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
         <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
           <h3 style="font-size: var(--font-lg); font-weight: 800;">
-            <i :class="isSamKrobItem ? 'fa-solid fa-gears' : 'fa-solid fa-tags'" style="margin-right: 6px; color: var(--primary);"></i> 
-            {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : 'เลือกขนาด (Size)' }}
+            <i :class="isSamKrobItem ? 'fa-solid fa-gears' : isBunItem ? 'fa-solid fa-fire-burner' : 'fa-solid fa-tags'" style="margin-right: 6px; color: var(--primary);"></i> 
+            {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : isBunItem ? 'เลือกวิธีการปรุง' : 'เลือกขนาด (Size)' }}
           </h3>
           <button class="modal-close" @click="showOptionsModal = false" style="font-size: var(--font-md);">✕</button>
         </div>
@@ -334,7 +334,8 @@
           <!-- Size Selector -->
           <div class="form-group mb-lg" style="margin-bottom: 24px;">
             <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 8px; display: block;">
-              <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i> เลือกขนาด *
+              <i :class="isBunItem ? 'fa-solid fa-fire-burner' : 'fa-solid fa-weight-scale'" style="margin-right: 4px; color: var(--primary);"></i>
+              {{ isBunItem ? 'เลือกวิธีการปรุง *' : 'เลือกขนาด *' }}
             </label>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
               <div 
@@ -419,9 +420,9 @@
           <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
             <div class="font-bold mb-xs" style="font-size: var(--font-xs); color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
             <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center;">
-              <span>{{ isSamKrobItem ? 'น้ำหนักรวม:' : 'ขนาด:' }}</span>
+              <span>{{ isSamKrobItem ? 'น้ำหนักรวม:' : isBunItem ? 'วิธีปรุง:' : 'ขนาด:' }}</span>
               <span class="font-extrabold text-primary" style="font-size: var(--font-md);">
-                {{ isSamKrobItem ? getSelectedSizeWeight() + ' กรัม' : (selectedSize === 'S' ? 'เล็ก (S)' : selectedSize === 'M' ? 'กลาง (M)' : 'ใหญ่ (L)') }}
+                {{ isSamKrobItem ? getSelectedSizeWeight() + ' กรัม' : isBunItem ? (selectedSize === 'S' ? 'นึ่ง' : selectedSize === 'M' ? 'ทอด' : 'ปิ้ง') : (selectedSize === 'S' ? 'เล็ก (S)' : selectedSize === 'M' ? 'กลาง (M)' : 'ใหญ่ (L)') }}
               </span>
             </div>
             <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
@@ -484,6 +485,12 @@ const isSamKrobItem = computed(() => {
   return !!(cat && cat.name.includes('สามกรอบ'));
 });
 
+const isBunItem = computed(() => {
+  if (!activeModalItem.value) return false;
+  const cat = store.categories.find(c => String(c.id) === String(activeModalItem.value.category_id));
+  return !!(cat && cat.name.includes('ซาลาเปา'));
+});
+
 const samKrobIngredients = computed(() => {
   return store.menuItems.filter(item => {
     const cat = store.categories.find(c => String(c.id) === String(item.category_id));
@@ -531,6 +538,29 @@ const getAvailableSizes = () => {
   if (!baseItem) return {};
 
   const isSamKrob = isSamKrobItem.value;
+  const isBun = isBunItem.value;
+
+  if (isBun) {
+    let parsed = {};
+    if (baseItem.multiple_prices) {
+      try {
+        parsed = typeof baseItem.multiple_prices === 'string'
+          ? JSON.parse(baseItem.multiple_prices)
+          : baseItem.multiple_prices;
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    const priceS = (parsed && parsed.S !== undefined && parsed.S !== null && parsed.S !== '') ? Number(parsed.S) : baseItem.price;
+    const priceM = (parsed && parsed.M !== undefined && parsed.M !== null && parsed.M !== '') ? Number(parsed.M) : baseItem.price;
+    const priceL = (parsed && parsed.L !== undefined && parsed.L !== null && parsed.L !== '') ? Number(parsed.L) : baseItem.price;
+    
+    return {
+      S: { name: 'นึ่ง', weight: 1, price: priceS },
+      M: { name: 'ทอด', weight: 1, price: priceM },
+      L: { name: 'ปิ้ง', weight: 1, price: priceL }
+    };
+  }
 
   // S/M/L default prices for SamKrob (40, 50, 60)
   let itemPrices = isSamKrob ? { S: 40, M: 50, L: 60 } : {};
@@ -684,12 +714,20 @@ const addToCart = (item) => {
   // Check if item belongs to the "สามกรอบ" category
   const cat = store.categories.find(c => String(c.id) === String(item.category_id));
   const isSamKrob = !!(cat && cat.name.includes('สามกรอบ'));
+  const isBun = !!(cat && cat.name.includes('ซาลาเปา'));
 
   if (isSamKrob) {
     activeModalItem.value = item;
     selectedSize.value = 'S';
     selectedSamKrobIds.value = [item.id];
     mixSamKrob.value = false;
+    showOptionsModal.value = true;
+    return;
+  }
+
+  if (isBun) {
+    activeModalItem.value = item;
+    selectedSize.value = 'S'; // Default to Steamed
     showOptionsModal.value = true;
     return;
   }
@@ -838,7 +876,7 @@ const confirmSelection = () => {
     cartKey = `${baseItem.id}-${selectedSize.value}-${sortedIds}`;
 
   } else {
-    // General SML Item
+    // General SML / Bun Item
     if (baseItem.stock !== null && baseItem.stock !== undefined) {
       const currentQty = getCartQty(baseItem.id);
       if (currentQty >= baseItem.stock) {
@@ -847,17 +885,33 @@ const confirmSelection = () => {
       }
     }
 
-    const sizeLabel = selectedSize.value === 'S' ? 'S' : selectedSize.value === 'M' ? 'M' : 'L';
-    customName = `${baseItem.name} (ขนาด ${sizeLabel})`;
+    const isBun = isBunItem.value;
+    if (isBun) {
+      const bunMethodLabel = selectedSize.value === 'S' ? 'นึ่ง' : selectedSize.value === 'M' ? 'ทอด' : 'ปิ้ง';
+      customName = `${baseItem.name} (${bunMethodLabel})`;
 
-    customItem = {
-      ...baseItem,
-      name: customName,
-      price: sizeConfig.price,
-      options: {
-        size: selectedSize.value
-      }
-    };
+      customItem = {
+        ...baseItem,
+        name: customName,
+        price: sizeConfig.price,
+        options: {
+          cooking_method: bunMethodLabel,
+          size: selectedSize.value
+        }
+      };
+    } else {
+      const sizeLabel = selectedSize.value === 'S' ? 'S' : selectedSize.value === 'M' ? 'M' : 'L';
+      customName = `${baseItem.name} (ขนาด ${sizeLabel})`;
+
+      customItem = {
+        ...baseItem,
+        name: customName,
+        price: sizeConfig.price,
+        options: {
+          size: selectedSize.value
+        }
+      };
+    }
 
     cartKey = `${baseItem.id}-${selectedSize.value}`;
   }

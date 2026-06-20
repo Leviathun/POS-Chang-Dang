@@ -148,6 +148,9 @@
                   :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0')"
                   class="form-input"
                 />
+                <div v-if="item.name.includes('แร็ปไก่')" style="font-size: 13px; color: #ff3b30; margin-top: 6px; text-align: center; font-weight: bold; line-height: 1.3;">
+                  * การเพิ่มจะหัก "ไก่ไร้กระดูก" 1 ชิ้น อัตโนมัติ
+                </div>
               </div>
             </div>
           </div>

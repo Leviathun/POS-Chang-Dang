@@ -423,6 +423,10 @@
             </template>
           </div>
 
+          <div v-if="!activeIsModifier && activeItem?.name?.includes('แร็ปไก่') && (actionType === 'restock' || (actionType === 'adjust' && actionForm.quantity > 0))" style="font-size: 13px; color: #ff3b30; margin-top: -6px; margin-bottom: var(--space-md); text-align: left; font-weight: bold; line-height: 1.3;">
+            * การเพิ่มจะหัก "ไก่ไร้กระดูก" 1 ชิ้น อัตโนมัติ
+          </div>
+
           <div v-if="!activeIsModifier && actionType === 'fry'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
             * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "ทอดสุก" 
           </div>
