@@ -272,6 +272,14 @@ async function getTopItems(days = 7, branchId = null) {
   `;
 
   const allOrderItems = await db.prepare(sql).all(params);
+  
+  // Fetch UOM map from menu_items to dynamic assign correct unit of measure
+  const dbMenuItems = await db.prepare('SELECT id, uom FROM menu_items').all();
+  const uomMap = {};
+  dbMenuItems.forEach(item => {
+    uomMap[item.id] = item.uom;
+  });
+
   const aggregation = {};
 
   allOrderItems.forEach(oi => {
@@ -297,7 +305,7 @@ async function getTopItems(days = 7, branchId = null) {
             total_qty: 0,
             portion_count: 0,
             total_revenue: 0,
-            unit: 'กรัม'
+            unit: uomMap[id] || 'กรัม'
           };
         }
         aggregation[id].total_qty += totalWeight;
@@ -317,7 +325,7 @@ async function getTopItems(days = 7, branchId = null) {
           total_qty: 0,
           portion_count: 0,
           total_revenue: 0,
-          unit: 'ชิ้น'
+          unit: uomMap[id] || 'ชิ้น'
         };
       }
       aggregation[id].total_qty += qty;
