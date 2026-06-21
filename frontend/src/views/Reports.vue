@@ -84,23 +84,82 @@
               {{ periodMode === 'daily' ? 'เลือกวัน:' : periodMode === 'monthly' ? 'เลือกเดือน:' : 'เลือกปี:' }}
             </div>
             
-            <input 
-              v-if="periodMode === 'daily'"
-              type="date" 
-              class="form-input reports-filter-control" 
-              style="max-width: 200px;" 
-              v-model="selectedDate" 
-              @change="loadReportData"
-            />
-            
-            <input 
-              v-if="periodMode === 'monthly'"
-              type="month" 
-              class="form-input reports-filter-control" 
-              style="max-width: 200px;" 
-              v-model="selectedMonth" 
-              @change="loadReportData"
-            />
+            <!-- Custom Select for Daily (Date Picker) -->
+            <div v-if="periodMode === 'daily'" class="custom-select-wrapper" style="max-width: 200px; position: relative;" @click.stop>
+              <div 
+                class="custom-select-trigger reports-filter-control" 
+                :class="{ 'active': isDateDropdownOpen }" 
+                @click="toggleDateDropdown"
+                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
+              >
+                <span class="custom-select-text">{{ selectedDateLabel }}</span>
+              </div>
+              <div v-if="isDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 280px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+                <!-- Header: Month & Year Selector -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
+                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustDatePickerMonth(-1)">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span class="font-bold" style="font-size: 13px;">{{ datePickerMonthName }} {{ datePickerYear + 543 }}</span>
+                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustDatePickerMonth(1)">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <!-- Weekday Labels -->
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                  <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
+                </div>
+                <!-- Days Grid -->
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                  <div v-for="empty in datePickerStartOffset" :key="'empty-'+empty"></div>
+                  <button 
+                    v-for="dNum in datePickerDaysCount" 
+                    :key="dNum"
+                    class="btn btn-sm"
+                    :class="isDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
+                    style="min-height: 28px; width: 100%; padding: 0; font-size: 11px; display: flex; align-items: center; justify-content: center; border-radius: 4px;"
+                    @click="selectDatePickerDay(dNum)"
+                  >
+                    {{ dNum }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom Select for Monthly (Month Picker) -->
+            <div v-if="periodMode === 'monthly'" class="custom-select-wrapper" style="max-width: 200px; position: relative;" @click.stop>
+              <div 
+                class="custom-select-trigger reports-filter-control" 
+                :class="{ 'active': isMonthDropdownOpen }" 
+                @click="toggleMonthDropdown"
+                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
+              >
+                <span class="custom-select-text">{{ selectedMonthLabel }}</span>
+              </div>
+              <div v-if="isMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
+                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustMonthPickerYear(-1)">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span class="font-bold">ปี พ.ศ. {{ monthPickerYear + 543 }}</span>
+                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustMonthPickerYear(1)">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                  <button 
+                    v-for="(mName, idx) in thaiMonthsShort" 
+                    :key="idx" 
+                    class="btn btn-sm"
+                    :class="isMonthPickerSelected(idx + 1) ? 'btn-primary' : 'btn-secondary'"
+                    style="min-height: 32px; padding: 4px; font-size: 12px;"
+                    @click="selectMonthPicker(idx + 1)"
+                  >
+                    {{ mName }}
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <!-- Custom Select for Yearly -->
             <div v-if="periodMode === 'yearly'" class="custom-select-wrapper" style="max-width: 200px;" @click.stop>
@@ -607,7 +666,7 @@
         
         <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
           <div class="card-title" style="font-size: var(--font-sm); margin: 0;">
-            <i class="fa-solid fa-book" style="margin-right: 6px;"></i> สมุดบัญชีรายรับ-รายจ่าย (เดือน {{ selectedDate.substring(0, 7) }})
+            <i class="fa-solid fa-book" style="margin-right: 6px;"></i> สมุดบัญชีรายรับ-รายจ่าย ({{ ledgerPeriodLabel }})
           </div>
           <div style="display:flex; align-items:center; gap:var(--space-sm);">
             <button 
@@ -1042,11 +1101,21 @@ const applyDataFromStore = () => {
   }
   
   // Ledger
-  const monthOrders = store.reportMonthlyOrders || [];
-  const monthExpenses = store.reportMonthlyExpenses || [];
+  let ledgerOrders = [];
+  let ledgerExpenses = [];
+
+  if (periodMode.value === 'daily') {
+    ledgerOrders = store.reportsHistory || [];
+    ledgerExpenses = store.reportsExpenses || [];
+  } else if (periodMode.value === 'monthly') {
+    ledgerOrders = store.reportMonthlyOrders || [];
+    ledgerExpenses = store.reportMonthlyExpenses || [];
+  }
+
   const list = [];
 
-  monthOrders.forEach(o => {
+  ledgerOrders.forEach(o => {
+    if (o.status !== 'completed') return;
     list.push({
       id: o.id,
       created_at: o.created_at,
@@ -1058,7 +1127,7 @@ const applyDataFromStore = () => {
     });
   });
 
-  monthExpenses.forEach(e => {
+  ledgerExpenses.forEach(e => {
     list.push({
       id: e.id,
       created_at: e.created_at,
@@ -1077,7 +1146,9 @@ const applyDataFromStore = () => {
     running += item.income - item.expense;
     return {
       ...item,
-      runningBalance: running
+      runningBalance: running,
+      formattedDate: formatDate(item.created_at),
+      formattedTime: formatTime(item.created_at)
     };
   });
 
@@ -1265,6 +1336,27 @@ const selectHistoryStatus = (status) => {
 // Custom dropdowns for Branch and Year filter
 const isBranchDropdownOpen = ref(false);
 const isYearDropdownOpen = ref(false);
+const isMonthDropdownOpen = ref(false);
+const isDateDropdownOpen = ref(false);
+
+const monthPickerYear = ref(new Date().getFullYear());
+const datePickerYear = ref(new Date().getFullYear());
+const datePickerMonth = ref(new Date().getMonth() + 1);
+
+const thaiMonthsShort = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+const selectedMonthLabel = computed(() => {
+  if (!selectedMonth.value) return 'เลือกเดือน';
+  const [year, month] = selectedMonth.value.split('-');
+  const d = new Date(Number(year), Number(month) - 1, 1);
+  return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long' });
+});
+
+const selectedDateLabel = computed(() => {
+  if (!selectedDate.value) return 'เลือกวัน';
+  return formatDate(selectedDate.value);
+});
 
 const selectedBranchName = computed(() => {
   if (selectedBranchId.value === null) return 'ทุกสาขา';
@@ -1273,6 +1365,23 @@ const selectedBranchName = computed(() => {
 });
 
 const selectedYearLabel = computed(() => `ปี ${selectedYear.value}`);
+
+const ledgerPeriodLabel = computed(() => {
+  if (periodMode.value === 'daily') {
+    return `วัน ${formatDate(selectedDate.value)}`;
+  } else if (periodMode.value === 'monthly') {
+    if (!selectedMonth.value) return 'เดือน -';
+    const [year, month] = selectedMonth.value.split('-');
+    const d = new Date(Number(year), Number(month) - 1, 1);
+    const formatted = d.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long'
+    });
+    return `เดือน ${formatted}`;
+  } else {
+    return `ปี ${selectedYear.value}`;
+  }
+});
 
 const toggleBranchDropdown = () => {
   const current = isBranchDropdownOpen.value;
@@ -1284,6 +1393,92 @@ const toggleYearDropdown = () => {
   const current = isYearDropdownOpen.value;
   closeReportsDropdowns();
   isYearDropdownOpen.value = !current;
+};
+
+const toggleMonthDropdown = () => {
+  const current = isMonthDropdownOpen.value;
+  closeReportsDropdowns();
+  isMonthDropdownOpen.value = !current;
+  if (isMonthDropdownOpen.value) {
+    if (selectedMonth.value) {
+      monthPickerYear.value = Number(selectedMonth.value.split('-')[0]);
+    } else {
+      monthPickerYear.value = new Date().getFullYear();
+    }
+  }
+};
+
+const toggleDateDropdown = () => {
+  const current = isDateDropdownOpen.value;
+  closeReportsDropdowns();
+  isDateDropdownOpen.value = !current;
+  if (isDateDropdownOpen.value) {
+    if (selectedDate.value) {
+      const [y, m] = selectedDate.value.split('-');
+      datePickerYear.value = Number(y);
+      datePickerMonth.value = Number(m);
+    } else {
+      const today = new Date();
+      datePickerYear.value = today.getFullYear();
+      datePickerMonth.value = today.getMonth() + 1;
+    }
+  }
+};
+
+const isMonthPickerSelected = (m) => {
+  if (!selectedMonth.value) return false;
+  const [y, mm] = selectedMonth.value.split('-');
+  return monthPickerYear.value === Number(y) && m === Number(mm);
+};
+
+const selectMonthPicker = (m) => {
+  selectedMonth.value = `${monthPickerYear.value}-${String(m).padStart(2, '0')}`;
+  isMonthDropdownOpen.value = false;
+  loadReportData();
+};
+
+const adjustMonthPickerYear = (amount) => {
+  monthPickerYear.value += amount;
+};
+
+const datePickerMonthName = computed(() => {
+  return thaiMonths[datePickerMonth.value - 1] || '';
+});
+
+const datePickerDaysCount = computed(() => {
+  return new Date(datePickerYear.value, datePickerMonth.value, 0).getDate();
+});
+
+const datePickerStartOffset = computed(() => {
+  return new Date(datePickerYear.value, datePickerMonth.value - 1, 1).getDay();
+});
+
+const isDatePickerSelected = (day) => {
+  if (!selectedDate.value) return false;
+  const [y, m, d] = selectedDate.value.split('-');
+  return datePickerYear.value === Number(y) &&
+         datePickerMonth.value === Number(m) &&
+         day === Number(d);
+};
+
+const selectDatePickerDay = (day) => {
+  selectedDate.value = `${datePickerYear.value}-${String(datePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  isDateDropdownOpen.value = false;
+  loadReportData();
+};
+
+const adjustDatePickerMonth = (amount) => {
+  let m = datePickerMonth.value + amount;
+  let y = datePickerYear.value;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  } else if (m > 12) {
+    m = 1;
+    y += 1;
+  }
+  datePickerMonth.value = m;
+  datePickerYear.value = y;
 };
 
 const selectBranch = (branchId) => {
@@ -1304,6 +1499,8 @@ const closeReportsDropdowns = () => {
   isHistoryStatusDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
   isYearDropdownOpen.value = false;
+  isMonthDropdownOpen.value = false;
+  isDateDropdownOpen.value = false;
 };
 
 const loadMonthlyLedger = async () => {
@@ -1313,16 +1510,30 @@ const loadMonthlyLedger = async () => {
   }
   ledgerLoading.value = true;
   try {
-    const monthVal = selectedDate.value.substring(0, 7);
-    const ordersRes = await api.orders.getAll({ status: 'completed', month: monthVal, branch_id: selectedBranchId.value });
-    const monthOrders = ordersRes.success ? (ordersRes.data || []) : [];
+    const params = { status: 'completed', branch_id: selectedBranchId.value };
+    const expenseParams = { branch_id: selectedBranchId.value };
 
-    const expensesRes = await api.expenses.get({ month: monthVal, branch_id: selectedBranchId.value });
-    const monthExpenses = expensesRes.success ? (expensesRes.data || []) : [];
+    if (periodMode.value === 'daily') {
+      params.date = selectedDate.value;
+      expenseParams.date = selectedDate.value;
+    } else if (periodMode.value === 'monthly') {
+      params.month = selectedMonth.value;
+      expenseParams.month = selectedMonth.value;
+    } else {
+      params.year = selectedYear.value;
+      expenseParams.year = selectedYear.value;
+    }
+
+    const ordersRes = await api.orders.getAll(params);
+    const periodOrders = ordersRes.success ? (ordersRes.data || []) : [];
+
+    const expensesRes = await api.expenses.get(expenseParams);
+    const periodExpenses = expensesRes.success ? (expensesRes.data || []) : [];
 
     const list = [];
 
-    monthOrders.forEach(o => {
+    periodOrders.forEach(o => {
+      if (o.status !== 'completed') return;
       list.push({
         id: o.id,
         created_at: o.created_at,
@@ -1334,7 +1545,7 @@ const loadMonthlyLedger = async () => {
       });
     });
 
-    monthExpenses.forEach(e => {
+    periodExpenses.forEach(e => {
       list.push({
         id: e.id,
         created_at: e.created_at,
@@ -1361,8 +1572,8 @@ const loadMonthlyLedger = async () => {
 
     ledgerTransactions.value = computedList.reverse();
   } catch (e) {
-    console.error('❌ Failed to load monthly ledger:', e);
-    ui.showToast('ไม่สามารถดึงข้อมูลบัญชีรายรับ-รายจ่ายรายเดือนได้', 'error');
+    console.error('❌ Failed to load ledger:', e);
+    ui.showToast('ไม่สามารถดึงข้อมูลบัญชีรายรับ-รายจ่ายได้', 'error');
   } finally {
     ledgerLoading.value = false;
   }
@@ -1831,8 +2042,8 @@ const exportExpensesCSV = () => {
     t.expense > 0 ? t.expense : 0,
     t.runningBalance
   ]);
-  const monthVal = selectedDate.value.substring(0, 7);
-  exportToCSV(headers, rows, `ledger_report_${monthVal}.csv`);
+  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
+  exportToCSV(headers, rows, `ledger_report_${periodStr}.csv`);
 };
 </script>
 
