@@ -575,10 +575,11 @@ const actionForm = ref({
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
   const roundedQty = Math.round(Number(qty) * 100) / 100;
+  const formatted = roundedQty.toLocaleString('th-TH', { maximumFractionDigits: 2 });
   if (uom === 'กรัม') {
-    return `${roundedQty} ก.`;
+    return `${formatted} ก.`;
   }
-  return `${roundedQty} ${uom || 'ชิ้น'}`;
+  return `${formatted} ${uom || 'ชิ้น'}`;
 };
 
 const isItemLowStock = (item, qty) => {
