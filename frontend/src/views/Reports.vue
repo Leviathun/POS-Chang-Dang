@@ -624,7 +624,7 @@
 
       <!-- Tab 2: Expenses (บันทึกค่าใช้จ่ายประจำวัน) -->
       <div v-if="activeTab === 'expenses' && isAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 6px;"></i> บันทึกค่าใช้จ่ายประจำวัน (วันที่ {{ formatDate(selectedDate) }})</div>
+        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 6px;"></i> บันทึกค่าใช้จ่ายประจำวัน ({{ selectedDate === getToday() ? 'วันนี้' : 'วันที่ ' + formatDate(selectedDate) }})</div>
         
         <!-- Quick Add Expense Form -->
         <div class="expense-form-grid">
@@ -924,7 +924,7 @@
 
       <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
       <div v-if="activeTab === 'activity_logs' && isAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน (วันที่ {{ formatDate(selectedDate) }})</div>
+        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
         
         <!-- Filter dropdown -->
         <div class="form-group mb-md">
