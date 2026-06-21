@@ -676,7 +676,7 @@
                 class="table-row-hover"
               >
                 <td style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; font-size:11px; color:var(--text-secondary); text-align: left !important;">
-                  {{ formatDate(item.created_at) }}<br/>{{ formatTime(item.created_at) }}
+                  {{ item.formattedDate }}<br/>{{ item.formattedTime }}
                 </td>
                 <td style="width: 35%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500; text-align: left !important; white-space: normal; word-break: break-word;">
                   {{ item.name }}
@@ -725,7 +725,7 @@
                 <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ item.name }}</span>
               </div>
               <div class="flex flex-between align-center mt-xs" style="font-size: 11px; color: var(--text-secondary);">
-                <span><i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> {{ formatDate(item.created_at) }} {{ formatTime(item.created_at) }}</span>
+                <span><i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> {{ item.formattedDate }} {{ item.formattedTime }}</span>
                 <div class="flex align-center gap-md">
                   <span v-if="item.income > 0" class="font-bold text-success" style="font-size: var(--font-base);">
                     +{{ formatCurrency(item.income) }}
@@ -1353,7 +1353,9 @@ const loadMonthlyLedger = async () => {
       running += item.income - item.expense;
       return {
         ...item,
-        runningBalance: running
+        runningBalance: running,
+        formattedDate: formatDate(item.created_at),
+        formattedTime: formatTime(item.created_at)
       };
     });
 
