@@ -1189,10 +1189,12 @@ const onPaymentSuccess = async () => {
   useModifiers.value = false;
   selectedModifiers.value = [];
 
-  // Revalidate store data in background silently
-  store.fetchMenu(true).catch(() => {});
-  store.fetchStock(true).catch(() => {});
-  store.fetchModifiers(true).catch(() => {});
+  // Revalidate store data in background silently with a delay to prevent UI rendering freeze
+  setTimeout(() => {
+    store.fetchMenu(true).catch(() => {});
+    store.fetchStock(true).catch(() => {});
+    store.fetchModifiers(true).catch(() => {});
+  }, 2000);
 };
 
 // Load Menu & Categories from API

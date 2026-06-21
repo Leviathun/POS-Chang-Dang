@@ -25,6 +25,13 @@
                 <strong style="color: var(--text-primary);">#{{ orderId }}</strong>
               </div>
               <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+                <span style="color: var(--text-secondary);">สถานะบิล:</span>
+                <strong :style="{ color: isCheckingOut ? '#ff9500' : 'var(--success)' }">
+                  <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin" style="margin-right: 4px;"></i>
+                  {{ isCheckingOut ? 'กำลังบันทึกลงระบบ...' : 'บันทึกสำเร็จ' }}
+                </strong>
+              </div>
+              <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
                 <span style="color: var(--text-secondary);">ช่องทางชำระ:</span>
                 <strong style="color: var(--text-primary);">{{ getPaymentMethodLabel(paymentMethod) }}</strong>
               </div>
@@ -314,6 +321,8 @@ const paymentMethod = ref(null);
 const enteredAmount = ref('');
 const orderId = ref(null);
 const success = ref(false);
+const checkoutPromise = ref(null);
+const isCheckingOut = ref(false);
 
 const netTotal = computed(() => Math.max(0, props.total - (props.discount || 0)));
 
@@ -360,7 +369,17 @@ const handleClose = () => {
   emit('close');
 };
 
-const finishPayment = () => {
+const finishPayment = async () => {
+  if (isCheckingOut.value) {
+    ui.showLoading();
+    try {
+      await checkoutPromise.value;
+    } catch (e) {
+      ui.hideLoading();
+      return; // ห้ามปิด modal หากการบันทึกล้มเหลว
+    }
+    ui.hideLoading();
+  }
   emit('success');
 };
 
@@ -401,109 +420,65 @@ const getPaymentMethodLabel = (method) => {
   return map[method] || method;
 };
 
+// Unified Checkout Submitter for Optimistic UI
+const submitCheckout = (paymentMethodType, cashReceivedVal) => {
+  success.value = true;
+  showConfetti();
+  
+  // สร้างเลขออเดอร์จำลองระหว่างรอเซิร์ฟเวอร์
+  const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const dateStr = today.getUTCFullYear().toString() +
+    String(today.getUTCMonth() + 1).padStart(2, '0') +
+    String(today.getUTCDate()).padStart(2, '0');
+  const tempNum = Math.floor(100 + Math.random() * 900);
+  orderId.value = `กำลังบันทึก... (CD-${dateStr}-${tempNum})`;
+
+  isCheckingOut.value = true;
+  checkoutPromise.value = (async () => {
+    try {
+      const res = await api.orders.create({
+        items: getCartItems(),
+        note: '',
+        discount: props.discount,
+        modifiers: props.freeModifiers,
+        payment_method: paymentMethodType,
+        cash_received: cashReceivedVal
+      });
+      orderId.value = res.data?.order_number || res.data?.id || res.id;
+      store.clearReportsCache();
+      ui.showToast(`ชำระเงินผ่าน ${getPaymentMethodLabel(paymentMethodType)} สำเร็จ!`, 'success');
+      return res;
+    } catch (error) {
+      console.error(error);
+      ui.showToast(`ชำระเงินไม่สำเร็จ: ${error.message}`, 'error');
+      // ย้อนกลับหากไม่สำเร็จ
+      success.value = false;
+      throw error;
+    } finally {
+      isCheckingOut.value = false;
+    }
+  })();
+};
+
 // Cash Checkout
-const confirmCashPayment = async () => {
-  ui.showLoading();
-  try {
-    const cashVal = Number(enteredAmount.value) || 0;
-    const res = await api.orders.create({ 
-      items: getCartItems(), 
-      note: '',
-      discount: props.discount,
-      modifiers: props.freeModifiers,
-      payment_method: 'cash',
-      cash_received: cashVal
-    });
-    
-    orderId.value = res.data?.order_number || res.data?.id || res.id;
-    success.value = true;
-    store.clearReportsCache();
-    showConfetti();
-    ui.showToast('ชำระเงินสดเรียบร้อย!', 'success');
-  } catch (error) {
-    console.error(error);
-    ui.showToast('บันทึกยอดเงินสดไม่สำเร็จ: ' + error.message, 'error');
-  } finally {
-    ui.hideLoading();
-  }
+const confirmCashPayment = () => {
+  const cashVal = Number(enteredAmount.value) || 0;
+  submitCheckout('cash', cashVal);
 };
 
 // QR Checkout
-const confirmQRPayment = async () => {
-  ui.showLoading();
-  try {
-    const res = await api.orders.create({ 
-      items: getCartItems(), 
-      note: '',
-      discount: props.discount,
-      modifiers: props.freeModifiers,
-      payment_method: 'qr',
-      cash_received: netTotal.value
-    });
-
-    orderId.value = res.data?.order_number || res.data?.id || res.id;
-    success.value = true;
-    store.clearReportsCache();
-    showConfetti();
-    ui.showToast('ชำระเงินผ่าน QR Code เรียบร้อย!', 'success');
-  } catch (error) {
-    console.error(error);
-    ui.showToast('ยืนยันชำระคิวอาร์โค้ดไม่สำเร็จ: ' + error.message, 'error');
-  } finally {
-    ui.hideLoading();
-  }
+const confirmQRPayment = () => {
+  submitCheckout('qr', netTotal.value);
 };
 
 // Government Project Checkout
-const confirmGovPayment = async () => {
-  ui.showLoading();
-  try {
-    const res = await api.orders.create({ 
-      items: getCartItems(), 
-      note: '',
-      discount: props.discount,
-      modifiers: props.freeModifiers,
-      payment_method: 'gov',
-      cash_received: netTotal.value
-    });
-
-    orderId.value = res.data?.order_number || res.data?.id || res.id;
-    success.value = true;
-    store.clearReportsCache();
-    showConfetti();
-    ui.showToast('ชำระเงินโครงการของรัฐเรียบร้อย!', 'success');
-  } catch (error) {
-    console.error(error);
-    ui.showToast('ยืนยันชำระโครงการรัฐไม่สำเร็จ: ' + error.message, 'error');
-  } finally {
-    ui.hideLoading();
-  }
+const confirmGovPayment = () => {
+  submitCheckout('gov', netTotal.value);
 };
 
 // Delivery App Checkout
-const confirmDeliveryPayment = async () => {
-  ui.showLoading();
-  try {
-    const res = await api.orders.create({ 
-      items: getCartItems(), 
-      note: '',
-      discount: props.discount,
-      modifiers: props.freeModifiers,
-      payment_method: 'delivery',
-      cash_received: netTotal.value
-    });
-
-    orderId.value = res.data?.order_number || res.data?.id || res.id;
-    success.value = true;
-    store.clearReportsCache();
-    showConfetti();
-    ui.showToast('ชำระเงินผ่านเดลิเวอรีเรียบร้อย!', 'success');
-  } catch (error) {
-    console.error(error);
-    ui.showToast('ยืนยันชำระเดลิเวอรีไม่สำเร็จ: ' + error.message, 'error');
-  } finally {
-    ui.hideLoading();
-  }
+const confirmDeliveryPayment = () => {
+  submitCheckout('delivery', netTotal.value);
 };
 </script>
 
