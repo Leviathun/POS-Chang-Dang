@@ -51,7 +51,8 @@ export function formatDate(dateStr) {
   if (!dateStr) return '-';
   let d;
   if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
-    const isoStr = dateStr.replace(' ', 'T') + '+07:00';
+    const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
+    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
     d = new Date(isoStr);
   } else {
     d = new Date(dateStr);
@@ -68,7 +69,8 @@ export function formatTime(dateStr) {
   if (!dateStr) return '-';
   let d;
   if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
-    const isoStr = dateStr.replace(' ', 'T') + '+07:00';
+    const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
+    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
     d = new Date(isoStr);
   } else {
     d = new Date(dateStr);
