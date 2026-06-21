@@ -250,7 +250,8 @@ async function getYearlyReport(year, branchId = null) {
 async function getTopItems(days = 7, branchId = null) {
   const db = getDb();
   let branchFilter = '';
-  const params = [`-${days} days`];
+  const offsetDays = days - 1;
+  const params = [`-${offsetDays} days`];
 
   if (branchId) {
     branchFilter = ' AND o.branch_id = ?';
@@ -268,7 +269,7 @@ async function getTopItems(days = 7, branchId = null) {
     JOIN orders o ON o.id = oi.order_id
     WHERE o.status = 'completed'
       ${branchFilter}
-      AND o.created_at >= datetime('now', 'localtime', ?)
+      AND o.created_at >= datetime('now', 'localtime', 'start of day', ?)
   `;
 
   const allOrderItems = await db.prepare(sql).all(params);
