@@ -198,9 +198,58 @@
             <span class="text-secondary">ยอดรวม</span>
             <span class="font-medium">{{ formatCurrency(cartTotal) }}</span>
           </div>
+          <!-- Discount Row -->
+          <div v-if="discountAmount > 0" class="summary-row text-danger font-semibold animate-fade-in" style="color: #ff3b30;">
+            <span>ส่วนลด</span>
+            <span>-{{ formatCurrency(discountAmount) }}</span>
+          </div>
+          <!-- Discount Selector Area -->
+          <div class="discount-selector-area mt-sm mb-sm p-xs card" style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 8px;">
+            <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px;">
+              <span class="font-semibold" style="font-size: var(--font-xs); display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-percent" style="color: var(--primary);"></i> เลือกส่วนลด
+              </span>
+              <button 
+                v-if="discountAmount > 0"
+                class="btn btn-ghost btn-xs text-danger" 
+                @click="clearDiscount"
+                style="padding: 0; min-height: unset; font-size: 11px;"
+              >
+                ล้างส่วนลด
+              </button>
+            </div>
+            <!-- Discount buttons & custom input -->
+            <div class="flex gap-xs mt-xs align-center" style="display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-top: 6px; padding: 2px 4px; align-items: center;">
+              <button 
+                class="btn btn-sm"
+                :class="activeDiscountType === 'bun_promo' ? 'btn-primary' : 'btn-secondary'"
+                @click="applyBunPromoDiscount"
+                :disabled="!canApplyBunPromo"
+                style="font-size: 11px; padding: 4px 8px; min-height: 28px; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;"
+                title="โปรซาลาเปา 3 ลูก ลด 10 บาท"
+              >
+                🎁 โปรเปา 3 ลูก (-10฿)
+              </button>
+              
+              <!-- Input field for custom discount -->
+              <div style="position: relative; display: inline-flex; align-items: center; flex: 1; min-width: 80px;">
+                <input 
+                  type="number" 
+                  class="form-input" 
+                  v-model.number="discountInputVal"
+                  @input="onDiscountInput"
+                  placeholder="ลดระบุเอง..." 
+                  min="0"
+                  :max="cartTotal"
+                  style="font-size: 11px; padding: 4px 20px 4px 8px; height: 28px; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary);"
+                />
+                <span style="position: absolute; right: 8px; font-size: 11px; color: var(--text-muted); pointer-events: none;">฿</span>
+              </div>
+            </div>
+          </div>
           <div class="summary-row total-row font-bold mt-sm">
             <span>ยอดสุทธิ</span>
-            <span class="text-accent" style="font-size: var(--font-lg);">{{ formatCurrency(cartTotal) }}</span>
+            <span class="text-accent" style="font-size: var(--font-lg);">{{ formatCurrency(netCartTotal) }}</span>
           </div>
           <button class="btn btn-primary btn-block mt-lg" @click="handleCheckout" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
             <i class="fa-solid fa-wallet"></i> ชำระเงิน
@@ -214,7 +263,7 @@
       <div class="cart-bar-inner">
         <div class="cart-info" style="cursor:pointer;" @click="toggleCartDetail">
           <span class="cart-count">{{ cartCount }} รายการ</span>
-          <span class="cart-total">{{ formatCurrency(cartTotal) }}</span>
+          <span class="cart-total">{{ formatCurrency(netCartTotal) }}</span>
         </div>
         <button class="cart-pay-btn" @click="handleCheckout" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
           <i class="fa-solid fa-wallet"></i> ชำระเงิน
@@ -243,8 +292,50 @@
             <span class="qty-value">{{ cartItem.quantity }}</span>
             <button class="qty-btn" @click="incrementCartItem(itemId)">+</button>
           </div>
-          <div class="cart-item-subtotal">
+        <div class="cart-item-subtotal">
             {{ formatCurrency(cartItem.item.price * cartItem.quantity) }}
+          </div>
+        </div>
+
+        <!-- Mobile Discount Selector Area -->
+        <div class="discount-selector-area p-sm" style="border-top: 1px dashed var(--border-color); background: rgba(0, 0, 0, 0.02); text-align: left; padding: 12px 16px;">
+          <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span class="font-bold" style="font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+              <i class="fa-solid fa-percent" style="color: var(--primary);"></i> เลือกส่วนลด
+            </span>
+            <button 
+              v-if="discountAmount > 0"
+              class="btn btn-ghost btn-xs text-danger" 
+              @click="clearDiscount"
+              style="padding: 0; min-height: unset; font-size: 12px;"
+            >
+              ล้างส่วนลด (ลดอยู่ -{{ formatCurrency(discountAmount) }})
+            </button>
+          </div>
+          <div class="flex gap-xs align-center" style="display: flex; gap: var(--space-xs); flex-wrap: wrap; align-items: center;">
+            <button 
+              class="btn btn-sm"
+              :class="activeDiscountType === 'bun_promo' ? 'btn-primary' : 'btn-secondary'"
+              @click="applyBunPromoDiscount"
+              :disabled="!canApplyBunPromo"
+              style="font-size: 12px; padding: 6px 12px; min-height: 32px; border-radius: var(--radius-md); flex-shrink: 0;"
+            >
+              🎁 โปรเปา 3 ลูก (-10฿)
+            </button>
+            
+            <div style="position: relative; display: inline-flex; align-items: center; flex: 1; min-width: 100px;">
+              <input 
+                type="number" 
+                class="form-input" 
+                v-model.number="discountInputVal"
+                @input="onDiscountInput"
+                placeholder="ลดระบุเอง (บาท)..." 
+                min="0"
+                :max="cartTotal"
+                style="font-size: 12px; padding: 6px 24px 6px 12px; height: 32px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
+              />
+              <span style="position: absolute; right: 10px; font-size: 12px; color: var(--text-muted); pointer-events: none;">฿</span>
+            </div>
           </div>
         </div>
 
@@ -445,6 +536,7 @@
       v-if="showPaymentModal"
       :cart="cart"
       :total="cartTotal"
+      :discount="discountAmount"
       :freeModifiers="selectedModifiers"
       @close="showPaymentModal = false"
       @success="onPaymentSuccess"
@@ -688,8 +780,63 @@ const cartTotal = computed(() => {
   return total;
 });
 
+const discountAmount = ref(0);
+const activeDiscountType = ref(null); // 'bun_promo' or 'custom'
+const discountInputVal = ref('');
+
+const netCartTotal = computed(() => {
+  return Math.max(0, cartTotal.value - discountAmount.value);
+});
+
+const canApplyBunPromo = computed(() => {
+  let bunCount = 0;
+  cart.value.forEach(cartItem => {
+    const name = cartItem.item.name || '';
+    if (name.includes('เปา') || name.includes('หมั่นโถ')) {
+      bunCount += cartItem.quantity;
+    }
+  });
+  return bunCount >= 3;
+});
+
+const applyBunPromoDiscount = () => {
+  discountAmount.value = 10;
+  discountInputVal.value = '';
+  activeDiscountType.value = 'bun_promo';
+};
+
+const onDiscountInput = () => {
+  if (discountInputVal.value === '' || discountInputVal.value === null || discountInputVal.value === undefined) {
+    discountAmount.value = 0;
+    activeDiscountType.value = null;
+    return;
+  }
+  const val = Number(discountInputVal.value);
+  if (isNaN(val) || val < 0) {
+    discountAmount.value = 0;
+    activeDiscountType.value = null;
+  } else if (val > cartTotal.value) {
+    discountAmount.value = cartTotal.value;
+    discountInputVal.value = cartTotal.value;
+    activeDiscountType.value = 'custom';
+    ui.showToast("ส่วนลดไม่สามารถเกินยอดรวมได้", "warning");
+  } else {
+    discountAmount.value = val;
+    activeDiscountType.value = val > 0 ? 'custom' : null;
+  }
+};
+
+const clearDiscount = () => {
+  discountAmount.value = 0;
+  discountInputVal.value = '';
+  activeDiscountType.value = null;
+};
+
 // Watch cart to emit event to App.vue (updating app padding)
 watch(cartCount, (newVal) => {
+  if (newVal === 0) {
+    clearDiscount();
+  }
   const event = new CustomEvent('cart-state-change', {
     detail: { hasItems: newVal > 0 }
   });
@@ -985,6 +1132,7 @@ const handleClearCart = async () => {
   const confirm = await ui.showConfirm('ล้างตะกร้า', 'ต้องการล้างรายการสินค้าในตะกร้าทั้งหมดหรือไม่?');
   if (confirm) {
     cart.value = new Map();
+    clearDiscount();
     cartExpanded.value = false;
     ui.showToast('ล้างตะกร้าสินค้าแล้ว', 'info');
   }
@@ -1035,6 +1183,7 @@ const onPaymentSuccess = async () => {
   }
 
   cart.value = new Map();
+  clearDiscount();
   cartExpanded.value = false;
   showPaymentModal.value = false;
   useModifiers.value = false;

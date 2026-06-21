@@ -28,9 +28,13 @@
                 <span style="color: var(--text-secondary);">ช่องทางชำระ:</span>
                 <strong style="color: var(--text-primary);">{{ getPaymentMethodLabel(paymentMethod) }}</strong>
               </div>
+              <div v-if="discount > 0" class="flex flex-between mb-sm animate-fade-in" style="font-size: var(--font-sm); color: #ff3b30;">
+                <span>ส่วนลด:</span>
+                <strong>-{{ formatCurrency(discount) }}</strong>
+              </div>
               <div class="flex flex-between mb-sm" style="font-size: var(--font-lg);">
                 <span class="font-bold">ยอดสุทธิ:</span>
-                <strong class="text-accent">{{ formatCurrency(total) }}</strong>
+                <strong class="text-accent">{{ formatCurrency(netTotal) }}</strong>
               </div>
               <div v-if="paymentMethod === 'cash'" class="flex flex-between mb-sm" style="font-size: var(--font-sm); border-top: 1px solid var(--border-color); padding-top: var(--space-sm); margin-top: var(--space-sm);">
                 <span style="color: var(--text-secondary);">รับเงินมา:</span>
@@ -91,9 +95,19 @@
                   </template>
                 </div>
 
-                <div style="border-top: 2px dashed var(--border-color); padding-top: var(--space-md); display: flex; justify-content: space-between; align-items: center;">
-                  <span class="font-bold" style="font-size: var(--font-md);">ยอดชำระทั้งสิ้น</span>
-                  <span class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(total) }}</span>
+                <div style="border-top: 2px dashed var(--border-color); padding-top: var(--space-md); display: flex; flex-direction: column; gap: var(--space-xs);">
+                  <div class="flex flex-between" style="display: flex; justify-content: space-between; font-size: var(--font-sm); color: var(--text-secondary);">
+                    <span>ยอดรวม</span>
+                    <span>{{ formatCurrency(total) }}</span>
+                  </div>
+                  <div v-if="discount > 0" class="flex flex-between animate-fade-in" style="display: flex; justify-content: space-between; font-size: var(--font-sm); color: #ff3b30; font-weight: bold;">
+                    <span>ส่วนลด</span>
+                    <span>-{{ formatCurrency(discount) }}</span>
+                  </div>
+                  <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: var(--space-xs);">
+                    <span class="font-bold" style="font-size: var(--font-md);">ยอดชำระทั้งสิ้น</span>
+                    <span class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(netTotal) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -162,10 +176,10 @@
                   <div class="quick-amounts" style="margin-bottom: var(--space-md); display: flex; gap: var(--space-sm); overflow-x: auto; padding-bottom: var(--space-xs);">
                     <button 
                       class="quick-amount-btn" 
-                      :class="{ 'active': Number(enteredAmount) === total }"
-                      @click="enteredAmount = total"
+                      :class="{ 'active': Number(enteredAmount) === netTotal }"
+                      @click="enteredAmount = netTotal"
                     >
-                      พอดี ({{ formatCurrency(total) }})
+                      พอดี ({{ formatCurrency(netTotal) }})
                     </button>
                     <button 
                       v-for="amt in quickAmountOptions" 
@@ -189,7 +203,7 @@
                   <div>
                     <button 
                       class="btn btn-primary btn-xl" 
-                      :disabled="Number(enteredAmount) < total"
+                      :disabled="Number(enteredAmount) < netTotal"
                       @click="confirmCashPayment"
                       style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
                     >
@@ -211,7 +225,7 @@
                   </div>
 
                   <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg);">
-                    {{ formatCurrency(total) }}
+                    {{ formatCurrency(netTotal) }}
                   </div>
                   
                   <button class="btn btn-success btn-xl" @click="confirmQRPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
@@ -229,7 +243,7 @@
                   </div>
 
                   <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg);">
-                    {{ formatCurrency(total) }}
+                    {{ formatCurrency(netTotal) }}
                   </div>
                   
                   <button class="btn btn-primary btn-xl" @click="confirmGovPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent) !important; border-color: var(--accent) !important;">
@@ -247,7 +261,7 @@
                   </div>
 
                   <div class="font-bold mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg); color: #ff9500;">
-                    {{ formatCurrency(total) }}
+                    {{ formatCurrency(netTotal) }}
                   </div>
                   
                   <button class="btn btn-primary btn-xl" @click="confirmDeliveryPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: #ff9500 !important; border-color: #ff9500 !important;">
@@ -282,6 +296,10 @@ const props = defineProps({
     type: Number,
     required: true
   },
+  discount: {
+    type: Number,
+    default: 0
+  },
   freeModifiers: {
     type: Array,
     default: () => []
@@ -297,15 +315,17 @@ const enteredAmount = ref('');
 const orderId = ref(null);
 const success = ref(false);
 
+const netTotal = computed(() => Math.max(0, props.total - (props.discount || 0)));
+
 // Cash Calculations
 const cashChange = computed(() => {
   const amount = Number(enteredAmount.value) || 0;
-  return Math.max(0, amount - props.total);
+  return Math.max(0, amount - netTotal.value);
 });
 
 const changeText = computed(() => {
   const amount = Number(enteredAmount.value) || 0;
-  const diff = amount - props.total;
+  const diff = amount - netTotal.value;
   if (diff >= 0) {
     return `เงินทอน: ${formatCurrency(diff)}`;
   } else {
@@ -315,7 +335,7 @@ const changeText = computed(() => {
 
 const changeClass = computed(() => {
   const amount = Number(enteredAmount.value) || 0;
-  return amount >= props.total ? 'positive' : 'negative';
+  return amount >= netTotal.value ? 'positive' : 'negative';
 });
 
 // Quick cash bills selection
@@ -323,8 +343,8 @@ const quickAmountOptions = computed(() => {
   const options = [];
   const bills = [100, 500, 1000, 5000];
   bills.forEach(bill => {
-    const rounded = roundUp(props.total, bill);
-    if (rounded > props.total && !options.includes(rounded)) {
+    const rounded = roundUp(netTotal.value, bill);
+    if (rounded > netTotal.value && !options.includes(rounded)) {
       options.push(rounded);
     }
   });
@@ -389,6 +409,7 @@ const confirmCashPayment = async () => {
     const res = await api.orders.create({ 
       items: getCartItems(), 
       note: '',
+      discount: props.discount,
       modifiers: props.freeModifiers,
       payment_method: 'cash',
       cash_received: cashVal
@@ -414,9 +435,10 @@ const confirmQRPayment = async () => {
     const res = await api.orders.create({ 
       items: getCartItems(), 
       note: '',
+      discount: props.discount,
       modifiers: props.freeModifiers,
       payment_method: 'qr',
-      cash_received: props.total
+      cash_received: netTotal.value
     });
 
     orderId.value = res.data?.order_number || res.data?.id || res.id;
@@ -439,9 +461,10 @@ const confirmGovPayment = async () => {
     const res = await api.orders.create({ 
       items: getCartItems(), 
       note: '',
+      discount: props.discount,
       modifiers: props.freeModifiers,
       payment_method: 'gov',
-      cash_received: props.total
+      cash_received: netTotal.value
     });
 
     orderId.value = res.data?.order_number || res.data?.id || res.id;
@@ -464,9 +487,10 @@ const confirmDeliveryPayment = async () => {
     const res = await api.orders.create({ 
       items: getCartItems(), 
       note: '',
+      discount: props.discount,
       modifiers: props.freeModifiers,
       payment_method: 'delivery',
-      cash_received: props.total
+      cash_received: netTotal.value
     });
 
     orderId.value = res.data?.order_number || res.data?.id || res.id;

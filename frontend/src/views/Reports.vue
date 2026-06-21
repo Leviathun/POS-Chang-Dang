@@ -276,6 +276,7 @@
                 </span>
                 <div>
                   <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:11px; margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
+                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
                   <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                 </div>
               </div>
@@ -297,6 +298,17 @@
                   <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
                     <span>{{ item.item_name }} x{{ item.quantity }}</span>
                     <span>{{ formatCurrency(item.subtotal) }}</span>
+                  </div>
+                  <!-- Discount Info if applied -->
+                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-secondary);">
+                    <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                      <span>ยอดรวม (ก่อนหัก):</span>
+                      <span>{{ formatCurrency(order.subtotal) }}</span>
+                    </div>
+                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                      <span>ส่วนลด:</span>
+                      <span>-{{ formatCurrency(order.discount) }}</span>
+                    </div>
                   </div>
                 </div>
                 <!-- Void Button (only for completed orders) -->
@@ -392,8 +404,11 @@
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
                       {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;" :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">
-                      {{ formatCurrency(order.total) }}
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;">
+                      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                        <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+                        <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 1px 4px; border-radius: var(--radius-sm); font-weight: normal; display: inline-block;">ลด -{{ formatCurrency(order.discount) }}</span>
+                      </div>
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
                       <span v-if="order.status === 'completed'" class="text-success" style="font-size:12px;"><i class="fa-solid fa-circle-check text-success" style="margin-right: 4px;"></i> สำเร็จ</span>
@@ -423,6 +438,21 @@
                             <span>{{ item.item_name }} x{{ item.quantity }}</span>
                             <span class="font-bold">{{ formatCurrency(item.subtotal) }}</span>
                           </div>
+                          <!-- Discount Info if applied -->
+                          <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary);">
+                            <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                              <span>ยอดรวม (ก่อนหัก):</span>
+                              <span>{{ formatCurrency(order.subtotal) }}</span>
+                            </div>
+                            <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                              <span>ส่วนลด:</span>
+                              <span>-{{ formatCurrency(order.discount) }}</span>
+                            </div>
+                            <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
+                              <span>ยอดสุทธิ:</span>
+                              <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+                            </div>
+                          </div>
                         </div>
                         <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); font-size:11px; color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
                           <i class="fa-solid fa-triangle-exclamation text-danger"></i> <strong>เหตุผลที่ยกเลิก:</strong> {{ order.cancel_reason }}
@@ -448,7 +478,10 @@
                 <span :style="order.status === 'cancelled' ? 'text-decoration:line-through; opacity:0.5;' : ''">
                   #{{ order.order_number }}
                 </span>
-                <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+                <div>
+                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
+                  <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+                </div>
               </div>
               <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary);">
                 <span><i class="fa-solid fa-user" style="margin-right: 2px;"></i> {{ order.staff_name || 'ระบบ' }} | <i class="fa-solid fa-store" style="margin-right: 2px;"></i> {{ order.branch_name || 'ไม่ระบุ' }}</span>
@@ -472,6 +505,21 @@
                   <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
                     <span>{{ item.item_name }} x{{ item.quantity }}</span>
                     <span>{{ formatCurrency(item.subtotal) }}</span>
+                  </div>
+                  <!-- Discount Info if applied -->
+                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-secondary);">
+                    <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                      <span>ยอดรวม (ก่อนหัก):</span>
+                      <span>{{ formatCurrency(order.subtotal) }}</span>
+                    </div>
+                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                      <span>ส่วนลด:</span>
+                      <span>-{{ formatCurrency(order.discount) }}</span>
+                    </div>
+                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
+                      <span>ยอดสุทธิ:</span>
+                      <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+                    </div>
                   </div>
                 </div>
                 <div v-if="order.cancel_reason" style="font-size:11px; color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
