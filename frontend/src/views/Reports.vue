@@ -272,7 +272,7 @@
           <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
           
           <!-- Payment Methods Breakdowns -->
-          <div class="grid grid-4" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:var(--space-sm); font-size:var(--font-xs);">
+          <div class="payment-methods-grid">
             <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
@@ -281,7 +281,11 @@
               <div style="color:var(--text-tertiary);">{{ dailyReport.cash_orders }} บิล</div>
             </div>
             <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-qrcode" style="color: var(--primary);"></i> QR Code</div>
+              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i>
+                <span class="hide-mobile">QR Code</span>
+                <span class="show-mobile-inline">QR</span>
+              </div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
                 {{ formatCurrency(dailyReport.qr_sales) }}
               </div>
@@ -3140,5 +3144,19 @@ select.reports-filter-control,
 }
 .hint-text {
   flex: 1;
+}
+
+/* Payment Methods Grid */
+.payment-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+  font-size: var(--font-xs);
+}
+
+@media (max-width: 768px) {
+  .payment-methods-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 </style>
