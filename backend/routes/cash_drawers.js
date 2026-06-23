@@ -59,9 +59,12 @@ router.use(requireAuth);
 // ─── POST /opening-cash — Set/Edit Opening Cash (Admin Only) ───────
 router.post('/opening-cash', requireAdmin, async (req, res) => {
   try {
-    const { session_id, session_date, opening_cash } = req.body;
+    const { session_id, session_date, opening_cash, branch_id } = req.body;
     const db = getDb();
     let branchId = req.user.branch_id;
+    if (req.user.role === 'admin' && branch_id) {
+      branchId = Number(branch_id);
+    }
 
     if (opening_cash === undefined || opening_cash === null || isNaN(Number(opening_cash)) || Number(opening_cash) < 0) {
       return res.status(400).json({
@@ -109,10 +112,11 @@ router.post('/opening-cash', requireAdmin, async (req, res) => {
     }
 
     // Log Activity
+    const logBranchId = session ? session.branch_id : branchId;
     await db.prepare(`
       INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
       VALUES (?, ?, 'cash_opening_set', ?, datetime('now', '+7 hours'))
-    `).run(branchId, req.user.id, `เจ้าของร้านบันทึกเงินทอนตั้งต้นวันที่ ${session.session_date} เป็นเงิน ${opening_cash} บาท`);
+    `).run(logBranchId, req.user.id, `เจ้าของร้านบันทึกเงินทอนตั้งต้นวันที่ ${session.session_date} เป็นเงิน ${opening_cash} บาท`);
 
     res.json({
       success: true,
@@ -130,9 +134,12 @@ router.post('/opening-cash', requireAdmin, async (req, res) => {
 // ─── POST /audit — Reconcile & Close Cash Session (Admin Only) ───────
 router.post('/audit', requireAdmin, async (req, res) => {
   try {
-    const { session_id, session_date, actual_cash, note } = req.body;
+    const { session_id, session_date, actual_cash, note, branch_id } = req.body;
     const db = getDb();
     let branchId = req.user.branch_id;
+    if (req.user.role === 'admin' && branch_id) {
+      branchId = Number(branch_id);
+    }
 
     if (actual_cash === undefined || actual_cash === null || isNaN(Number(actual_cash)) || Number(actual_cash) < 0) {
       return res.status(400).json({
@@ -183,7 +190,7 @@ router.post('/audit', requireAdmin, async (req, res) => {
     const expensesResult = await db.prepare(`
       SELECT SUM(amount) as cash_expenses
       FROM expenses
-      WHERE session_id = ?
+      WHERE session_id = ? AND (payment_method = 'cash' OR payment_method IS NULL)
     `).get(sessionId);
     const cashExpenses = expensesResult.cash_expenses || 0;
 
@@ -205,10 +212,11 @@ router.post('/audit', requireAdmin, async (req, res) => {
     `).run(expectedCash, actualCash, difference, note || null, sessionId);
 
     // Log Activity
+    const logBranchId = session ? session.branch_id : branchId;
     await db.prepare(`
       INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
       VALUES (?, ?, 'cash_audit', ?, datetime('now', '+7 hours'))
-    `).run(branchId, req.user.id, `เจ้าของร้านตรวจสอบเงินสดวันที่ ${session.session_date} (นับจริง: ${actualCash} บาท, คาดการณ์: ${expectedCash} บาท, ผลต่าง: ${difference} บาท)`);
+    `).run(logBranchId, req.user.id, `เจ้าของร้านตรวจสอบเงินสดวันที่ ${session.session_date} (นับจริง: ${actualCash} บาท, คาดการณ์: ${expectedCash} บาท, ผลต่าง: ${difference} บาท)`);
 
     res.json({
       success: true,
@@ -276,7 +284,7 @@ router.get('/summary', requireAdmin, async (req, res) => {
       const expRes = await db.prepare(`
         SELECT SUM(amount) as cash_expenses
         FROM expenses
-        WHERE session_id = ?
+        WHERE session_id = ? AND (payment_method = 'cash' OR payment_method IS NULL)
       `).get(session.id);
       const cashExpenses = expRes.cash_expenses || 0;
 

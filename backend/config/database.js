@@ -308,7 +308,8 @@ async function initDatabase() {
       category TEXT NOT NULL,
       note TEXT,
       expense_date DATE DEFAULT (date('now', 'localtime')),
-      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer'))
     )`,
     `CREATE TABLE IF NOT EXISTS activity_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -385,6 +386,18 @@ async function initDatabase() {
     }
   }
 
+  // Migration: Add payment_method to expenses table if not exists
+  try {
+    const columnsInfo = await db.prepare("PRAGMA table_info(expenses)").all();
+    const hasPaymentMethod = columnsInfo.some(col => col.name === 'payment_method');
+    if (!hasPaymentMethod) {
+      await db.exec("ALTER TABLE expenses ADD COLUMN payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer'))");
+      console.log('  🔧 Migration: Added payment_method column to expenses table.');
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration payment_method to expenses failed:', e.message);
+  }
+
   // Migration: Drop CHECK constraint on expenses.category to allow new expense categories
   try {
     const schema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='expenses'").get();
@@ -393,10 +406,13 @@ async function initDatabase() {
       
       const columnsInfo = await db.prepare("PRAGMA table_info(expenses)").all();
       const hasSessionId = columnsInfo.some(col => col.name === 'session_id');
+      const hasPaymentMethod = columnsInfo.some(col => col.name === 'payment_method');
       
       await db.exec('BEGIN TRANSACTION;');
       
-      await db.exec(`
+      let selectCols = 'id, branch_id, staff_id, amount, category, note, expense_date, created_at';
+      let insertCols = 'id, branch_id, staff_id, amount, category, note, expense_date, created_at';
+      let newTableSchema = `
         CREATE TABLE expenses_new (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           branch_id INTEGER REFERENCES branches(id),
@@ -405,22 +421,24 @@ async function initDatabase() {
           category TEXT NOT NULL,
           note TEXT,
           expense_date DATE DEFAULT (date('now', 'localtime')),
-          created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-          session_id INTEGER REFERENCES cash_drawer_sessions(id)
-        )
-      `);
+          created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      `;
       
       if (hasSessionId) {
-        await db.exec(`
-          INSERT INTO expenses_new (id, branch_id, staff_id, amount, category, note, expense_date, created_at, session_id)
-          SELECT id, branch_id, staff_id, amount, category, note, expense_date, created_at, session_id FROM expenses
-        `);
-      } else {
-        await db.exec(`
-          INSERT INTO expenses_new (id, branch_id, staff_id, amount, category, note, expense_date, created_at)
-          SELECT id, branch_id, staff_id, amount, category, note, expense_date, created_at FROM expenses
-        `);
+        newTableSchema += `, session_id INTEGER REFERENCES cash_drawer_sessions(id)`;
+        selectCols += `, session_id`;
+        insertCols += `, session_id`;
       }
+      if (hasPaymentMethod) {
+        newTableSchema += `, payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer'))`;
+        selectCols += `, payment_method`;
+        insertCols += `, payment_method`;
+      }
+      
+      newTableSchema += `)`;
+      
+      await db.exec(newTableSchema);
+      await db.exec(`INSERT INTO expenses_new (${insertCols}) SELECT ${selectCols} FROM expenses`);
       
       await db.exec('DROP TABLE expenses;');
       await db.exec('ALTER TABLE expenses_new RENAME TO expenses;');
@@ -452,7 +470,9 @@ async function initDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_orders_branch ON orders(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`,
-    `CREATE INDEX IF NOT EXISTS idx_stock_logs_branch ON stock_logs(branch_id)`
+    `CREATE INDEX IF NOT EXISTS idx_stock_logs_branch ON stock_logs(branch_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_activity_logs_branch ON activity_logs(branch_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`
   ];
 
   for (const index of indexes) {

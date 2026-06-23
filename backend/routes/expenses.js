@@ -11,7 +11,7 @@ router.use(requireAdmin);
 // ─── POST / — Create New Expense ────────────────────────────
 router.post('/', async (req, res) => {
   try {
-    const { amount, category, note, expense_date } = req.body;
+    const { amount, category, note, expense_date, payment_method } = req.body;
     const db = getDb();
 
     if (!amount || amount <= 0) {
@@ -21,10 +21,18 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (!category || !['raw_materials', 'gas_fuel', 'packaging', 'other', 'raw_chicken', 'meatballs', 'salapao', 'fuel_oil', 'gas_lpg', 'salary', 'utility_bills'].includes(category)) {
+    if (!category || !['raw_materials', 'gas_fuel', 'packaging', 'other', 'raw_chicken', 'meatballs', 'salapao', 'fuel_oil', 'gas_lpg', 'salary', 'utility_bills', 'debt'].includes(category)) {
       return res.status(400).json({
         success: false,
         error: 'กรุณาระบุหมวดหมู่ที่ถูกต้อง'
+      });
+    }
+
+    const paymentMethod = payment_method || 'cash';
+    if (!['cash', 'transfer'].includes(paymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุช่องทางการชำระเงินที่ถูกต้อง (cash หรือ transfer)'
       });
     }
 
@@ -43,11 +51,9 @@ router.post('/', async (req, res) => {
     const sessionId = session ? session.id : null;
 
     const result = await db.prepare(`
-      INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, session_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
-    `).run(branchId, req.user.id, amount, category, note || null, dateVal, sessionId);
-
-
+      INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, session_id, payment_method, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+    `).run(branchId, req.user.id, amount, category, note || null, dateVal, sessionId, paymentMethod);
 
     res.status(201).json({
       success: true,
@@ -56,7 +62,8 @@ router.post('/', async (req, res) => {
         amount,
         category,
         note,
-        expense_date: dateVal
+        expense_date: dateVal,
+        payment_method: paymentMethod
       }
     });
   } catch (error) {

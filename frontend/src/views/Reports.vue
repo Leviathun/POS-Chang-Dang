@@ -254,7 +254,7 @@
 
         <!-- Admin Only: Daily Summary Card -->
         <div v-if="isAdminUser" class="card">
-          <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> สรุปยอดวันที่ {{ formatDate(selectedDate) }}</div>
+          <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> {{ summaryCardTitle }}</div>
           
           <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
             <span>ยอดขายทั้งหมด (สุทธิ):</span>
@@ -319,7 +319,7 @@
         <!-- Today's Transaction Logs (ALL ROLES) -->
         <div class="card">
           <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-            <div class="card-title" style="font-size: var(--font-sm); margin: 0;"><i class="fa-solid fa-list" style="margin-right: 6px;"></i> รายการบิลประจำวัน</div>
+            <div class="card-title" style="font-size: var(--font-sm); margin: 0;"><i class="fa-solid fa-list" style="margin-right: 6px;"></i> {{ dailyOrdersListTitle }}</div>
             <button 
               v-if="dailyReport.orders?.length > 0"
               class="btn btn-sm btn-secondary" 
@@ -331,11 +331,11 @@
           </div>
           
           <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
-            ยังไม่มีรายการขายในวันนี้
+            {{ dailyOrdersEmptyLabel }}
           </div>
           <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
             <div 
-              v-for="order in dailyReport.orders" 
+              v-for="order in paginatedDailyReportOrders" 
               :key="order.id" 
               class="p-sm card"
               style="font-size:var(--font-sm); background: var(--bg-primary); display:flex; flex-direction:column; gap:2px; cursor:pointer;"
@@ -392,6 +392,29 @@
                   <i class="fa-solid fa-ban"></i> ยกเลิกบิลนี้ (Void)
                 </button>
               </div>
+            </div>
+
+            <!-- Pagination UI for Daily Orders -->
+            <div v-if="totalDailyOrdersPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+              <button 
+                class="btn btn-secondary" 
+                style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+                :disabled="dailyOrdersCurrentPage === 1" 
+                @click="dailyOrdersCurrentPage--"
+              >
+                <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+              </button>
+              <span style="font-size: var(--font-sm); font-weight: bold;">
+                หน้า {{ dailyOrdersCurrentPage }} / {{ totalDailyOrdersPages }}
+              </span>
+              <button 
+                class="btn btn-secondary" 
+                style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+                :disabled="dailyOrdersCurrentPage === totalDailyOrdersPages" 
+                @click="dailyOrdersCurrentPage++"
+              >
+                ถัดไป <i class="fa-solid fa-chevron-right"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -664,10 +687,33 @@
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salary' }" @click="selectExpenseCategory('salary')"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 4px;"></i> เงินเดือน</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'utility_bills' }" @click="selectExpenseCategory('utility_bills')"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> ค่าไฟ/น้ำ</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> บรรจุภัณฑ์/ถุง</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'debt' }" @click="selectExpenseCategory('debt')"><i class="fa-solid fa-file-invoice-dollar" style="margin-right: 4px;"></i> รายจ่าย - หนี้</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')"><i class="fa-solid fa-paperclip" style="margin-right: 4px;"></i> อื่นๆ</div>
                 </div>
               </div>
             </div>
+          <div class="form-group mb-xs">
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isExpensePaymentMethodDropdownOpen }" 
+                @click="isExpensePaymentMethodDropdownOpen = !isExpensePaymentMethodDropdownOpen"
+              >
+                <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <i :class="expenseForm.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
+                  {{ expenseForm.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด' }}
+                </span>
+              </div>
+              <div v-if="isExpensePaymentMethodDropdownOpen" class="custom-select-dropdown" style="max-height: 250px; overflow-y: auto;">
+                <div class="custom-select-option" :class="{ 'selected': expenseForm.payment_method === 'cash' }" @click="selectExpensePaymentMethod('cash')">
+                  <i class="fa-solid fa-money-bill-wave" style="margin-right: 4px;"></i> เงินสด
+                </div>
+                <div class="custom-select-option" :class="{ 'selected': expenseForm.payment_method === 'transfer' }" @click="selectExpensePaymentMethod('transfer')">
+                  <i class="fa-solid fa-mobile-screen-button" style="margin-right: 4px;"></i> เงินโอน
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="form-group mb-xs">
             <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." />
           </div>
@@ -746,7 +792,7 @@
               </tr>
               <tr 
                 v-else 
-                v-for="item in ledgerTransactions" 
+                v-for="item in paginatedLedgerTransactions" 
                 :key="item.type + '-' + item.id" 
                 style="border-bottom: 1px solid var(--border-color);"
                 class="table-row-hover"
@@ -792,7 +838,7 @@
           </div>
           <div v-else style="display:flex; flex-direction:column; gap:var(--space-sm);">
             <div 
-              v-for="item in ledgerTransactions" 
+              v-for="item in paginatedLedgerTransactions" 
               :key="item.type + '-' + item.id" 
               class="ledger-mobile-card"
               :class="item.type === 'order' ? 'income' : 'expense'"
@@ -821,6 +867,29 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Pagination UI for Ledger -->
+        <div v-if="totalLedgerPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="ledgerCurrentPage === 1" 
+            @click="ledgerCurrentPage--"
+          >
+            <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+          </button>
+          <span style="font-size: var(--font-sm); font-weight: bold;">
+            หน้า {{ ledgerCurrentPage }} / {{ totalLedgerPages }}
+          </span>
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="ledgerCurrentPage === totalLedgerPages" 
+            @click="ledgerCurrentPage++"
+          >
+            ถัดไป <i class="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
       </div>
 
@@ -966,6 +1035,7 @@
               <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
               <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อก / ของเสีย (Stock & Waste)</div>
               <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
+              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
             </div>
           </div>
         </div>
@@ -974,7 +1044,7 @@
           ยังไม่มีกิจกรรมที่ตรงตามตัวกรองในวันนี้
         </div>
         <div v-else class="activity-logs-list">
-          <div v-for="log in filteredActivityLogs" :key="log.id" class="activity-log-item">
+          <div v-for="log in paginatedActivityLogs" :key="log.id" class="activity-log-item">
             <div class="log-badge-wrapper">
               <div class="log-badge" :class="log.action">
                 <i :class="getActionIconClass(log.action)"></i>
@@ -988,6 +1058,29 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Pagination UI for Activity Logs -->
+        <div v-if="totalActivityPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="activityCurrentPage === 1" 
+            @click="activityCurrentPage--"
+          >
+            <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+          </button>
+          <span style="font-size: var(--font-sm); font-weight: bold;">
+            หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
+          </span>
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="activityCurrentPage === totalActivityPages" 
+            @click="activityCurrentPage++"
+          >
+            ถัดไป <i class="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
       </div>
     </template>
@@ -1487,7 +1580,8 @@ const submitCashAudit = async () => {
       session_id: activeAuditSession.value.id,
       session_date: activeAuditSession.value.session_date,
       actual_cash: Number(actualCashInput.value),
-      note: auditNote.value
+      note: auditNote.value,
+      branch_id: selectedBranchId.value
     });
 
     if (res.success) {
@@ -1516,7 +1610,8 @@ const submitOpeningCash = async () => {
     const res = await api.cashDrawers.saveOpeningCash({
       session_id: activeOpeningSession.value.id,
       session_date: activeOpeningSession.value.session_date,
-      opening_cash: Number(openingCashInput.value)
+      opening_cash: Number(openingCashInput.value),
+      branch_id: selectedBranchId.value
     });
 
     if (res.success) {
@@ -1664,6 +1759,8 @@ const totalPages = computed(() => {
   return Math.ceil(historyOrders.value.length / historyOrdersPerPage) || 1;
 });
 
+
+
 watch(activeTab, (newVal) => {
   if (newVal === 'order_history') {
     loadOrderHistory();
@@ -1719,6 +1816,7 @@ const filteredActivityLogs = computed(() => {
     if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
     if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
     if (filterAction.value === 'credit') return act === 'staff_credit';
+    if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
     return true;
   });
 });
@@ -1742,7 +1840,8 @@ const voidPresets = [
 const expenseForm = ref({
   amount: null,
   category: 'raw_chicken',
-  note: ''
+  note: '',
+  payment_method: 'transfer'
 });
 
 const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.amount || 0), 0));
@@ -1750,6 +1849,50 @@ const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.
 // Ledger States
 const ledgerTransactions = ref([]);
 const ledgerLoading = ref(false);
+
+// Pagination States for Daily/Monthly Orders
+const dailyOrdersCurrentPage = ref(1);
+const dailyOrdersPerPage = 15;
+const totalDailyOrdersPages = computed(() => {
+  const count = (dailyReport.value.orders || []).length;
+  return Math.ceil(count / dailyOrdersPerPage) || 1;
+});
+const paginatedDailyReportOrders = computed(() => {
+  const orders = dailyReport.value.orders || [];
+  const start = (dailyOrdersCurrentPage.value - 1) * dailyOrdersPerPage;
+  const end = start + dailyOrdersPerPage;
+  return orders.slice(start, end);
+});
+
+// Pagination States for Ledger Transactions
+const ledgerCurrentPage = ref(1);
+const ledgerPerPage = 15;
+const totalLedgerPages = computed(() => {
+  const count = ledgerTransactions.value.length;
+  return Math.ceil(count / ledgerPerPage) || 1;
+});
+const paginatedLedgerTransactions = computed(() => {
+  const start = (ledgerCurrentPage.value - 1) * ledgerPerPage;
+  const end = start + ledgerPerPage;
+  return ledgerTransactions.value.slice(start, end);
+});
+
+// Pagination States for Activity Logs
+const activityCurrentPage = ref(1);
+const activityPerPage = 15;
+const totalActivityPages = computed(() => {
+  const count = filteredActivityLogs.value.length;
+  return Math.ceil(count / activityPerPage) || 1;
+});
+const paginatedActivityLogs = computed(() => {
+  const start = (activityCurrentPage.value - 1) * activityPerPage;
+  const end = start + activityPerPage;
+  return filteredActivityLogs.value.slice(start, end);
+});
+
+watch(filterAction, () => {
+  activityCurrentPage.value = 1;
+});
 
 // Custom dropdowns logic for Reports.vue
 const isExpenseCategoryDropdownOpen = ref(false);
@@ -1763,6 +1906,7 @@ const selectedExpenseCategoryLabel = computed(() => {
     salary: 'เงินเดือน',
     utility_bills: 'ค่าไฟ/น้ำ',
     packaging: 'บรรจุภัณฑ์/ถุง',
+    debt: 'รายจ่าย - หนี้',
     other: 'อื่นๆ',
     raw_materials: 'วัตถุดิบ (เดิม)',
     gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
@@ -1779,6 +1923,7 @@ const getExpenseCategoryIcon = (cat) => {
     salary: 'fa-solid fa-hand-holding-dollar',
     utility_bills: 'fa-solid fa-bolt',
     packaging: 'fa-solid fa-box',
+    debt: 'fa-solid fa-file-invoice-dollar',
     other: 'fa-solid fa-paperclip',
     raw_materials: 'fa-solid fa-drumstick-bite',
     gas_fuel: 'fa-solid fa-gas-pump'
@@ -1790,6 +1935,12 @@ const selectExpenseCategory = (cat) => {
   isExpenseCategoryDropdownOpen.value = false;
 };
 
+const isExpensePaymentMethodDropdownOpen = ref(false);
+const selectExpensePaymentMethod = (method) => {
+  expenseForm.value.payment_method = method;
+  isExpensePaymentMethodDropdownOpen.value = false;
+};
+
 const isFilterActionDropdownOpen = ref(false);
 const selectedFilterActionLabel = computed(() => {
   const filterLabels = {
@@ -1799,7 +1950,8 @@ const selectedFilterActionLabel = computed(() => {
     cancel: 'การยกเลิกบิล (Void)',
     expenses: 'บันทึกค่าใช้จ่าย (Expenses)',
     stock: 'จัดการสต็อก / ของเสีย (Stock & Waste)',
-    credit: 'เครดิตพนักงาน (Staff Credit)'
+    credit: 'เครดิตพนักงาน (Staff Credit)',
+    cash_drawer: 'การจัดการลิ้นชักเงินสด (Cash Drawer)'
   };
   return filterLabels[filterAction.value] || 'ทั้งหมด';
 });
@@ -1811,7 +1963,8 @@ const getFilterActionIcon = (action) => {
     cancel: 'fa-solid fa-ban',
     expenses: 'fa-solid fa-wallet',
     stock: 'fa-solid fa-boxes-stacked',
-    credit: 'fa-solid fa-user-check'
+    credit: 'fa-solid fa-user-check',
+    cash_drawer: 'fa-solid fa-cash-register'
   };
   return map[action] || 'fa-solid fa-folder';
 };
@@ -1867,6 +2020,36 @@ const selectedBranchName = computed(() => {
 });
 
 const selectedYearLabel = computed(() => `ปี ${selectedYear.value}`);
+
+const summaryCardTitle = computed(() => {
+  if (periodMode.value === 'daily') {
+    return `สรุปยอดวันที่ ${selectedDateLabel.value}`;
+  } else if (periodMode.value === 'monthly') {
+    return `สรุปยอดประจำเดือน ${selectedMonthLabel.value}`;
+  } else {
+    return `สรุปยอดประจำปี ${selectedYearLabel.value}`;
+  }
+});
+
+const dailyOrdersListTitle = computed(() => {
+  if (periodMode.value === 'daily') {
+    return 'รายการบิลประจำวัน';
+  } else if (periodMode.value === 'monthly') {
+    return 'รายการบิลประจำเดือน';
+  } else {
+    return 'รายการบิลประจำปี';
+  }
+});
+
+const dailyOrdersEmptyLabel = computed(() => {
+  if (periodMode.value === 'daily') {
+    return 'ยังไม่มีรายการขายในวันนี้';
+  } else if (periodMode.value === 'monthly') {
+    return 'ยังไม่มีรายการขายในเดือนนี้';
+  } else {
+    return 'ยังไม่มีรายการขายในปีนี้';
+  }
+});
 
 const ledgerPeriodLabel = computed(() => {
   if (periodMode.value === 'daily') {
@@ -1997,6 +2180,7 @@ const selectYear = (y) => {
 
 const closeReportsDropdowns = () => {
   isExpenseCategoryDropdownOpen.value = false;
+  isExpensePaymentMethodDropdownOpen.value = false;
   isFilterActionDropdownOpen.value = false;
   isHistoryStatusDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
@@ -2048,11 +2232,12 @@ const loadMonthlyLedger = async () => {
     });
 
     periodExpenses.forEach(e => {
+      const pmLabel = e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
       list.push({
         id: e.id,
         created_at: e.created_at,
         timestamp: new Date(e.created_at).getTime(),
-        name: e.note || getCategoryLabel(e.category),
+        name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})`,
         income: 0,
         expense: e.amount || 0,
         type: 'expense'
@@ -2132,7 +2317,7 @@ const loadActivityLogsForPeriod = async () => {
   }
   try {
     let res;
-    const params = { branch_id: selectedBranchId.value };
+    const params = { branch_id: selectedBranchId.value, limit: 1000 };
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;
     } else if (periodMode.value === 'monthly') {
@@ -2186,16 +2371,26 @@ const loadOrderHistory = async () => {
 const loadReportData = async () => {
   expandedOrderId.value = null;
   expandedItems.value = [];
+  dailyOrdersCurrentPage.value = 1;
+  ledgerCurrentPage.value = 1;
+  activityCurrentPage.value = 1;
 
   // Check if we can use store cache
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
     loading.value = false;
     
+    if (isAdmin() && activeTab.value === 'cash_audit') {
+      fetchCashDrawerSummary();
+    }
+    
     // Silent background fetch to update store cache
     store.fetchReports(selectedBranchId.value, false).then(() => {
       if (isUsingDefaultFilters() && store.reportsBranchId === selectedBranchId.value) {
         applyDataFromStore();
+        if (isAdmin() && activeTab.value === 'cash_audit') {
+          fetchCashDrawerSummary();
+        }
       }
     }).catch(e => console.error(e));
     
@@ -2340,8 +2535,6 @@ const handleVoidOrder = async () => {
   }
 };
 
-// ── Expense Handlers ──
-
 const handleAddExpense = async () => {
   ui.showLoading();
   try {
@@ -2349,11 +2542,13 @@ const handleAddExpense = async () => {
       amount: expenseForm.value.amount,
       category: expenseForm.value.category,
       note: expenseForm.value.note,
-      expense_date: selectedDate.value
+      expense_date: selectedDate.value,
+      payment_method: expenseForm.value.payment_method || 'cash',
+      branch_id: selectedBranchId.value
     });
     if (res.success) {
       ui.showToast('บันทึกค่าใช้จ่ายสำเร็จ', 'success');
-      expenseForm.value = { amount: null, category: 'raw_chicken', note: '' };
+      expenseForm.value = { amount: null, category: 'raw_chicken', note: '', payment_method: 'transfer' };
       store.clearReportsCache(); // Clear store cache!
       loadExpensesForPeriod();
       loadActivityLogsForPeriod();
@@ -2406,6 +2601,7 @@ const getCategoryLabel = (cat) => {
     'salary': 'เงินเดือน',
     'utility_bills': 'ค่าไฟ/น้ำ',
     'packaging': 'บรรจุภัณฑ์',
+    'debt': 'หนี้',
     'other': 'อื่นๆ',
     'raw_materials': 'วัตถุดิบ',
     'gas_fuel': 'แก๊ส/น้ำมัน'
@@ -2423,7 +2619,10 @@ const getActionIconClass = (action) => {
     'record_waste': 'fa-solid fa-trash-can text-danger',
     'staff_credit': 'fa-solid fa-user-check text-primary',
     'log_expense': 'fa-solid fa-wallet text-danger',
-    'delete_expense': 'fa-solid fa-trash-can text-danger'
+    'delete_expense': 'fa-solid fa-trash-can text-danger',
+    'cash_opening_set': 'fa-solid fa-cash-register text-success',
+    'cash_audit': 'fa-solid fa-cash-register text-primary',
+    'setting_change': 'fa-solid fa-gear text-neutral'
   };
   return map[action] || 'fa-solid fa-bookmark text-neutral';
 };
@@ -2662,10 +2861,16 @@ select.reports-filter-control,
 /* --- Expense Form Grid --- */
 .expense-form-grid {
   display: grid;
-  grid-template-columns: 150px 180px 1fr auto;
+  grid-template-columns: 130px 180px 160px 1fr auto;
   gap: var(--space-sm);
   align-items: end;
   margin-bottom: var(--space-md);
+}
+
+.expense-form-grid .custom-select-trigger {
+  padding: var(--space-md) 32px var(--space-md) var(--space-lg) !important;
+  font-size: var(--font-base) !important;
+  background-position: right 12px center !important;
 }
 
 @media (max-width: 768px) {
@@ -2768,6 +2973,7 @@ select.reports-filter-control,
 .log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); }
 .log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); }
 .log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); }
+.log-badge.cash_opening_set, .log-badge.cash_audit { background: rgba(42, 157, 143, 0.1); }
 
 .log-content-wrapper {
   flex: 1;

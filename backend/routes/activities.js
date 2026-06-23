@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
       branchId = defaultBranch ? defaultBranch.id : null;
     }
 
-    const queryLimit = parseInt(limit) || 100;
+    const queryLimit = parseInt(limit) || 1000;
     const queryOffset = parseInt(offset) || 0;
 
     let sql = `
