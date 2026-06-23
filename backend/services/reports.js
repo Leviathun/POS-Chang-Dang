@@ -157,6 +157,42 @@ async function getMonthlyReport(month, branchId = null) {
     WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
   `).get(params2);
 
+  // แยกตามวิธีชำระเงิน ของเดือน
+  const cashStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+  `).get(params2);
+
+  const qrStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+  `).get(params2);
+
+  const govStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+  `).get(params2);
+
+  const deliveryStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+  `).get(params2);
+
+  const breakdownData = {
+    cash_count: cashStats.count,
+    cash_total: cashStats.total,
+    qr_count: qrStats.count,
+    qr_total: qrStats.total,
+    gov_count: govStats.count,
+    gov_total: govStats.total,
+    delivery_count: deliveryStats.count,
+    delivery_total: deliveryStats.total
+  };
+
   // ดึงรายการออเดอร์ทั้งหมดของเดือนนี้
   const paramsOrders = [month];
   if (branchId) paramsOrders.push(branchId);
@@ -175,6 +211,8 @@ async function getMonthlyReport(month, branchId = null) {
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
+    payment_breakdown: breakdownData,
+    payment: breakdownData,
     daily_breakdown: dailyBreakdown,
     orders: orders
   };
@@ -219,6 +257,42 @@ async function getYearlyReport(year, branchId = null) {
     WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
   `).get(params2);
 
+  // แยกตามวิธีชำระเงิน ของปี
+  const cashStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+  `).get(params2);
+
+  const qrStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+  `).get(params2);
+
+  const govStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+  `).get(params2);
+
+  const deliveryStats = await db.prepare(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM orders 
+    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+  `).get(params2);
+
+  const breakdownData = {
+    cash_count: cashStats.count,
+    cash_total: cashStats.total,
+    qr_count: qrStats.count,
+    qr_total: qrStats.total,
+    gov_count: govStats.count,
+    gov_total: govStats.total,
+    delivery_count: deliveryStats.count,
+    delivery_total: deliveryStats.total
+  };
+
   // ดึงรายการออเดอร์ทั้งหมดของปีนี้
   const paramsOrders = [year];
   if (branchId) paramsOrders.push(branchId);
@@ -237,6 +311,8 @@ async function getYearlyReport(year, branchId = null) {
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
+    payment_breakdown: breakdownData,
+    payment: breakdownData,
     monthly_breakdown: monthlyBreakdown,
     orders: orders
   };
