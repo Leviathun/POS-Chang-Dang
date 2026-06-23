@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
 const { attachUser, requireAdmin } = require('../middleware/auth');
+const { getOrCreateSession } = require('./cash_drawers');
 
 // Apply auth middleware to all routes
 router.use(attachUser);
@@ -20,7 +21,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (!category || !['raw_materials', 'gas_fuel', 'packaging', 'other'].includes(category)) {
+    if (!category || !['raw_materials', 'gas_fuel', 'packaging', 'other', 'raw_chicken', 'meatballs', 'salapao', 'fuel_oil', 'gas_lpg', 'salary', 'utility_bills'].includes(category)) {
       return res.status(400).json({
         success: false,
         error: 'กรุณาระบุหมวดหมู่ที่ถูกต้อง'
@@ -37,10 +38,14 @@ router.post('/', async (req, res) => {
 
     const dateVal = expense_date || new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+    // ดึงหรือสร้างรอบบัญชีเงินสดประจำวัน
+    const session = await getOrCreateSession(db, branchId);
+    const sessionId = session ? session.id : null;
+
     const result = await db.prepare(`
-      INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
-    `).run(branchId, req.user.id, amount, category, note || null, dateVal);
+      INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, session_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+    `).run(branchId, req.user.id, amount, category, note || null, dateVal, sessionId);
 
 
 

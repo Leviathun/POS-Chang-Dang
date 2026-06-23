@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
 const { attachUser, requireAuth } = require('../middleware/auth');
+const { getOrCreateSession } = require('./cash_drawers');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
@@ -29,6 +30,10 @@ router.post('/', requireAuth, async (req, res) => {
 
     // หาสาขาของผู้ใช้ (ดึงตรงจาก req.user ที่มีค่าอยู่เสมอเนื่องจากผ่าน requireAuth)
     const branchId = req.user ? req.user.branch_id : 1;
+
+    // ดึงหรือสร้างรอบบัญชีเงินสดประจำวัน (Silent Daily Session)
+    const session = await getOrCreateSession(db, branchId);
+    const sessionId = session ? session.id : null;
 
     // รวบรวม IDs ของเมนูและวัตถุดิบทั้งหมดใน cart เพื่อคิวรีครั้งเดียว
     const menuItemIds = [...new Set(items.map(item => Number(item.menu_item_id)))];
@@ -190,8 +195,8 @@ router.post('/', requireAuth, async (req, res) => {
 
     // 1. บันทึกออเดอร์ (ดึง id และ created_at กลับมาทันทีในขั้นตอน batch)
     statements.push({
-      sql: `INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, datetime('now', '+7 hours'))
+      sql: `INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, session_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, datetime('now', '+7 hours'))
             RETURNING id, created_at`,
       args: [
         branchId,
@@ -204,7 +209,8 @@ router.post('/', requireAuth, async (req, res) => {
         cash_received || null,
         cashChange,
         note || null,
-        modifiers ? (typeof modifiers === 'string' ? modifiers : JSON.stringify(modifiers)) : null
+        modifiers ? (typeof modifiers === 'string' ? modifiers : JSON.stringify(modifiers)) : null,
+        sessionId
       ]
     });
 

@@ -36,6 +36,7 @@ app.use('/api/stock', require('./routes/stock'));
 app.use('/api/modifiers', require('./routes/modifiers'));
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/activities', require('./routes/activities'));
+app.use('/api/cash-drawers', require('./routes/cash_drawers'));
 
 // ─── SPA Fallback ─────────────────────────────────────────
 app.get('*', (req, res) => {

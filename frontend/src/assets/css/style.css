@@ -1132,6 +1132,13 @@ input[type="date"] {
   display: inline-block;
 }
 
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 768px) {
   .show-mobile-only {
     display: block !important;
