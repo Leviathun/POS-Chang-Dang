@@ -266,6 +266,19 @@ const activities = {
   },
 };
 
+const cashDrawers = {
+  async audit(data) {
+    return request('POST', '/api/cash-drawers/audit', data);
+  },
+  async getSummary(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/cash-drawers/summary?${query}`);
+  },
+  async saveOpeningCash(data) {
+    return request('POST', '/api/cash-drawers/opening-cash', data);
+  },
+};
+
 export default {
   auth,
   menu,
@@ -277,4 +290,5 @@ export default {
   activities,
   freeModifiers,
   modifiers: freeModifiers,
+  cashDrawers,
 };

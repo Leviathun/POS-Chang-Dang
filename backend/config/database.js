@@ -318,6 +318,20 @@ async function initDatabase() {
       details TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
+    `CREATE TABLE IF NOT EXISTS cash_drawer_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id),
+      session_date DATE NOT NULL,
+      opening_cash REAL NOT NULL,
+      expected_cash REAL,
+      actual_cash REAL,
+      difference REAL,
+      status TEXT DEFAULT 'open' CHECK(status IN ('open', 'closed')),
+      note TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(branch_id, session_date)
+    )`,
     `CREATE TABLE IF NOT EXISTS archived_orders (
       id INTEGER PRIMARY KEY,
       branch_id INTEGER,
@@ -349,6 +363,26 @@ async function initDatabase() {
 
   for (const table of tables) {
     await db.exec(table);
+  }
+
+  // Migration: Add session_id to orders table if not exists
+  try {
+    await db.exec('ALTER TABLE orders ADD COLUMN session_id INTEGER REFERENCES cash_drawer_sessions(id)');
+    console.log('  🔧 Migration: Added session_id column to orders table.');
+  } catch (e) {
+    if (!e.message.includes('duplicate column name') && !e.message.includes('already exists')) {
+      console.warn('⚠️ Migration session_id to orders failed:', e.message);
+    }
+  }
+
+  // Migration: Add session_id to expenses table if not exists
+  try {
+    await db.exec('ALTER TABLE expenses ADD COLUMN session_id INTEGER REFERENCES cash_drawer_sessions(id)');
+    console.log('  🔧 Migration: Added session_id column to expenses table.');
+  } catch (e) {
+    if (!e.message.includes('duplicate column name') && !e.message.includes('already exists')) {
+      console.warn('⚠️ Migration session_id to expenses failed:', e.message);
+    }
   }
 
   // Migration: Fix users with NULL branch_id — assign to first branch
@@ -417,6 +451,19 @@ async function initDatabase() {
       const insertSetting = db.prepare('INSERT INTO settings (branch_id, key, value) VALUES (?, ?, ?)');
       await insertSetting.run(b.id, 'low_stock_threshold', '5');
     }
+  }
+
+  // Seed default_opening_cash (500) per branch if not exists
+  try {
+    for (const b of branches) {
+      const existing = await db.prepare("SELECT value FROM settings WHERE branch_id = ? AND key = 'default_opening_cash'").get(b.id);
+      if (!existing) {
+        await db.prepare("INSERT INTO settings (branch_id, key, value) VALUES (?, 'default_opening_cash', '500')").run(b.id);
+        console.log(`  ⚙️ Seeded default_opening_cash (500) for branch ID ${b.id}`);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Seeding default_opening_cash failed:', e.message);
   }
 
   // Seed default modifiers
