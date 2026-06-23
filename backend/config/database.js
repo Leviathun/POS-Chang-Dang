@@ -305,7 +305,7 @@ async function initDatabase() {
       branch_id INTEGER REFERENCES branches(id),
       staff_id INTEGER REFERENCES users(id),
       amount REAL NOT NULL,
-      category TEXT NOT NULL CHECK(category IN ('raw_materials', 'gas_fuel', 'packaging', 'other')),
+      category TEXT NOT NULL,
       note TEXT,
       expense_date DATE DEFAULT (date('now', 'localtime')),
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
@@ -383,6 +383,53 @@ async function initDatabase() {
     if (!e.message.includes('duplicate column name') && !e.message.includes('already exists')) {
       console.warn('⚠️ Migration session_id to expenses failed:', e.message);
     }
+  }
+
+  // Migration: Drop CHECK constraint on expenses.category to allow new expense categories
+  try {
+    const schema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='expenses'").get();
+    if (schema && schema.sql && schema.sql.includes('CHECK(')) {
+      console.log('  🔧 Migration: Recreating expenses table to drop CHECK constraint...');
+      
+      const columnsInfo = await db.prepare("PRAGMA table_info(expenses)").all();
+      const hasSessionId = columnsInfo.some(col => col.name === 'session_id');
+      
+      await db.exec('BEGIN TRANSACTION;');
+      
+      await db.exec(`
+        CREATE TABLE expenses_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          branch_id INTEGER REFERENCES branches(id),
+          staff_id INTEGER REFERENCES users(id),
+          amount REAL NOT NULL,
+          category TEXT NOT NULL,
+          note TEXT,
+          expense_date DATE DEFAULT (date('now', 'localtime')),
+          created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+          session_id INTEGER REFERENCES cash_drawer_sessions(id)
+        )
+      `);
+      
+      if (hasSessionId) {
+        await db.exec(`
+          INSERT INTO expenses_new (id, branch_id, staff_id, amount, category, note, expense_date, created_at, session_id)
+          SELECT id, branch_id, staff_id, amount, category, note, expense_date, created_at, session_id FROM expenses
+        `);
+      } else {
+        await db.exec(`
+          INSERT INTO expenses_new (id, branch_id, staff_id, amount, category, note, expense_date, created_at)
+          SELECT id, branch_id, staff_id, amount, category, note, expense_date, created_at FROM expenses
+        `);
+      }
+      
+      await db.exec('DROP TABLE expenses;');
+      await db.exec('ALTER TABLE expenses_new RENAME TO expenses;');
+      await db.exec('COMMIT;');
+      console.log('  🔧 Migration: Successfully removed CHECK constraint from expenses table.');
+    }
+  } catch (e) {
+    try { await db.exec('ROLLBACK;'); } catch(_) {}
+    console.warn('⚠️ Migration drop expenses CHECK constraint failed:', e.message);
   }
 
   // Migration: Fix users with NULL branch_id — assign to first branch

@@ -655,9 +655,14 @@
                     {{ selectedExpenseCategoryLabel }}
                   </span>
                 </div>
-                <div v-if="isExpenseCategoryDropdownOpen" class="custom-select-dropdown">
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_materials' }" @click="selectExpenseCategory('raw_materials')"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> วัตถุดิบ</div>
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'gas_fuel' }" @click="selectExpenseCategory('gas_fuel')"><i class="fa-solid fa-gas-pump" style="margin-right: 4px;"></i> แก๊ส/น้ำมัน</div>
+                <div v-if="isExpenseCategoryDropdownOpen" class="custom-select-dropdown" style="max-height: 250px; overflow-y: auto;">
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_chicken' }" @click="selectExpenseCategory('raw_chicken')"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> ไก่สด</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'meatballs' }" @click="selectExpenseCategory('meatballs')"><i class="fa-solid fa-circle" style="margin-right: 4px;"></i> ลูกชิ้น</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salapao' }" @click="selectExpenseCategory('salapao')"><i class="fa-solid fa-cookie" style="margin-right: 4px;"></i> ซาลาเปา</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'fuel_oil' }" @click="selectExpenseCategory('fuel_oil')"><i class="fa-solid fa-gas-pump" style="margin-right: 4px;"></i> น้ำมัน</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'gas_lpg' }" @click="selectExpenseCategory('gas_lpg')"><i class="fa-solid fa-fire" style="margin-right: 4px;"></i> แก๊ส</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salary' }" @click="selectExpenseCategory('salary')"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 4px;"></i> เงินเดือน</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'utility_bills' }" @click="selectExpenseCategory('utility_bills')"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> ค่าไฟ/น้ำ</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> บรรจุภัณฑ์/ถุง</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')"><i class="fa-solid fa-paperclip" style="margin-right: 4px;"></i> อื่นๆ</div>
                 </div>
@@ -1736,7 +1741,7 @@ const voidPresets = [
 // Expense form state
 const expenseForm = ref({
   amount: null,
-  category: 'raw_materials',
+  category: 'raw_chicken',
   note: ''
 });
 
@@ -1750,19 +1755,33 @@ const ledgerLoading = ref(false);
 const isExpenseCategoryDropdownOpen = ref(false);
 const selectedExpenseCategoryLabel = computed(() => {
   const categoryLabels = {
-    raw_materials: 'วัตถุดิบ',
-    gas_fuel: 'แก๊ส/น้ำมัน',
+    raw_chicken: 'ไก่สด',
+    meatballs: 'ลูกชิ้น',
+    salapao: 'ซาลาเปา',
+    fuel_oil: 'น้ำมัน',
+    gas_lpg: 'แก๊ส',
+    salary: 'เงินเดือน',
+    utility_bills: 'ค่าไฟ/น้ำ',
     packaging: 'บรรจุภัณฑ์/ถุง',
-    other: 'อื่นๆ'
+    other: 'อื่นๆ',
+    raw_materials: 'วัตถุดิบ (เดิม)',
+    gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
   };
   return categoryLabels[expenseForm.value.category] || 'เลือกหมวดหมู่...';
 });
 const getExpenseCategoryIcon = (cat) => {
   const map = {
-    raw_materials: 'fa-solid fa-drumstick-bite',
-    gas_fuel: 'fa-solid fa-gas-pump',
+    raw_chicken: 'fa-solid fa-drumstick-bite',
+    meatballs: 'fa-solid fa-circle',
+    salapao: 'fa-solid fa-cookie',
+    fuel_oil: 'fa-solid fa-gas-pump',
+    gas_lpg: 'fa-solid fa-fire',
+    salary: 'fa-solid fa-hand-holding-dollar',
+    utility_bills: 'fa-solid fa-bolt',
     packaging: 'fa-solid fa-box',
-    other: 'fa-solid fa-paperclip'
+    other: 'fa-solid fa-paperclip',
+    raw_materials: 'fa-solid fa-drumstick-bite',
+    gas_fuel: 'fa-solid fa-gas-pump'
   };
   return map[cat] || 'fa-solid fa-folder';
 };
@@ -2334,7 +2353,7 @@ const handleAddExpense = async () => {
     });
     if (res.success) {
       ui.showToast('บันทึกค่าใช้จ่ายสำเร็จ', 'success');
-      expenseForm.value = { amount: null, category: 'raw_materials', note: '' };
+      expenseForm.value = { amount: null, category: 'raw_chicken', note: '' };
       store.clearReportsCache(); // Clear store cache!
       loadExpensesForPeriod();
       loadActivityLogsForPeriod();
@@ -2379,10 +2398,17 @@ const setPeriodMode = (mode) => {
 
 const getCategoryLabel = (cat) => {
   const map = {
-    'raw_materials': 'วัตถุดิบ',
-    'gas_fuel': 'แก๊ส/น้ำมัน',
+    'raw_chicken': 'ไก่สด',
+    'meatballs': 'ลูกชิ้น',
+    'salapao': 'ซาลาเปา',
+    'fuel_oil': 'น้ำมัน',
+    'gas_lpg': 'แก๊ส',
+    'salary': 'เงินเดือน',
+    'utility_bills': 'ค่าไฟ/น้ำ',
     'packaging': 'บรรจุภัณฑ์',
-    'other': 'อื่นๆ'
+    'other': 'อื่นๆ',
+    'raw_materials': 'วัตถุดิบ',
+    'gas_fuel': 'แก๊ส/น้ำมัน'
   };
   return map[cat] || cat;
 };

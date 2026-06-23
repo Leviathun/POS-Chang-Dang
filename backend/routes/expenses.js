@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (!category || !['raw_materials', 'gas_fuel', 'packaging', 'other'].includes(category)) {
+    if (!category || !['raw_materials', 'gas_fuel', 'packaging', 'other', 'raw_chicken', 'meatballs', 'salapao', 'fuel_oil', 'gas_lpg', 'salary', 'utility_bills'].includes(category)) {
       return res.status(400).json({
         success: false,
         error: 'กรุณาระบุหมวดหมู่ที่ถูกต้อง'
