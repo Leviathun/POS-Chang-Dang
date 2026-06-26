@@ -320,14 +320,6 @@
         <div class="card">
           <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
             <div class="card-title" style="font-size: var(--font-sm); margin: 0;"><i class="fa-solid fa-list" style="margin-right: 6px;"></i> {{ dailyOrdersListTitle }}</div>
-            <button 
-              v-if="dailyReport.orders?.length > 0"
-              class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
-              @click="exportSalesCSV"
-            >
-              <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกรายงานยอดขาย (CSV)
-            </button>
           </div>
           
           <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
