@@ -225,6 +225,28 @@
               </div>
             </div>
           </div>
+
+          <!-- Time Filter (ช่วงเวลา) - Active only on daily mode for specific tabs -->
+          <div v-if="periodMode === 'daily' && ['order_history', 'expenses', 'activity_logs'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
+            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">ช่วงเวลา:</div>
+            <div class="flex align-center gap-xs">
+              <input 
+                type="text" 
+                v-model="customStartTime" 
+                placeholder="00.00" 
+                class="form-input reports-filter-control" 
+                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
+              />
+              <span style="font-size: var(--font-sm); color: var(--text-secondary);">ถึง</span>
+              <input 
+                type="text" 
+                v-model="customEndTime" 
+                placeholder="23.59" 
+                class="form-input reports-filter-control" 
+                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -381,7 +403,7 @@
                   style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
                   @click.stop="openVoidModal(order)"
                 >
-                  <i class="fa-solid fa-ban"></i> ยกเลิกบิลนี้ (Void)
+                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
                 </button>
               </div>
             </div>
@@ -425,13 +447,69 @@
             >
               <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกประวัติออเดอร์ (CSV)
             </button>
+            
+            <!-- Staff Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">พนักงาน:</span>
+              <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isHistoryStaffDropdownOpen }" 
+                  @click="isHistoryStaffDropdownOpen = !isHistoryStaffDropdownOpen; isHistoryPaymentDropdownOpen = false; isHistoryStatusDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text">
+                    {{ historyStaffFilter === 'all' ? 'ทั้งหมด' : historyStaffFilter }}
+                  </span>
+                </div>
+                <div v-if="isHistoryStaffDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 200px; overflow-y: auto;">
+                  <div class="custom-select-option" :class="{ 'selected': historyStaffFilter === 'all' }" @click="historyStaffFilter = 'all'; isHistoryStaffDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
+                  <div 
+                    v-for="staff in staffList" 
+                    :key="staff.id" 
+                    class="custom-select-option" 
+                    :class="{ 'selected': historyStaffFilter === staff.name }" 
+                    @click="historyStaffFilter = staff.name; isHistoryStaffDropdownOpen = false;" 
+                    style="padding: 6px 12px; font-size: 12px;"
+                  >
+                    {{ staff.name }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">ชำระเงิน:</span>
+              <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isHistoryPaymentDropdownOpen }" 
+                  @click="isHistoryPaymentDropdownOpen = !isHistoryPaymentDropdownOpen; isHistoryStaffDropdownOpen = false; isHistoryStatusDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text">
+                    {{ getPaymentLabel(historyPaymentFilter) }}
+                  </span>
+                </div>
+                <div v-if="isHistoryPaymentDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'all' }" @click="historyPaymentFilter = 'all'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'cash' }" @click="historyPaymentFilter = 'cash'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">เงินสด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'qr' }" @click="historyPaymentFilter = 'qr'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">QR Code</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'gov' }" @click="historyPaymentFilter = 'gov'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">โครงการรัฐ</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'delivery' }" @click="historyPaymentFilter = 'delivery'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">เดลิเวอรี</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status Filter -->
             <div class="flex align-center gap-xs">
               <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
                   :class="{ 'active': isHistoryStatusDropdownOpen }" 
-                  @click="isHistoryStatusDropdownOpen = !isHistoryStatusDropdownOpen"
+                  @click="isHistoryStatusDropdownOpen = !isHistoryStatusDropdownOpen; isHistoryStaffDropdownOpen = false; isHistoryPaymentDropdownOpen = false;"
                   style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
                 >
                   <span class="custom-select-text">
@@ -508,7 +586,7 @@
                         style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); padding:4px 8px; font-size:11px; min-height:28px; display: inline-flex; align-items: center; gap: 4px;"
                         @click="openVoidModal(order)"
                       >
-                        <i class="fa-solid fa-ban"></i> Void
+                        <i class="fa-solid fa-trash-can"></i> ลบ
                       </button>
                       <span v-else>-</span>
                     </td>
@@ -618,7 +696,7 @@
                   style="width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); min-height:36px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
                   @click="openVoidModal(order)"
                 >
-                  <i class="fa-solid fa-ban"></i> ยกเลิกบิลนี้ (Void)
+                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
                 </button>
               </div>
             </div>
@@ -725,7 +803,7 @@
           </div>
           <div style="display:flex; align-items:center; gap:var(--space-sm);">
             <button 
-              v-if="ledgerTransactions.length > 0"
+              v-if="filteredLedgerTransactions.length > 0"
               class="btn btn-sm btn-secondary" 
               style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
               @click="exportExpensesCSV"
@@ -741,19 +819,19 @@
           <div class="p-xs card" style="background:rgba(42, 157, 143, 0.05); border:none; text-align:center;">
             <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายรับรวม</div>
             <div class="font-bold text-success" style="font-size:var(--font-base);">
-              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.income, 0)) }}
+              {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.income, 0)) }}
             </div>
           </div>
           <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
             <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายจ่ายรวม</div>
             <div class="font-bold text-danger" style="font-size:var(--font-base);">
-              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.expense, 0)) }}
+              {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.expense, 0)) }}
             </div>
           </div>
           <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
             <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">คงเหลือสุทธิ</div>
             <div class="font-bold" style="font-size:var(--font-base); color: var(--text-primary);">
-              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.income - t.expense, 0)) }}
+              {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.income - t.expense, 0)) }}
             </div>
           </div>
         </div>
@@ -772,12 +850,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="ledgerLoading && ledgerTransactions.length === 0">
+              <tr v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
                 <td colspan="6" style="text-align: center; padding: var(--space-xl);">
                   <div class="spinner" style="margin: 0 auto;"></div>
                 </td>
               </tr>
-              <tr v-else-if="ledgerTransactions.length === 0">
+              <tr v-else-if="filteredLedgerTransactions.length === 0">
                 <td colspan="6" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
                   ไม่มีรายการธุรกรรมในเดือนนี้
                 </td>
@@ -822,10 +900,10 @@
 
         <!-- Mobile Ledger List (Mobile Only) -->
         <div class="ledger-mobile-list show-mobile-only">
-          <div v-if="ledgerLoading && ledgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
+          <div v-if="ledgerLoading && filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
             <div class="spinner" style="margin: 0 auto;"></div>
           </div>
-          <div v-else-if="ledgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+          <div v-else-if="filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ไม่มีรายการธุรกรรมในเดือนนี้
           </div>
           <div v-else style="display:flex; flex-direction:column; gap:var(--space-sm);">
@@ -1004,32 +1082,67 @@
       <div v-if="activeTab === 'activity_logs' && isAdminUser" class="card">
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
         
-        <!-- Filter dropdown -->
-        <div class="form-group mb-md">
-          <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภทกิจกรรม:</label>
-          <div class="custom-select-wrapper" @click.stop>
-            <div 
-              class="custom-select-trigger" 
-              :class="{ 'active': isFilterActionDropdownOpen }" 
-              @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen"
-              style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
-            >
-              <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px;">
-                <i :class="getFilterActionIcon(filterAction)"></i>
-                {{ selectedFilterActionLabel }}
-              </span>
-            </div>
-            <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อก / ของเสีย (Stock & Waste)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+        <!-- Filter dropdowns in a 2-column grid -->
+        <div class="grid grid-2 gap-md mb-md" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-md);">
+          
+          <!-- Category Filter -->
+          <div class="form-group">
+            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภทกิจกรรม:</label>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isFilterActionDropdownOpen }" 
+                @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
+                style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
+              >
+                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px;">
+                  <i :class="getFilterActionIcon(filterAction)"></i>
+                  {{ selectedFilterActionLabel }}
+                </span>
+              </div>
+              <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อก / ของเสีย (Stock & Waste)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+              </div>
             </div>
           </div>
+
+          <!-- Staff Filter -->
+          <div class="form-group">
+            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-user" style="margin-right: 6px;"></i> กรองพนักงาน:</label>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isActivityStaffDropdownOpen }" 
+                @click="isActivityStaffDropdownOpen = !isActivityStaffDropdownOpen; isFilterActionDropdownOpen = false;"
+                style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
+              >
+                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-user"></i>
+                  {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
+                </span>
+              </div>
+              <div v-if="isActivityStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; overflow-y: auto; top: calc(100% + 2px);">
+                <div class="custom-select-option" :class="{ 'selected': activityStaffFilter === 'all' }" @click="activityStaffFilter = 'all'; isActivityStaffDropdownOpen = false;"><i class="fa-solid fa-users" style="margin-right: 4px;"></i> ทั้งหมด</div>
+                <div 
+                  v-for="staff in staffList" 
+                  :key="staff.id" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': activityStaffFilter === staff.name }" 
+                  @click="activityStaffFilter = staff.name; isActivityStaffDropdownOpen = false;"
+                >
+                  <i class="fa-solid fa-user" style="margin-right: 4px;"></i> {{ staff.name }}
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <div v-if="filteredActivityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
@@ -1082,7 +1195,7 @@
       <div class="modal-overlay" @click="showVoidModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
-          <h3><i class="fa-solid fa-ban" style="margin-right: 6px;"></i> ยกเลิกบิล #{{ voidOrder?.order_number }}</h3>
+          <h3><i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> ลบบิล #{{ voidOrder?.order_number }}</h3>
           <button class="modal-close" @click="showVoidModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -1090,7 +1203,7 @@
             ยอดรวม: <strong class="text-accent">{{ formatCurrency(voidOrder?.total) }}</strong>
           </div>
 
-          <div class="form-label" style="margin-bottom:var(--space-sm);">เลือกเหตุผลการยกเลิก:</div>
+          <div class="form-label" style="margin-bottom:var(--space-sm);">เลือกเหตุผลการลบ:</div>
           
           <!-- Preset Buttons -->
           <div style="display:flex; flex-direction:column; gap:var(--space-sm); margin-bottom:var(--space-md);">
@@ -1102,7 +1215,7 @@
               style="text-align:left; min-height:44px; display: inline-flex; align-items: center; gap: 8px;"
               @click="voidReason = preset.value"
             >
-              <i :class="preset.icon"></i> {{ preset.label }}
+              <i :class="preset.icon"></i> {{ preset.label.replace('ยกเลิกออเดอร์', 'ลบออเดอร์') }}
             </button>
           </div>
 
@@ -1120,7 +1233,7 @@
               :disabled="!voidReason || (voidReason === 'custom' && !voidCustomReason.trim())"
               @click="handleVoidOrder"
             >
-              <i class="fa-solid fa-circle-check"></i> ยืนยันยกเลิกบิล
+              <i class="fa-solid fa-circle-check"></i> ยืนยันลบบิล
             </button>
           </div>
         </div>
@@ -1473,6 +1586,77 @@ const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') ? Numb
 
 const activeTab = ref('sales');
 
+// New Filters State & Helpers
+const customStartTime = ref('00.00');
+const customEndTime = ref('23.59');
+
+const staffList = computed(() => store.users || []);
+const historyStaffFilter = ref('all');
+const historyPaymentFilter = ref('all');
+const activityStaffFilter = ref('all');
+
+const isHistoryStaffDropdownOpen = ref(false);
+const isHistoryPaymentDropdownOpen = ref(false);
+const isActivityStaffDropdownOpen = ref(false);
+
+const parseTimeDot = (timeStr) => {
+  if (!timeStr) return { hour: 0, minute: 0 };
+  const normalized = timeStr.replace(':', '.');
+  const parts = normalized.split('.');
+  const hour = Number(parts[0]) || 0;
+  const minute = Number(parts[1]) || 0;
+  return { hour, minute };
+};
+
+const getBangkokTimeComponents = (dateStr) => {
+  if (!dateStr) return { hour: 0, minute: 0 };
+  let d;
+  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+    const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
+    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
+    d = new Date(isoStr);
+  } else {
+    d = new Date(dateStr);
+  }
+  const bkkString = d.toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  const [h, m] = bkkString.split(':').map(Number);
+  return { hour: h, minute: m };
+};
+
+const isTimeInRange = (dateStr, startStr, endStr) => {
+  const start = parseTimeDot(startStr || '00.00');
+  const end = parseTimeDot(endStr || '23.59');
+  
+  const { hour, minute } = getBangkokTimeComponents(dateStr);
+  const timeVal = hour * 60 + minute;
+  
+  const startVal = start.hour * 60 + start.minute;
+  const endVal = end.hour * 60 + end.minute;
+  
+  if (startVal <= endVal) {
+    return timeVal >= startVal && timeVal <= endVal;
+  } else {
+    return timeVal >= startVal || timeVal <= endVal;
+  }
+};
+
+const getPaymentLabel = (pm) => {
+  const map = {
+    'all': 'ทั้งหมด',
+    'cash': 'เงินสด',
+    'qr': 'QR Code',
+    'gov': 'โครงการรัฐ',
+    'delivery': 'เดลิเวอรี'
+  };
+  return map[pm] || pm;
+};
+
 // --- CASH DRAWER AUDIT STATE ---
 const cashDrawerSessions = ref([]);
 const cashDrawerLoading = ref(false);
@@ -1741,14 +1925,33 @@ const historyOrders = ref([]);
 const historyCurrentPage = ref(1);
 const historyOrdersPerPage = 20;
 
+const filteredHistoryOrders = computed(() => {
+  let list = historyOrders.value;
+  
+  if (historyStaffFilter.value !== 'all') {
+    list = list.filter(o => o.staff_name === historyStaffFilter.value);
+  }
+  
+  if (historyPaymentFilter.value !== 'all') {
+    list = list.filter(o => o.payment_method === historyPaymentFilter.value);
+  }
+  
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    list = list.filter(o => isTimeInRange(o.created_at, customStartTime.value, customEndTime.value));
+  }
+  
+  return list;
+});
+
 const paginatedHistoryOrders = computed(() => {
   const start = (historyCurrentPage.value - 1) * historyOrdersPerPage;
   const end = start + historyOrdersPerPage;
-  return historyOrders.value.slice(start, end);
+  return filteredHistoryOrders.value.slice(start, end);
 });
 
 const totalPages = computed(() => {
-  return Math.ceil(historyOrders.value.length / historyOrdersPerPage) || 1;
+  return Math.ceil(filteredHistoryOrders.value.length / historyOrdersPerPage) || 1;
 });
 
 
@@ -1798,19 +2001,34 @@ const filterAction = ref('all');
 
 const filteredActivityLogs = computed(() => {
   // Filter out create_order entirely to prevent duplicate count & confusion
-  const list = activityLogs.value.filter(log => log.action !== 'create_order');
-  if (filterAction.value === 'all') return list;
-  return list.filter(log => {
-    const act = log.action;
-    if (filterAction.value === 'login') return act === 'login';
-    if (filterAction.value === 'sales') return act === 'complete_order';
-    if (filterAction.value === 'cancel') return act === 'cancel_order';
-    if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
-    if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
-    if (filterAction.value === 'credit') return act === 'staff_credit';
-    if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
-    return true;
-  });
+  let list = activityLogs.value.filter(log => log.action !== 'create_order');
+  
+  if (filterAction.value !== 'all') {
+    list = list.filter(log => {
+      const act = log.action;
+      if (filterAction.value === 'login') return act === 'login';
+      if (filterAction.value === 'sales') return act === 'complete_order';
+      if (filterAction.value === 'cancel') return act === 'cancel_order';
+      if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
+      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
+      if (filterAction.value === 'credit') return act === 'staff_credit';
+      if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
+      return true;
+    });
+  }
+
+  // Filter by activityStaffFilter
+  if (activityStaffFilter.value !== 'all') {
+    list = list.filter(log => log.staff_name === activityStaffFilter.value);
+  }
+
+  // Filter by time range if periodMode === 'daily'
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    list = list.filter(log => isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
+  }
+
+  return list;
 });
 
 // Expanded order state
@@ -1842,6 +2060,16 @@ const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.
 const ledgerTransactions = ref([]);
 const ledgerLoading = ref(false);
 
+const filteredLedgerTransactions = computed(() => {
+  let list = ledgerTransactions.value;
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    list = list.filter(item => isTimeInRange(item.created_at, customStartTime.value, customEndTime.value));
+  }
+  return list;
+});
+
+
 // Pagination States for Daily/Monthly Orders
 const dailyOrdersCurrentPage = ref(1);
 const dailyOrdersPerPage = 15;
@@ -1860,13 +2088,13 @@ const paginatedDailyReportOrders = computed(() => {
 const ledgerCurrentPage = ref(1);
 const ledgerPerPage = 15;
 const totalLedgerPages = computed(() => {
-  const count = ledgerTransactions.value.length;
+  const count = filteredLedgerTransactions.value.length;
   return Math.ceil(count / ledgerPerPage) || 1;
 });
 const paginatedLedgerTransactions = computed(() => {
   const start = (ledgerCurrentPage.value - 1) * ledgerPerPage;
   const end = start + ledgerPerPage;
-  return ledgerTransactions.value.slice(start, end);
+  return filteredLedgerTransactions.value.slice(start, end);
 });
 
 // Pagination States for Activity Logs
@@ -1883,6 +2111,20 @@ const paginatedActivityLogs = computed(() => {
 });
 
 watch(filterAction, () => {
+  activityCurrentPage.value = 1;
+});
+
+watch([customStartTime, customEndTime], () => {
+  historyCurrentPage.value = 1;
+  ledgerCurrentPage.value = 1;
+  activityCurrentPage.value = 1;
+});
+
+watch([historyStaffFilter, historyPaymentFilter], () => {
+  historyCurrentPage.value = 1;
+});
+
+watch(activityStaffFilter, () => {
   activityCurrentPage.value = 1;
 });
 
@@ -2179,6 +2421,9 @@ const closeReportsDropdowns = () => {
   isYearDropdownOpen.value = false;
   isMonthDropdownOpen.value = false;
   isDateDropdownOpen.value = false;
+  isHistoryStaffDropdownOpen.value = false;
+  isHistoryPaymentDropdownOpen.value = false;
+  isActivityStaffDropdownOpen.value = false;
 };
 
 const loadMonthlyLedger = async () => {
@@ -2202,10 +2447,11 @@ const loadMonthlyLedger = async () => {
       expenseParams.year = selectedYear.value;
     }
 
-    const ordersRes = await api.orders.getAll(params);
+    const [ordersRes, expensesRes] = await Promise.all([
+      api.orders.getAll(params),
+      api.expenses.get(expenseParams)
+    ]);
     const periodOrders = ordersRes.success ? (ordersRes.data || []) : [];
-
-    const expensesRes = await api.expenses.get(expenseParams);
     const periodExpenses = expensesRes.success ? (expensesRes.data || []) : [];
 
     const list = [];
@@ -2391,60 +2637,69 @@ const loadReportData = async () => {
 
   loading.value = true;
   try {
-    let res;
-    if (periodMode.value === 'daily') {
-      res = await api.reports.daily(selectedDate.value, selectedBranchId.value);
-    } else if (periodMode.value === 'monthly') {
-      res = await api.reports.monthly(selectedMonth.value, selectedBranchId.value);
-    } else {
-      res = await api.reports.yearly(selectedYear.value, selectedBranchId.value);
-    }
+    const promises = [];
 
-    if (res.success && res.data) {
-      const data = res.data;
-      dailyReport.value = {
-        total_sales: data.total_revenue || 0,
-        total_orders: data.total_orders || 0,
-        average_bill: data.avg_order_value || 0,
-        cash_sales: data.payment_breakdown?.cash_total || 0,
-        cash_orders: data.payment_breakdown?.cash_count || 0,
-        qr_sales: data.payment_breakdown?.qr_total || 0,
-        qr_orders: data.payment_breakdown?.qr_count || 0,
-        gov_sales: data.payment_breakdown?.gov_total || 0,
-        gov_orders: data.payment_breakdown?.gov_count || 0,
-        delivery_sales: data.payment_breakdown?.delivery_total || 0,
-        delivery_orders: data.payment_breakdown?.delivery_count || 0,
-        orders: data.orders || []
-      };
-    } else {
-      dailyReport.value = {
-        total_sales: 0,
-        total_orders: 0,
-        average_bill: 0,
-        cash_sales: 0,
-        cash_orders: 0,
-        qr_sales: 0,
-        qr_orders: 0,
-        gov_sales: 0,
-        gov_orders: 0,
-        delivery_sales: 0,
-        delivery_orders: 0,
-        orders: []
-      };
-    }
+    // Promise 1: Main report data depending on period mode
+    const loadMainReport = async () => {
+      let res;
+      if (periodMode.value === 'daily') {
+        res = await api.reports.daily(selectedDate.value, selectedBranchId.value);
+      } else if (periodMode.value === 'monthly') {
+        res = await api.reports.monthly(selectedMonth.value, selectedBranchId.value);
+      } else {
+        res = await api.reports.yearly(selectedYear.value, selectedBranchId.value);
+      }
 
-    // Load expenses and activity logs (admin only)
+      if (res.success && res.data) {
+        const data = res.data;
+        dailyReport.value = {
+          total_sales: data.total_revenue || 0,
+          total_orders: data.total_orders || 0,
+          average_bill: data.avg_order_value || 0,
+          cash_sales: data.payment_breakdown?.cash_total || 0,
+          cash_orders: data.payment_breakdown?.cash_count || 0,
+          qr_sales: data.payment_breakdown?.qr_total || 0,
+          qr_orders: data.payment_breakdown?.qr_count || 0,
+          gov_sales: data.payment_breakdown?.gov_total || 0,
+          gov_orders: data.payment_breakdown?.gov_count || 0,
+          delivery_sales: data.payment_breakdown?.delivery_total || 0,
+          delivery_orders: data.payment_breakdown?.delivery_count || 0,
+          orders: data.orders || []
+        };
+      } else {
+        dailyReport.value = {
+          total_sales: 0,
+          total_orders: 0,
+          average_bill: 0,
+          cash_sales: 0,
+          cash_orders: 0,
+          qr_sales: 0,
+          qr_orders: 0,
+          gov_sales: 0,
+          gov_orders: 0,
+          delivery_sales: 0,
+          delivery_orders: 0,
+          orders: []
+        };
+      }
+    };
+    promises.push(loadMainReport());
+
+    // Promise 2: Admin only data loads
     if (isAdmin()) {
-      await loadExpensesForPeriod();
-      await loadActivityLogsForPeriod();
-      await loadMonthlyLedger();
+      promises.push(loadExpensesForPeriod());
+      promises.push(loadActivityLogsForPeriod());
+      promises.push(loadMonthlyLedger());
       if (activeTab.value === 'cash_audit') {
-        await fetchCashDrawerSummary();
+        promises.push(fetchCashDrawerSummary());
       }
     }
 
-    // Load history orders if currently active
-    await loadOrderHistory();
+    // Promise 3: Order history
+    promises.push(loadOrderHistory());
+
+    // Execute all concurrently!
+    await Promise.all(promises);
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถดึงข้อมูลรายงานได้', 'error');
@@ -2629,21 +2884,29 @@ const onBranchChange = () => {
   }
 };
 
-onMounted(async () => {
+onMounted(() => {
   if (isAdmin()) {
-    try {
-      const res = await api.auth.getBranches();
-      if (res.success) {
-        branches.value = res.data || [];
-      }
-    } catch (e) {
-      console.warn('Failed to load branches:', e);
-    }
+    // Non-blocking fetch of branches
+    api.auth.getBranches()
+      .then(res => {
+        if (res.success) {
+          branches.value = res.data || [];
+        }
+      })
+      .catch(e => console.warn('Failed to load branches:', e));
+
+    // Load staff/users list for filters (non-blocking)
+    store.fetchSettingsData(selectedBranchId.value)
+      .catch(e => console.warn('Failed to load settings:', e));
+
+    // Load summary and top items (non-blocking)
     loadReportSummary();
     loadTopItems();
-    loadMonthlyLedger();
   }
+
+  // Load report data (which handles ledger internally)
   loadReportData();
+
   window.addEventListener('click', closeReportsDropdowns);
 });
 
@@ -2741,7 +3004,7 @@ const exportHistoryOrdersCSV = () => {
 
 const exportExpensesCSV = () => {
   const headers = ['วันที่-เวลา', 'รายการ', 'รายรับ (บาท)', 'รายจ่าย (บาท)', 'คงเหลือสุทธิ (บาท)'];
-  const rows = ledgerTransactions.value.map(t => [
+  const rows = filteredLedgerTransactions.value.map(t => [
     formatDate(t.created_at) + ' ' + formatTime(t.created_at),
     t.name,
     t.income > 0 ? t.income : 0,
