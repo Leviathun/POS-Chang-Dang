@@ -44,6 +44,14 @@
       <button 
         v-if="isAdminUser"
         class="category-tab" 
+        :class="{ 'active': activeTab === 'stock_history' }"
+        @click="activeTab = 'stock_history'"
+      >
+        <i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ประวัติสต็อก
+      </button>
+      <button 
+        v-if="isAdminUser"
+        class="category-tab" 
         :class="{ 'active': activeTab === 'cash_audit' }"
         @click="activeTab = 'cash_audit'"
       >
@@ -227,7 +235,7 @@
           </div>
 
           <!-- Time Filter (ช่วงเวลา) - Active only on daily mode for specific tabs -->
-          <div v-if="periodMode === 'daily' && ['order_history', 'expenses', 'activity_logs'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
+          <div v-if="periodMode === 'daily' && ['order_history', 'expenses', 'activity_logs', 'stock_history'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
             <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">ช่วงเวลา:</div>
             <div class="flex align-center gap-xs">
               <input 
@@ -1240,6 +1248,158 @@
       </div>
     </div>
 
+    <!-- Tab 5: Stock History (ประวัติสต็อก) -->
+    <div v-if="activeTab === 'stock_history' && isAdminUser" class="card">
+      <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
+        <div class="card-title" style="font-size: var(--font-sm); margin:0;">
+          <i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> ประวัติสต็อก
+        </div>
+
+        <!-- Menu Item Filter -->
+        <div class="flex align-center gap-xs">
+          <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สินค้า:</span>
+          <div class="custom-select-wrapper" style="width: 200px;" @click.stop>
+            <div 
+              class="custom-select-trigger" 
+              :class="{ 'active': isStockItemDropdownOpen }" 
+              @click="isStockItemDropdownOpen = !isStockItemDropdownOpen"
+              style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+            >
+              <span class="custom-select-text">
+                {{ selectedStockItemName }}
+              </span>
+            </div>
+            <div v-if="isStockItemDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 200px; overflow-y: auto; z-index:1001;">
+              <div 
+                v-for="item in reportsStockItems" 
+                :key="item.id" 
+                class="custom-select-option" 
+                :class="{ 'selected': selectedReportsStockItemId === item.id }" 
+                @click="selectReportsStockItem(item)" 
+                style="padding: 6px 12px; font-size: 12px;"
+              >
+                {{ item.name }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="stockHistoryLoading" style="text-align: center; padding: var(--space-xl);">
+        <div class="spinner" style="margin: 0 auto;"></div>
+      </div>
+      <div v-else-if="filteredStockLogs.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary); font-size: var(--font-sm);">
+        ไม่มีรายการประวัติสต็อกในช่วงเวลาที่เลือก
+      </div>
+      <div v-else>
+        <!-- Desktop Table (Desktop Only) -->
+        <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+          <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-sm);">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md); text-align: left;">สินค้า</th>
+                <th style="padding: var(--space-md); text-align: left;">ชื่อพนักงาน</th>
+                <th style="padding: var(--space-md); text-align: left;">กิจกรรม</th>
+                <th style="padding: var(--space-md); text-align: left;">เวลา</th>
+                <th style="padding: var(--space-md); text-align: center;">จำนวนก่อนปรับ</th>
+                <th style="padding: var(--space-md); text-align: center;">จำนวนที่ปรับ</th>
+                <th style="padding: var(--space-md); text-align: center;">จำนวนหลังปรับ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                v-for="log in paginatedStockLogs" 
+                :key="log.id"
+                style="border-bottom: 1px solid var(--border-color);"
+                class="table-row-hover"
+              >
+                <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
+                  {{ selectedStockItemName }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md);">
+                  {{ log.staff_name || 'ระบบ' }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md);">
+                  <span class="font-bold" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
+                    <span>{{ getStockReasonLabel(log.reason) }}</span>
+                  </span>
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); font-size: 11px; color:var(--text-secondary);">
+                  {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
+                  {{ log.previous_stock }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); text-align: center;" :class="log.change_qty > 0 ? 'text-success' : 'text-danger'">
+                  <strong>{{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}</strong>
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); text-align: center; font-weight:bold;">
+                  {{ log.new_stock }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile List View (Mobile Only) -->
+        <div class="show-mobile-only" style="display: flex; flex-direction: column; gap: var(--space-sm);">
+          <div 
+            v-for="log in paginatedStockLogs" 
+            :key="log.id" 
+            class="card p-sm flex flex-between align-center"
+            style="font-size: var(--font-sm); background: var(--bg-primary);"
+          >
+            <div>
+              <div class="font-bold" style="display: inline-flex; align-items: center; gap: 6px;">
+                <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
+                <span>{{ getStockReasonLabel(log.reason) }}</span>
+                <span 
+                  :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
+                  style="margin-left: 4px;"
+                >
+                  {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
+                </span>
+              </div>
+              <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">
+                โดย: {{ log.staff_name || 'ระบบ' }} | {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
+              </div>
+              <div v-if="log.note" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; border-left: 2px solid var(--border-color); padding-left: 6px;">
+                {{ log.note }}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 10px; color: var(--text-tertiary);">ยอดหลังปรับ</div>
+              <div class="font-bold">{{ log.new_stock }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination UI -->
+        <div v-if="totalStockLogsPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="stockLogsCurrentPage === 1" 
+            @click="stockLogsCurrentPage--"
+          >
+            <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+          </button>
+          <span style="font-size: var(--font-sm); font-weight: bold;">
+            หน้า {{ stockLogsCurrentPage }} / {{ totalStockLogsPages }}
+          </span>
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="stockLogsCurrentPage === totalStockLogsPages" 
+            @click="stockLogsCurrentPage++"
+          >
+            ถัดไป <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Cash Drawer Audit Tab (Admin Only) -->
     <div v-if="activeTab === 'cash_audit' && isAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
@@ -1598,6 +1758,15 @@ const activityStaffFilter = ref('all');
 const isHistoryStaffDropdownOpen = ref(false);
 const isHistoryPaymentDropdownOpen = ref(false);
 const isActivityStaffDropdownOpen = ref(false);
+const isStockItemDropdownOpen = ref(false);
+
+const reportsStockItems = computed(() => store.stockItems || []);
+const selectedReportsStockItemId = ref(null);
+
+const selectedStockItemName = computed(() => {
+  const found = reportsStockItems.value.find(item => item.id === selectedReportsStockItemId.value);
+  return found ? found.name : 'เลือกสินค้า...';
+});
 
 const parseTimeDot = (timeStr) => {
   if (!timeStr) return { hour: 0, minute: 0 };
@@ -1961,6 +2130,8 @@ watch(activeTab, (newVal) => {
     loadOrderHistory();
   } else if (newVal === 'cash_audit') {
     fetchCashDrawerSummary();
+  } else if (newVal === 'stock_history') {
+    loadStockHistoryLogs();
   }
 });
 
@@ -2110,6 +2281,103 @@ const paginatedActivityLogs = computed(() => {
   return filteredActivityLogs.value.slice(start, end);
 });
 
+// Pagination States for Stock Logs
+const stockLogsCurrentPage = ref(1);
+const stockLogsPerPage = 15;
+const stockHistoryLogs = ref([]);
+const stockHistoryLoading = ref(false);
+
+const filteredStockLogs = computed(() => {
+  let list = stockHistoryLogs.value;
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    list = list.filter(log => isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
+  }
+  return list;
+});
+
+const totalStockLogsPages = computed(() => {
+  const count = filteredStockLogs.value.length;
+  return Math.ceil(count / stockLogsPerPage) || 1;
+});
+const paginatedStockLogs = computed(() => {
+  const start = (stockLogsCurrentPage.value - 1) * stockLogsPerPage;
+  const end = start + stockLogsPerPage;
+  return filteredStockLogs.value.slice(start, end);
+});
+
+const loadStockHistoryLogs = async () => {
+  if (!selectedReportsStockItemId.value) return;
+  stockHistoryLoading.value = true;
+  try {
+    const params = {};
+    if (periodMode.value === 'daily') {
+      params.date = selectedDate.value;
+    } else if (periodMode.value === 'monthly') {
+      params.month = selectedMonth.value;
+    } else {
+      params.year = selectedYear.value;
+    }
+    const res = await api.stock.getLogs(selectedReportsStockItemId.value, params);
+    stockHistoryLogs.value = res.data?.logs || res.data || res || [];
+  } catch (e) {
+    console.error(e);
+    ui.showToast('ไม่สามารถดึงข้อมูลประวัติสต็อกได้', 'error');
+  } finally {
+    stockHistoryLoading.value = false;
+  }
+};
+
+const selectReportsStockItem = (item) => {
+  selectedReportsStockItemId.value = item.id;
+  isStockItemDropdownOpen.value = false;
+  loadStockHistoryLogs();
+};
+
+const getStockReasonLabel = (reason) => {
+  const map = {
+    'sale': 'หักจากการขาย',
+    'restock': 'เติมสต็อกสินค้า',
+    'adjustment': 'ปรับปรุงจำนวนสต็อก',
+    'waste': 'สินค้าเสีย/ทิ้ง',
+    'cancel_restore': 'คืนสต็อก (ยกเลิกบิล)',
+    'staff_benefit': 'แจกพนักงาน/เครดิต',
+    'fry': 'ทอดสุกพร้อมขาย'
+  };
+  return map[reason] || reason;
+};
+
+const getStockReasonIconClass = (reason) => {
+  const map = {
+    'sale': 'fa-solid fa-cart-shopping',
+    'restock': 'fa-solid fa-plus',
+    'adjustment': 'fa-solid fa-wrench',
+    'waste': 'fa-solid fa-trash-can',
+    'cancel_restore': 'fa-solid fa-rotate-left',
+    'staff_benefit': 'fa-solid fa-utensils',
+    'fry': 'fa-solid fa-fire'
+  };
+  return map[reason] || 'fa-solid fa-circle-info';
+};
+
+// Watch stockItems list to default to "ไส้กรอกดอกแดง"
+watch(reportsStockItems, (newVal) => {
+  if (newVal.length > 0 && selectedReportsStockItemId.value === null) {
+    const defaultItem = newVal.find(item => item.name.includes('ไส้กรอกดอกแดง'));
+    if (defaultItem) {
+      selectedReportsStockItemId.value = defaultItem.id;
+    } else {
+      selectedReportsStockItemId.value = newVal[0].id;
+    }
+  }
+}, { immediate: true });
+
+// Refetch stock history when item or date changes
+watch(selectedReportsStockItemId, () => {
+  stockLogsCurrentPage.value = 1;
+  loadStockHistoryLogs();
+});
+
 watch(filterAction, () => {
   activityCurrentPage.value = 1;
 });
@@ -2118,6 +2386,7 @@ watch([customStartTime, customEndTime], () => {
   historyCurrentPage.value = 1;
   ledgerCurrentPage.value = 1;
   activityCurrentPage.value = 1;
+  stockLogsCurrentPage.value = 1;
 });
 
 watch([historyStaffFilter, historyPaymentFilter], () => {
@@ -2424,6 +2693,7 @@ const closeReportsDropdowns = () => {
   isHistoryStaffDropdownOpen.value = false;
   isHistoryPaymentDropdownOpen.value = false;
   isActivityStaffDropdownOpen.value = false;
+  isStockItemDropdownOpen.value = false;
 };
 
 const loadMonthlyLedger = async () => {
@@ -2693,6 +2963,9 @@ const loadReportData = async () => {
       if (activeTab.value === 'cash_audit') {
         promises.push(fetchCashDrawerSummary());
       }
+      if (activeTab.value === 'stock_history') {
+        promises.push(loadStockHistoryLogs());
+      }
     }
 
     // Promise 3: Order history
@@ -2902,6 +3175,10 @@ onMounted(() => {
     // Load summary and top items (non-blocking)
     loadReportSummary();
     loadTopItems();
+
+    // Fetch stock items for stock logs (non-blocking)
+    store.fetchStock()
+      .catch(e => console.warn('Failed to load stock:', e));
   }
 
   // Load report data (which handles ledger internally)

@@ -486,7 +486,7 @@
       <div class="modal-overlay" @click="showLogsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:80dvh;">
         <div class="modal-header">
-          <h3><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติการเข้า-ออกของสต็อก</h3>
+          <h3><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติสต็อกวันนี้</h3>
           <button class="modal-close" @click="showLogsModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -544,7 +544,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../api';
-import { ui, formatDateTime, getUser } from '../helpers';
+import { ui, formatDateTime, getUser, getToday } from '../helpers';
 
 import { store } from '../store';
 
@@ -771,9 +771,10 @@ const viewLogs = async (item, isMod = false) => {
   showLogsModal.value = true;
   logsLoading.value = true;
   try {
+    const today = getToday();
     const res = isMod
-      ? await api.modifiers.getLogs(item.id)
-      : await api.stock.getLogs(item.id);
+      ? await api.modifiers.getLogs(item.id, { date: today })
+      : await api.stock.getLogs(item.id, { date: today });
     logs.value = res.data?.logs || res.data || res || [];
   } catch (e) {
     console.error(e);

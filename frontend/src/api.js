@@ -147,8 +147,12 @@ const stock = {
   async fry(id, data) {
     return request('POST', `/api/stock/${id}/fry`, data);
   },
-  async getLogs(id) {
-    return request('GET', `/api/stock/${id}/logs`);
+  async getLogs(id, dateOrParams = '') {
+    if (dateOrParams && typeof dateOrParams === 'object') {
+      const query = new URLSearchParams(dateOrParams).toString();
+      return request('GET', `/api/stock/${id}/logs?${query}`);
+    }
+    return request('GET', `/api/stock/${id}/logs${dateOrParams ? `?date=${dateOrParams}` : ''}`);
   },
   async bulkAdjust(data) {
     return request('POST', '/api/stock/bulk-adjust', data);
@@ -230,8 +234,12 @@ const freeModifiers = {
   async deletePreset(id) {
     return request('DELETE', `/api/modifiers/presets/${id}`);
   },
-  async getLogs(id) {
-    return request('GET', `/api/modifiers/${id}/logs`);
+  async getLogs(id, dateOrParams = '') {
+    if (dateOrParams && typeof dateOrParams === 'object') {
+      const query = new URLSearchParams(dateOrParams).toString();
+      return request('GET', `/api/modifiers/${id}/logs?${query}`);
+    }
+    return request('GET', `/api/modifiers/${id}/logs${dateOrParams ? `?date=${dateOrParams}` : ''}`);
   },
   async bulkAdjust(data) {
     return request('POST', '/api/modifiers/bulk-adjust', data);
