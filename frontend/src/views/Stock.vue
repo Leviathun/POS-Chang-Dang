@@ -346,10 +346,10 @@
               จำนวนคงเหลือปัจจุบัน: <strong>{{ formatModifierStock(activeItem) }}</strong>
             </span>
             <span v-else-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined">
-              ทอดสุกแล้ว: <strong>{{ activeItem?.quantity || 0 }} ชิ้น</strong> | ของสด: <strong>{{ activeItem?.raw_quantity || 0 }} ชิ้น</strong>
+              ทอดสุกแล้ว: <strong>{{ formatStockQty(activeItem?.quantity || 0, activeItem?.uom) }}</strong> | ของสด: <strong>{{ formatStockQty(activeItem?.raw_quantity || 0, activeItem?.uom) }}</strong>
             </span>
             <span v-else>
-              จำนวนคงเหลือในระบบปัจจุบัน: <strong>{{ activeItem?.quantity !== null && activeItem?.quantity !== undefined ? activeItem?.quantity : 0 }} ชิ้น</strong>
+              จำนวนคงเหลือในระบบปัจจุบัน: <strong>{{ formatStockQty(activeItem?.quantity !== null && activeItem?.quantity !== undefined ? activeItem?.quantity : 0, activeItem?.uom) }}</strong>
             </span>
           </div>
 
