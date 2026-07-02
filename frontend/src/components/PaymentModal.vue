@@ -17,44 +17,44 @@
         <div v-if="success" id="success-section" class="flex-1" style="display:flex; align-items:center; justify-content:center;">
           <div class="success-screen card" style="max-width: 480px; width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-2xl); padding: var(--space-3xl); box-shadow: var(--shadow-lg);">
             <div class="success-checkmark">✓</div>
-            <div class="success-title text-success" style="font-size: var(--font-2xl); font-weight: var(--font-weight-bold); margin-bottom: var(--space-md);">ชำระเงินสำเร็จ!</div>
+            <div class="success-title text-success font-bold text-2xl" style="margin-bottom: var(--space-md);">ชำระเงินสำเร็จ!</div>
             
             <div class="success-details card" style="background: rgba(244, 162, 97, 0.03); border: 1px dashed var(--border-color); padding: var(--space-lg); text-align: left; width: 100%; margin: var(--space-lg) 0;">
-              <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+              <div class="flex flex-between mb-sm text-sm">
                 <span style="color: var(--text-secondary);">เลขที่บิล:</span>
                 <strong style="color: var(--text-primary);">#{{ orderId }}</strong>
               </div>
-              <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+              <div class="flex flex-between mb-sm text-sm">
                 <span style="color: var(--text-secondary);">สถานะบิล:</span>
                 <strong :style="{ color: isCheckingOut ? '#ff9500' : 'var(--success)' }">
                   <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin" style="margin-right: 4px;"></i>
                   {{ isCheckingOut ? 'กำลังบันทึกลงระบบ...' : 'บันทึกสำเร็จ' }}
                 </strong>
               </div>
-              <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+              <div class="flex flex-between mb-sm text-sm">
                 <span style="color: var(--text-secondary);">ช่องทางชำระ:</span>
                 <strong style="color: var(--text-primary);">{{ getPaymentMethodLabel(paymentMethod) }}</strong>
               </div>
-              <div v-if="discount > 0" class="flex flex-between mb-sm animate-fade-in" style="font-size: var(--font-sm); color: #ff3b30;">
+              <div v-if="discount > 0" class="flex flex-between mb-sm animate-fade-in text-sm text-danger">
                 <span>ส่วนลด:</span>
                 <strong>-{{ formatCurrency(discount) }}</strong>
               </div>
-              <div class="flex flex-between mb-sm" style="font-size: var(--font-lg);">
+              <div class="flex flex-between mb-sm text-lg">
                 <span class="font-bold">ยอดสุทธิ:</span>
                 <strong class="text-accent">{{ formatCurrency(netTotal) }}</strong>
               </div>
-              <div v-if="paymentMethod === 'cash'" class="flex flex-between mb-sm" style="font-size: var(--font-sm); border-top: 1px solid var(--border-color); padding-top: var(--space-sm); margin-top: var(--space-sm);">
+              <div v-if="paymentMethod === 'cash'" class="flex flex-between mb-sm text-sm" style="border-top: 1px solid var(--border-color); padding-top: var(--space-sm); margin-top: var(--space-sm);">
                 <span style="color: var(--text-secondary);">รับเงินมา:</span>
                 <strong style="color: var(--text-primary);">{{ formatCurrency(Number(enteredAmount)) }}</strong>
               </div>
-              <div v-if="paymentMethod === 'cash' && cashChange > 0" class="flex flex-between" style="font-size: var(--font-lg); color: var(--success);">
+              <div v-if="paymentMethod === 'cash' && cashChange > 0" class="flex flex-between text-lg text-success">
                 <span class="font-bold">เงินทอน:</span>
-                <strong style="font-size: var(--font-xl);">{{ formatCurrency(cashChange) }}</strong>
+                <strong class="text-xl">{{ formatCurrency(cashChange) }}</strong>
               </div>
             </div>
 
             <div class="w-full">
-              <button class="btn btn-primary btn-xl" @click="finishPayment" style="width:100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <button class="btn-modal btn-modal-primary" @click="finishPayment">
                 <i class="fa-solid fa-circle-check"></i> เสร็จสิ้น (กลับหน้าขาย)
               </button>
             </div>
@@ -67,53 +67,53 @@
             <!-- Top Section: Bill Details -->
             <div class="checkout-left">
               <div class="card" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: var(--space-lg) var(--space-xl);">
-                <div class="card-title" style="font-size: var(--font-md); font-weight: var(--font-weight-bold); margin-bottom: var(--space-md); border-bottom: 2px dashed var(--border-color); padding-bottom: var(--space-sm); display: flex; align-items: center; gap: 8px;">
+                <div class="card-title font-bold text-md" style="margin-bottom: var(--space-md); border-bottom: 2px dashed var(--border-color); padding-bottom: var(--space-sm); display: flex; align-items: center; gap: 8px;">
                   <i class="fa-solid fa-receipt" style="color: var(--primary);"></i> รายละเอียดบิลสินค้า
                 </div>
                 
                 <div class="order-items-scroll" style="max-height: 300px; overflow-y: auto; padding-right: var(--space-xs); display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-md);">
-                  <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between align-start" style="font-size: var(--font-sm); padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
+                  <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between align-start text-sm" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
                     <div style="display:flex; flex-direction:column; gap:2px; flex: 1; min-width: 0;">
                       <span class="font-bold" style="color: var(--text-primary); word-break: break-word;">{{ cartItem.item.name }}</span>
                       
                       <!-- Show options details if any -->
-                      <div v-if="cartItem.item.options && cartItem.item.options.selected_items" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; word-break: break-word;">
+                      <div v-if="cartItem.item.options && cartItem.item.options.selected_items" class="text-xs text-secondary" style="margin-top: 2px; line-height: 1.4; word-break: break-word;">
                         ผสม: {{ cartItem.item.options.selected_items.map(i => `${i.name} (${i.weight}ก.)`).join(', ') }}
                       </div>
                     </div>
                     <div style="text-align: right; flex-shrink: 0; min-width: 80px;">
                       <span class="font-bold text-accent" style="display: block;">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
-                      <span style="font-size: 11px; color: var(--text-secondary); display: block; margin-top: 2px;">{{ cartItem.quantity }} × {{ formatCurrency(cartItem.item.price) }}</span>
+                      <span class="text-xs text-secondary" style="display: block; margin-top: 2px;">{{ cartItem.quantity }} × {{ formatCurrency(cartItem.item.price) }}</span>
                     </div>
                   </div>
 
                   <!-- Seasonings at the end of the menu -->
                   <template v-if="freeModifiers.length > 0">
                     <div style="border-top: 1px dashed var(--border-color); margin: 4px 0 2px 0;"></div>
-                    <div v-for="mod in freeModifiers" :key="mod.id" class="flex flex-between align-start" style="font-size: var(--font-sm); padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
+                    <div v-for="mod in freeModifiers" :key="mod.id" class="flex flex-between align-start text-sm" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
                       <div style="display:flex; flex-direction:column; gap:2px; flex: 1; min-width: 0;">
                         <span style="color: var(--text-secondary); word-break: break-word;">{{ mod.name }}</span>
                       </div>
                       <div style="text-align: right; flex-shrink: 0; min-width: 80px;">
                         <span class="font-bold text-accent" style="display: block;">฿0</span>
-                        <span style="font-size: 11px; color: var(--text-secondary); display: block; margin-top: 2px;">1 × ฿0</span>
+                        <span class="text-xs text-secondary" style="display: block; margin-top: 2px;">1 × ฿0</span>
                       </div>
                     </div>
                   </template>
                 </div>
 
                 <div style="border-top: 2px dashed var(--border-color); padding-top: var(--space-md); display: flex; flex-direction: column; gap: var(--space-xs);">
-                  <div class="flex flex-between" style="display: flex; justify-content: space-between; font-size: var(--font-sm); color: var(--text-secondary);">
+                  <div class="flex flex-between text-sm text-secondary" style="display: flex; justify-content: space-between;">
                     <span>ยอดรวม</span>
                     <span>{{ formatCurrency(total) }}</span>
                   </div>
-                  <div v-if="discount > 0" class="flex flex-between animate-fade-in" style="display: flex; justify-content: space-between; font-size: var(--font-sm); color: #ff3b30; font-weight: bold;">
+                  <div v-if="discount > 0" class="flex flex-between animate-fade-in text-sm text-danger font-bold" style="display: flex; justify-content: space-between;">
                     <span>ส่วนลด</span>
                     <span>-{{ formatCurrency(discount) }}</span>
                   </div>
                   <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: var(--space-xs);">
-                    <span class="font-bold" style="font-size: var(--font-md);">ยอดชำระทั้งสิ้น</span>
-                    <span class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(netTotal) }}</span>
+                    <span class="font-bold text-md">ยอดชำระทั้งสิ้น</span>
+                    <span class="font-bold text-accent text-xl">{{ formatCurrency(netTotal) }}</span>
                   </div>
                 </div>
               </div>
@@ -125,17 +125,17 @@
                 
                 <!-- Grouped header showing active channel and change method button -->
                 <div v-if="paymentMethod" class="flex flex-between align-center" style="margin-bottom: var(--space-lg); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-                  <span class="font-bold text-primary" style="font-size: var(--font-sm);">
+                  <span class="font-bold text-primary text-sm">
                     <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> ช่องทาง: {{ getPaymentMethodLabel(paymentMethod) }}
                   </span>
-                  <button class="btn btn-secondary btn-sm" @click="paymentMethod = null" style="font-size: 11px; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 4px;">
+                  <button class="btn btn-secondary" @click="paymentMethod = null">
                     <i class="fa-solid fa-arrow-left"></i> เปลี่ยนช่องทาง
                   </button>
                 </div>
 
                 <!-- Step 1: Select Payment Method -->
                 <div v-if="!paymentMethod" id="payment-method-section">
-                  <div class="card-title font-bold" style="font-size: var(--font-md); margin-bottom: var(--space-lg);">
+                  <div class="card-title font-bold text-md" style="margin-bottom: var(--space-lg);">
                     เลือกประเภทการชำระเงิน
                   </div>
                   <div class="payment-methods">
@@ -167,14 +167,14 @@
                 <!-- Step 2A: Cash Payment -->
                 <div v-if="paymentMethod === 'cash'" id="cash-section">
                   <div class="payment-amount-display" style="background: rgba(0,0,0,0.015); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg); border: 1px solid var(--border-color); margin-bottom: var(--space-md); text-align: center;">
-                    <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: var(--space-xs); text-transform: uppercase;">
+                    <div class="text-xs text-secondary" style="margin-bottom: var(--space-xs); text-transform: uppercase;">
                       จำนวนเงินที่รับ
                     </div>
-                    <div class="payment-entered text-primary" style="font-size: var(--font-3xl); font-weight: var(--font-weight-bold); color: var(--primary);">
+                    <div class="payment-entered text-primary font-bold text-3xl">
                       {{ enteredAmount > 0 ? formatCurrency(enteredAmount) : '฿0' }}
                     </div>
                     
-                    <div v-if="enteredAmount > 0" class="payment-change font-bold" :class="changeClass" style="font-size: var(--font-md); margin-top: var(--space-xs);">
+                    <div v-if="enteredAmount > 0" class="payment-change font-bold text-md" :class="changeClass" style="margin-top: var(--space-xs);">
                       {{ changeText }}
                     </div>
                   </div>
@@ -227,15 +227,15 @@
                   <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--primary); opacity: 0.9;">
                     <i class="fa-solid fa-qrcode"></i>
                   </div>
-                  <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-md);">
+                  <div class="text-sm text-secondary" style="margin-bottom: var(--space-md);">
                     ช่องทางชำระเงินด้วย QR Code / โอนเงินผ่านธนาคาร
                   </div>
 
-                  <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg);">
+                  <div class="font-bold text-accent mb-xl text-2xl" style="margin-bottom: var(--space-lg);">
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn btn-success btn-xl" @click="confirmQRPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                  <button class="btn-modal btn-modal-primary" @click="confirmQRPayment">
                     <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการชำระเงิน
                   </button>
                 </div>
@@ -245,15 +245,15 @@
                   <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--accent); opacity: 0.9;">
                     <i class="fa-solid fa-landmark"></i>
                   </div>
-                  <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-md);">
+                  <div class="text-sm text-secondary" style="margin-bottom: var(--space-md);">
                     ช่องทางชำระเงินด้วย โครงการของรัฐ
                   </div>
 
-                  <div class="font-bold text-accent mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg);">
+                  <div class="font-bold text-accent mb-xl text-2xl" style="margin-bottom: var(--space-lg);">
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn btn-primary btn-xl" @click="confirmGovPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent) !important; border-color: var(--accent) !important;">
+                  <button class="btn-modal btn-modal-primary" @click="confirmGovPayment">
                     <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการโครงการรัฐ
                   </button>
                 </div>
@@ -263,15 +263,15 @@
                   <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: #ff9500; opacity: 0.9;">
                     <i class="fa-solid fa-motorcycle"></i>
                   </div>
-                  <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-md);">
+                  <div class="text-sm text-secondary" style="margin-bottom: var(--space-md);">
                     ช่องทางชำระเงินด้วย เดลิเวอรี (Delivery App)
                   </div>
 
-                  <div class="font-bold mb-xl" style="font-size: var(--font-2xl); margin-bottom: var(--space-lg); color: #ff9500;">
+                  <div class="font-bold mb-xl text-2xl" style="margin-bottom: var(--space-lg); color: #ff9500;">
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn btn-primary btn-xl" @click="confirmDeliveryPayment" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: #ff9500 !important; border-color: #ff9500 !important;">
+                  <button class="btn-modal btn-modal-primary" @click="confirmDeliveryPayment">
                     <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการเดลิเวอรี
                   </button>
                 </div>

@@ -217,8 +217,8 @@
         <div class="confirm-title">{{ uiState.confirm.title }}</div>
         <div class="confirm-message">{{ uiState.confirm.message }}</div>
         <div class="confirm-actions">
-          <button class="btn btn-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
-          <button class="btn btn-danger flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
+          <button class="btn-modal btn-modal-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
+          <button class="btn-modal btn-modal-primary flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
         </div>
       </div>
     </div>
@@ -400,10 +400,83 @@ const closeBranchDropdown = () => {
   isBranchDropdownOpen.value = false;
 };
 
+let dragScrollObserver = null;
+
+const initDragToScroll = () => {
+  const attachEvents = (el) => {
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+    let hasDragged = false;
+
+    el.addEventListener('mousedown', (e) => {
+      isDown = true;
+      hasDragged = false;
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+      el.style.cursor = 'grabbing';
+      el.style.userSelect = 'none';
+    });
+
+    el.addEventListener('mouseleave', () => {
+      isDown = false;
+      el.style.cursor = 'grab';
+    });
+
+    el.addEventListener('mouseup', () => {
+      isDown = false;
+      el.style.cursor = 'grab';
+    });
+
+    el.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      if (Math.abs(walk) > 5) {
+        hasDragged = true;
+      }
+      el.scrollLeft = scrollLeft - walk;
+    });
+
+    // Capture phase click handler to block click if dragged
+    el.addEventListener('click', (e) => {
+      if (hasDragged) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    // Initial cursor style
+    el.style.cursor = 'grab';
+  };
+
+  // Find all current elements
+  document.querySelectorAll('.category-tabs').forEach(attachEvents);
+
+  // Monitor DOM for new category-tabs dynamically loaded by views
+  dragScrollObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) {
+          if (node.classList && node.classList.contains('category-tabs')) {
+            attachEvents(node);
+          }
+          const nested = node.querySelectorAll ? node.querySelectorAll('.category-tabs') : [];
+          nested.forEach(attachEvents);
+        }
+      });
+    });
+  });
+
+  dragScrollObserver.observe(document.body, { childList: true, subtree: true });
+};
+
 onMounted(() => {
   user.value = getUser();
   loadSettings();
   loadBranches();
+  initDragToScroll();
 
   // Listen to global events for cart bar visibility
   window.addEventListener('cart-state-change', (e) => {
@@ -416,6 +489,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('click', closeBranchDropdown);
+  if (dragScrollObserver) {
+    dragScrollObserver.disconnect();
+  }
 });
 </script>
 
@@ -1000,8 +1076,8 @@ onUnmounted(() => {
   }
 
   .sidebar-user .user-role-badge {
-    font-size: 10px;
-    padding: 1px 6px;
+    font-size: var(--font-xs);
+    padding: 2px 8px;
     border-radius: var(--radius-full);
     display: inline-block;
     font-weight: var(--font-weight-medium);
@@ -1089,7 +1165,7 @@ onUnmounted(() => {
   }
 
   .desktop-content-header .desktop-page-title {
-    font-size: var(--font-xl);
+    font-size: var(--font-lg);
     font-weight: var(--font-weight-bold);
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -1101,7 +1177,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
   }
 
   .desktop-content-header .desktop-user-profile .user-badge {

@@ -4,19 +4,19 @@
     <!-- Top Action Card / Page Header -->
     <div class="card mb-lg bulk-header-grid">
       <div class="header-left">
-        <router-link to="/stock" class="btn btn-secondary btn-bulk-back">
-          <i class="fa-solid fa-arrow-left" style="margin-right: 4px;"></i> ย้อนกลับ
+        <router-link to="/stock" class="btn btn-primary btn-bulk-back">
+          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
         </router-link>
       </div>
       <div class="header-center">
-        <h2 class="stock-page-title"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> จัดการสต็อกด่วน</h2>
+        <h2 class="stock-page-title"><i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน</h2>
       </div>
       <div class="header-right">
         <button 
           class="btn btn-primary btn-bulk-save" 
           @click="handleSaveBulkAdjust"
         >
-          <i class="fa-solid fa-floppy-disk" style="margin-right: 4px;"></i> บันทึกสต็อกด่วน
+          <i class="fa-solid fa-floppy-disk"></i> บันทึกสต็อกด่วน
         </button>
       </div>
     </div>
@@ -26,36 +26,36 @@
       <!-- Outer Category Tabs: Menu Items vs Modifiers -->
       <div class="category-tabs mb-lg">
         <button 
-          class="category-tab" 
+          class="btn btn-secondary" 
           :class="{ 'active': activeStockType === 'menu_items' }"
           @click="activeStockType = 'menu_items'"
         >
-          <i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> สินค้าและเมนู
+          <i class="fa-solid fa-drumstick-bite"></i> สินค้าและเมนู
         </button>
         <button 
-          class="category-tab" 
+          class="btn btn-secondary" 
           :class="{ 'active': activeStockType === 'modifiers' }"
           @click="activeStockType = 'modifiers'"
         >
-          <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px;"></i> ซอสและเครื่องปรุง
+          <i class="fa-solid fa-bottle-droplet"></i> ซอสและเครื่องปรุง
         </button>
       </div>
 
       <!-- Action Mode Tabs -->
-      <div class="bulk-tabs">
+      <div class="flex gap-sm mb-lg">
         <button 
-          class="bulk-tab" 
-          :class="{ 'active': bulkTab === 'relative' }" 
+          class="btn-action flex-1" 
+          :class="bulkTab === 'relative' ? 'btn-action-fry' : ''" 
           @click="setBulkTab('relative')"
         >
-          <i class="fa-solid fa-square-plus" style="margin-right: 4px;"></i> เพิ่มสต็อก
+          <i class="fa-solid fa-square-plus"></i> เพิ่มสต็อก
         </button>
         <button 
-          class="bulk-tab" 
-          :class="{ 'active': bulkTab === 'absolute' }" 
+          class="btn-action flex-1" 
+          :class="bulkTab === 'absolute' ? 'btn-action-fry' : ''" 
           @click="setBulkTab('absolute')"
         >
-          <i class="fa-solid fa-wrench" style="margin-right: 4px;"></i> ปรับปรุงยอด
+          <i class="fa-solid fa-wrench"></i> ปรับปรุงยอด
         </button>
       </div>
 
@@ -84,7 +84,7 @@
 
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-3xl">
-        <div class="spinner" style="margin: 0 auto;"></div>
+        <div class="spinner"></div>
       </div>
 
       <!-- Form Grid/Table for Menu Items -->
@@ -103,14 +103,14 @@
           <div v-for="item in bulkFormItems" :key="item.menu_item_id" class="bulk-stock-row">
             <!-- Col 1: Name -->
             <div class="bulk-item-name-col">
-              <div class="font-bold" style="font-size: var(--font-lg);">{{ item.name }}</div>
-              <div class="mobile-only" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px;">ID: {{ item.menu_item_id }}</div>
+              <div class="font-bold text-lg">{{ item.name }}</div>
+              <div class="mobile-only text-xs text-muted" style="margin-top: 2px;">ID: {{ item.menu_item_id }}</div>
             </div>
 
             <!-- Col 2: Raw stock quantity -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> คงเหลือ:</span>
-              <span :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" style="font-weight: bold; font-size: var(--font-md);">
+              <span :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" class="font-bold text-md">
                 {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? formatStockQty(item.raw_quantity, item.uom) : '-' }}
               </span>
             </div>
@@ -133,7 +133,7 @@
             <!-- Col 4: Cooked stock quantity -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> คงเหลือ:</span>
-              <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" style="font-weight: bold; font-size: var(--font-md);">
+              <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" class="font-bold text-md">
                 {{ item.quantity !== null && item.quantity !== undefined ? formatStockQty(item.quantity, item.uom) : formatStockQty(0, item.uom) }}
               </span>
             </div>
@@ -148,7 +148,7 @@
                   :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0')"
                   class="form-input"
                 />
-                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" style="font-size: 13px; color: #ff3b30; margin-top: 6px; text-align: center; font-weight: bold; line-height: 1.3;">
+                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" class="text-xs text-danger font-bold text-center" style="margin-top: 6px; line-height: 1.3;">
                   {{ getLinkageWarningText(item) }}
                 </div>
               </div>
@@ -159,7 +159,7 @@
         <!-- Absolute Tab reason presets -->
         <div v-if="bulkTab === 'absolute'" class="absolute-reason-section mt-xl">
           <div class="form-group mb-0">
-            <label class="form-label font-bold" style="font-size: var(--font-md);">เหตุผลในการปรับยอดจริง *</label>
+            <label class="form-label font-bold text-md">เหตุผลในการปรับยอดจริง *</label>
             <div class="custom-select-wrapper" @click.stop>
               <div 
                 class="custom-select-trigger" 
@@ -185,7 +185,7 @@
             </div>
           </div>
           <div class="form-group mb-0">
-            <label class="form-label font-bold" style="font-size: var(--font-md);">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
+            <label class="form-label font-bold text-md">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
             <input 
               type="text" 
               v-model="bulkNote" 
@@ -197,14 +197,14 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-lg mt-2xl bulk-action-buttons">
-          <router-link to="/stock" class="btn btn-secondary btn-bulk-back">
+          <router-link to="/stock" class="btn-modal btn-modal-secondary flex-1">
             ยกเลิก
           </router-link>
           <button 
-            class="btn btn-primary btn-bulk-save" 
+            class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
             @click="handleSaveBulkAdjust"
           >
-            <i class="fa-solid fa-floppy-disk" style="margin-right: 4px;"></i> บันทึกสต็อกด่วน
+            <i class="fa-solid fa-floppy-disk"></i> บันทึกสต็อกด่วน
           </button>
         </div>
       </div>
@@ -233,17 +233,17 @@
             <div class="bulk-item-name-col">
               <div class="flex flex-between align-center" style="width: 100%; gap: var(--space-xs);">
                 <div>
-                  <div class="font-bold" style="font-size: var(--font-lg); text-align: left;">{{ item.name }}</div>
-                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px; text-align: left;">ID: {{ item.modifier_id }}</div>
+                  <div class="font-bold text-lg" style="text-align: left;">{{ item.name }}</div>
+                  <div class="text-xs text-muted" style="margin-top: 2px; text-align: left;">ID: {{ item.modifier_id }}</div>
                 </div>
-                <span class="badge show-mobile-inline" :class="getModifierCategoryClass(item.category)" style="font-size: 11px; padding: 3px 8px; margin-left: auto;">
+                <span class="badge show-mobile-inline text-xs" :class="getModifierCategoryClass(item.category)" style="padding: 3px 8px; margin-left: auto;">
                   {{ getModifierCategoryLabel(item.category) }}
                 </span>
               </div>
             </div>
 
             <!-- Col 2: Category Badge (Desktop Only) -->
-            <div class="flex align-center justify-center font-semibold hide-mobile">
+            <div class="hide-mobile-flex align-center justify-center font-semibold">
               <span class="badge" :class="getModifierCategoryClass(item.category)">
                 {{ getModifierCategoryLabel(item.category) }}
               </span>
@@ -252,7 +252,7 @@
             <!-- Col 3: Current Stock (servings + bags) -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label">คงเหลือ:</span>
-              <span style="font-weight: bold; font-size: var(--font-md);">
+              <span class="font-bold text-md">
                 {{ formatModifierStockShort(item) }}
               </span>
             </div>
@@ -277,7 +277,7 @@
         <!-- Absolute Tab reason presets -->
         <div v-if="bulkTab === 'absolute'" class="absolute-reason-section mt-xl">
           <div class="form-group mb-0">
-            <label class="form-label font-bold" style="font-size: var(--font-md);">เหตุผลในการปรับยอดจริง *</label>
+            <label class="form-label font-bold text-md">เหตุผลในการปรับยอดจริง *</label>
             <div class="custom-select-wrapper" @click.stop>
               <div 
                 class="custom-select-trigger" 
@@ -303,7 +303,7 @@
             </div>
           </div>
           <div class="form-group mb-0">
-            <label class="form-label font-bold" style="font-size: var(--font-md);">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
+            <label class="form-label font-bold text-md">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
             <input 
               type="text" 
               v-model="bulkNote" 
@@ -315,14 +315,14 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-lg mt-2xl bulk-action-buttons">
-          <router-link to="/stock" class="btn btn-secondary btn-bulk-back">
+          <router-link to="/stock" class="btn-modal btn-modal-secondary flex-1">
             ยกเลิก
           </router-link>
           <button 
-            class="btn btn-primary btn-bulk-save" 
+            class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
             @click="handleSaveBulkAdjust"
           >
-            <i class="fa-solid fa-floppy-disk" style="margin-right: 4px;"></i> บันทึกสต็อกด่วน
+            <i class="fa-solid fa-floppy-disk"></i> บันทึกสต็อกด่วน
           </button>
         </div>
       </div>
@@ -745,50 +745,6 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* Header Buttons matching styling */
-.btn-bulk-back, .btn-bulk-save {
-  min-height: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  font-weight: bold;
-  font-size: var(--font-base);
-  padding: 0 var(--space-lg);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-  white-space: nowrap;
-}
-
-.btn-bulk-back {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color-light);
-  color: var(--text-primary);
-  text-decoration: none;
-  min-width: 150px;
-}
-
-.btn-bulk-back:hover {
-  background: var(--bg-secondary);
-  border-color: var(--border-color-focus);
-  transform: translateY(-1px);
-}
-
-.btn-bulk-save {
-  background: linear-gradient(135deg, #e63946, #b7091b);
-  color: white;
-  border: none;
-  cursor: pointer;
-  min-width: 200px;
-}
-
-.btn-bulk-save:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
 /* Action Buttons Footer Container */
 .bulk-action-buttons {
   display: flex;
@@ -797,61 +753,8 @@ onUnmounted(() => {
   width: 100%;
 }
 
-/* Outer category tabs style */
-.category-tabs {
-  display: flex;
-  gap: var(--space-sm);
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: var(--space-sm);
-  margin-bottom: var(--space-lg);
-  overflow-x: auto;
-}
-.category-tab {
-  padding: 8px 16px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  font-size: 1.15rem;
-  font-weight: bold;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
-}
-.category-tab:hover {
-  color: var(--text-primary);
-}
-.category-tab.active {
-  border-bottom-color: var(--primary);
-  color: var(--primary);
-}
-
-/* Tabs */
-.bulk-tabs {
-  display: flex;
-  gap: var(--space-xs);
-  border-bottom: 2px solid var(--border-color);
-  margin-bottom: var(--space-lg);
-}
-.bulk-tab {
-  flex: 1;
-  padding: 16px 8px;
-  text-align: center;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  border-bottom: 4px solid transparent;
-  color: var(--text-secondary);
-  font-size: 1.25rem;
-  font-weight: var(--font-weight-bold);
-  transition: all var(--transition-base);
-}
-.bulk-tab:hover {
-  color: var(--text-primary);
-}
-.bulk-tab.active {
-  border-bottom-color: var(--primary);
-  color: var(--primary);
+.bulk-action-buttons .btn-bulk-save {
+  min-height: 0 !important;
 }
 
 /* Hint box alert */

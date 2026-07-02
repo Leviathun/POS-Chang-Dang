@@ -4,14 +4,14 @@
     <!-- Tab Selector -->
     <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
       <button 
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'menu_items' }"
         @click="setTab('menu_items')"
       >
         <i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> สินค้าและเมนู
       </button>
       <button 
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'modifiers' }"
         @click="setTab('modifiers')"
       >
@@ -27,8 +27,8 @@
           เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
         </div>
         <div class="menu-action-buttons">
-          <button class="btn btn-secondary" @click="openCatModal"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> จัดการหมวดหมู่</button>
-          <button class="btn btn-primary" @click="openAddModal"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มเมนูอาหาร</button>
+          <button class="btn btn-primary" @click="openCatModal"><i class="fa-solid fa-folder-open"></i> จัดการหมวดหมู่</button>
+          <button class="btn btn-primary" @click="openAddModal"><i class="fa-solid fa-plus"></i> เพิ่มเมนูอาหาร</button>
         </div>
       </div>
 
@@ -38,7 +38,7 @@
           <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md);">รูป</th>
+                <th style="padding: var(--space-md); text-align: center; width: 80px;">รูป</th>
                 <th style="padding: var(--space-md);">เมนูอาหาร</th>
                 <th style="padding: var(--space-md); text-align: right;">ราคา</th>
                 <th style="padding: var(--space-md); text-align: center;">ขาย</th>
@@ -64,16 +64,16 @@
                 class="table-row-hover"
               >
                 <!-- Image Preview -->
-                <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div style="width: 48px; height: 36px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                  <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
                     <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
-                    <i v-else :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i>
+                    <i v-else :class="getIconClass(item.category_id)" class="text-base text-muted"></i>
                   </div>
                 </td>
                 <!-- Name & Category -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
-                  <div style="font-size: var(--font-xs); color: var(--text-tertiary);">
+                  <div class="font-bold text-base">{{ item.name }}</div>
+                  <div class="text-xs text-muted">
                     {{ getCategoryName(item.category_id) }}
                   </div>
                 </td>
@@ -96,8 +96,8 @@
                 <!-- Actions -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
-                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> แก้ไข</button>
-                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ</button>
+                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
                   </div>
                 </td>
               </tr>
@@ -153,8 +153,8 @@
             
             <!-- Bottom Action Buttons -->
             <div class="mobile-menu-card-actions">
-              <button class="btn-action btn-action-edit" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> แก้ไข</button>
-              <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ</button>
+              <button class="btn-action btn-action-edit" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+              <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
             </div>
           </div>
         </div>
@@ -204,8 +204,8 @@
               >
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
-                  <div style="font-size: var(--font-xs); color: var(--text-tertiary);">ID: {{ item.id }}</div>
+                  <div class="font-bold text-base">{{ item.name }}</div>
+                  <div class="text-xs text-muted">ID: {{ item.id }}</div>
                 </td>
                 <!-- Category -->
                 <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
@@ -308,17 +308,16 @@
                 class="flex flex-between align-center p-sm" 
                 style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md);"
               >
-                <span class="font-semibold" style="font-size: var(--font-sm);"><i class="fa-solid fa-folder" style="margin-right: 4px; color: var(--text-tertiary);"></i> {{ cat.name }}</span>
+                <span class="font-semibold text-sm"><i class="fa-solid fa-folder" style="margin-right: 4px; color: var(--text-tertiary);"></i> {{ cat.name }}</span>
                 <button 
                   class="btn-action btn-action-delete" 
                   title="ลบหมวดหมู่"
                   @click="handleDeleteCat(cat.id)"
-                  style="min-width: 75px; height: 38px; padding: 0 var(--space-md); font-size: var(--font-xs);"
                 >
-                  <i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ
+                  <i class="fa-solid fa-trash-can"></i> ลบ
                 </button>
               </div>
-              <div v-if="categories.length === 0" class="text-center text-muted py-md" style="font-size: var(--font-xs);">
+              <div v-if="categories.length === 0" class="text-center text-muted py-md text-xs">
                 ไม่มีหมวดหมู่สินค้า
               </div>
             </div>
@@ -326,7 +325,7 @@
 
           <div class="flex gap-md mt-xl">
             <button 
-              class="btn btn-primary btn-block" 
+              class="btn-modal btn-modal-primary" 
               :disabled="!catForm.name" 
               @click="handleCreateCat"
             >
@@ -366,7 +365,7 @@
               <input type="checkbox" v-model="itemForm.use_multiple_prices" @change="onSmlToggleChange" />
               <span class="toggle-slider"></span>
             </label>
-            <span class="font-semibold" style="font-size: var(--font-sm); margin-left: 6px;">
+            <span class="font-semibold text-sm" style="margin-left: 6px;">
               ใช้งานหลายราคาตามขนาดไซส์ (S, M, L)
             </span>
           </div>
@@ -392,7 +391,7 @@
             </label>
             <div class="flex flex-column gap-sm" style="display: flex; flex-direction: column; gap: 8px;">
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">เล็ก (S):</span>
+                <span class="text-sm" style="min-width: 80px;">เล็ก (S):</span>
                 <input 
                   type="number" 
                   class="form-input" 
@@ -403,7 +402,7 @@
                 />
               </div>
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">กลาง (M):</span>
+                <span class="text-sm" style="min-width: 80px;">กลาง (M):</span>
                 <input 
                   type="number" 
                   class="form-input" 
@@ -414,7 +413,7 @@
                 />
               </div>
               <div class="flex align-center gap-sm" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: var(--font-sm); min-width: 80px;">ใหญ่ (L):</span>
+                <span class="text-sm" style="min-width: 80px;">ใหญ่ (L):</span>
                 <input 
                   type="number" 
                   class="form-input" 
@@ -487,7 +486,7 @@
               <input type="checkbox" v-model="itemForm.track_raw_stock" />
               <span class="toggle-slider"></span>
             </label>
-            <span style="font-size: var(--font-sm); color: var(--text-primary); font-weight: var(--font-weight-medium);">
+            <span class="text-sm text-primary font-medium">
               มีของสด
             </span>
           </div>
@@ -505,11 +504,10 @@
               />
               <button 
                 type="button" 
-                class="btn btn-secondary" 
-                style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 15px;"
+                class="btn-upload" 
                 @click="triggerFileInput"
               >
-                <i class="fa-solid fa-image" style="margin-right: 4px;"></i> อัปโหลดภาพ
+                <i class="fa-solid fa-image"></i> อัปโหลดภาพ
               </button>
             </div>
             <input 
@@ -519,7 +517,7 @@
               accept="image/*" 
               @change="handleFileChange"
             />
-            <span style="font-size: var(--font-xs); color: var(--text-tertiary); display: block; margin-top: 2px; text-align: left;">
+            <span class="text-xs text-muted" style="display: block; margin-top: 2px; text-align: left;">
               <i class="fa-regular fa-lightbulb" style="color: var(--primary); margin-right: 4px;"></i> สามารถเลือกไฟล์, วางลิงก์รูปภาพ หรือคัดลอกรูปภาพแล้วกดวาง (Ctrl+V) ในช่องด้านบนได้
             </span>
           </div>
@@ -533,16 +531,14 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-xl">
-            <button class="btn btn-secondary flex-1" @click="showItemModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showItemModal = false">ยกเลิก</button>
             <button 
-              class="btn btn-primary flex-1" 
+              class="btn-modal btn-modal-primary flex-1" 
               :disabled="!itemForm.name || (!itemForm.price && !itemForm.use_multiple_prices) || !itemForm.category_id"
               @click="handleSaveItem"
             >
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-floppy-disk"></i>
-                {{ isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกรายการใหม่' }}
-              </span>
+              <i class="fa-solid fa-floppy-disk"></i>
+              {{ isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกรายการใหม่' }}
             </button>
           </div>
         </div>
@@ -1084,7 +1080,7 @@ onUnmounted(() => {
   align-items: center;
 }
 .menu-total-count {
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   font-weight: bold;
   color: var(--text-secondary);
   margin-left: 0;
@@ -1120,7 +1116,7 @@ onUnmounted(() => {
   }
   
   .menu-total-count {
-    font-size: 1.1rem;
+    font-size: var(--font-lg);
     font-weight: bold;
     margin-left: 0;
   }
@@ -1264,47 +1260,9 @@ onUnmounted(() => {
   }
 }
 
-/* --- Category Tabs (Rounded Buttons style matching user's request) --- */
-.category-tabs {
-  display: flex;
-  gap: var(--space-sm);
-  overflow-x: auto;
-  padding-bottom: var(--space-md);
-  margin-bottom: var(--space-lg);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-}
 
-.category-tabs::-webkit-scrollbar {
-  display: none;
-}
 
-.category-tab {
-  padding: var(--space-sm) var(--space-lg);
-  background: #ffffff !important;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all var(--transition-base);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-}
 
-.category-tab:active {
-  transform: scale(0.97);
-}
-
-.category-tab.active {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  border-color: transparent !important;
-  box-shadow: var(--shadow-glow-primary) !important;
-}
 
 /* Modifier Specific Badges (High Contrast, Distinct Colors) */
 .badge-mod-sauce-small {
