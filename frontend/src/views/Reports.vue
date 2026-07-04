@@ -2159,12 +2159,48 @@ const expenses = ref([]);
 const activityLogs = ref([]);
 const filterAction = ref('all');
 
+const getExpenseCategoryLabel = (cat) => {
+  const map = {
+    raw_chicken: 'ไก่สด',
+    meatballs: 'ลูกชิ้น',
+    salapao: 'ซาลาเปา',
+    fuel_oil: 'น้ำมัน',
+    gas_lpg: 'แก๊ส',
+    salary: 'เงินเดือน',
+    utility_bills: 'ค่าไฟ/น้ำ',
+    packaging: 'บรรจุภัณฑ์/ถุง',
+    debt: 'รายจ่าย - หนี้',
+    other: 'อื่นๆ',
+    raw_materials: 'วัตถุดิบ (เดิม)',
+    gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
+  };
+  return map[cat] || cat;
+};
+
 const filteredActivityLogs = computed(() => {
-  // Include both complete_order and create_order in active logs
-  let list = activityLogs.value;
+  // 1. Get database activity logs, filtering out database log_expense to avoid duplicates with actual expenses
+  let dbLogs = activityLogs.value.filter(log => log.action !== 'log_expense');
   
+  // 2. Map actual expense records dynamically to mock activity logs
+  const mappedExpenses = expenses.value.map(e => ({
+    id: `expense-${e.id}`,
+    branch_id: e.branch_id,
+    user_id: e.staff_id,
+    action: 'log_expense',
+    details: `บันทึกค่าใช้จ่าย หมวดหมู่ ${getExpenseCategoryLabel(e.category)} จำนวน ${e.amount} บาท${e.note ? ` (บันทึกเพิ่มเติม: ${e.note})` : ''}`,
+    created_at: e.created_at,
+    staff_name: e.staff_name || 'ผู้ดูแลระบบ'
+  }));
+
+  // 3. Combine both lists
+  let combined = [...dbLogs, ...mappedExpenses];
+
+  // 4. Sort by created_at descending
+  combined.sort((a, b) => new Date(b.created_at.replace(' ', 'T')) - new Date(a.created_at.replace(' ', 'T')));
+  
+  // 5. Apply activity category filter
   if (filterAction.value !== 'all') {
-    list = list.filter(log => {
+    combined = combined.filter(log => {
       const act = log.action;
       if (filterAction.value === 'login') return act === 'login';
       if (filterAction.value === 'sales') return act === 'complete_order' || act === 'create_order';
@@ -2177,18 +2213,18 @@ const filteredActivityLogs = computed(() => {
     });
   }
 
-  // Filter by activityStaffFilter
+  // 6. Filter by staff
   if (activityStaffFilter.value !== 'all') {
-    list = list.filter(log => log.staff_name === activityStaffFilter.value);
+    combined = combined.filter(log => log.staff_name === activityStaffFilter.value);
   }
 
-  // Filter by time range if periodMode === 'daily'
+  // 7. Filter by time range if periodMode === 'daily'
   const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
   if (periodMode.value === 'daily' && isTimeFilterActive) {
-    list = list.filter(log => isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
+    combined = combined.filter(log => isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
   }
 
-  return list;
+  return combined;
 });
 
 // Expanded order state
