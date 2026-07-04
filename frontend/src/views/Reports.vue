@@ -113,13 +113,13 @@
                   <button class="btn btn-secondary" @click.stop="adjustDatePickerMonth(-1)">
                     <i class="fa-solid fa-chevron-left"></i>
                   </button>
-                  <span class="font-bold" style="font-size: 13px;">{{ datePickerMonthName }} {{ datePickerYear + 543 }}</span>
+                  <span class="font-bold" style="font-size: var(--font-sm);">{{ datePickerMonthName }} {{ datePickerYear + 543 }}</span>
                   <button class="btn btn-secondary" @click.stop="adjustDatePickerMonth(1)">
                     <i class="fa-solid fa-chevron-right"></i>
                   </button>
                 </div>
                 <!-- Weekday Labels -->
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
                   <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                 </div>
                 <!-- Days Grid -->
@@ -128,9 +128,9 @@
                   <button 
                     v-for="dNum in datePickerDaysCount" 
                     :key="dNum"
-                    class="btn btn-sm"
+                    class="btn btn-sm calendar-day-btn"
                     :class="isDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                    style="min-height: 28px; width: 100%; padding: 0; font-size: 11px; display: flex; align-items: center; justify-content: center; border-radius: 4px;"
+                    style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
                     @click="selectDatePickerDay(dNum)"
                   >
                     {{ dNum }}
@@ -363,32 +363,32 @@
                   #{{ order.order_number }}
                 </span>
                 <div>
-                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:11px; margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
+                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:var(--font-xs); margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
+                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
                   <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                 </div>
               </div>
-              <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
+              <div class="flex flex-between" style="font-size:var(--font-xs); color:var(--text-secondary); margin-top:2px;">
                 <span style="display: inline-flex; align-items: center; gap: 4px;">
                   <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
                   {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
                 </span>
                 <span>เวลา: {{ formatTime(order.created_at) }}</span>
               </div>
-              <div v-if="order.cancel_reason" style="font-size: 11px; color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
+              <div v-if="order.cancel_reason" style="font-size: var(--font-xs); color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
                 เหตุผลยกเลิก: {{ order.cancel_reason }}
               </div>
 
               <!-- Expandable: Order Items Detail -->
               <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);">
-                <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
+                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
                 <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
+                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
                     <span>{{ item.item_name }} x{{ item.quantity }}</span>
                     <span>{{ formatCurrency(item.subtotal) }}</span>
                   </div>
                   <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-secondary);">
+                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
                     <div class="flex flex-between" style="display: flex; justify-content: space-between;">
                       <span>ยอดรวม (ก่อนหัก):</span>
                       <span>{{ formatCurrency(order.subtotal) }}</span>
@@ -415,7 +415,7 @@
             <div v-if="totalDailyOrdersPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
               <button 
                 class="btn btn-secondary" 
-                style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+                style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
                 :disabled="dailyOrdersCurrentPage === 1" 
                 @click="dailyOrdersCurrentPage--"
               >
@@ -426,7 +426,7 @@
               </span>
               <button 
                 class="btn btn-secondary" 
-                style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+                style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
                 :disabled="dailyOrdersCurrentPage === totalDailyOrdersPages" 
                 @click="dailyOrdersCurrentPage++"
               >
@@ -445,7 +445,7 @@
             <button 
               v-if="historyOrders.length > 0"
               class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              style="padding: 4px 12px; font-size: var(--font-sm); min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
               @click="exportHistoryOrdersCSV"
             >
               <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกประวัติออเดอร์ (CSV)
@@ -459,21 +459,21 @@
                   class="custom-select-trigger" 
                   :class="{ 'active': isHistoryStaffDropdownOpen }" 
                   @click="isHistoryStaffDropdownOpen = !isHistoryStaffDropdownOpen; isHistoryPaymentDropdownOpen = false; isHistoryStatusDropdownOpen = false;"
-                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
                 >
                   <span class="custom-select-text">
                     {{ historyStaffFilter === 'all' ? 'ทั้งหมด' : historyStaffFilter }}
                   </span>
                 </div>
                 <div v-if="isHistoryStaffDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 200px; overflow-y: auto;">
-                  <div class="custom-select-option" :class="{ 'selected': historyStaffFilter === 'all' }" @click="historyStaffFilter = 'all'; isHistoryStaffDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStaffFilter === 'all' }" @click="historyStaffFilter = 'all'; isHistoryStaffDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
                   <div 
                     v-for="staff in staffList" 
                     :key="staff.id" 
                     class="custom-select-option" 
                     :class="{ 'selected': historyStaffFilter === staff.name }" 
                     @click="historyStaffFilter = staff.name; isHistoryStaffDropdownOpen = false;" 
-                    style="padding: 6px 12px; font-size: 12px;"
+                    style="padding: 6px 12px; font-size: var(--font-sm);"
                   >
                     {{ staff.name }}
                   </div>
@@ -489,18 +489,18 @@
                   class="custom-select-trigger" 
                   :class="{ 'active': isHistoryPaymentDropdownOpen }" 
                   @click="isHistoryPaymentDropdownOpen = !isHistoryPaymentDropdownOpen; isHistoryStaffDropdownOpen = false; isHistoryStatusDropdownOpen = false;"
-                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
                 >
                   <span class="custom-select-text">
                     {{ getPaymentLabel(historyPaymentFilter) }}
                   </span>
                 </div>
                 <div v-if="isHistoryPaymentDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'all' }" @click="historyPaymentFilter = 'all'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'cash' }" @click="historyPaymentFilter = 'cash'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">เงินสด</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'qr' }" @click="historyPaymentFilter = 'qr'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">QR Code</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'gov' }" @click="historyPaymentFilter = 'gov'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">โครงการรัฐ</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'delivery' }" @click="historyPaymentFilter = 'delivery'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: 12px;">เดลิเวอรี</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'all' }" @click="historyPaymentFilter = 'all'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'cash' }" @click="historyPaymentFilter = 'cash'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">เงินสด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'qr' }" @click="historyPaymentFilter = 'qr'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">QR Code</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'gov' }" @click="historyPaymentFilter = 'gov'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">โครงการรัฐ</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'delivery' }" @click="historyPaymentFilter = 'delivery'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">เดลิเวอรี</div>
                 </div>
               </div>
             </div>
@@ -513,16 +513,16 @@
                   class="custom-select-trigger" 
                   :class="{ 'active': isHistoryStatusDropdownOpen }" 
                   @click="isHistoryStatusDropdownOpen = !isHistoryStatusDropdownOpen; isHistoryStaffDropdownOpen = false; isHistoryPaymentDropdownOpen = false;"
-                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
                 >
                   <span class="custom-select-text">
                     {{ selectedHistoryStatusLabel }}
                   </span>
                 </div>
                 <div v-if="isHistoryStatusDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'all' }" @click="selectHistoryStatus('all')" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'completed' }" @click="selectHistoryStatus('completed')" style="padding: 6px 12px; font-size: 12px;">ชำระเงินแล้ว</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'cancelled' }" @click="selectHistoryStatus('cancelled')" style="padding: 6px 12px; font-size: 12px;">ยกเลิก</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'all' }" @click="selectHistoryStatus('all')" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'completed' }" @click="selectHistoryStatus('completed')" style="padding: 6px 12px; font-size: var(--font-sm);">ชำระเงินแล้ว</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'cancelled' }" @click="selectHistoryStatus('cancelled')" style="padding: 6px 12px; font-size: var(--font-sm);">ยกเลิก</div>
                 </div>
               </div>
             </div>
@@ -540,12 +540,12 @@
                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                   <th style="padding: var(--space-md); text-align: left;">วัน-เวลา</th>
                   <th style="padding: var(--space-md); text-align: left;">เลขที่บิล</th>
-                  <th style="padding: var(--space-md); text-align: left;">พนักงาน</th>
-                  <th style="padding: var(--space-md); text-align: left;">สาขา</th>
-                  <th style="padding: var(--space-md); text-align: center;">ชำระเงิน</th>
-                  <th style="padding: var(--space-md); text-align: right;">ยอดสุทธิ</th>
-                  <th style="padding: var(--space-md); text-align: center;">สถานะ</th>
-                  <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                  <th class="text-center" style="padding: var(--space-md);">พนักงาน</th>
+                  <th class="text-center" style="padding: var(--space-md);">สาขา</th>
+                  <th class="text-center" style="padding: var(--space-md);">ชำระเงิน</th>
+                  <th class="text-center" style="padding: var(--space-md);">ยอดสุทธิ</th>
+                  <th class="text-center" style="padding: var(--space-md);">สถานะ</th>
+                  <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
                 </tr>
               </thead>
               <tbody>
@@ -561,18 +561,18 @@
                     <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
                       #{{ order.order_number }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md);">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
                       {{ order.staff_name || 'ระบบ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md);">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
                       {{ order.branch_name || 'ไม่ระบุ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: center; white-space: nowrap;">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); white-space: nowrap;">
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
                       {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;">
-                      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
+                      <div class="flex flex-col align-center" style="gap: 2px;">
                         <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                         <span v-if="order.discount > 0" class="badge animate-fade-in" style="background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 1px 4px; border-radius: var(--radius-sm); font-weight: normal; display: inline-block;">ลด -{{ formatCurrency(order.discount) }}</span>
                       </div>
@@ -585,8 +585,7 @@
                     <td style="padding: var(--space-sm) var(--space-md); text-align: center;" @click.stop>
                       <button 
                         v-if="order.status === 'completed'" 
-                        class="btn btn-sm" 
-                        style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); padding:4px 8px; min-height:28px; display: inline-flex; align-items: center; gap: 4px;"
+                        class="btn-delete-action"
                         @click="openVoidModal(order)"
                       >
                         <i class="fa-solid fa-trash-can"></i> ลบ
@@ -598,15 +597,15 @@
                   <tr v-if="expandedOrderId === order.id" :key="'expand-' + order.id" style="background: rgba(139, 3, 19, 0.01);">
                     <td colspan="8" style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
                       <div style="max-width: 500px; margin: 0 auto; border: 1px dashed var(--border-color); padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-primary);">
-                        <div class="font-bold mb-xs" style="font-size: 13px; color: var(--primary);">รายละเอียดสินค้า:</div>
-                        <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
+                        <div class="font-bold mb-xs" style="color: var(--primary);">รายละเอียดสินค้า:</div>
+                        <div v-if="expandedItems.length === 0" class="text-center" style="color:var(--text-tertiary);">กำลังโหลด...</div>
                         <div v-else>
-                          <div v-for="item in expandedItems" :key="item.id" class="flex flex-between mb-xs" style="font-size:12px; border-bottom:1px solid rgba(0,0,0,0.03); padding-bottom:2px;">
+                          <div v-for="item in expandedItems" :key="item.id" class="flex flex-between mb-xs" style="border-bottom:1px solid rgba(0,0,0,0.03); padding-bottom:2px;">
                             <span>{{ item.item_name }} x{{ item.quantity }}</span>
                             <span class="font-bold">{{ formatCurrency(item.subtotal) }}</span>
                           </div>
                           <!-- Discount Info if applied -->
-                          <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary);">
+                          <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);">
                             <div class="flex flex-between" style="display: flex; justify-content: space-between;">
                               <span>ยอดรวม (ก่อนหัก):</span>
                               <span>{{ formatCurrency(order.subtotal) }}</span>
@@ -621,7 +620,7 @@
                             </div>
                           </div>
                         </div>
-                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); font-size:11px; color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
+                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
                           <i class="fa-solid fa-triangle-exclamation text-danger"></i> <strong>เหตุผลที่ยกเลิก:</strong> {{ order.cancel_reason }}
                         </div>
                       </div>
@@ -646,15 +645,15 @@
                   #{{ order.order_number }}
                 </span>
                 <div>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
+                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
                   <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                 </div>
               </div>
-              <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary);">
+              <div class="flex flex-between" style="font-size:var(--font-xs); color:var(--text-secondary);">
                 <span><i class="fa-solid fa-user" style="margin-right: 2px;"></i> {{ order.staff_name || 'ระบบ' }} | <i class="fa-solid fa-store" style="margin-right: 2px;"></i> {{ order.branch_name || 'ไม่ระบุ' }}</span>
                 <span>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}</span>
               </div>
-              <div class="flex flex-between align-center mt-xs" style="font-size:11px;">
+              <div class="flex flex-between align-center mt-xs" style="font-size:var(--font-xs);">
                 <span style="display: inline-flex; align-items: center; gap: 4px;">
                   <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
                   {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
@@ -667,14 +666,14 @@
 
               <!-- Expanded detail for Mobile card -->
               <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);" @click.stop>
-                <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
+                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
                 <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
+                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
                     <span>{{ item.item_name }} x{{ item.quantity }}</span>
                     <span>{{ formatCurrency(item.subtotal) }}</span>
                   </div>
                   <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-secondary);">
+                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
                     <div class="flex flex-between" style="display: flex; justify-content: space-between;">
                       <span>ยอดรวม (ก่อนหัก):</span>
                       <span>{{ formatCurrency(order.subtotal) }}</span>
@@ -689,7 +688,7 @@
                     </div>
                   </div>
                 </div>
-                <div v-if="order.cancel_reason" style="font-size:11px; color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
+                <div v-if="order.cancel_reason" style="font-size:var(--font-xs); color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
                   <i class="fa-solid fa-triangle-exclamation text-danger"></i> เหตุผลยกเลิก: {{ order.cancel_reason }}
                 </div>
                 <!-- Void Button inside Mobile Expanded Card -->
@@ -709,7 +708,7 @@
           <div v-if="totalPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
             <button 
               class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
               :disabled="historyCurrentPage === 1" 
               @click="historyCurrentPage--"
             >
@@ -720,7 +719,7 @@
             </span>
             <button 
               class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
               :disabled="historyCurrentPage === totalPages" 
               @click="historyCurrentPage++"
             >
@@ -808,7 +807,7 @@
             <button 
               v-if="filteredLedgerTransactions.length > 0"
               class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              style="padding: 4px 12px; font-size: var(--font-sm); min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
               @click="exportExpensesCSV"
             >
               <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกบัญชี (CSV)
@@ -843,12 +842,12 @@
           <table class="table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="width: 15%; padding: var(--space-md); white-space:nowrap; text-align: left !important;">วัน-เวลา</th>
-                <th style="width: 35%; padding: var(--space-md); text-align: left !important;">ชื่อรายการ</th>
-                <th style="width: 15%; padding: var(--space-md); white-space:nowrap; text-align: center !important;">รายรับ</th>
-                <th style="width: 15%; padding: var(--space-md); white-space:nowrap; text-align: center !important;">รายจ่าย</th>
-                <th style="width: 15%; padding: var(--space-md); white-space:nowrap; text-align: center !important;">คงเหลือ</th>
-                <th style="width: 5%; padding: var(--space-md); white-space:nowrap; text-align: center !important;">จัดการ</th>
+                <th class="text-left" style="width: 15%; padding: var(--space-md); white-space:nowrap;">วัน-เวลา</th>
+                <th class="text-left" style="width: 30%; padding: var(--space-md);">ชื่อรายการ</th>
+                <th class="text-center" style="width: 15%; padding: var(--space-md); white-space:nowrap;">รายรับ</th>
+                <th class="text-center" style="width: 15%; padding: var(--space-md); white-space:nowrap;">รายจ่าย</th>
+                <th class="text-center" style="width: 15%; padding: var(--space-md); white-space:nowrap;">คงเหลือ</th>
+                <th class="text-center" style="width: 10%; padding: var(--space-md); white-space:nowrap;">จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -869,31 +868,30 @@
                 style="border-bottom: 1px solid var(--border-color);"
                 class="table-row-hover"
               >
-                <td style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; font-size:11px; color:var(--text-secondary); text-align: left !important;">
+                <td class="text-left" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; color:var(--text-secondary);">
                   {{ item.formattedDate }}<br/>{{ item.formattedTime }}
                 </td>
-                <td style="width: 35%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500; text-align: left !important; white-space: normal; word-break: break-word;">
+                <td class="text-left" style="width: 30%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500; white-space: normal; word-break: break-word;">
                   {{ item.name }}
                 </td>
-                <td class="text-success" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; text-align: center !important;">
+                <td class="text-success text-center" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold;">
                   {{ item.income > 0 ? formatCurrency(item.income) : '-' }}
                 </td>
-                <td class="text-danger" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; text-align: center !important;">
+                <td class="text-danger text-center" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold;">
                   {{ item.expense > 0 ? '-' + formatCurrency(item.expense) : '-' }}
                 </td>
-                <td style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; color: var(--text-primary); text-align: center !important;">
+                <td class="text-center" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; color: var(--text-primary);">
                   {{ formatCurrency(item.runningBalance) }}
                 </td>
-                <td style="width: 5%; padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align: center !important;">
+                <td class="text-center" style="width: 10%; padding: var(--space-sm) var(--space-md); vertical-align: middle;">
                   <button 
                     v-if="item.type === 'expense'" 
-                    class="btn btn-sm" 
-                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:4px 8px; font-size:11px; border-radius:var(--radius-sm); cursor:pointer; display: inline-flex; align-items: center; justify-content: center;" 
+                    class="btn-delete-action"
                     @click="handleDeleteExpense(item.id)"
                   >
-                    <i class="fa-solid fa-trash-can"></i>
+                    <i class="fa-solid fa-trash-can"></i> ลบ
                   </button>
-                  <span v-else style="color:var(--text-tertiary); font-size:10px;">-</span>
+                  <span v-else style="color:var(--text-tertiary);">-</span>
                 </td>
               </tr>
             </tbody>
@@ -918,7 +916,7 @@
               <div class="flex flex-between align-center">
                 <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ item.name }}</span>
               </div>
-              <div class="flex flex-between align-center mt-xs" style="font-size: 11px; color: var(--text-secondary);">
+              <div class="flex flex-between align-center mt-xs" style="font-size: var(--font-xs); color: var(--text-secondary);">
                 <span><i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> {{ item.formattedDate }} {{ item.formattedTime }}</span>
                 <div class="flex align-center gap-md">
                   <span v-if="item.income > 0" class="font-bold text-success" style="font-size: var(--font-base);">
@@ -930,7 +928,7 @@
                   <button 
                     v-if="item.type === 'expense'"
                     class="btn btn-sm" 
-                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 14px; font-size:13px; border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px;" 
+                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 14px; font-size:var(--font-sm); border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px;" 
                     @click="handleDeleteExpense(item.id)"
                   >
                     <i class="fa-solid fa-trash-can"></i>
@@ -945,7 +943,7 @@
         <div v-if="totalLedgerPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="ledgerCurrentPage === 1" 
             @click="ledgerCurrentPage--"
           >
@@ -956,7 +954,7 @@
           </span>
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="ledgerCurrentPage === totalLedgerPages" 
             @click="ledgerCurrentPage++"
           >
@@ -974,7 +972,7 @@
           </div>
           <div>
             <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">10 อันดับสินค้าขายดีที่สุด</span>
-            <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">สถิติการใช้วัตถุดิบและเมนูจากการขายจริง</span>
+            <span style="font-size: var(--font-xs); color: var(--text-secondary); font-weight: normal;">สถิติการใช้วัตถุดิบและเมนูจากการขายจริง</span>
           </div>
         </div>
 
@@ -991,7 +989,7 @@
                 boxShadow: topItemsDays === d ? 'var(--shadow-sm)' : 'none',
                 fontWeight: topItemsDays === d ? 'bold' : 'normal'
               }"
-              style="padding: 6px 18px; border-radius: var(--radius-full); font-size: 11px; transition: all 0.2s ease; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 70px;"
+              style="padding: 6px 18px; border-radius: var(--radius-full); font-size: var(--font-xs); transition: all 0.2s ease; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 70px;"
             >
               {{ d === 1 ? 'วันนี้' : d + ' วัน' }}
             </button>
@@ -1042,7 +1040,7 @@
           </div>
 
           <!-- Divider label for ranks 4-10 -->
-          <div v-if="topItems.length > 3" style="font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding-left: 6px; margin: var(--space-md) 0 var(--space-sm) 0; border-left: 3px solid var(--primary);">
+          <div v-if="topItems.length > 3" style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding-left: 6px; margin: var(--space-md) 0 var(--space-sm) 0; border-left: 3px solid var(--primary);">
             อันดับที่ 4 - 10
           </div>
 
@@ -1171,7 +1169,7 @@
         <div v-if="totalActivityPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="activityCurrentPage === 1" 
             @click="activityCurrentPage--"
           >
@@ -1182,7 +1180,7 @@
           </span>
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="activityCurrentPage === totalActivityPages" 
             @click="activityCurrentPage++"
           >
@@ -1193,7 +1191,7 @@
     </template>
 
     <!-- Void Order Modal -->
-    <div v-if="showVoidModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showVoidModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showVoidModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -1256,7 +1254,7 @@
               class="custom-select-trigger" 
               :class="{ 'active': isStockItemDropdownOpen }" 
               @click="isStockItemDropdownOpen = !isStockItemDropdownOpen"
-              style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+              style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
             >
               <span class="custom-select-text">
                 {{ selectedStockItemName }}
@@ -1269,7 +1267,7 @@
                 class="custom-select-option" 
                 :class="{ 'selected': selectedReportsStockItemId === item.id }" 
                 @click="selectReportsStockItem(item)" 
-                style="padding: 6px 12px; font-size: 12px;"
+                style="padding: 6px 12px; font-size: var(--font-sm);"
               >
                 {{ item.name }}
               </div>
@@ -1291,12 +1289,12 @@
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th style="padding: var(--space-md); text-align: left;">สินค้า</th>
-                <th style="padding: var(--space-md); text-align: left;">ชื่อพนักงาน</th>
+                <th class="text-center" style="padding: var(--space-md);">ชื่อพนักงาน</th>
                 <th style="padding: var(--space-md); text-align: left;">กิจกรรม</th>
-                <th style="padding: var(--space-md); text-align: left;">เวลา</th>
-                <th style="padding: var(--space-md); text-align: center;">จำนวนก่อนปรับ</th>
-                <th style="padding: var(--space-md); text-align: center;">จำนวนที่ปรับ</th>
-                <th style="padding: var(--space-md); text-align: center;">จำนวนหลังปรับ</th>
+                <th class="text-center" style="padding: var(--space-md);">เวลา</th>
+                <th class="text-center" style="padding: var(--space-md);">จำนวนก่อนปรับ</th>
+                <th class="text-center" style="padding: var(--space-md);">จำนวนที่ปรับ</th>
+                <th class="text-center" style="padding: var(--space-md);">จำนวนหลังปรับ</th>
               </tr>
             </thead>
             <tbody>
@@ -1306,19 +1304,19 @@
                 style="border-bottom: 1px solid var(--border-color);"
                 class="table-row-hover"
               >
-                <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
+                <td style="padding: var(--space-sm) var(--space-md);">
                   {{ selectedStockItemName }}
                 </td>
-                <td style="padding: var(--space-sm) var(--space-md);">
+                <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
                   {{ log.staff_name || 'ระบบ' }}
                 </td>
                 <td style="padding: var(--space-sm) var(--space-md);">
-                  <span class="font-bold" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="font-bold flex align-center" style="gap: 6px;">
                     <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
                     <span>{{ getStockReasonLabel(log.reason) }}</span>
                   </span>
                 </td>
-                <td style="padding: var(--space-sm) var(--space-md); font-size: 11px; color:var(--text-secondary);">
+                <td class="text-center" style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
                   {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
                 </td>
                 <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
@@ -1354,15 +1352,15 @@
                   {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
                 </span>
               </div>
-              <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">
+              <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px;">
                 โดย: {{ log.staff_name || 'ระบบ' }} | {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
               </div>
-              <div v-if="log.note" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; border-left: 2px solid var(--border-color); padding-left: 6px;">
+              <div v-if="log.note" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; border-left: 2px solid var(--border-color); padding-left: 6px;">
                 {{ log.note }}
               </div>
             </div>
             <div style="text-align: right;">
-              <div style="font-size: 10px; color: var(--text-tertiary);">ยอดหลังปรับ</div>
+              <div style="font-size: var(--font-xs); color: var(--text-tertiary);">ยอดหลังปรับ</div>
               <div class="font-bold">{{ log.new_stock }}</div>
             </div>
           </div>
@@ -1372,7 +1370,7 @@
         <div v-if="totalStockLogsPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="stockLogsCurrentPage === 1" 
             @click="stockLogsCurrentPage--"
           >
@@ -1383,7 +1381,7 @@
           </span>
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="stockLogsCurrentPage === totalStockLogsPages" 
             @click="stockLogsCurrentPage++"
           >
@@ -1396,7 +1394,7 @@
     <!-- Cash Drawer Audit Tab (Admin Only) -->
     <div v-if="activeTab === 'cash_audit' && isAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
-        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--text-primary);">
+        <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
           <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>
           ตรวจสอบเงินสดในลิ้นชักประจำวัน (ลับเฉพาะเจ้าของร้าน)
         </h3>
@@ -1427,35 +1425,35 @@
         <table class="table" style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">วันที่</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินทอนตั้งต้น</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดขายเงินสด</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดจ่ายเงินสด</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดที่ควรมี</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดนับจริง</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ผลต่าง (ขาด/เกิน)</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">สถานะ</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ตรวจสอบ</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">วันที่</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินทอนตั้งต้น</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดขายเงินสด</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดจ่ายเงินสด</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดที่ควรมี</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดนับจริง</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ผลต่าง (ขาด/เกิน)</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">สถานะ</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ตรวจสอบ</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="session in cashDrawerSessions" :key="session.id" style="border-bottom: 1px solid var(--border-color);">
-              <td style="padding: 12px; font-weight: 600; text-align: center; vertical-align: middle; white-space: nowrap;">{{ formatDate(session.session_date) }}</td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.opening_cash) }}</td>
-              <td style="padding: 12px; color: #34c759; font-weight: 500; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; font-weight: 600; vertical-align: middle; white-space: nowrap;">{{ formatDate(session.session_date) }}</td>
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.opening_cash) }}</td>
+              <td class="text-center" style="padding: 12px; color: #34c759; font-weight: 500; vertical-align: middle; white-space: nowrap;">
                 +{{ formatCurrency(session.cash_sales) }}
               </td>
-              <td style="padding: 12px; color: #ff3b30; font-weight: 500; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; color: #ff3b30; font-weight: 500; vertical-align: middle; white-space: nowrap;">
                 -{{ formatCurrency(session.cash_expenses) }}
               </td>
-              <td style="padding: 12px; font-weight: 600; text-align: center; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.calculated_expected_cash) }}</td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; font-weight: 600; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.calculated_expected_cash) }}</td>
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
                 <span v-if="session.status === 'closed'" style="font-weight: 600;">
                   {{ formatCurrency(session.actual_cash) }}
                 </span>
                 <span v-else style="color: var(--text-light); font-style: italic;">ยังไม่ได้ตรวจนับ</span>
               </td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
                 <span v-if="session.status === 'closed'">
                   <span v-if="session.difference === 0" style="color: #34c759; font-weight: bold; background: rgba(52,199,89,0.15); padding: 2px 6px; border-radius: 4px; display: inline-block; white-space: nowrap;">
                     ครบถ้วน (ยอดเท่ากัน)
@@ -1469,14 +1467,13 @@
                 </span>
                 <span v-else style="color: var(--text-light); font-style: italic;">รอปิดยอดประจำวัน</span>
               </td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
                 <span 
                   :style="{
                     background: session.status === 'closed' ? 'rgba(52,199,89,0.2)' : 'rgba(255,149,0,0.2)',
                     color: session.status === 'closed' ? '#30d158' : '#ff9f0a',
                     padding: '4px 8px',
                     borderRadius: '4px',
-                    fontSize: '0.8rem',
                     fontWeight: '600',
                     display: 'inline-block',
                     whiteSpace: 'nowrap'
@@ -1485,12 +1482,12 @@
                   {{ session.status === 'closed' ? 'ตรวจสอบแล้ว' : 'เปิดอยู่' }}
                 </span>
               </td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
-                <div style="display: inline-flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; width: 100%;">
-                  <button class="btn-action" @click="openOpeningCashModal(session)" style="width: 150px;">
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
+                <div class="flex flex-col align-center justify-center" style="gap: 6px; width: 100%;">
+                  <button class="btn-action btn-drawer-action" @click="openOpeningCashModal(session)">
                     <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
                   </button>
-                  <button class="btn-action btn-action-primary" @click="openAuditModal(session)" style="width: 150px;">
+                  <button class="btn-action btn-action-primary btn-drawer-action" @click="openAuditModal(session)">
                     <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
                   </button>
                 </div>
@@ -1578,7 +1575,7 @@
     </div>
 
     <!-- Cash Audit Modal -->
-    <div v-if="showAuditModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showAuditModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showAuditModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 90vh; overflow-y: auto; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
@@ -1589,7 +1586,7 @@
         </div>
         <div class="modal-body" style="padding: var(--space-lg) !important; text-align: left !important;">
           <!-- Session Summary details -->
-          <div class="mb-md p-sm" style="background: rgba(139, 3, 19, 0.04) !important; border: 1px solid var(--border-color-light) !important; border-radius: 8px; display: flex; flex-direction: column; gap: var(--space-xs); font-size: 0.9rem; margin-bottom:var(--space-md); padding:var(--space-sm); color: var(--text-primary) !important;">
+          <div class="mb-md p-sm" style="background: rgba(139, 3, 19, 0.04) !important; border: 1px solid var(--border-color-light) !important; border-radius: 8px; display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-sm); margin-bottom:var(--space-md); padding:var(--space-sm); color: var(--text-primary) !important;">
             <div class="flex justify-between" style="display:flex; justify-content:space-between; align-items: center;">
               <span style="color: var(--text-secondary) !important;">เงินทอนตั้งต้น:</span>
               <span style="font-weight: 700; color: var(--text-primary) !important;">{{ formatCurrency(activeAuditSession.opening_cash) }}</span>
@@ -1602,9 +1599,9 @@
               <span style="color: var(--text-secondary) !important;">ยอดจ่ายเงินสดสะสม:</span>
               <span style="font-weight: 700; color: var(--danger) !important;">-{{ formatCurrency(activeAuditSession.cash_expenses) }}</span>
             </div>
-            <div class="flex justify-between" style="display:flex; justify-content:space-between; align-items: center; border-top: 1px solid var(--border-color-light) !important; padding-top: var(--space-xs); font-weight: 700; font-size: 0.95rem; color: var(--text-primary) !important;">
+            <div class="flex justify-between" style="display:flex; justify-content:space-between; align-items: center; border-top: 1px solid var(--border-color-light) !important; padding-top: var(--space-xs); font-weight: 700; font-size: var(--font-sm); color: var(--text-primary) !important;">
               <span>เงินสดที่ระบบคำนวณว่าควรมี:</span>
-              <span style="color: var(--primary) !important; font-size: 1.05rem !important;">{{ formatCurrency(activeAuditSession.calculated_expected_cash) }}</span>
+              <span style="color: var(--primary) !important; font-size: var(--font-base) !important;">{{ formatCurrency(activeAuditSession.calculated_expected_cash) }}</span>
             </div>
           </div>
 
@@ -1612,31 +1609,31 @@
           <div class="mb-md" style="margin-bottom:var(--space-md);">
             <div class="flex justify-between align-center mb-xs" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-xs);">
               <span class="form-label" style="font-weight: 700; color: var(--text-primary) !important; margin:0;">เครื่องช่วยคำนวณเงินสด (นับเหรียญ & ธนบัตร)</span>
-              <button type="button" class="btn btn-secondary" style="border: 1.5px solid var(--border-color-light) !important; padding: 6px 12px !important; font-size: 12px !important; color: var(--text-primary) !important; min-height: 32px; font-weight: bold; border-radius: 6px;" @click="toggleCalculatorHelper">
+              <button type="button" class="btn btn-secondary" style="border: 1.5px solid var(--border-color-light) !important; padding: 6px 12px !important; font-size: var(--font-sm) !important; color: var(--text-primary) !important; min-height: 32px; font-weight: bold; border-radius: 6px;" @click="toggleCalculatorHelper">
                 {{ showCalculatorHelper ? 'ซ่อนเครื่องช่วยนับ' : 'แสดงเครื่องช่วยนับ' }}
               </button>
             </div>
 
             <div v-if="showCalculatorHelper" class="calculator-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: rgba(139, 3, 19, 0.03) !important; border: 1px dashed var(--border-color-light) !important; padding: 12px; border-radius: 12px; margin-top:6px;">
               <div v-for="denom in denominations" :key="denom.value" class="denom-card" style="background: var(--card-bg) !important; border: 1px solid var(--border-color-light) !important; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: var(--shadow-sm);">
-                <span style="font-weight: 700; color: var(--primary) !important; font-size: 0.9rem;">{{ denom.label }}</span>
+                <span style="font-weight: 700; color: var(--primary) !important; font-size: var(--font-sm);">{{ denom.label }}</span>
                 <div style="display: flex; align-items: center; gap: 2px; width: 100%; justify-content: center;">
-                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: 16px;" @click="decrementDenom(denom)">-</button>
+                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: var(--font-base);" @click="decrementDenom(denom)">-</button>
                   <input 
                     type="number" 
                     class="form-input text-center" 
-                    style="padding: 2px !important; font-size: 0.9rem !important; width: 44px !important; text-align: center !important; height: 28px !important; border: 1px solid var(--border-color-light) !important; background: var(--bg-primary) !important; color: var(--text-primary) !important; border-radius: 4px; font-weight: bold;" 
+                    style="padding: 2px !important; font-size: var(--font-sm) !important; width: 44px !important; text-align: center !important; height: 28px !important; border: 1px solid var(--border-color-light) !important; background: var(--bg-primary) !important; color: var(--text-primary) !important; border-radius: 4px; font-weight: bold;" 
                     min="0" 
                     v-model.number="denom.count" 
                     @input="calculateTotalFromDenoms"
                   />
-                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: 16px;" @click="incrementDenom(denom)">+</button>
+                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: var(--font-base);" @click="incrementDenom(denom)">+</button>
                 </div>
-                <span style="color: var(--text-secondary) !important; font-size: 0.75rem; font-weight: 700; text-align: center; word-break: break-all;">{{ formatCurrency(denom.count * denom.value) }}</span>
+                <span style="color: var(--text-secondary) !important; font-size: var(--font-xs); font-weight: 700; text-align: center; word-break: break-all;">{{ formatCurrency(denom.count * denom.value) }}</span>
               </div>
               <div style="grid-column: 1 / -1; border-top: 1px dashed var(--border-color-light) !important; padding-top: var(--space-xs); display:flex; justify-content:space-between; align-items:center; font-weight: 700; margin-top:8px;">
-                <span style="color: var(--text-primary) !important; font-size: 0.9rem;">ยอดคำนวณรวม: <span style="color:var(--primary); font-size: 1.15rem !important; font-weight: 800;">{{ formatCurrency(calculatorTotalSum) }}</span></span>
-                <button type="button" class="btn btn-primary" style="background: var(--gradient-primary) !important; color: #fff !important; padding: 6px 12px !important; font-size: 12px !important; font-weight: bold; border-radius: 6px; min-height: 32px;" @click="useCalculatorSum">ใช้ยอดนี้</button>
+                <span style="color: var(--text-primary) !important; font-size: var(--font-sm);">ยอดคำนวณรวม: <span style="color:var(--primary); font-size: var(--font-md) !important; font-weight: 800;">{{ formatCurrency(calculatorTotalSum) }}</span></span>
+                <button type="button" class="btn btn-primary" style="background: var(--gradient-primary) !important; color: #fff !important; padding: 6px 12px !important; font-size: var(--font-sm) !important; font-weight: bold; border-radius: 6px; min-height: 32px;" @click="useCalculatorSum">ใช้ยอดนี้</button>
               </div>
             </div>
           </div>
@@ -1681,7 +1678,7 @@
     </div>
 
     <!-- Set Opening Cash Modal -->
-    <div v-if="showOpeningCashModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showOpeningCashModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showOpeningCashModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
@@ -2163,14 +2160,14 @@ const activityLogs = ref([]);
 const filterAction = ref('all');
 
 const filteredActivityLogs = computed(() => {
-  // Filter out create_order entirely to prevent duplicate count & confusion
-  let list = activityLogs.value.filter(log => log.action !== 'create_order');
+  // Include both complete_order and create_order in active logs
+  let list = activityLogs.value;
   
   if (filterAction.value !== 'all') {
     list = list.filter(log => {
       const act = log.action;
       if (filterAction.value === 'login') return act === 'login';
-      if (filterAction.value === 'sales') return act === 'complete_order';
+      if (filterAction.value === 'sales') return act === 'complete_order' || act === 'create_order';
       if (filterAction.value === 'cancel') return act === 'cancel_order';
       if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
       if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
@@ -3447,7 +3444,7 @@ select.reports-filter-control,
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: var(--font-md);
   background: rgba(139, 3, 19, 0.04);
 }
 
@@ -3480,7 +3477,7 @@ select.reports-filter-control,
 .log-meta {
   display: flex;
   gap: var(--space-md);
-  font-size: 10px;
+  font-size: var(--font-xs);
   color: var(--text-tertiary);
 }
 
@@ -3575,7 +3572,7 @@ select.reports-filter-control,
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   flex-shrink: 0;
 }
 
@@ -3617,7 +3614,7 @@ select.reports-filter-control,
 }
 
 .badge-type {
-  font-size: 9px;
+  font-size: var(--font-xs);
   font-weight: 700;
   padding: 1px 6px;
   border-radius: var(--radius-sm);
@@ -3662,7 +3659,7 @@ select.reports-filter-control,
 }
 
 .qty-unit {
-  font-size: 9px;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -3672,7 +3669,7 @@ select.reports-filter-control,
   border: 1px solid rgba(139, 3, 19, 0.12);
   padding: 4px 12px;
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xs);
   color: var(--primary);
   font-weight: 700;
   min-width: 80px;
@@ -3727,7 +3724,7 @@ select.reports-filter-control,
 .session-status-badge {
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: var(--font-xs);
   font-weight: 700;
   text-align: center;
   white-space: nowrap;
@@ -3797,7 +3794,7 @@ select.reports-filter-control,
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--font-sm);
   display: inline-block;
   white-space: nowrap;
 }
@@ -3838,31 +3835,6 @@ select.reports-filter-control,
   gap: 6px;
 }
 
-/* Hint box alert */
-.bulk-hint-box {
-  font-size: var(--font-base);
-  color: var(--text-secondary);
-  text-align: left;
-  background: rgba(255, 171, 43, 0.06);
-  border: 1px solid rgba(255, 171, 43, 0.25);
-  border-left: 6px solid var(--accent);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  line-height: 1.5;
-}
-.hint-icon {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-  line-height: 1;
-  margin-top: 2px;
-}
-.hint-text {
-  flex: 1;
-}
-
 /* Payment Methods Grid */
 .payment-methods-grid {
   display: grid;
@@ -3875,5 +3847,30 @@ select.reports-filter-control,
   .payment-methods-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+}
+
+.calendar-day-btn {
+  border-radius: var(--radius-full) !important;
+}
+
+.btn-delete-action {
+  background: rgba(255, 59, 48, 0.1) !important;
+  color: #ff3b30 !important;
+  border: 1px solid rgba(255, 59, 48, 0.2) !important;
+  padding: 4px 8px !important;
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer;
+}
+
+.btn-delete-action:active {
+  background: rgba(255, 59, 48, 0.2) !important;
+}
+
+.btn-drawer-action {
+  width: 180px !important;
 }
 </style>

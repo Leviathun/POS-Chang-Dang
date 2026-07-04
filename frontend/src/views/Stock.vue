@@ -36,23 +36,23 @@
       <!-- Desktop Stock Table (Visible on desktop only) -->
       <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md); text-align: left; width: 30%;">เมนูอาหาร</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">ของสด</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">ทอดสุก/พร้อมขาย</th>
-                <th style="padding: var(--space-md); text-align: center; width: 30%;">จัดการสต็อก</th>
+                <th class="text-left" style="padding: var(--space-md); width: 30%;">เมนูอาหาร</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ของสด</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ทอดสุก/พร้อมขาย</th>
+                <th class="text-center" style="padding: var(--space-md); width: 30%;">จัดการสต็อก</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl);">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
                   <div class="spinner" style="margin: 0 auto;"></div>
                 </td>
               </tr>
               <tr v-else-if="stockItems.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก (เพิ่มสินค้าในหน้า "จัดการเมนู")
                 </td>
               </tr>
@@ -66,31 +66,31 @@
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-xs text-muted" style="display: flex; gap: var(--space-sm); align-items: center;">
+                  <div class="text-base text-muted flex align-center" style="gap: var(--space-sm);">
                     <span>ID: {{ item.id }}</span>
                     <span style="color: var(--border-color);">|</span>
                     <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)"><i class="fa-solid fa-file-medical" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
                 <!-- Raw Quantity -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <span v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" style="font-weight: bold;">
                     {{ formatStockQty(item.raw_quantity, item.uom) }}
-                    <span v-if="isItemLowStock(item, item.raw_quantity)" class="text-xs font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                    <span v-if="(item.raw_quantity || 0) <= 0" class="text-xs font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
+                    <span v-if="isItemLowStock(item, item.raw_quantity)" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="(item.raw_quantity || 0) <= 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                   <span v-else style="color: var(--text-tertiary); font-style: italic;">-</span>
                 </td>
                 <!-- Cooked Quantity -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" style="font-weight: bold;">
                     {{ formatStockQty(item.quantity, item.uom) }}
-                    <span v-if="isItemLowStock(item, item.quantity)" class="text-xs font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" class="text-xs font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
+                    <span v-if="isItemLowStock(item, item.quantity)" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                 </td>
                 <!-- Actions -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: nowrap;">
                     <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn-action btn-action-fry" @click="openActionModal('fry', item, false)"><i class="fa-solid fa-fire"></i> ทอดสินค้า</button>
                     <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
@@ -151,21 +151,21 @@
                   <span 
                     v-if="item.raw_quantity !== null && item.raw_quantity !== undefined && isItemLowStock(item, item.quantity) && isItemLowStock(item, item.raw_quantity)"
                     class="badge badge-danger badge-sm"
-                    style="display: block; font-size: 0.65rem;"
+                    style="display: block; font-size: var(--font-xs);"
                   >
                     <i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ของใกล้หมดทั้งคู่
                   </span>
                   <span 
                     v-else-if="isItemLowStock(item, item.quantity)" 
                     class="badge badge-warning badge-sm"
-                    style="display: block; font-size: 0.65rem;"
+                    style="display: block; font-size: var(--font-xs);"
                   >
                     <i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ใกล้หมด
                   </span>
                   <span 
                     v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" 
                     class="badge badge-danger badge-sm"
-                    style="display: block; font-size: 0.65rem;"
+                    style="display: block; font-size: var(--font-xs);"
                   >
                     <i class="fa-solid fa-circle-xmark" style="margin-right: 2px;"></i> หมดเกลี้ยง
                   </span>
@@ -196,23 +196,23 @@
       <!-- Desktop Free Modifiers Table -->
       <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md); text-align: left; width: 30%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">ประเภท</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">ปริมาณคงเหลือ</th>
-                <th style="padding: var(--space-md); text-align: center; width: 30%;">จัดการสต็อก</th>
+                <th class="text-left" style="padding: var(--space-md); width: 30%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ประเภท</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ปริมาณคงเหลือ</th>
+                <th class="text-center" style="padding: var(--space-md); width: 30%;">จัดการสต็อก</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl);">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
                   <div class="spinner" style="margin: 0 auto;"></div>
                 </td>
               </tr>
               <tr v-else-if="modifierItems.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการเครื่องปรุงในระบบ
                 </td>
               </tr>
@@ -227,30 +227,30 @@
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">
                     {{ item.name }}
-                    <span v-if="!item.active" class="badge badge-neutral badge-sm" style="margin-left:6px;">ปิดใช้งาน</span>
+                    <span v-if="!item.active" class="badge badge-neutral text-base" style="margin-left:6px;">ปิดใช้งาน</span>
                   </div>
-                  <div class="text-xs text-muted" style="display: flex; gap: var(--space-sm); align-items: center;">
+                  <div class="text-base text-muted flex align-center" style="gap: var(--space-sm);">
                     <span>ID: {{ item.id }}</span>
                     <span style="color: var(--border-color);">|</span>
                     <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
                 <!-- Category -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span class="badge" :class="getModifierCategoryClass(item.category)">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="badge text-base" :class="getModifierCategoryClass(item.category)">
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </td>
                 <!-- Quantity -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <span :class="{ 'text-danger font-bold': isModifierLowStock(item), 'font-semibold': !isModifierLowStock(item) }">
                     {{ formatModifierStock(item) }}
-                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="text-xs font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                    <span v-if="item.total_servings <= 0" class="text-xs font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
+                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="item.total_servings <= 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
                   </span>
                 </td>
                 <!-- Actions -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: nowrap;">
                     <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
                       <i class="fa-solid fa-plus"></i> เติมสต็อก
@@ -327,7 +327,7 @@
     </div>
 
     <!-- Restock/Adjust Modal -->
-    <div v-if="showActionModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showActionModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showActionModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -480,7 +480,7 @@
     </div>
 
     <!-- Logs Modal -->
-    <div v-if="showLogsModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showLogsModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showLogsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:80dvh;">
         <div class="modal-header">
@@ -1031,10 +1031,6 @@ onMounted(() => {
     padding: 0 !important;
     margin: 0 !important;
   }
-}
-
-.table-row-hover:hover {
-  background: rgba(139, 3, 19, 0.015) !important;
 }
 
 /* --- Stock Item --- */

@@ -151,7 +151,7 @@
             <div v-if="useModifiers" class="modifiers-options-panel mt-sm animate-fade-in" style="max-height: 200px; overflow-y: auto; text-align: left;">
               <!-- Presets -->
               <div v-if="activePresets.length > 0" class="presets-row mb-sm">
-                <div class="text-muted mb-xs" style="font-size: 10px; font-weight: bold;">สูตรสำเร็จ (Presets):</div>
+                <div class="text-muted mb-xs" style="font-size: var(--font-xs); font-weight: bold;">สูตรสำเร็จ (Presets):</div>
                 <div class="flex gap-xs" style="flex-wrap: wrap;">
                   <button 
                     v-for="preset in activePresets" 
@@ -159,7 +159,7 @@
                     class="btn btn-sm btn-secondary preset-btn"
                     @click="applyPreset(preset)"
                     type="button"
-                    style="padding: 4px 8px; font-size: 11px; min-height: 28px;"
+                    style="padding: 4px 8px; font-size: var(--font-xs); min-height: 28px;"
                   >
                     <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                   </button>
@@ -170,7 +170,7 @@
               <div class="modifiers-categories" style="display: flex; flex-direction: column; gap: var(--space-xs);">
                 <template v-for="cat in modifierCategories" :key="cat.key">
                   <div v-if="getModifiersByCategory(cat.key).length > 0" class="modifier-cat-group">
-                    <div class="text-secondary mb-xs font-semibold" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <div class="text-secondary mb-xs font-semibold" style="font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.5px;">
                       {{ cat.label }}:
                     </div>
                     <div class="flex gap-xs" style="flex-wrap: wrap; margin-bottom: 6px;">
@@ -213,7 +213,7 @@
                 v-if="discountAmount > 0"
                 class="btn btn-ghost btn-xs text-danger" 
                 @click="clearDiscount"
-                style="padding: 0; min-height: unset; font-size: 11px;"
+                style="padding: 0; min-height: unset; font-size: var(--font-xs);"
               >
                 ล้างส่วนลด
               </button>
@@ -240,9 +240,9 @@
                   placeholder="ลดระบุเอง..." 
                   min="0"
                   :max="cartTotal"
-                  style="font-size: 11px; padding: 4px 20px 4px 8px; height: 28px; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary);"
+                  style="font-size: var(--font-xs); padding: 4px 20px 4px 8px; height: 28px; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary);"
                 />
-                <span style="position: absolute; right: 8px; font-size: 11px; color: var(--text-muted); pointer-events: none;">฿</span>
+                <span style="position: absolute; right: 8px; font-size: var(--font-xs); color: var(--text-muted); pointer-events: none;">฿</span>
               </div>
             </div>
           </div>
@@ -306,7 +306,7 @@
               v-if="discountAmount > 0"
               class="btn btn-ghost btn-xs text-danger" 
               @click="clearDiscount"
-              style="padding: 0; min-height: unset; font-size: 12px;"
+              style="padding: 0; min-height: unset; font-size: var(--font-sm);"
             >
               ล้างส่วนลด (ลดอยู่ -{{ formatCurrency(discountAmount) }})
             </button>
@@ -330,9 +330,9 @@
                 placeholder="ลดระบุเอง (บาท)..." 
                 min="0"
                 :max="cartTotal"
-                style="font-size: 12px; padding: 6px 24px 6px 12px; height: 32px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
+                style="font-size: var(--font-sm); padding: 6px 24px 6px 12px; height: 32px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
               />
-              <span style="position: absolute; right: 10px; font-size: 12px; color: var(--text-muted); pointer-events: none;">฿</span>
+              <span style="position: absolute; right: 10px; font-size: var(--font-sm); color: var(--text-muted); pointer-events: none;">฿</span>
             </div>
           </div>
         </div>
@@ -345,7 +345,7 @@
           marginBottom: '0px' 
         }">
           <div class="flex flex-between align-center" style="margin-bottom: 8px;">
-            <span class="font-bold" style="font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+            <span class="font-bold" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
               <i class="fa-solid fa-bottle-droplet" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
             </span>
             <label class="switch-toggle">
@@ -358,7 +358,7 @@
           <div v-if="useModifiers" class="modifiers-options-panel mt-md animate-fade-in" style="text-align: left; display: flex; flex-direction: column; gap: 12px; padding-left: 4px;">
             <!-- Presets -->
             <div v-if="activePresets.length > 0" class="presets-row">
-              <div class="text-secondary font-bold" style="font-size: 12px; margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">สูตรสำเร็จ (Presets):</div>
+              <div class="text-secondary font-bold" style="font-size: var(--font-sm); margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">สูตรสำเร็จ (Presets):</div>
               <div class="flex gap-xs" style="flex-wrap: wrap; padding-left: 4px;">
                 <button 
                   v-for="preset in activePresets" 
@@ -366,7 +366,7 @@
                   class="btn btn-sm btn-secondary preset-btn"
                   @click="applyPreset(preset)"
                   type="button"
-                  style="padding: 6px 12px; font-size: 12px; min-height: 32px; border-radius: var(--radius-md);"
+                  style="padding: 6px 12px; font-size: var(--font-sm); min-height: 32px; border-radius: var(--radius-md);"
                 >
                   <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                 </button>
@@ -377,7 +377,7 @@
             <div class="modifiers-categories" style="display: flex; flex-direction: column; gap: 12px;">
               <template v-for="cat in modifierCategories" :key="cat.key">
                 <div v-if="getModifiersByCategory(cat.key).length > 0" class="modifier-cat-group">
-                  <div class="text-secondary font-bold" style="font-size: 12px; margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">
+                  <div class="text-secondary font-bold" style="font-size: var(--font-sm); margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">
                     {{ cat.label }}:
                   </div>
                   <div class="flex gap-xs" style="flex-wrap: wrap; padding-left: 4px;">
@@ -388,10 +388,10 @@
                       :class="{ 'active': isModifierSelected(mod), 'out-of-stock': mod.total_servings <= 0 }"
                       @click="toggleModifierSelection(mod)"
                       type="button"
-                      style="padding: 6px 12px; font-size: 12px; border-radius: var(--radius-full);"
+                      style="padding: 6px 12px; font-size: var(--font-sm); border-radius: var(--radius-full);"
                     >
                       {{ mod.name }} 
-                      <span class="stock-badge" style="font-size: 10px; opacity: 0.8;">
+                      <span class="stock-badge" style="font-size: var(--font-xs); opacity: 0.8;">
                         ({{ formatModifierStockShort(mod) }})
                       </span>
                     </button>
@@ -1332,32 +1332,6 @@ onUnmounted(() => {
 
 <style scoped>
 
-
-.category-tab {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all var(--transition-base);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.category-tab:active {
-  transform: scale(0.97);
-}
-
-.category-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
-}
-
 /* --- POS Grid --- */
 .pos-grid {
   display: grid;
@@ -1454,7 +1428,7 @@ onUnmounted(() => {
 }
 
 .pos-item-stock {
-  font-size: 0.65rem;
+  font-size: var(--font-xs);
   color: var(--text-tertiary);
   font-weight: var(--font-weight-medium);
 }
@@ -1644,7 +1618,7 @@ onUnmounted(() => {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 1.35rem; /* Enlarged font-size to match the circle size! */
+  font-size: var(--font-lg); /* Enlarged font-size to match the circle size! */
   font-weight: var(--font-weight-bold);
   transition: var(--transition-base);
 }
@@ -1852,7 +1826,7 @@ onUnmounted(() => {
   }
 
   .pos-item-name {
-    font-size: 1.15rem !important;
+    font-size: var(--font-md) !important;
   }
 }
 
@@ -1912,7 +1886,7 @@ input:checked + .slider-toggle:before {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xs);
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
@@ -1939,7 +1913,7 @@ input:checked + .slider-toggle:before {
 }
 
 .pill-btn .stock-badge {
-  font-size: 9px;
+  font-size: var(--font-xs);
   opacity: 0.75;
 }
 .pill-btn.active .stock-badge {
@@ -1986,7 +1960,7 @@ input:checked + .slider-toggle:before {
   border: none;
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-extrabold);
-  font-size: 1.1rem !important; /* Larger readable size */
+  font-size: var(--font-md) !important; /* Larger readable size */
   cursor: pointer;
   transition: all var(--transition-base);
   user-select: none;

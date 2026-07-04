@@ -72,48 +72,48 @@
                 </div>
                 
                 <div class="order-items-scroll" style="max-height: 300px; overflow-y: auto; padding-right: var(--space-xs); display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-md);">
-                  <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between align-start text-sm" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
+                  <div v-for="[itemId, cartItem] in cart" :key="itemId" class="flex flex-between align-start text-base" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
                     <div style="display:flex; flex-direction:column; gap:2px; flex: 1; min-width: 0;">
                       <span class="font-bold" style="color: var(--text-primary); word-break: break-word;">{{ cartItem.item.name }}</span>
                       
                       <!-- Show options details if any -->
-                      <div v-if="cartItem.item.options && cartItem.item.options.selected_items" class="text-xs text-secondary" style="margin-top: 2px; line-height: 1.4; word-break: break-word;">
+                      <div v-if="cartItem.item.options && cartItem.item.options.selected_items" class="text-sm text-secondary" style="margin-top: 2px; line-height: 1.4; word-break: break-word;">
                         ผสม: {{ cartItem.item.options.selected_items.map(i => `${i.name} (${i.weight}ก.)`).join(', ') }}
                       </div>
                     </div>
                     <div style="text-align: right; flex-shrink: 0; min-width: 80px;">
-                      <span class="font-bold text-accent" style="display: block;">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
-                      <span class="text-xs text-secondary" style="display: block; margin-top: 2px;">{{ cartItem.quantity }} × {{ formatCurrency(cartItem.item.price) }}</span>
+                      <span class="font-bold text-accent text-base" style="display: block;">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
+                      <span class="text-sm text-secondary" style="display: block; margin-top: 2px;">{{ cartItem.quantity }} × {{ formatCurrency(cartItem.item.price) }}</span>
                     </div>
                   </div>
 
                   <!-- Seasonings at the end of the menu -->
                   <template v-if="freeModifiers.length > 0">
                     <div style="border-top: 1px dashed var(--border-color); margin: 4px 0 2px 0;"></div>
-                    <div v-for="mod in freeModifiers" :key="mod.id" class="flex flex-between align-start text-sm" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
+                    <div v-for="mod in freeModifiers" :key="mod.id" class="flex flex-between align-start text-base" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed rgba(0,0,0,0.06); gap: var(--space-sm);">
                       <div style="display:flex; flex-direction:column; gap:2px; flex: 1; min-width: 0;">
                         <span style="color: var(--text-secondary); word-break: break-word;">{{ mod.name }}</span>
                       </div>
                       <div style="text-align: right; flex-shrink: 0; min-width: 80px;">
-                        <span class="font-bold text-accent" style="display: block;">฿0</span>
-                        <span class="text-xs text-secondary" style="display: block; margin-top: 2px;">1 × ฿0</span>
+                        <span class="font-bold text-accent text-base" style="display: block;">฿0</span>
+                        <span class="text-sm text-secondary" style="display: block; margin-top: 2px;">1 × ฿0</span>
                       </div>
                     </div>
                   </template>
                 </div>
 
                 <div style="border-top: 2px dashed var(--border-color); padding-top: var(--space-md); display: flex; flex-direction: column; gap: var(--space-xs);">
-                  <div class="flex flex-between text-sm text-secondary" style="display: flex; justify-content: space-between;">
+                  <div class="flex flex-between text-base text-secondary" style="display: flex; justify-content: space-between;">
                     <span>ยอดรวม</span>
                     <span>{{ formatCurrency(total) }}</span>
                   </div>
-                  <div v-if="discount > 0" class="flex flex-between animate-fade-in text-sm text-danger font-bold" style="display: flex; justify-content: space-between;">
+                  <div v-if="discount > 0" class="flex flex-between animate-fade-in text-base text-danger font-bold" style="display: flex; justify-content: space-between;">
                     <span>ส่วนลด</span>
                     <span>-{{ formatCurrency(discount) }}</span>
                   </div>
                   <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: var(--space-xs);">
-                    <span class="font-bold text-md">ยอดชำระทั้งสิ้น</span>
-                    <span class="font-bold text-accent text-xl">{{ formatCurrency(netTotal) }}</span>
+                    <span class="font-bold text-lg">ยอดชำระทั้งสิ้น</span>
+                    <span class="font-bold text-accent text-2xl">{{ formatCurrency(netTotal) }}</span>
                   </div>
                 </div>
               </div>
@@ -125,7 +125,7 @@
                 
                 <!-- Grouped header showing active channel and change method button -->
                 <div v-if="paymentMethod" class="flex flex-between align-center" style="margin-bottom: var(--space-lg); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-                  <span class="font-bold text-primary text-sm">
+                  <span class="font-bold text-primary text-md">
                     <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> ช่องทาง: {{ getPaymentMethodLabel(paymentMethod) }}
                   </span>
                   <button class="btn btn-secondary" @click="paymentMethod = null">
@@ -223,9 +223,6 @@
                 <div v-if="paymentMethod === 'qr'" id="qr-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; padding: var(--space-md) 0;">
                   <div class="qr-code-display" style="margin-bottom: var(--space-md); width: 100%; max-width: 480px; display: flex; justify-content: center;">
                     <img src="@/assets/image/qr.png" alt="Payment QR Code" style="max-width: 480px; width: 100%; max-height: 480px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); object-fit: contain;" />
-                  </div>
-                  <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--primary); opacity: 0.9;">
-                    <i class="fa-solid fa-qrcode"></i>
                   </div>
                   <div class="text-sm text-secondary" style="margin-bottom: var(--space-md);">
                     ช่องทางชำระเงินด้วย QR Code / โอนเงินผ่านธนาคาร
@@ -517,11 +514,42 @@ const confirmDeliveryPayment = () => {
   width: 100%;
 }
 
+@media (min-width: 768px) {
+  .checkout-container {
+    flex-direction: row !important;
+    max-width: 1100px !important;
+    align-items: stretch !important;
+    gap: var(--space-lg) !important;
+  }
+  .checkout-left {
+    flex: 1.1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .checkout-right {
+    flex: 0.9;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .checkout-left .card,
+  .checkout-right .card {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .checkout-left .order-items-scroll {
+    flex: 1 !important;
+    max-height: none !important;
+  }
+}
+
 /* Modal close button override */
 .modal-close {
   background: transparent;
   border: none;
-  font-size: 1.5rem;
+  font-size: var(--font-xl);
   color: var(--text-secondary);
   cursor: pointer;
   padding: var(--space-xs);

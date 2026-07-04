@@ -103,14 +103,14 @@
           <div v-for="item in bulkFormItems" :key="item.menu_item_id" class="bulk-stock-row">
             <!-- Col 1: Name -->
             <div class="bulk-item-name-col">
-              <div class="font-bold text-lg">{{ item.name }}</div>
-              <div class="mobile-only text-xs text-muted" style="margin-top: 2px;">ID: {{ item.menu_item_id }}</div>
+              <div class="font-bold text-base">{{ item.name }}</div>
+              <div class="mobile-only text-base text-muted" style="margin-top: 2px;">ID: {{ item.menu_item_id }}</div>
             </div>
 
             <!-- Col 2: Raw stock quantity -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> คงเหลือ:</span>
-              <span :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" class="font-bold text-md">
+              <span :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" class="font-bold text-base">
                 {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? formatStockQty(item.raw_quantity, item.uom) : '-' }}
               </span>
             </div>
@@ -133,7 +133,7 @@
             <!-- Col 4: Cooked stock quantity -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> คงเหลือ:</span>
-              <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" class="font-bold text-md">
+              <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" class="font-bold text-base">
                 {{ item.quantity !== null && item.quantity !== undefined ? formatStockQty(item.quantity, item.uom) : formatStockQty(0, item.uom) }}
               </span>
             </div>
@@ -148,7 +148,7 @@
                   :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0')"
                   class="form-input"
                 />
-                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" class="text-xs text-danger font-bold text-center" style="margin-top: 6px; line-height: 1.3;">
+                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" class="text-base text-danger font-bold text-center" style="margin-top: 6px; line-height: 1.3;">
                   {{ getLinkageWarningText(item) }}
                 </div>
               </div>
@@ -233,10 +233,10 @@
             <div class="bulk-item-name-col">
               <div class="flex flex-between align-center" style="width: 100%; gap: var(--space-xs);">
                 <div>
-                  <div class="font-bold text-lg" style="text-align: left;">{{ item.name }}</div>
-                  <div class="text-xs text-muted" style="margin-top: 2px; text-align: left;">ID: {{ item.modifier_id }}</div>
+                  <div class="font-bold text-base" style="text-align: left;">{{ item.name }}</div>
+                  <div class="text-base text-muted" style="margin-top: 2px; text-align: left;">ID: {{ item.modifier_id }}</div>
                 </div>
-                <span class="badge show-mobile-inline text-xs" :class="getModifierCategoryClass(item.category)" style="padding: 3px 8px; margin-left: auto;">
+                <span class="badge show-mobile-inline text-base" :class="getModifierCategoryClass(item.category)" style="padding: 3px 8px; margin-left: auto;">
                   {{ getModifierCategoryLabel(item.category) }}
                 </span>
               </div>
@@ -244,7 +244,7 @@
 
             <!-- Col 2: Category Badge (Desktop Only) -->
             <div class="hide-mobile-flex align-center justify-center font-semibold">
-              <span class="badge" :class="getModifierCategoryClass(item.category)">
+              <span class="badge text-base" :class="getModifierCategoryClass(item.category)">
                 {{ getModifierCategoryLabel(item.category) }}
               </span>
             </div>
@@ -252,7 +252,7 @@
             <!-- Col 3: Current Stock (servings + bags) -->
             <div class="bulk-item-current-col text-center">
               <span class="mobile-label">คงเหลือ:</span>
-              <span class="font-bold text-md">
+              <span class="font-bold text-base">
                 {{ formatModifierStockShort(item) }}
               </span>
             </div>
@@ -739,7 +739,7 @@ onUnmounted(() => {
 
 .stock-page-title {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
   font-weight: bold;
   color: var(--text-primary);
   text-align: center;
@@ -757,31 +757,6 @@ onUnmounted(() => {
   min-height: 0 !important;
 }
 
-/* Hint box alert */
-.bulk-hint-box {
-  font-size: var(--font-base);
-  color: var(--text-secondary);
-  text-align: left;
-  background: rgba(255, 171, 43, 0.06);
-  border: 1px solid rgba(255, 171, 43, 0.25);
-  border-left: 6px solid var(--accent);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  line-height: 1.5;
-}
-.hint-icon {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-  line-height: 1;
-  margin-top: 2px;
-}
-.hint-text {
-  flex: 1;
-}
-
 .bulk-stock-table-container {
   display: flex;
   flex-direction: column;
@@ -793,7 +768,7 @@ onUnmounted(() => {
   padding: var(--space-lg) var(--space-md);
   background: rgba(139, 3, 19, 0.05);
   border-bottom: 2px solid var(--border-color);
-  font-size: 1.15rem;
+  font-size: var(--font-base);
   font-weight: bold;
   color: var(--text-secondary);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
@@ -838,10 +813,10 @@ onUnmounted(() => {
 }
 
 .bulk-input-wrapper input {
-  height: 48px;
-  padding: var(--space-sm);
-  font-size: 1.35rem;
-  font-weight: bold;
+  height: 40px;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-medium);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
@@ -896,7 +871,7 @@ onUnmounted(() => {
   }
   
   .bulk-tab {
-    font-size: 1.05rem;
+    font-size: var(--font-base);
     padding: 10px 4px;
   }
 
@@ -984,8 +959,8 @@ onUnmounted(() => {
   }
   
   .bulk-input-wrapper input {
-    height: 44px;
-    font-size: 1.15rem;
+    height: 40px;
+    font-size: var(--font-base);
   }
 
   .mobile-label {

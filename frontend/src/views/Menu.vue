@@ -35,24 +35,24 @@
       <!-- Desktop Menu List Table (Visible on desktop only) -->
       <div class="card p-0 overflow-hidden desktop-menu-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md); text-align: center; width: 80px;">รูป</th>
-                <th style="padding: var(--space-md);">เมนูอาหาร</th>
-                <th style="padding: var(--space-md); text-align: right;">ราคา</th>
-                <th style="padding: var(--space-md); text-align: center;">ขาย</th>
-                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
+                <th class="text-left" style="padding: var(--space-md);">เมนูอาหาร</th>
+                <th class="text-right" style="padding: var(--space-md);">ราคา</th>
+                <th class="text-center" style="padding: var(--space-md);">ขาย</th>
+                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="5" style="text-align: center; padding: var(--space-3xl);">
+                <td colspan="5" class="text-center" style="padding: var(--space-3xl);">
                   <div class="spinner" style="margin: 0 auto;"></div>
                 </td>
               </tr>
               <tr v-else-if="menuItems.length === 0">
-                <td colspan="5" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                <td colspan="5" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
                 </td>
               </tr>
@@ -64,7 +64,7 @@
                 class="table-row-hover"
               >
                 <!-- Image Preview -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
                     <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
                     <i v-else :class="getIconClass(item.category_id)" class="text-base text-muted"></i>
@@ -73,16 +73,16 @@
                 <!-- Name & Category -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-xs text-muted">
+                  <div class="text-base text-muted">
                     {{ getCategoryName(item.category_id) }}
                   </div>
                 </td>
                 <!-- Price -->
-                <td style="padding: var(--space-md); text-align: right; font-weight: bold; vertical-align: middle;">
+                <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
                   {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
                 </td>
                 <!-- Toggle Active Switch -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <label class="toggle-switch" style="margin: 0 auto; display: block;" :class="{ 'disabled': !isAdminUser }">
                     <input 
                       type="checkbox" 
@@ -94,7 +94,7 @@
                   </label>
                 </td>
                 <!-- Actions -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
                     <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
                     <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
@@ -176,22 +176,22 @@
       <!-- Desktop Modifiers Table -->
       <div class="card p-0 overflow-hidden desktop-menu-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md); width: 45%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
-                <th style="padding: var(--space-md); text-align: center; width: 25%;">ประเภท</th>
-                <th style="padding: var(--space-md); text-align: center; width: 30%;">เปิด/ปิดการใช้งาน</th>
+                <th class="text-left" style="padding: var(--space-md); width: 45%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
+                <th class="text-center" style="padding: var(--space-md); width: 25%;">ประเภท</th>
+                <th class="text-center" style="padding: var(--space-md); width: 30%;">เปิด/ปิดการใช้งาน</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="modifiersLoading">
-                <td colspan="3" style="text-align: center; padding: var(--space-3xl);">
+                <td colspan="3" class="text-center" style="padding: var(--space-3xl);">
                   <div class="spinner" style="margin: 0 auto;"></div>
                 </td>
               </tr>
               <tr v-else-if="modifierItems.length === 0">
-                <td colspan="3" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                <td colspan="3" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการเครื่องปรุงในระบบ
                 </td>
               </tr>
@@ -205,16 +205,16 @@
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-xs text-muted">ID: {{ item.id }}</div>
+                  <div class="text-base text-muted">ID: {{ item.id }}</div>
                 </td>
                 <!-- Category -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span class="badge" :class="getModifierCategoryClass(item.category)">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="badge text-base" :class="getModifierCategoryClass(item.category)">
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </td>
                 <!-- Toggle switch -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <label class="toggle-switch" style="margin: 0 auto; display: block;" :class="{ 'disabled': !isAdminUser }">
                     <input 
                       type="checkbox" 
@@ -1100,10 +1100,6 @@ onUnmounted(() => {
   display: block;
 }
 
-.table-row-hover:hover {
-  background: rgba(139, 3, 19, 0.015) !important;
-}
-
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   /* Top Actions layout on mobile */
@@ -1198,7 +1194,7 @@ onUnmounted(() => {
   }
   
   .mobile-menu-card-placeholder {
-    font-size: 1.6rem;
+    font-size: var(--font-lg);
   }
   
   .mobile-menu-card-details {
@@ -1259,10 +1255,6 @@ onUnmounted(() => {
     justify-content: center;
   }
 }
-
-
-
-
 
 /* Modifier Specific Badges (High Contrast, Distinct Colors) */
 .badge-mod-sauce-small {

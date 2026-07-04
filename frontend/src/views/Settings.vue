@@ -103,19 +103,19 @@
       <!-- Users list table (Visible on Desktop Only) -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md);">ชื่อพนักงาน</th>
-                <th style="padding: var(--space-md); text-align: center;">สาขา</th>
-                <th style="padding: var(--space-md); text-align: center;">บทบาท</th>
-                <th style="padding: var(--space-md); text-align: center;">รหัส PIN</th>
-                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                <th class="text-left" style="padding: var(--space-md);">ชื่อพนักงาน</th>
+                <th class="text-center" style="padding: var(--space-md);">สาขา</th>
+                <th class="text-center" style="padding: var(--space-md);">บทบาท</th>
+                <th class="text-center" style="padding: var(--space-md);">รหัส PIN</th>
+                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="usersLoading">
-                <td colspan="5" style="text-align: center; padding: var(--space-2xl);">
+                <td colspan="5" class="text-center" style="padding: var(--space-2xl);">
                   <div class="spinner" style="margin: 0 auto;"></div>
                 </td>
               </tr>
@@ -128,22 +128,22 @@
               >
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">{{ u.name }}</div>
-                  <div class="text-xs text-muted">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+                  <div class="text-base text-muted">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span class="text-xs text-secondary" style="display: inline-flex; align-items: center; gap: 4px;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="text-base text-secondary flex align-center justify-center" style="gap: 4px;">
                     <i class="fa-solid fa-store" style="color: var(--text-tertiary);"></i> {{ getBranchName(u.branch_id) }}
                   </span>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="badge text-base" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
                     {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
                   </span>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; font-weight: bold; vertical-align: middle; color:var(--primary);">
+                <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary);">
                   ••••
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
                     <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditUserModal(u)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
                     <button 
@@ -219,7 +219,7 @@
     </div>
 
     <!-- User Add/Edit Dialog Modal -->
-    <div v-if="showUserModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showUserModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showUserModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -326,17 +326,17 @@
       <!-- Branch list table (Visible on Desktop Only) -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md);">ชื่อสาขา</th>
-                <th style="padding: var(--space-md);">ที่อยู่</th>
-                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                <th class="text-left" style="padding: var(--space-md);">ชื่อสาขา</th>
+                <th class="text-left" style="padding: var(--space-md);">ที่อยู่</th>
+                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="branches.length === 0">
-                <td colspan="3" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+                <td colspan="3" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสาขา
                 </td>
               </tr>
@@ -353,7 +353,7 @@
                 <td style="padding: var(--space-md); vertical-align: middle; color: var(--text-secondary);">
                   {{ b.address || '-' }}
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
                     <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditBranchModal(b)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
                     <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteBranch(b.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
@@ -409,7 +409,7 @@
     </div>
 
     <!-- Branch Add/Edit Dialog Modal -->
-    <div v-if="showBranchModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showBranchModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showBranchModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -465,23 +465,23 @@
       <!-- Presets List -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md);">ชื่อสูตร</th>
-                <th style="padding: var(--space-md);">เครื่องปรุงที่รวมอยู่</th>
-                <th style="padding: var(--space-md); text-align: center;">สถานะ</th>
-                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                <th class="text-left" style="padding: var(--space-md);">ชื่อสูตร</th>
+                <th class="text-left" style="padding: var(--space-md);">เครื่องปรุงที่รวมอยู่</th>
+                <th class="text-center" style="padding: var(--space-md);">สถานะ</th>
+                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="presetsLoading">
-                <td colspan="4" style="text-align: center; padding: var(--space-2xl);">
+                <td colspan="4" class="text-center" style="padding: var(--space-2xl);">
                   <div class="spinner" style="margin: 0 auto;"></div>
                 </td>
               </tr>
               <tr v-else-if="presets.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+                <td colspan="4" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
                 </td>
               </tr>
@@ -502,12 +502,12 @@
                     </span>
                   </div>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span class="badge" :class="p.active ? 'badge-primary' : 'badge-neutral'">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="badge text-base" :class="p.active ? 'badge-primary' : 'badge-neutral'">
                     {{ p.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
                   </span>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
                     <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditPresetModal(p)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
                     <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeletePreset(p.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
@@ -633,7 +633,7 @@
     </div>
 
     <!-- Preset Add/Edit Dialog Modal -->
-    <div v-if="showPresetModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showPresetModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showPresetModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -1262,36 +1262,6 @@ onUnmounted(() => {
 
 <style scoped>
 
-
-.category-tab {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all var(--transition-base);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.category-tab:active {
-  transform: scale(0.97);
-}
-
-.category-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
-}
-
-.table-row-hover:hover {
-  background: rgba(139, 3, 19, 0.015) !important;
-}
-
 /* --- Setting Item --- */
 .setting-item {
   display: flex;
@@ -1400,7 +1370,7 @@ onUnmounted(() => {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
-  font-size: var(--font-xs);
+  font-size: var(--font-base);
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
   box-shadow: var(--shadow-sm);

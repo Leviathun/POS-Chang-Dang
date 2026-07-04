@@ -3,10 +3,12 @@
    Retro Warm 80s Diner Theme
    ============================================ */
 
-/* --- Google Font Import --- */
+/* --- Google Font Import start --- */
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-/* --- CSS Custom Properties --- */
+/* --- Google Font Import end --- */
+
+/* --- CSS Custom Properties start --- */
 :root {
   /* Colors - 80s Diner Retro Warm Theme */
   --bg-primary: #fff7df;        /* Warm Cream Background */
@@ -116,7 +118,9 @@
   --sidebar-width: 280px;
 }
 
-/* --- Reset / Normalize --- */
+/* --- CSS Custom Properties end --- */
+
+/* --- Reset / Normalize start --- */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -162,7 +166,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 input, select, textarea { font-family: inherit; }
 ul, ol { list-style: none; }
 
-/* --- Scrollbar --- */
+/* --- Reset / Normalize end --- */
+
+/* --- Scrollbar start --- */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -178,7 +184,9 @@ ul, ol { list-style: none; }
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* --- Layout --- */
+/* --- Scrollbar end --- */
+
+/* --- Layout start --- */
 .app-wrapper {
   max-width: var(--max-width);
   margin: 0 auto;
@@ -187,7 +195,9 @@ ul, ol { list-style: none; }
   position: relative;
 }
 
-/* --- Main Content Area --- */
+/* --- Layout end --- */
+
+/* --- Main Content Area start --- */
 #app-content {
   padding-top: calc(var(--header-height) + var(--space-lg));
   padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--space-xl));
@@ -203,7 +213,9 @@ ul, ol { list-style: none; }
   padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height) + var(--space-xl) + 10px);
 }
 
-/* --- Cards --- */
+/* --- Main Content Area end --- */
+
+/* --- Cards start --- */
 .card {
   background: #ffffff;
   border: 1px solid var(--border-color);
@@ -230,6 +242,8 @@ ul, ol { list-style: none; }
   color: var(--text-secondary);
   margin-bottom: var(--space-lg);
 }
+
+/* --- Cards end --- */
 
 /* --- Buttons start --- */
 .btn {
@@ -464,7 +478,7 @@ ul, ol { list-style: none; }
 }
 /* --- Buttons end --- */
 
-/* --- Inputs --- */
+/* --- Inputs start --- */
 .form-group {
   margin-bottom: var(--space-lg);
 }
@@ -534,7 +548,9 @@ ul, ol { list-style: none; }
   font-family: var(--font-family) !important;
 }
 
-/* --- Toggle Switch --- */
+/* --- Inputs end --- */
+
+/* --- Toggle Switch start --- */
 .toggle-switch {
   position: relative;
   width: 44px;
@@ -579,7 +595,9 @@ ul, ol { list-style: none; }
   transform: translateX(20px);
 }
 
-/* --- Badges --- */
+/* --- Toggle Switch end --- */
+
+/* --- Badges start --- */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -620,7 +638,6 @@ ul, ol { list-style: none; }
 .badge-neutral {
   background: rgba(110, 78, 55, 0.08);
   color: var(--text-secondary);
-  border: 1px solid rgba(110, 78, 55, 0.15);
 }
 
 /* Modifier Specific Badges (High Contrast, Distinct Colors) */
@@ -667,7 +684,9 @@ ul, ol { list-style: none; }
   z-index: 2;
 }
 
-/* --- Status Indicators --- */
+/* --- Badges end --- */
+
+/* --- Status Indicators start --- */
 .status-dot {
   width: 8px;
   height: 8px;
@@ -681,7 +700,9 @@ ul, ol { list-style: none; }
 .status-dot.danger { background: var(--danger); box-shadow: 0 0 6px var(--danger-glow); }
 .status-dot.neutral { background: var(--text-muted); }
 
-/* --- Modal Wrappers --- */
+/* --- Status Indicators end --- */
+
+/* --- Modal Wrappers start --- */
 #modal-container, .modal-container {
   position: fixed;
   inset: 0;
@@ -785,7 +806,9 @@ ul, ol { list-style: none; }
   gap: var(--space-md);
 }
 
-/* --- Loading Spinner --- */
+/* --- Modal Wrappers end --- */
+
+/* --- Loading Spinner start --- */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -828,7 +851,9 @@ ul, ol { list-style: none; }
   border-radius: var(--radius-sm);
 }
 
-/* --- Utility Classes --- */
+/* --- Loading Spinner end --- */
+
+/* --- Utility Classes start --- */
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
@@ -849,7 +874,9 @@ ul, ol { list-style: none; }
 .font-semibold { font-weight: var(--font-weight-semibold); }
 .font-medium { font-weight: var(--font-weight-medium); }
 
-/* --- Table Typography Standardizations --- */
+/* --- Utility Classes end --- */
+
+/* --- Table Typography Standardizations start --- */
 .table th {
   font-size: var(--font-base) !important;
 }
@@ -896,7 +923,9 @@ ul, ol { list-style: none; }
 .hidden { display: none !important; }
 .visible { display: block; }
 
-/* --- Animations --- */
+/* --- Table Typography Standardizations end --- */
+
+/* --- Animations start --- */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1043,7 +1072,9 @@ ul, ol { list-style: none; }
 .stagger-children > *:nth-child(10) { animation-delay: 0.30s; }
 .stagger-children > *:nth-child(n+11) { animation-delay: 0.33s; }
 
-/* --- Hide elements based on auth --- */
+/* --- Animations end --- */
+
+/* --- Hide elements based on auth start --- */
 body.not-logged-in #app-header,
 body.not-logged-in #bottom-nav,
 body.not-logged-in #app-content {
@@ -1058,7 +1089,9 @@ body.not-logged-in #login-screen {
   display: none;
 }
 
-/* --- Date picker override --- */
+/* --- Hide elements based on auth end --- */
+
+/* --- Date picker override start --- */
 input[type="date"] {
   color-scheme: light;
 }
@@ -1077,7 +1110,9 @@ input[type="date"] {
   display: flex;
 }
 
-/* --- Responsive Layout for Desktop / Tablet --- */
+/* --- Date picker override end --- */
+
+/* --- Responsive Layout for Desktop / Tablet start --- */
 @media (min-width: 1024px) {
   /* Hide mobile elements on desktop */
   #app-header,
@@ -1119,7 +1154,9 @@ input[type="date"] {
   }
 }
 
-/* --- Premium Custom Dropdown (Custom Select) --- */
+/* --- Responsive Layout for Desktop / Tablet end --- */
+
+/* --- Premium Custom Dropdown (Custom Select) start --- */
 .custom-select-wrapper {
   position: relative;
   width: 100%;
@@ -1196,7 +1233,9 @@ input[type="date"] {
   color: white;
 }
 
-/* --- Responsive Utilities --- */
+/* --- Premium Custom Dropdown (Custom Select) end --- */
+
+/* --- Responsive Utilities start --- */
 .show-mobile-only,
 .show-mobile-inline {
   display: none !important;
@@ -1224,7 +1263,9 @@ input[type="date"] {
   }
 }
 
-/* --- Category Tabs Wrapper --- */
+/* --- Responsive Utilities end --- */
+
+/* --- Category Tabs Wrapper start --- */
 .category-tabs {
   margin-bottom: var(--space-lg);
   display: flex;
@@ -1246,7 +1287,9 @@ input[type="date"] {
   display: none;
 }
 
-/* --- Bulk Stock Management page buttons --- */
+/* --- Category Tabs Wrapper end --- */
+
+/* --- Bulk Stock Management page buttons start --- */
 .btn-bulk-back {
   background: var(--bg-primary) !important;
   border: 1px solid var(--border-color-light) !important;
@@ -1288,3 +1331,68 @@ input[type="date"] {
   }
 }
 
+/* ============================================
+   Consolidated Common Component Styles
+   ============================================ */
+
+/* --- Bulk Stock Management page buttons end --- */
+
+/* --- Table Row Hover start --- */
+.table-row-hover:hover {
+  background: rgba(139, 3, 19, 0.015) !important;
+}
+
+/* --- Table Row Hover end --- */
+
+/* --- Bulk Hint Box start --- */
+.bulk-hint-box {
+  font-size: var(--font-base);
+  color: var(--text-secondary);
+  text-align: left;
+  background: rgba(255, 171, 43, 0.06);
+  border: 1px solid rgba(255, 171, 43, 0.25);
+  border-left: 6px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  line-height: 1.5;
+}
+.hint-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+.hint-text {
+  flex: 1;
+}
+
+/* --- Bulk Hint Box end --- */
+
+/* --- Category Tab start --- */
+.category-tab {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.category-tab:active {
+  transform: scale(0.97);
+}
+.category-tab.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-glow-primary);
+}
+
+/* --- Category Tab end --- */

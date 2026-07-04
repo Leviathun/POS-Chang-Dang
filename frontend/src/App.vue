@@ -12,7 +12,7 @@
         <div class="brand-logo mb-2" style="display: flex; justify-content: center; height: 6.5rem; align-items: center;">
           <img src="@/assets/image/Logo POS.png" alt="Logo" style="height: 100%; object-fit: contain;" />
         </div>
-        <h2 class="font-bold text-gradient mb-1" style="font-size: 1.8rem;">
+        <h2 class="font-bold text-gradient mb-1" style="font-size: var(--font-lg);">
           ร้านไก่ทอดช้างแดง
         </h2>
         <p class="text-secondary text-sm mb-lg">กรุณาเลือกสาขาและระบุรหัส PIN เพื่อเข้าใช้งาน</p>
@@ -73,8 +73,8 @@
       <aside id="app-sidebar">
         <!-- Brand / Logo -->
         <div class="sidebar-brand">
-          <span class="brand-emoji" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;">
-            <img src="@/assets/image/Logo POS.png" alt="Logo" style="width: 28px; height: 28px; object-fit: contain;" />
+          <span class="brand-emoji">
+            <img src="@/assets/image/Logo POS.png" alt="Logo" class="brand-logo-img" />
           </span>
           <div class="brand-text">
             <span class="brand-name">ร้านไก่ทอดช้างแดง</span>
@@ -86,12 +86,12 @@
 
         <!-- User profile widget -->
         <div class="sidebar-user" v-if="user">
-          <div class="user-avatar" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;">
-            <i class="fa-solid fa-circle-user" style="font-size: 2.2rem; color: var(--primary);"></i>
+          <div class="user-avatar">
+            <i class="fa-solid fa-circle-user avatar-icon"></i>
           </div>
           <div class="user-info">
             <div class="user-name">{{ user.name }}</div>
-            <div class="user-role-badge" :class="user.role">{{ user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน' }}</div>
+            <div class="user-role-badge" :class="user.role">{{ user.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}</div>
           </div>
         </div>
 
@@ -144,8 +144,8 @@
           </span>
           <div class="header-right">
             <button class="header-btn" id="btn-logout" @click="handleLogout" style="display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fa-solid fa-right-from-bracket" style="font-size: 14px;"></i>
-              <span style="font-size: 11px; font-weight: bold;">ออก</span>
+              <i class="fa-solid fa-right-from-bracket" style="font-size: var(--font-sm);"></i>
+              <span style="font-size: var(--font-xs); font-weight: bold;">ออก</span>
             </button>
           </div>
         </header>
@@ -157,7 +157,7 @@
             <h2 class="desktop-page-title">{{ activeTitle }}</h2>
             <div class="desktop-user-profile" v-if="user">
               <span class="user-greeting">สวัสดี, <strong>{{ user.name }}</strong></span>
-              <span class="user-badge" :class="user.role">{{ user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน' }}</span>
+              <span class="user-badge" :class="user.role">{{ user.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}</span>
             </div>
           </div>
 
@@ -784,7 +784,7 @@ onUnmounted(() => {
 }
 
 .nav-item .nav-icon {
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
   transition: var(--transition-base);
 }
 
@@ -1019,10 +1019,21 @@ onUnmounted(() => {
 
   .sidebar-brand .brand-emoji {
     font-size: 2.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+  }
+
+  .sidebar-brand .brand-logo-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
   }
 
   .sidebar-brand .brand-name {
-    font-size: var(--font-md);
+    font-size: var(--font-lg);
     font-weight: var(--font-weight-bold);
     color: var(--primary);
     background: var(--gradient-primary);
@@ -1032,7 +1043,7 @@ onUnmounted(() => {
   }
 
   .sidebar-brand .brand-tagline {
-    font-size: 10px;
+    font-size: var(--font-xs);
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -1061,12 +1072,17 @@ onUnmounted(() => {
   .sidebar-user .user-avatar {
     font-size: 1.5rem;
     background: var(--bg-tertiary);
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .sidebar-user .user-avatar .avatar-icon {
+    font-size: 2.2rem;
+    color: var(--primary);
   }
 
   .sidebar-user .user-name {
@@ -1114,7 +1130,7 @@ onUnmounted(() => {
   }
 
   .sidebar-item .sidebar-icon {
-    font-size: 1.3rem;
+    font-size: var(--font-lg);
   }
 
   .sidebar-item:hover {

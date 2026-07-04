@@ -4,6 +4,24 @@ const { getDb } = require('../config/database');
 const { attachUser, requireAdmin } = require('../middleware/auth');
 const { getOrCreateSession } = require('./cash_drawers');
 
+const getCategoryLabel = (cat) => {
+  const map = {
+    'raw_materials': 'วัตถุดิบและของสดทั่วไป',
+    'gas_fuel': 'แก๊สและเชื้อเพลิง',
+    'packaging': 'บรรจุภัณฑ์/แพ็คเกจ',
+    'raw_chicken': 'ของสด: ไก่ดิบ',
+    'meatballs': 'ของสด: ลูกชิ้น',
+    'salapao': 'ของสด: ซาลาเปา',
+    'fuel_oil': 'น้ำมันทอด',
+    'gas_lpg': 'แก๊ส LPG',
+    'salary': 'ค่าแรงพนักงาน/เงินเดือน',
+    'utility_bills': 'ค่าน้ำ/ค่าไฟ/ค่าเน็ต',
+    'debt': 'ชำระหนี้/ยอดค้าง',
+    'other': 'ค่าใช้จ่ายอื่นๆ'
+  };
+  return map[cat] || cat;
+};
+
 // Apply auth middleware to all routes
 router.use(attachUser);
 router.use(requireAdmin);
@@ -54,6 +72,12 @@ router.post('/', async (req, res) => {
       INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, session_id, payment_method, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
     `).run(branchId, req.user.id, amount, category, note || null, dateVal, sessionId, paymentMethod);
+
+    // Log Activity
+    await db.prepare(`
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'log_expense', ?, datetime('now', '+7 hours'))
+    `).run(branchId, req.user.id, `บันทึกค่าใช้จ่าย หมวดหมู่ ${getCategoryLabel(category)} จำนวน ${amount} บาท${note ? ` (บันทึกเพิ่มเติม: ${note})` : ''}`);
 
     res.status(201).json({
       success: true,
@@ -159,7 +183,11 @@ router.delete('/:id', async (req, res) => {
 
     await db.prepare('DELETE FROM expenses WHERE id = ?').run(Number(id));
 
-
+    // Log Activity
+    await db.prepare(`
+      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+      VALUES (?, ?, 'delete_expense', ?, datetime('now', '+7 hours'))
+    `).run(branchId, req.user.id, `ลบรายการค่าใช้จ่าย หมวดหมู่ ${getCategoryLabel(expense.category)} จำนวน ${expense.amount} บาท`);
 
     res.json({
       success: true,
