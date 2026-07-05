@@ -761,6 +761,7 @@
                 </div>
                 <div v-if="isExpenseCategoryDropdownOpen" class="custom-select-dropdown" style="max-height: 250px; overflow-y: auto;">
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_chicken' }" @click="selectExpenseCategory('raw_chicken')"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> ไก่สด</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'sticky_rice' }" @click="selectExpenseCategory('sticky_rice')"><i class="fa-solid fa-bowl-rice" style="margin-right: 4px;"></i> ข้าวเหนียว</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'meatballs' }" @click="selectExpenseCategory('meatballs')"><i class="fa-solid fa-circle" style="margin-right: 4px;"></i> ลูกชิ้น</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salapao' }" @click="selectExpenseCategory('salapao')"><i class="fa-solid fa-cookie" style="margin-right: 4px;"></i> ซาลาเปา</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'fuel_oil' }" @click="selectExpenseCategory('fuel_oil')"><i class="fa-solid fa-gas-pump" style="margin-right: 4px;"></i> น้ำมัน</div>
@@ -768,7 +769,7 @@
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salary' }" @click="selectExpenseCategory('salary')"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 4px;"></i> เงินเดือน</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'utility_bills' }" @click="selectExpenseCategory('utility_bills')"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> ค่าไฟ/น้ำ</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> บรรจุภัณฑ์/ถุง</div>
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'debt' }" @click="selectExpenseCategory('debt')"><i class="fa-solid fa-file-invoice-dollar" style="margin-right: 4px;"></i> รายจ่าย - หนี้</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'debt' }" @click="selectExpenseCategory('debt')"><i class="fa-solid fa-file-invoice-dollar" style="margin-right: 4px;"></i> หนี้</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')"><i class="fa-solid fa-paperclip" style="margin-right: 4px;"></i> อื่นๆ</div>
                 </div>
               </div>
@@ -798,7 +799,27 @@
           <div class="form-group mb-xs">
             <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." />
           </div>
-          <div class="form-group mb-xs">
+          <!-- Presets Row (placed inside the grid to manage mobile order and desktop columns) -->
+          <div class="expense-form-presets flex gap-sm align-center flex-wrap">
+            <span class="text-secondary font-bold text-sm"><i class="fa-solid fa-tags"></i> บันทึกด่วน:</span>
+            <button 
+              type="button" 
+              class="btn btn-secondary btn-sm preset-btn" 
+              :class="{ 'active': expenseForm.note === 'แม็คโคร' }"
+              @click="expenseForm.note = 'แม็คโคร'"
+            >
+              แม็คโคร
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-secondary btn-sm preset-btn" 
+              :class="{ 'active': expenseForm.note === 'เลี้ยงลูกน้อง' }"
+              @click="expenseForm.note = 'เลี้ยงลูกน้อง'"
+            >
+              เลี้ยงลูกน้อง
+            </button>
+          </div>
+          <div class="form-group mb-xs expense-form-submit-group">
             <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0">
               <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
@@ -2180,6 +2201,7 @@ const filterAction = ref('all');
 const getExpenseCategoryLabel = (cat) => {
   const map = {
     raw_chicken: 'ไก่สด',
+    sticky_rice: 'ข้าวเหนียว',
     meatballs: 'ลูกชิ้น',
     salapao: 'ซาลาเปา',
     fuel_oil: 'น้ำมัน',
@@ -2187,7 +2209,7 @@ const getExpenseCategoryLabel = (cat) => {
     salary: 'เงินเดือน',
     utility_bills: 'ค่าไฟ/น้ำ',
     packaging: 'บรรจุภัณฑ์/ถุง',
-    debt: 'รายจ่าย - หนี้',
+    debt: 'หนี้',
     other: 'อื่นๆ',
     raw_materials: 'วัตถุดิบ (เดิม)',
     gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
@@ -2445,6 +2467,7 @@ const isExpenseCategoryDropdownOpen = ref(false);
 const selectedExpenseCategoryLabel = computed(() => {
   const categoryLabels = {
     raw_chicken: 'ไก่สด',
+    sticky_rice: 'ข้าวเหนียว',
     meatballs: 'ลูกชิ้น',
     salapao: 'ซาลาเปา',
     fuel_oil: 'น้ำมัน',
@@ -2452,7 +2475,7 @@ const selectedExpenseCategoryLabel = computed(() => {
     salary: 'เงินเดือน',
     utility_bills: 'ค่าไฟ/น้ำ',
     packaging: 'บรรจุภัณฑ์/ถุง',
-    debt: 'รายจ่าย - หนี้',
+    debt: 'หนี้',
     other: 'อื่นๆ',
     raw_materials: 'วัตถุดิบ (เดิม)',
     gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
@@ -2462,6 +2485,7 @@ const selectedExpenseCategoryLabel = computed(() => {
 const getExpenseCategoryIcon = (cat) => {
   const map = {
     raw_chicken: 'fa-solid fa-drumstick-bite',
+    sticky_rice: 'fa-solid fa-bowl-rice',
     meatballs: 'fa-solid fa-circle',
     salapao: 'fa-solid fa-cookie',
     fuel_oil: 'fa-solid fa-gas-pump',
@@ -3157,6 +3181,7 @@ const setPeriodMode = (mode) => {
 const getCategoryLabel = (cat) => {
   const map = {
     'raw_chicken': 'ไก่สด',
+    'sticky_rice': 'ข้าวเหนียว',
     'meatballs': 'ลูกชิ้น',
     'salapao': 'ซาลาเปา',
     'fuel_oil': 'น้ำมัน',
@@ -3409,10 +3434,21 @@ select.reports-filter-control,
   background-position: right 12px center !important;
 }
 
+.expense-form-presets {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
 @media (max-width: 768px) {
   .expense-form-grid {
     grid-template-columns: 1fr;
     gap: var(--space-xs);
+  }
+  .expense-form-presets {
+    order: 5;
+  }
+  .expense-form-submit-group {
+    order: 6;
   }
 }
 
