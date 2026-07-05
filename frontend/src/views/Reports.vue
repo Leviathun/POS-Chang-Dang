@@ -1225,7 +1225,7 @@
       <div class="modal-overlay" @click="showVoidModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
-          <h3><i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> ลบบิล #{{ voidOrder?.order_number }}</h3>
+          <h3 class="void-modal-title"><i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> ลบบิล #{{ voidOrder?.order_number }}</h3>
           <button class="modal-close" @click="showVoidModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -3109,11 +3109,15 @@ const handleVoidOrder = async () => {
     if (res.success) {
       ui.showToast(`ยกเลิกบิล #${voidOrder.value.order_number} สำเร็จ`, 'success');
       showVoidModal.value = false;
-      store.clearReportsCache(); // Clear store cache!
+      ui.hideLoading(); // Hide full-screen blocking loader immediately!
+      
+      // Reload reports silently in background
+      store.clearReportsCache();
       loadReportData();
       if (isAdmin()) {
         loadReportSummary();
       }
+      return; // Skip the finally block to prevent double hiding
     }
   } catch (e) {
     ui.showToast('ยกเลิกบิลไม่สำเร็จ: ' + e.message, 'error');
@@ -3449,6 +3453,9 @@ select.reports-filter-control,
   }
   .expense-form-submit-group {
     order: 6;
+  }
+  .void-modal-title {
+    font-size: var(--font-base) !important;
   }
 }
 

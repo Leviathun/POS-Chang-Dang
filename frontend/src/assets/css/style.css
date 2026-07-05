@@ -553,6 +553,7 @@ ul, ol { list-style: none; }
 
 /* --- Toggle Switch start --- */
 .toggle-switch {
+  display: inline-block;
   position: relative;
   width: 44px;
   height: 24px;
