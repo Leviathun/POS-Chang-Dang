@@ -1,34 +1,34 @@
 <template>
   <div id="stock-page" class="page-enter">
     
+    <!-- Tab Selector -->
+    <div class="category-tabs mb-lg">
+      <button 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeTab === 'menu_items' }"
+        @click="activeTab = 'menu_items'"
+      >
+        <i class="fa-solid fa-drumstick-bite"></i> สินค้าและเมนู
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeTab === 'modifiers' }"
+        @click="activeTab = 'modifiers'"
+      >
+        <i class="fa-solid fa-bottle-droplet"></i> ซอสและเครื่องปรุง
+      </button>
+    </div>
+
     <!-- Info Header Card -->
     <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
       <div class="stock-page-title">
         ระบบจัดการสต็อกสินค้า
       </div>
       <div>
-        <router-link to="/stock/bulk" class="btn btn-primary" style="background: linear-gradient(135deg, #e63946, #b7091b); color: white; border: none; font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); gap: var(--space-xs); padding: 10px 20px;">
-          <i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อกด่วน
+        <router-link to="/stock/bulk" class="btn btn-primary">
+          <i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน
         </router-link>
       </div>
-    </div>
-
-    <!-- Tab Selector -->
-    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
-      <button 
-        class="category-tab" 
-        :class="{ 'active': activeTab === 'menu_items' }"
-        @click="activeTab = 'menu_items'"
-      >
-        <i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> สินค้าและเมนู
-      </button>
-      <button 
-        class="category-tab" 
-        :class="{ 'active': activeTab === 'modifiers' }"
-        @click="activeTab = 'modifiers'"
-      >
-        <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px;"></i> ซอสและเครื่องปรุง
-      </button>
     </div>
 
     <!-- Tab 1: Menu Items Stock -->
@@ -36,23 +36,23 @@
       <!-- Desktop Stock Table (Visible on desktop only) -->
       <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md); text-align: center; width: 30%;">เมนูอาหาร</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">ของสด</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">ทอดสุก/พร้อมขาย</th>
-                <th style="padding: var(--space-md); text-align: center; width: 30%;">จัดการสต็อก</th>
+                <th class="text-left" style="padding: var(--space-md); width: 30%;">เมนูอาหาร</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ของสด</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ทอดสุก/พร้อมขาย</th>
+                <th class="text-center" style="padding: var(--space-md); width: 30%;">จัดการสต็อก</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="stockItems.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก (เพิ่มสินค้าในหน้า "จัดการเมนู")
                 </td>
               </tr>
@@ -65,36 +65,34 @@
               >
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold" style="font-size: var(--font-base);">{{ item.name }}</div>
-                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); display: flex; gap: var(--space-sm); align-items: center;">
-                    <span>ID: {{ item.id }}</span>
-                    <span style="color: var(--border-color);">|</span>
+                  <div class="font-bold text-base">{{ item.name }}</div>
+                  <div class="text-base text-muted flex align-center gap-sm">
                     <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)"><i class="fa-solid fa-file-medical" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
                 <!-- Raw Quantity -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <span v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" style="font-weight: bold;">
                     {{ formatStockQty(item.raw_quantity, item.uom) }}
-                    <span v-if="isItemLowStock(item, item.raw_quantity)" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                    <span v-if="(item.raw_quantity || 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
+                    <span v-if="isItemLowStock(item, item.raw_quantity)" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="(item.raw_quantity || 0) <= 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                   <span v-else style="color: var(--text-tertiary); font-style: italic;">-</span>
                 </td>
                 <!-- Cooked Quantity -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" style="font-weight: bold;">
                     {{ formatStockQty(item.quantity, item.uom) }}
-                    <span v-if="isItemLowStock(item, item.quantity)" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
+                    <span v-if="isItemLowStock(item, item.quantity)" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมดเกลี้ยง</span>
                   </span>
                 </td>
                 <!-- Actions -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
-                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn btn-primary" style="background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" @click="openActionModal('fry', item, false)"><i class="fa-solid fa-fire" style="margin-right: 4px;"></i> ทอดสินค้า</button>
-                    <button class="btn" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2);" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ของเสีย</button>
-                    <button class="btn" style="background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิต</button>
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <div class="stock-actions flex justify-center gap-sm">
+                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn-action btn-action-fry" @click="openActionModal('fry', item, false)"><i class="fa-solid fa-fire"></i> ทอดสินค้า</button>
+                    <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
+                    <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
                   </div>
                 </td>
               </tr>
@@ -106,7 +104,7 @@
       <!-- Mobile Stock Card List (Visible on mobile only) -->
       <div class="mobile-stock-list-container">
         <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="stockItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก
@@ -122,16 +120,14 @@
               <!-- Left: Name & ID -->
               <div class="mobile-stock-card-details">
                 <div class="mobile-stock-card-name">{{ item.name }}</div>
-                <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
-                  <span>ID: {{ item.id }}</span>
-                  <span style="color: var(--border-color);">|</span>
+                <div class="mobile-stock-card-id flex align-center gap-sm flex-wrap">
                   <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)"><i class="fa-solid fa-file-medical"></i> ประวัติ</a>
                 </div>
               </div>
               
               <!-- Right: Stock Quantity & Badge -->
               <div class="mobile-stock-card-meta">
-                <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-column align-end gap-xs" style="text-align: right;">
+                <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-col align-end gap-xs" style="text-align: right;">
                   <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 2px;">
                     ทอดแล้ว: <strong :class="{ 'text-danger': isItemLowStock(item, item.quantity) }">{{ formatStockQty(item.quantity, item.uom) }}</strong>
                   </div>
@@ -151,21 +147,21 @@
                   <span 
                     v-if="item.raw_quantity !== null && item.raw_quantity !== undefined && isItemLowStock(item, item.quantity) && isItemLowStock(item, item.raw_quantity)"
                     class="badge badge-danger badge-sm"
-                    style="display: block; font-size: 0.65rem;"
+                    style="display: block; font-size: var(--font-xs);"
                   >
                     <i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ของใกล้หมดทั้งคู่
                   </span>
                   <span 
                     v-else-if="isItemLowStock(item, item.quantity)" 
                     class="badge badge-warning badge-sm"
-                    style="display: block; font-size: 0.65rem;"
+                    style="display: block; font-size: var(--font-xs);"
                   >
                     <i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ใกล้หมด
                   </span>
                   <span 
                     v-else-if="(item.quantity !== null && item.quantity !== undefined ? item.quantity : 0) <= 0" 
                     class="badge badge-danger badge-sm"
-                    style="display: block; font-size: 0.65rem;"
+                    style="display: block; font-size: var(--font-xs);"
                   >
                     <i class="fa-solid fa-circle-xmark" style="margin-right: 2px;"></i> หมดเกลี้ยง
                   </span>
@@ -177,14 +173,14 @@
             <div class="mobile-stock-card-actions">
               <button 
                 v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" 
-                class="btn btn-primary" 
-                style="grid-column: span 2; background: #8b0313; color: white; border: 1px solid #6b020e; font-weight: bold;" 
+                class="btn-action btn-action-fry" 
+                style="grid-column: span 2;" 
                 @click="openActionModal('fry', item, false)"
               >
-                <i class="fa-solid fa-fire"></i> ทอดสินค้า (หักของสด ➔ ทอดสุก)
+                <i class="fa-solid fa-fire"></i> ทอด
               </button>
-              <button class="btn btn-danger-outline" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
-              <button class="btn btn-warning-outline" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
+              <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
+              <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
             </div>
           </div>
         </div>
@@ -196,23 +192,23 @@
       <!-- Desktop Free Modifiers Table -->
       <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md); text-align: center; width: 35%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
-                <th style="padding: var(--space-md); text-align: center; width: 25%;">ประเภท</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">ปริมาณคงเหลือ</th>
-                <th style="padding: var(--space-md); text-align: center; width: 20%;">จัดการสต็อก</th>
+                <th class="text-left" style="padding: var(--space-md); width: 30%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ประเภท</th>
+                <th class="text-center" style="padding: var(--space-md); width: 20%;">ปริมาณคงเหลือ</th>
+                <th class="text-center" style="padding: var(--space-md); width: 30%;">จัดการสต็อก</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="modifierItems.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-3xl); color: var(--text-tertiary);">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการเครื่องปรุงในระบบ
                 </td>
               </tr>
@@ -225,38 +221,36 @@
               >
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold" style="font-size: var(--font-base);">
-                    {{ item.name }}
-                    <span v-if="!item.active" class="badge badge-neutral badge-sm" style="margin-left:6px;">ปิดใช้งาน</span>
+                  <div class="font-bold text-base flex align-center gap-xs">
+                    <span>{{ item.name }}</span>
+                    <span v-if="!item.active" class="badge badge-neutral">ปิดใช้งาน</span>
                   </div>
-                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); display: flex; gap: var(--space-sm); align-items: center;">
-                    <span>ID: {{ item.id }}</span>
-                    <span style="color: var(--border-color);">|</span>
+                  <div class="text-base text-muted flex align-center gap-sm">
                     <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
                 <!-- Category -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <span class="badge" :class="getModifierCategoryClass(item.category)">
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </td>
                 <!-- Quantity -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <span :class="{ 'text-danger font-bold': isModifierLowStock(item), 'font-semibold': !isModifierLowStock(item) }">
                     {{ formatModifierStock(item) }}
-                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                    <span v-if="item.total_servings <= 0" style="display:block; font-size: 10px; font-weight:normal;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
+                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
+                    <span v-if="item.total_servings <= 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
                   </span>
                 </td>
                 <!-- Actions -->
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: wrap;">
-                    <button class="btn btn-primary" style="background: var(--success); color: white; border: 1px solid var(--success-light); font-weight: bold;" @click="openActionModal('restock', item, true)">
-                      <i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เติมสต็อก
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <div class="stock-actions flex justify-center gap-sm">
+                    <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
+                      <i class="fa-solid fa-plus"></i> เติมสต็อก
                     </button>
-                    <button class="btn" style="background: rgba(255, 149, 0, 0.1); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.2); font-weight: bold;" @click="openActionModal('adjust', item, true)">
-                      <i class="fa-solid fa-wrench" style="margin-right: 4px;"></i> ปรับปรุง
+                    <button class="btn-action btn-action-edit" @click="openActionModal('adjust', item, true)">
+                      <i class="fa-solid fa-wrench"></i> ปรับปรุง
                     </button>
                   </div>
                 </td>
@@ -269,7 +263,7 @@
       <!-- Mobile Free Modifiers Card List -->
       <div class="mobile-stock-list-container">
         <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการเครื่องปรุงในระบบ
@@ -284,17 +278,15 @@
             <div class="mobile-stock-card-body">
               <!-- Left: Name & ID -->
               <div class="mobile-stock-card-details">
-                <div class="mobile-stock-card-name">
-                  {{ item.name }}
-                  <span v-if="!item.active" class="badge badge-sm badge-neutral" style="margin-left:4px;">ปิดใช้งาน</span>
+                <div class="mobile-stock-card-name flex align-center gap-xs flex-wrap">
+                  <span>{{ item.name }}</span>
+                  <span v-if="!item.active" class="badge badge-neutral">ปิดใช้งาน</span>
                 </div>
-                <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
-                  <span>ID: {{ item.id }}</span>
-                  <span style="color: var(--border-color);">|</span>
+                <div class="mobile-stock-card-id flex align-center gap-sm flex-wrap">
                   <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ประวัติ</a>
                 </div>
                 <div style="margin-top: 4px;">
-                  <span class="badge badge-sm" :class="getModifierCategoryClass(item.category)">
+                  <span class="badge" :class="getModifierCategoryClass(item.category)">
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </div>
@@ -314,11 +306,11 @@
             
             <!-- Bottom Stock Actions -->
             <div class="mobile-stock-card-actions">
-              <button class="btn btn-primary" style="background: var(--success); color: white; border: 1px solid var(--success-light); font-weight: bold;" @click="openActionModal('restock', item, true)">
-                <i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เติมสต็อก
+              <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
+                <i class="fa-solid fa-plus"></i> เติมสต็อก
               </button>
-              <button class="btn" style="background: rgba(255, 149, 0, 0.1); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.2); font-weight: bold;" @click="openActionModal('adjust', item, true)">
-                <i class="fa-solid fa-wrench" style="margin-right: 4px;"></i> ปรับปรุง
+              <button class="btn-action btn-action-edit" @click="openActionModal('adjust', item, true)">
+                <i class="fa-solid fa-wrench"></i> ปรับปรุง
               </button>
             </div>
           </div>
@@ -327,7 +319,7 @@
     </div>
 
     <!-- Restock/Adjust Modal -->
-    <div v-if="showActionModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showActionModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showActionModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -338,18 +330,18 @@
           <button class="modal-close" @click="showActionModal = false">✕</button>
         </div>
         <div class="modal-body">
-          <div class="mb-md font-bold" style="font-size: var(--font-base); text-align: center;">
+          <div class="mb-md font-bold text-base text-center">
             {{ activeItem?.name }}
           </div>
-          <div style="font-size: var(--font-sm); color: var(--text-secondary); text-align: center; margin-bottom: var(--space-lg);">
+          <div class="text-sm text-secondary text-center mb-lg">
             <span v-if="activeIsModifier">
               จำนวนคงเหลือปัจจุบัน: <strong>{{ formatModifierStock(activeItem) }}</strong>
             </span>
             <span v-else-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined">
-              ทอดสุกแล้ว: <strong>{{ activeItem?.quantity || 0 }} ชิ้น</strong> | ของสด: <strong>{{ activeItem?.raw_quantity || 0 }} ชิ้น</strong>
+              ทอดสุกแล้ว: <strong>{{ formatStockQty(activeItem?.quantity || 0, activeItem?.uom) }}</strong> | ของสด: <strong>{{ formatStockQty(activeItem?.raw_quantity || 0, activeItem?.uom) }}</strong>
             </span>
             <span v-else>
-              จำนวนคงเหลือในระบบปัจจุบัน: <strong>{{ activeItem?.quantity !== null && activeItem?.quantity !== undefined ? activeItem?.quantity : 0 }} ชิ้น</strong>
+              จำนวนคงเหลือในระบบปัจจุบัน: <strong>{{ formatStockQty(activeItem?.quantity !== null && activeItem?.quantity !== undefined ? activeItem?.quantity : 0, activeItem?.uom) }}</strong>
             </span>
           </div>
 
@@ -358,20 +350,18 @@
             <label class="form-label font-bold">จัดการสต็อกส่วนใด? *</label>
             <div style="display:flex; gap:var(--space-sm); margin-bottom:var(--space-md);">
               <button 
-                class="btn flex-1"
-                :class="actionForm.stock_type === 'cooked' ? 'btn-primary' : 'btn-secondary'"
+                class="btn-action flex-1"
+                :class="actionForm.stock_type === 'cooked' ? 'btn-action-fry' : ''"
                 @click="actionForm.stock_type = 'cooked'"
                 type="button"
-                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);"
               >
                 <i class="fa-solid fa-drumstick-bite"></i> ทอดสุก
               </button>
               <button 
-                class="btn flex-1"
-                :class="actionForm.stock_type === 'raw' ? 'btn-primary' : 'btn-secondary'"
+                class="btn-action flex-1"
+                :class="actionForm.stock_type === 'raw' ? 'btn-action-fry' : ''"
                 @click="actionForm.stock_type = 'raw'"
                 type="button"
-                style="min-height:50px; padding: 10px !important; font-size: var(--font-sm) !important; font-weight: normal; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);"
               >
                 <i class="fa-solid fa-box"></i> ของสด
               </button>
@@ -398,7 +388,7 @@
                   <option :value="2000">2 กิโลกรัม (2,000 กรัม)</option>
                 </select>
               </div>
-              <div class="mt-sm p-sm card" style="background: rgba(255, 149, 0, 0.05); border: 1px dashed var(--border-color); text-align: left; font-size: var(--font-sm);">
+              <div class="mt-sm p-sm card text-sm" style="background: rgba(255, 149, 0, 0.05); border: 1px dashed var(--border-color); text-align: left;">
                 น้ำหนักที่จะเพิ่มเข้าคลัง: <strong>{{ formatStockQty(restockBags * restockBagCapacity, 'กรัม') }}</strong>
               </div>
             </template>
@@ -423,15 +413,15 @@
             </template>
           </div>
 
-          <div v-if="!activeIsModifier && (activeItem?.name?.includes('แร็ปไก่') || isLinkedBun(activeItem)) && (actionType === 'restock' || actionType === 'adjust')" style="font-size: 13px; color: #ff3b30; margin-top: -6px; margin-bottom: var(--space-md); text-align: left; font-weight: bold; line-height: 1.3;">
+          <div v-if="!activeIsModifier && (activeItem?.name?.includes('แร็ปไก่') || isLinkedBun(activeItem)) && (actionType === 'restock' || actionType === 'adjust')" class="text-sm text-danger font-bold" style="margin-top: -6px; margin-bottom: var(--space-md); text-align: left; line-height: 1.3;">
             {{ getLinkageWarningText(activeItem) }}
           </div>
 
-          <div v-if="!activeIsModifier && actionType === 'fry'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
+          <div v-if="!activeIsModifier && actionType === 'fry'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
             * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "ทอดสุก" 
           </div>
 
-          <div v-if="activeIsModifier && actionType === 'restock'" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
+          <div v-if="activeIsModifier && actionType === 'restock'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
             * {{ activeItem?.category === 'sauce_small' ? 'ระบบจะเติมสต็อกตามจำนวนซองที่ระบุ' : `ระบบจะคูณด้วย ${activeItem?.servings_per_bag || 50} รอบเสิร์ฟอัตโนมัติเมื่อกดบันทึก` }}
           </div>
 
@@ -441,12 +431,12 @@
             <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
               <button 
                 v-for="preset in wastePresets" :key="preset"
-                class="btn btn-sm"
-                :class="actionForm.note === preset ? 'btn-primary' : 'btn-secondary'"
+                class="btn btn-secondary btn-sm"
+                :class="{ 'active': actionForm.note === preset }"
                 @click="actionForm.note = preset"
-                style="min-height:38px; display: inline-flex; align-items: center; gap: 4px;"
+                type="button"
               >
-                <i :class="preset === 'เน่า/เสีย' ? 'fa-solid fa-trash-can' : 'fa-solid fa-circle-exclamation'" style="font-size: var(--font-xs);"></i>
+                <i :class="preset === 'เน่า/เสีย' ? 'fa-solid fa-trash-can' : 'fa-solid fa-circle-exclamation'"></i>
                 {{ preset }}
               </button>
             </div>
@@ -465,9 +455,9 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" @click="showActionModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showActionModal = false">ยกเลิก</button>
             <button 
-              class="btn btn-primary flex-1" 
+              class="btn-modal btn-modal-primary flex-1" 
               :disabled="actionForm.quantity === '' || actionForm.quantity === null" 
               @click="handleSaveAction"
             >
@@ -482,20 +472,20 @@
     </div>
 
     <!-- Logs Modal -->
-    <div v-if="showLogsModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showLogsModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showLogsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:80dvh;">
         <div class="modal-header">
-          <h3><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติการเข้า-ออกของสต็อก</h3>
+          <h3><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติสต็อกวันนี้</h3>
           <button class="modal-close" @click="showLogsModal = false">✕</button>
         </div>
         <div class="modal-body">
-          <div class="mb-lg font-bold" style="font-size: var(--font-md); text-align: center;">
+          <div class="mb-lg font-bold text-md text-center">
             {{ activeItem?.name }}
           </div>
 
           <div v-if="logsLoading" style="text-align: center; padding: var(--space-2xl);">
-            <div class="spinner" style="margin:0 auto;"></div>
+            <div class="spinner mx-auto"></div>
           </div>
           <div v-else-if="logs.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ยังไม่มีบันทึกประวัติการปรับปรุงสต็อกสำหรับสินค้าชิ้นนี้
@@ -505,8 +495,8 @@
             <div 
               v-for="log in logs" 
               :key="log.id" 
-              class="card p-sm flex flex-between align-center"
-              style="font-size: var(--font-sm); background: var(--bg-primary);"
+              class="card p-sm flex flex-between align-center text-sm"
+              style="background: var(--bg-primary);"
             >
               <div>
                 <div class="font-bold" style="display: inline-flex; align-items: center; gap: 6px;">
@@ -519,15 +509,15 @@
                     {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
                   </span>
                 </div>
-                <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">
+                <div class="text-xs text-muted" style="margin-top: 2px;">
                   โดย: {{ log.staff_name || 'ระบบ' }} | {{ formatDateTime(log.created_at) }}
                 </div>
-                <div v-if="log.note" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; border-left: 2px solid var(--border-color); padding-left: 6px;">
+                <div v-if="log.note" class="text-xs text-secondary" style="margin-top: 4px; border-left: 2px solid var(--border-color); padding-left: 6px;">
                   {{ log.note }}
                 </div>
               </div>
               <div style="text-align: right;">
-                <div style="font-size: 10px; color: var(--text-tertiary);">ยอดหลังปรับ</div>
+                <div class="text-xs text-muted">ยอดหลังปรับ</div>
                 <div class="font-bold">{{ log.new_stock }} ชิ้น</div>
               </div>
             </div>
@@ -544,7 +534,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../api';
-import { ui, formatDateTime, getUser } from '../helpers';
+import { ui, formatDateTime, getUser, getToday } from '../helpers';
 
 import { store } from '../store';
 
@@ -771,9 +761,10 @@ const viewLogs = async (item, isMod = false) => {
   showLogsModal.value = true;
   logsLoading.value = true;
   try {
+    const today = getToday();
     const res = isMod
-      ? await api.modifiers.getLogs(item.id)
-      : await api.stock.getLogs(item.id);
+      ? await api.modifiers.getLogs(item.id, { date: today })
+      : await api.stock.getLogs(item.id, { date: today });
     logs.value = res.data?.logs || res.data || res || [];
   } catch (e) {
     console.error(e);
@@ -894,14 +885,14 @@ onMounted(() => {
 }
 
 .stock-page-title {
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   font-weight: bold;
   color: var(--text-secondary);
   text-align: left;
 }
 @media (max-width: 768px) {
   .stock-page-title {
-    font-size: 1.1rem !important;
+    font-size: var(--font-lg) !important;
     font-weight: bold !important;
     text-align: center !important;
   }
@@ -924,17 +915,7 @@ onMounted(() => {
   display: block;
 }
 
-.btn-danger-outline {
-  background: rgba(255, 59, 48, 0.08) !important;
-  color: #ff3b30 !important;
-  border: 1px solid rgba(255, 59, 48, 0.2) !important;
-}
 
-.btn-warning-outline {
-  background: rgba(255, 149, 0, 0.08) !important;
-  color: #ff9500 !important;
-  border: 1px solid rgba(255, 149, 0, 0.2) !important;
-}
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
@@ -953,47 +934,9 @@ onMounted(() => {
     gap: var(--space-md);
     padding-bottom: var(--space-2xl);
   }
-  
-  .mobile-stock-card {
-    background: #ffffff;
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: var(--space-md);
-    box-shadow: 0 4px 12px rgba(139, 3, 19, 0.03);
-    transition: all var(--transition-base);
-    display: flex;
-    flex-direction: column;
-  }
-  
   .mobile-stock-card.out-of-stock-card {
     border-color: rgba(173, 40, 30, 0.2);
     background: #fff5f5;
-  }
-  
-  .mobile-stock-card-body {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-md);
-    width: 100%;
-  }
-  
-  .mobile-stock-card-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    text-align: left;
-  }
-  
-  .mobile-stock-card-name {
-    font-size: var(--font-md);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-primary);
-    word-break: break-word;
   }
   
   .mobile-stock-card-id {
@@ -1001,16 +944,8 @@ onMounted(() => {
     color: var(--text-tertiary);
   }
   
-  .mobile-stock-card-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--space-xs);
-    flex-shrink: 0;
-  }
-  
   .mobile-stock-card-qty {
-    font-size: var(--font-md);
+    font-size: var(--font-base);
     font-weight: var(--font-weight-bold);
     color: var(--text-secondary);
   }
@@ -1024,16 +959,6 @@ onMounted(() => {
     align-items: center;
   }
   
-  .mobile-stock-card-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
-    padding-top: var(--space-md);
-    border-top: 1px dashed var(--border-color);
-    width: 100%;
-  }
-  
   .mobile-stock-card-actions .btn {
     width: 100% !important;
     height: 44px !important;
@@ -1042,10 +967,6 @@ onMounted(() => {
     padding: 0 !important;
     margin: 0 !important;
   }
-}
-
-.table-row-hover:hover {
-  background: rgba(139, 3, 19, 0.015) !important;
 }
 
 /* --- Stock Item --- */
@@ -1190,44 +1111,7 @@ onMounted(() => {
   max-height: 500px;
 }
 
-/* --- Category Tabs --- */
-.category-tabs {
-  display: flex;
-  gap: var(--space-sm);
-  overflow-x: auto;
-  padding-bottom: var(--space-md);
-  margin-bottom: var(--space-lg);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-}
 
-.category-tabs::-webkit-scrollbar {
-  display: none;
-}
 
-.category-tab {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all var(--transition-base);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
 
-.category-tab:active {
-  transform: scale(0.97);
-}
-
-.category-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
-}
 </style>

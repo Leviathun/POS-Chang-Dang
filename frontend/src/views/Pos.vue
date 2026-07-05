@@ -6,7 +6,7 @@
       <!-- Category Tabs -->
       <div class="category-tabs" id="pos-category-tabs">
         <button 
-          class="category-tab" 
+          class="btn btn-secondary" 
           :class="{ 'active': activeCategory === 'all' }"
           @click="activeCategory = 'all'"
         >
@@ -15,7 +15,7 @@
         <button 
           v-for="cat in categories" 
           :key="cat.id" 
-          class="category-tab"
+          class="btn btn-secondary"
           :class="{ 'active': activeCategory === String(cat.id) }"
           @click="activeCategory = String(cat.id)"
         >
@@ -27,19 +27,19 @@
       <div class="pos-grid" :class="{ 'stagger-children': isVisualStaggerActive }" id="pos-menu-grid">
         <!-- Skeleton loader while loading -->
         <template v-if="loading">
-          <div v-for="i in 8" :key="i" class="pos-item skeleton-card" style="pointer-events:none;">
+          <div v-for="i in 8" :key="i" class="pos-item skeleton-card pos-skeleton-container">
             <!-- Matches pos-item-img-container -->
             <div class="pos-item-img-container">
-              <div class="skeleton" style="width:100%; height:100%;"></div>
+              <div class="skeleton skeleton-img-placeholder"></div>
             </div>
             <!-- Matches pos-item-name -->
             <div class="pos-item-name">
-              <div class="skeleton" style="width:80%; height:16px; border-radius:4px; margin:0 auto;"></div>
+              <div class="skeleton skeleton-text-80"></div>
             </div>
             <!-- Matches pos-item-details -->
             <div class="pos-item-details">
-              <div class="skeleton" style="width:50%; height:18px; border-radius:4px; margin:0 auto;"></div>
-              <div class="skeleton" style="width:35%; height:12px; border-radius:4px; margin:var(--space-xs) auto 0;"></div>
+              <div class="skeleton skeleton-text-50"></div>
+              <div class="skeleton skeleton-text-35"></div>
             </div>
           </div>
         </template>
@@ -62,7 +62,7 @@
             <!-- Product Image / Styled Emoji Placeholder -->
             <div class="pos-item-img-container">
               <img v-if="item.image_url" :src="item.image_url" class="pos-item-img" alt="เมนู" />
-              <div v-else class="pos-item-placeholder" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+              <div v-else class="pos-item-placeholder flex flex-center h-full">
                 <i :class="getIconClass(item.category_id)" style="font-size: 2.2rem; opacity: 0.65;"></i>
               </div>
             </div>
@@ -73,7 +73,7 @@
             <!-- Product Price & Stock in stable container -->
             <div class="pos-item-details">
               <div class="pos-item-price">
-                {{ formatItemPrice(item) }}<span v-if="item.uom && item.uom !== 'ชิ้น'" style="font-size: 10px; color: var(--text-secondary); font-weight: normal; margin-left: 2px;">/{{ item.uom }}</span>
+                {{ formatItemPrice(item) }}<span v-if="item.uom && item.uom !== 'ชิ้น'" class="text-xs text-secondary font-normal" style="margin-left: 2px;">/{{ item.uom }}</span>
               </div>
               <div v-if="item.stock !== null && item.stock !== undefined" class="pos-item-stock" :class="{ 'low-stock': isLowStock(item) }">
                 <span v-if="item.stock <= 0"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
@@ -99,7 +99,7 @@
     <div class="pos-cart-section-desktop">
       <div class="desktop-cart-card">
         <div class="desktop-cart-header">
-          <h3 class="font-bold flex align-center gap-sm" style="font-size: var(--font-base); display:flex; align-items:center;">
+          <h3 class="font-bold text-base flex align-center gap-sm">
             <span><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> รายการสั่งซื้อ</span>
             <span class="badge badge-primary" style="margin-left: 6px;" v-if="cartCount > 0">{{ cartCount }} รายการ</span>
           </h3>
@@ -130,16 +130,16 @@
         <div class="desktop-cart-empty" v-else>
           <div style="font-size: 3rem; margin-bottom: var(--space-md); opacity:0.6;"><i class="fa-solid fa-utensils"></i></div>
           <p class="font-semibold text-secondary">ไม่มีสินค้าในตะกร้า</p>
-          <p class="text-muted mt-sm" style="font-size: var(--font-xs);">เลือกเมนูอาหารด้านซ้าย<br/>เพื่อเริ่มการสั่งซื้อ</p>
+          <p class="text-muted mt-sm text-xs">เลือกเมนูอาหารด้านซ้าย<br/>เพื่อเริ่มการสั่งซื้อ</p>
         </div>
 
         <!-- Checkout summary -->
         <div class="desktop-cart-summary" v-if="cart.size > 0">
           <!-- Free Modifiers Toggle & Pills inside Desktop summary -->
-          <div class="free-modifiers-section mb-md p-sm card" style="border: 1px dashed var(--border-color); background: rgba(255, 247, 223, 0.3); border-radius: var(--radius-md);">
+          <div class="free-modifiers-section mb-md p-sm card free-modifiers-box">
             <div class="flex flex-between align-center">
-              <span class="font-semibold" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 4px; color: var(--text-primary);">
-                <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px; color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
+              <span class="font-semibold text-sm text-primary flex align-center gap-xs">
+                <i class="fa-solid fa-bottle-droplet mr-xs" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
               </span>
               <label class="switch-toggle">
                 <input type="checkbox" v-model="useModifiers" @change="onModifiersToggleChange" />
@@ -148,18 +148,17 @@
             </div>
 
             <!-- Expanded Options Panel -->
-            <div v-if="useModifiers" class="modifiers-options-panel mt-sm animate-fade-in" style="max-height: 200px; overflow-y: auto; text-align: left;">
+            <div v-if="useModifiers" class="modifiers-options-panel mt-sm animate-fade-in modifiers-options-container">
               <!-- Presets -->
               <div v-if="activePresets.length > 0" class="presets-row mb-sm">
-                <div class="text-muted mb-xs" style="font-size: 10px; font-weight: bold;">สูตรสำเร็จ (Presets):</div>
-                <div class="flex gap-xs" style="flex-wrap: wrap;">
+                <div class="text-muted mb-xs" style="font-size: var(--font-xs); font-weight: bold;">สูตรสำเร็จ (Presets):</div>
+                <div class="flex gap-xs flex-wrap">
                   <button 
                     v-for="preset in activePresets" 
                     :key="preset.id" 
                     class="btn btn-sm btn-secondary preset-btn"
                     @click="applyPreset(preset)"
                     type="button"
-                    style="padding: 4px 8px; font-size: 11px; min-height: 28px;"
                   >
                     <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                   </button>
@@ -167,13 +166,13 @@
               </div>
 
               <!-- Modifiers Categories -->
-              <div class="modifiers-categories" style="display: flex; flex-direction: column; gap: var(--space-xs);">
+              <div class="modifiers-categories flex flex-col gap-xs">
                 <template v-for="cat in modifierCategories" :key="cat.key">
                   <div v-if="getModifiersByCategory(cat.key).length > 0" class="modifier-cat-group">
-                    <div class="text-secondary mb-xs font-semibold" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <div class="text-secondary mb-xs font-semibold" style="font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.5px;">
                       {{ cat.label }}:
                     </div>
-                    <div class="flex gap-xs" style="flex-wrap: wrap; margin-bottom: 6px;">
+                    <div class="flex gap-xs flex-wrap" style="margin-bottom: 6px;">
                       <button
                         v-for="mod in getModifiersByCategory(cat.key)"
                         :key="mod.id"
@@ -199,33 +198,32 @@
             <span class="font-medium">{{ formatCurrency(cartTotal) }}</span>
           </div>
           <!-- Discount Row -->
-          <div v-if="discountAmount > 0" class="summary-row text-danger font-semibold animate-fade-in" style="color: #ff3b30;">
+          <div v-if="discountAmount > 0" class="summary-row text-danger font-semibold animate-fade-in">
             <span>ส่วนลด</span>
             <span>-{{ formatCurrency(discountAmount) }}</span>
           </div>
           <!-- Discount Selector Area -->
-          <div class="discount-selector-area mt-sm mb-sm p-xs card" style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 8px;">
-            <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px;">
-              <span class="font-semibold" style="font-size: var(--font-xs); display: flex; align-items: center; gap: 4px;">
+          <div class="discount-selector-area mt-sm mb-sm p-xs card discount-selector-box">
+            <div class="flex flex-between align-center" style="padding: 2px 4px;">
+              <span class="font-semibold text-xs text-primary flex align-center gap-xs">
                 <i class="fa-solid fa-percent" style="color: var(--primary);"></i> เลือกส่วนลด
               </span>
               <button 
                 v-if="discountAmount > 0"
                 class="btn btn-ghost btn-xs text-danger" 
                 @click="clearDiscount"
-                style="padding: 0; min-height: unset; font-size: 11px;"
+                style="padding: 0; min-height: unset; font-size: var(--font-xs);"
               >
                 ล้างส่วนลด
               </button>
             </div>
             <!-- Discount buttons & custom input -->
-            <div class="flex gap-xs mt-xs align-center" style="display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-top: 6px; padding: 2px 4px; align-items: center;">
+            <div class="flex gap-xs flex-wrap align-center" style="margin-top: 6px; padding: 2px 4px;">
               <button 
-                class="btn btn-sm"
-                :class="activeDiscountType === 'bun_promo' ? 'btn-primary' : 'btn-secondary'"
+                class="btn btn-secondary btn-sm"
+                :class="{ 'active': activeDiscountType === 'bun_promo' }"
                 @click="applyBunPromoDiscount"
                 :disabled="!canApplyBunPromo"
-                style="font-size: 11px; padding: 4px 8px; min-height: 28px; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;"
                 title="โปรซาลาเปา 3 ลูก ลด 10 บาท"
               >
                 🎁 โปรเปา 3 ลูก (-10฿)
@@ -241,17 +239,17 @@
                   placeholder="ลดระบุเอง..." 
                   min="0"
                   :max="cartTotal"
-                  style="font-size: 11px; padding: 4px 20px 4px 8px; height: 28px; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary);"
+                  style="font-size: var(--font-xs); padding: 4px 20px 4px 8px; height: 28px; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary);"
                 />
-                <span style="position: absolute; right: 8px; font-size: 11px; color: var(--text-muted); pointer-events: none;">฿</span>
+                <span style="position: absolute; right: 8px; font-size: var(--font-xs); color: var(--text-muted); pointer-events: none;">฿</span>
               </div>
             </div>
           </div>
           <div class="summary-row total-row font-bold mt-sm">
             <span>ยอดสุทธิ</span>
-            <span class="text-accent" style="font-size: var(--font-lg);">{{ formatCurrency(netCartTotal) }}</span>
+            <span class="text-accent text-lg">{{ formatCurrency(netCartTotal) }}</span>
           </div>
-          <button class="btn btn-primary btn-block mt-lg" @click="handleCheckout" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <button class="btn-modal btn-modal-primary mt-lg" @click="handleCheckout">
             <i class="fa-solid fa-wallet"></i> ชำระเงิน
           </button>
         </div>
@@ -273,7 +271,7 @@
 
     <div id="cart-detail-panel" class="cart-detail-panel mobile-only-cart" :class="{ 'hidden': !cartExpanded || cart.size === 0 }">
       <div class="cart-detail-header">
-        <span class="font-semibold" style="font-size: var(--font-md); display: flex; align-items: center; gap: 6px;">
+        <span class="font-semibold text-md" style="display: flex; align-items: center; gap: 6px;">
           <i class="fa-solid fa-cart-shopping"></i> รายการสั่งซื้อ
         </span>
         <button class="btn btn-ghost btn-sm text-danger" @click="handleClearCart">ล้างทั้งหมด</button>
@@ -298,27 +296,26 @@
         </div>
 
         <!-- Mobile Discount Selector Area -->
-        <div class="discount-selector-area p-sm" style="border-top: 1px dashed var(--border-color); background: rgba(0, 0, 0, 0.02); text-align: left; padding: 12px 16px;">
-          <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span class="font-bold" style="font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+        <div class="discount-selector-area p-sm mobile-discount-selector">
+          <div class="flex flex-between align-center" style="margin-bottom: 8px;">
+            <span class="font-bold text-base text-primary flex align-center gap-xs">
               <i class="fa-solid fa-percent" style="color: var(--primary);"></i> เลือกส่วนลด
             </span>
             <button 
               v-if="discountAmount > 0"
               class="btn btn-ghost btn-xs text-danger" 
               @click="clearDiscount"
-              style="padding: 0; min-height: unset; font-size: 12px;"
+              style="padding: 0; min-height: unset; font-size: var(--font-sm);"
             >
               ล้างส่วนลด (ลดอยู่ -{{ formatCurrency(discountAmount) }})
             </button>
           </div>
-          <div class="flex gap-xs align-center" style="display: flex; gap: var(--space-xs); flex-wrap: wrap; align-items: center;">
+          <div class="flex gap-xs flex-wrap align-center">
             <button 
-              class="btn btn-sm"
-              :class="activeDiscountType === 'bun_promo' ? 'btn-primary' : 'btn-secondary'"
+              class="btn btn-secondary btn-sm"
+              :class="{ 'active': activeDiscountType === 'bun_promo' }"
               @click="applyBunPromoDiscount"
               :disabled="!canApplyBunPromo"
-              style="font-size: 12px; padding: 6px 12px; min-height: 32px; border-radius: var(--radius-md); flex-shrink: 0;"
             >
               🎁 โปรเปา 3 ลูก (-10฿)
             </button>
@@ -332,22 +329,17 @@
                 placeholder="ลดระบุเอง (บาท)..." 
                 min="0"
                 :max="cartTotal"
-                style="font-size: 12px; padding: 6px 24px 6px 12px; height: 32px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
+                style="font-size: var(--font-sm); padding: 6px 24px 6px 12px; height: 32px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
               />
-              <span style="position: absolute; right: 10px; font-size: 12px; color: var(--text-muted); pointer-events: none;">฿</span>
+              <span style="position: absolute; right: 10px; font-size: var(--font-sm); color: var(--text-muted); pointer-events: none;">฿</span>
             </div>
           </div>
         </div>
 
         <!-- Mobile Free Modifiers Toggle & Pills -->
-        <div class="free-modifiers-section" :style="{ 
-          borderTop: '1px dashed var(--border-color)', 
-          background: 'rgba(255, 247, 223, 0.3)', 
-          padding: useModifiers ? '16px 20px 80px 20px' : '16px 20px 36px 20px', 
-          marginBottom: '0px' 
-        }">
+        <div class="free-modifiers-section mobile-modifiers-box" :class="{ 'expanded': useModifiers }">
           <div class="flex flex-between align-center" style="margin-bottom: 8px;">
-            <span class="font-bold" style="font-size: 14px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+            <span class="font-bold" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
               <i class="fa-solid fa-bottle-droplet" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
             </span>
             <label class="switch-toggle">
@@ -360,7 +352,7 @@
           <div v-if="useModifiers" class="modifiers-options-panel mt-md animate-fade-in" style="text-align: left; display: flex; flex-direction: column; gap: 12px; padding-left: 4px;">
             <!-- Presets -->
             <div v-if="activePresets.length > 0" class="presets-row">
-              <div class="text-secondary font-bold" style="font-size: 12px; margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">สูตรสำเร็จ (Presets):</div>
+              <div class="text-secondary font-bold" style="font-size: var(--font-sm); margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">สูตรสำเร็จ (Presets):</div>
               <div class="flex gap-xs" style="flex-wrap: wrap; padding-left: 4px;">
                 <button 
                   v-for="preset in activePresets" 
@@ -368,7 +360,6 @@
                   class="btn btn-sm btn-secondary preset-btn"
                   @click="applyPreset(preset)"
                   type="button"
-                  style="padding: 6px 12px; font-size: 12px; min-height: 32px; border-radius: var(--radius-md);"
                 >
                   <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                 </button>
@@ -379,7 +370,7 @@
             <div class="modifiers-categories" style="display: flex; flex-direction: column; gap: 12px;">
               <template v-for="cat in modifierCategories" :key="cat.key">
                 <div v-if="getModifiersByCategory(cat.key).length > 0" class="modifier-cat-group">
-                  <div class="text-secondary font-bold" style="font-size: 12px; margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">
+                  <div class="text-secondary font-bold" style="font-size: var(--font-sm); margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">
                     {{ cat.label }}:
                   </div>
                   <div class="flex gap-xs" style="flex-wrap: wrap; padding-left: 4px;">
@@ -390,10 +381,10 @@
                       :class="{ 'active': isModifierSelected(mod), 'out-of-stock': mod.total_servings <= 0 }"
                       @click="toggleModifierSelection(mod)"
                       type="button"
-                      style="padding: 6px 12px; font-size: 12px; border-radius: var(--radius-full);"
+                      style="padding: 6px 12px; font-size: var(--font-sm); border-radius: var(--radius-full);"
                     >
                       {{ mod.name }} 
-                      <span class="stock-badge" style="font-size: 10px; opacity: 0.8;">
+                      <span class="stock-badge" style="font-size: var(--font-xs); opacity: 0.8;">
                         ({{ formatModifierStockShort(mod) }})
                       </span>
                     </button>
@@ -407,24 +398,24 @@
     </div>
 
     <!-- Unified Options Modal -->
-    <div v-if="showOptionsModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showOptionsModal" class="modal-container active">
       <div class="modal-overlay" @click="showOptionsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
         <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
-          <h3 style="font-size: var(--font-lg); font-weight: 800;">
+          <h3 class="text-lg font-bold">
             <i :class="isSamKrobItem ? 'fa-solid fa-gears' : 'fa-solid fa-tags'" style="margin-right: 6px; color: var(--primary);"></i> 
             {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : 'เลือกขนาด (Size)' }}
           </h3>
           <button class="modal-close" @click="showOptionsModal = false" style="font-size: var(--font-md);">✕</button>
         </div>
         <div class="modal-body" style="text-align: left; padding: var(--space-lg);">
-          <div class="mb-lg font-extrabold text-center text-primary" style="font-size: var(--font-lg); margin-bottom: 20px;">
+          <div class="mb-lg font-bold text-center text-primary text-lg" style="margin-bottom: 20px;">
             {{ activeModalItem?.name }}
           </div>
 
           <!-- Size Selector -->
           <div class="form-group mb-lg" style="margin-bottom: 24px;">
-            <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 8px; display: block;">
+            <label class="form-label font-bold text-base" style="margin-bottom: 8px; display: block;">
               <i class="fa-solid fa-weight-scale" style="margin-right: 4px; color: var(--primary);"></i>
               เลือกขนาด *
             </label>
@@ -443,9 +434,9 @@
                 }"
                 @click="selectedSize = size"
               >
-                <div class="font-bold" style="font-size: var(--font-sm);">{{ config.name }}</div>
-                <div v-if="isSamKrobItem" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">{{ config.weight }} ก.</div>
-                <div class="font-extrabold text-accent" style="font-size: var(--font-md); margin-top: 6px;">฿{{ config.price }}</div>
+                <div class="font-bold text-sm">{{ config.name }}</div>
+                <div v-if="isSamKrobItem" class="text-xs text-secondary mt-xs">{{ config.weight }} ก.</div>
+                <div class="font-bold text-accent text-md" style="margin-top: 6px;">฿{{ config.price }}</div>
               </div>
             </div>
           </div>
@@ -456,12 +447,12 @@
               <input type="checkbox" v-model="mixSamKrob" />
               <span class="toggle-slider"></span>
             </label>
-            <span class="font-bold text-primary" style="font-size: var(--font-base); cursor: pointer;" @click="mixSamKrob = !mixSamKrob">ผสมวัตถุดิบอื่นเพิ่มเติม (Mix)</span>
+            <span class="font-bold text-primary text-base" style="cursor: pointer;" @click="mixSamKrob = !mixSamKrob">ผสมวัตถุดิบอื่นเพิ่มเติม (Mix)</span>
           </div>
 
           <!-- Ingredients Selector (SamKrob Only & mixSamKrob enabled) -->
           <div v-if="isSamKrobItem && mixSamKrob" class="form-group mb-lg" style="margin-bottom: 24px;">
-            <label class="form-label font-bold" style="font-size: var(--font-base); margin-bottom: 10px; display: block;">
+            <label class="form-label font-bold text-base" style="margin-bottom: 10px; display: block;">
               <i class="fa-solid fa-list-check" style="margin-right: 4px; color: var(--primary);"></i> เลือกวัตถุดิบผสม (เลือกได้ 1-3 ชนิด) *
             </label>
             <div class="flex flex-column gap-sm" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
@@ -491,15 +482,15 @@
                     style="width: 22px; height: 22px; cursor: pointer; flex-shrink: 0;"
                   />
                   <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <span class="font-bold" style="font-size: var(--font-base); color: var(--text-primary);">{{ ing.name }}</span>
-                    <span style="font-size: var(--font-sm); color: var(--text-secondary); font-weight: 500;">
+                    <span class="font-bold text-primary text-base">{{ ing.name }}</span>
+                    <span class="text-sm text-secondary font-medium">
                       สต็อก: {{ formatStockQty(ing.stock, ing.uom) || '0 ก.' }}
                     </span>
                   </div>
                 </div>
                 <!-- Right: Added Weight Portion -->
                 <div class="text-right" style="min-width: 80px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end;">
-                  <div v-if="selectedSamKrobIds.includes(ing.id)" class="text-accent font-extrabold animate-fade-in" style="font-size: var(--font-base);">
+                  <div v-if="selectedSamKrobIds.includes(ing.id)" class="text-accent font-bold animate-fade-in text-base">
                     +{{ getPortionWeightPreview(ing.id) }} ก.
                   </div>
                 </div>
@@ -509,23 +500,23 @@
 
           <!-- Summary Preview -->
           <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
-            <div class="font-bold mb-xs" style="font-size: var(--font-xs); color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
-            <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center;">
+            <div class="font-bold mb-xs text-xs text-secondary" style="text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
+            <div class="text-base" style="display: flex; justify-content: space-between; align-items: center;">
               <span>{{ isSamKrobItem ? 'น้ำหนักรวม:' : 'ขนาด:' }}</span>
-              <span class="font-extrabold text-primary" style="font-size: var(--font-md);">
+              <span class="font-bold text-primary text-md">
                 {{ isSamKrobItem ? getSelectedSizeWeight() + ' กรัม' : (selectedSize === 'S' ? 'เล็ก (S)' : selectedSize === 'M' ? 'กลาง (M)' : 'ใหญ่ (L)') }}
               </span>
             </div>
-            <div style="font-size: var(--font-base); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+            <div class="text-base mt-xs" style="display: flex; justify-content: space-between; align-items: center;">
               <span>ราคา:</span>
-              <span class="font-extrabold text-accent" style="font-size: var(--font-lg);">฿{{ getSelectedSizePrice() }}</span>
+              <span class="font-bold text-accent text-lg">฿{{ getSelectedSizePrice() }}</span>
             </div>
           </div>
 
           <!-- Confirmation Buttons -->
-          <div class="flex gap-md" style="display: flex; gap: 14px;">
-            <button class="btn btn-secondary flex-1" @click="showOptionsModal = false" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ยกเลิก</button>
-            <button class="btn btn-primary flex-1" @click="confirmSelection" style="font-size: var(--font-base); padding: 12px 16px; font-weight: bold;">ใส่ตะกร้า</button>
+          <div class="flex gap-md">
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showOptionsModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-primary flex-1" @click="confirmSelection">ใส่ตะกร้า</button>
           </div>
         </div>
       </div>
@@ -1189,13 +1180,6 @@ const onPaymentSuccess = async () => {
   showPaymentModal.value = false;
   useModifiers.value = false;
   selectedModifiers.value = [];
-
-  // Revalidate store data in background silently with a delay to prevent UI rendering freeze
-  setTimeout(() => {
-    store.fetchMenu(true).catch(() => {});
-    store.fetchStock(true).catch(() => {});
-    store.fetchModifiers(true).catch(() => {});
-  }, 2000);
 };
 
 // Load Menu & Categories from API
@@ -1333,46 +1317,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* --- Category Tabs --- */
-.category-tabs {
-  display: flex;
-  gap: var(--space-sm);
-  overflow-x: auto;
-  padding-bottom: var(--space-md);
-  margin-bottom: var(--space-lg);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.category-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.category-tab {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all var(--transition-base);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.category-tab:active {
-  transform: scale(0.97);
-}
-
-.category-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
-}
 
 /* --- POS Grid --- */
 .pos-grid {
@@ -1449,7 +1393,7 @@ onUnmounted(() => {
 }
 
 .pos-item-name {
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   font-weight: var(--font-weight-semibold);
   line-height: 1.25;
   color: var(--text-primary);
@@ -1470,7 +1414,7 @@ onUnmounted(() => {
 }
 
 .pos-item-stock {
-  font-size: 0.65rem;
+  font-size: var(--font-xs);
   color: var(--text-tertiary);
   font-weight: var(--font-weight-medium);
 }
@@ -1660,7 +1604,7 @@ onUnmounted(() => {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 1.35rem; /* Enlarged font-size to match the circle size! */
+  font-size: var(--font-lg); /* Enlarged font-size to match the circle size! */
   font-weight: var(--font-weight-bold);
   transition: var(--transition-base);
 }
@@ -1868,7 +1812,7 @@ onUnmounted(() => {
   }
 
   .pos-item-name {
-    font-size: 1.15rem !important;
+    font-size: var(--font-md) !important;
   }
 }
 
@@ -1928,7 +1872,7 @@ input:checked + .slider-toggle:before {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xs);
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
@@ -1955,7 +1899,7 @@ input:checked + .slider-toggle:before {
 }
 
 .pill-btn .stock-badge {
-  font-size: 9px;
+  font-size: var(--font-xs);
   opacity: 0.75;
 }
 .pill-btn.active .stock-badge {
@@ -2002,7 +1946,7 @@ input:checked + .slider-toggle:before {
   border: none;
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-extrabold);
-  font-size: 1.1rem !important; /* Larger readable size */
+  font-size: var(--font-md) !important; /* Larger readable size */
   cursor: pointer;
   transition: all var(--transition-base);
   user-select: none;
@@ -2053,5 +1997,69 @@ input:checked + .slider-toggle:before {
 .bun-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+.pos-item-stock {
+    font-size: var(--font-xxs) !important;
+  }
+}
+
+.pos-skeleton-container {
+  pointer-events: none;
+}
+.skeleton-img-placeholder {
+  width: 100%;
+  height: 100%;
+}
+.skeleton-text-80 {
+  width: 80%;
+  height: 16px;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+.skeleton-text-50 {
+  width: 50%;
+  height: 18px;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+.skeleton-text-35 {
+  width: 35%;
+  height: 12px;
+  border-radius: 4px;
+  margin: var(--space-xs) auto 0;
+}
+.free-modifiers-box {
+  border: 1px dashed var(--border-color);
+  background: rgba(255, 247, 223, 0.3);
+  border-radius: var(--radius-md);
+}
+.modifiers-options-container {
+  max-height: 200px;
+  overflow-y: auto;
+  text-align: left;
+}
+.discount-selector-box {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px;
+}
+.mobile-discount-selector {
+  border-top: 1px dashed var(--border-color);
+  background: rgba(0, 0, 0, 0.02);
+  text-align: left;
+  padding: 12px 16px;
+}
+.mobile-modifiers-box {
+  border-top: 1px dashed var(--border-color);
+  background: rgba(255, 247, 223, 0.3);
+  margin-bottom: 0px;
+  padding: 16px 20px 36px 20px;
+  text-align: left;
+}
+.mobile-modifiers-box.expanded {
+  padding: 16px 20px 80px 20px;
 }
 </style>

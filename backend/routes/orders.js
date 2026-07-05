@@ -362,10 +362,9 @@ router.post('/', requireAuth, async (req, res) => {
       }
     }
 
-    // 5. บันทึกกิจกรรมพนักงาน
     statements.push({
       sql: `INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-            VALUES (?, ?, 'create_order', ?, datetime('now', '+7 hours'))`,
+            VALUES (?, ?, 'complete_order', ?, datetime('now', '+7 hours'))`,
       args: [
         branchId,
         req.user.id,

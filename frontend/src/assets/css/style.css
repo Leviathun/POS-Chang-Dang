@@ -3,10 +3,12 @@
    Retro Warm 80s Diner Theme
    ============================================ */
 
-/* --- Google Font Import --- */
+/* --- Google Font Import start --- */
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-/* --- CSS Custom Properties --- */
+/* --- Google Font Import end --- */
+
+/* --- CSS Custom Properties start --- */
 :root {
   /* Colors - 80s Diner Retro Warm Theme */
   --bg-primary: #fff7df;        /* Warm Cream Background */
@@ -70,15 +72,16 @@
 
   /* Typography */
   --font-family: 'Prompt', 'Noto Sans Thai', sans-serif;
-  --font-xs: 0.7rem;
-  --font-sm: 0.8rem;
-  --font-base: 0.9rem;
-  --font-md: 1rem;
-  --font-lg: 1.15rem;
-  --font-xl: 1.35rem;
-  --font-2xl: 1.6rem;
-  --font-3xl: 2rem;
-  --font-4xl: 2.5rem;
+  --font-xxs: 0.7rem;
+  --font-xs: 0.8rem;
+  --font-sm: 0.9rem;
+  --font-base: 1rem;
+  --font-md: 1.15rem;
+  --font-lg: 1.35rem;
+  --font-xl: var(--font-lg); /* Capped at --font-lg (1.35rem) to limit maximum sizing scale */
+  --font-2xl: var(--font-lg);
+  --font-3xl: var(--font-lg);
+  --font-4xl: var(--font-lg);
   --font-weight-light: 300;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -116,7 +119,9 @@
   --sidebar-width: 280px;
 }
 
-/* --- Reset / Normalize --- */
+/* --- CSS Custom Properties end --- */
+
+/* --- Reset / Normalize start --- */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -162,7 +167,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 input, select, textarea { font-family: inherit; }
 ul, ol { list-style: none; }
 
-/* --- Scrollbar --- */
+/* --- Reset / Normalize end --- */
+
+/* --- Scrollbar start --- */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -178,7 +185,9 @@ ul, ol { list-style: none; }
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* --- Layout --- */
+/* --- Scrollbar end --- */
+
+/* --- Layout start --- */
 .app-wrapper {
   max-width: var(--max-width);
   margin: 0 auto;
@@ -187,7 +196,9 @@ ul, ol { list-style: none; }
   position: relative;
 }
 
-/* --- Main Content Area --- */
+/* --- Layout end --- */
+
+/* --- Main Content Area start --- */
 #app-content {
   padding-top: calc(var(--header-height) + var(--space-lg));
   padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--space-xl));
@@ -203,11 +214,11 @@ ul, ol { list-style: none; }
   padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height) + var(--space-xl) + 10px);
 }
 
-/* --- Cards --- */
+/* --- Main Content Area end --- */
+
+/* --- Cards start --- */
 .card {
-  background: var(--card-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
@@ -233,7 +244,9 @@ ul, ol { list-style: none; }
   margin-bottom: var(--space-lg);
 }
 
-/* --- Buttons --- */
+/* --- Cards end --- */
+
+/* --- Buttons start --- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -260,102 +273,56 @@ ul, ol { list-style: none; }
   pointer-events: none;
 }
 
+/* 1. ปุ่มเพิ่มเมนูหลัก / ปุ่มจัดการทั่วไป - สี่เหลี่ยมผืนผ้าขอบมน */
 .btn-primary {
   background: var(--gradient-primary);
-  color: white;
+  color: white !important;
   font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-glow-primary);
+  cursor: pointer;
+  border: none !important;
 }
 
 .btn-primary:active {
   box-shadow: 0 0 30px rgba(230, 57, 70, 0.5);
+  transform: scale(0.97);
 }
 
+/* 2. ปุ่มยาเม็ดเลือกหน้า/แท็บ - ยาเม็ด */
 .btn-secondary {
-  background: var(--card-bg);
-  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm) var(--space-lg);
+  background: #ffffff !important;
   border: 1px solid var(--border-color);
-  backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-full) !important; /* capsule shape */
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary) !important;
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.btn-secondary:active {
-  background: var(--card-bg-active);
-}
-
-.btn-success {
-  background: var(--gradient-success);
-  color: white;
-  font-weight: var(--font-weight-semibold);
-}
-
-.btn-danger {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--danger-light);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.btn-danger:active {
-  background: rgba(239, 68, 68, 0.25);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-}
-
-.btn-ghost:active {
-  background: var(--card-bg);
-}
-
-.btn-lg {
-  padding: var(--space-lg) var(--space-2xl);
-  font-size: var(--font-md);
-  border-radius: var(--radius-lg);
-}
-
-.btn-xl {
-  padding: var(--space-xl) var(--space-3xl);
-  font-size: var(--font-lg);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-lg);
-  width: 100%;
+.btn-secondary:hover, 
+.btn-secondary:active, 
+.btn-secondary.active {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: var(--shadow-glow-primary) !important;
 }
 
 .btn-sm {
-  padding: var(--space-xs) var(--space-md);
-  font-size: var(--font-sm);
-  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-md) !important;
+  font-size: var(--font-sm) !important;
 }
 
-.btn-icon {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border-radius: var(--radius-md);
-  font-size: var(--font-lg);
-}
-
-.btn-block {
-  width: 100%;
-}
-
-/* Ripple effect */
-.btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.btn:active::after {
-  opacity: 1;
-}
-
-/* --- Tactile Action Buttons (Edit / Delete) --- */
 .btn-action {
-  height: 42px; /* Touch friendly height */
+  height: 46px; 
   padding: 0 var(--space-lg); /* Generous padding for text and emoji */
   min-width: 90px;
   display: inline-flex;
@@ -363,14 +330,14 @@ ul, ol { list-style: none; }
   justify-content: center;
   gap: var(--space-sm); /* Spacing between emoji and text */
   border-radius: var(--radius-md);
-  font-size: var(--font-base); /* Easy to read font size */
+  font-size: var(--font-base); 
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-base);
-  border: 1px solid transparent;
+  background: #ffffff !important; /* Default white background */
+  border: 1px solid var(--border-color) !important; /* Default soft border */
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   box-shadow: var(--shadow-sm);
-  background: var(--card-bg);
   white-space: nowrap;
 }
 
@@ -378,31 +345,6 @@ ul, ol { list-style: none; }
   transform: scale(0.92);
 }
 
-.btn-action-edit {
-  background: rgba(255, 171, 43, 0.12) !important;
-  border-color: rgba(255, 171, 43, 0.25) !important;
-  color: var(--accent-dark);
-}
-
-.btn-action-edit:hover, .btn-action-edit:active {
-  background: rgba(255, 171, 43, 0.22) !important;
-  border-color: rgba(255, 171, 43, 0.4) !important;
-  box-shadow: 0 0 10px rgba(255, 171, 43, 0.15);
-}
-
-.btn-action-delete {
-  background: rgba(173, 40, 30, 0.08) !important;
-  border-color: rgba(173, 40, 30, 0.18) !important;
-  color: var(--primary);
-}
-
-.btn-action-delete:hover, .btn-action-delete:active {
-  background: rgba(173, 40, 30, 0.16) !important;
-  border-color: rgba(173, 40, 30, 0.3) !important;
-  box-shadow: 0 0 10px rgba(173, 40, 30, 0.12);
-}
-
-/* Disabled state */
 .btn-action:disabled {
   opacity: 0.35;
   pointer-events: none;
@@ -410,7 +352,134 @@ ul, ol { list-style: none; }
   border-color: transparent !important;
 }
 
-/* --- Inputs --- */
+/* สีปุ่มในตาราง */
+.btn-action-edit {
+  background: rgba(255, 171, 43, 0.15) !important;
+  color: var(--accent-dark) !important;
+  border: 1px solid rgba(255, 171, 43, 0.25) !important;
+}
+.btn-action-edit:active {
+  background: rgba(255, 171, 43, 0.25) !important;
+}
+
+.btn-action-delete {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: var(--danger-light) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+}
+.btn-action-delete:active {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+
+.btn-action-success {
+  background: linear-gradient(135deg, #e63946, #b7091b) !important;
+  color: white !important;
+  border: none !important;
+}
+.btn-action-success:active {
+  background: linear-gradient(135deg, #b7091b, #8b0313) !important;
+}
+
+.btn-action-primary {
+  background: var(--primary) !important;
+  color: white !important;
+  border: none !important;
+  font-weight: bold;
+}
+.btn-action-primary:active {
+  background: var(--primary-dark) !important;
+}
+
+.btn-action-fry {
+  background: var(--primary) !important;
+  color: white !important;
+  border: none !important;
+  font-weight: bold;
+}
+.btn-action-fry:active {
+  background: var(--primary-dark) !important;
+}
+
+.btn-action-waste {
+  background: rgba(255, 59, 48, 0.1) !important;
+  color: #ff3b30 !important;
+  border: 1px solid rgba(255, 59, 48, 0.2) !important;
+}
+.btn-action-waste:active {
+  background: rgba(255, 59, 48, 0.2) !important;
+}
+
+.btn-action-credit {
+  background: rgba(255, 149, 0, 0.1) !important;
+  color: #ff9500 !important;
+  border: 1px solid rgba(255, 149, 0, 0.2) !important;
+}
+.btn-action-credit:active {
+  background: rgba(255, 149, 0, 0.2) !important;
+}
+
+/* 4. ปุ่มใน Modal - สี่เหลี่ยมผืนผ้ายาวขอบมน */
+.btn-modal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  height: 56px; /* Locked height for absolute consistency and tablet touch targets */
+  padding: 0 var(--space-xl); /* Removed vertical padding to let height control centering */
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-base);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: none;
+}
+
+.btn-modal:active {
+  transform: scale(0.97);
+}
+
+.btn-modal-primary {
+  background: var(--gradient-primary);
+  color: white !important;
+  box-shadow: var(--shadow-glow-primary);
+  border: none !important;
+}
+
+.btn-modal-secondary {
+  background: #ffffff !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important; /* Soft warm reddish border, no dark border */
+  box-shadow: var(--shadow-sm);
+}
+
+/* 5. ปุ่มอัปโหลดรูปภาพในฟอร์ม */
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  height: 46px; /* Matches standard dropdown/input height of 46px */
+  padding: 0 var(--space-xl);
+  background: #ffffff !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md);
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all var(--transition-base);
+  white-space: nowrap;
+}
+
+.btn-upload:active {
+  background: #f5ece1 !important;
+  transform: scale(0.97);
+}
+/* --- Buttons end --- */
+
+/* --- Inputs start --- */
 .form-group {
   margin-bottom: var(--space-lg);
 }
@@ -480,8 +549,11 @@ ul, ol { list-style: none; }
   font-family: var(--font-family) !important;
 }
 
-/* --- Toggle Switch --- */
+/* --- Inputs end --- */
+
+/* --- Toggle Switch start --- */
 .toggle-switch {
+  display: inline-block;
   position: relative;
   width: 44px;
   height: 24px;
@@ -525,7 +597,9 @@ ul, ol { list-style: none; }
   transform: translateX(20px);
 }
 
-/* --- Badges --- */
+/* --- Toggle Switch end --- */
+
+/* --- Badges start --- */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -554,8 +628,8 @@ ul, ol { list-style: none; }
 }
 
 .badge-warning {
-  background: rgba(233, 196, 106, 0.15);
-  color: var(--warning-light);
+  background: rgba(197, 118, 0, 0.12);
+  color: #c57600;
 }
 
 .badge-danger {
@@ -566,7 +640,6 @@ ul, ol { list-style: none; }
 .badge-neutral {
   background: rgba(110, 78, 55, 0.08);
   color: var(--text-secondary);
-  border: 1px solid rgba(110, 78, 55, 0.15);
 }
 
 /* Modifier Specific Badges (High Contrast, Distinct Colors) */
@@ -613,7 +686,9 @@ ul, ol { list-style: none; }
   z-index: 2;
 }
 
-/* --- Status Indicators --- */
+/* --- Badges end --- */
+
+/* --- Status Indicators start --- */
 .status-dot {
   width: 8px;
   height: 8px;
@@ -627,7 +702,9 @@ ul, ol { list-style: none; }
 .status-dot.danger { background: var(--danger); box-shadow: 0 0 6px var(--danger-glow); }
 .status-dot.neutral { background: var(--text-muted); }
 
-/* --- Modal Wrappers --- */
+/* --- Status Indicators end --- */
+
+/* --- Modal Wrappers start --- */
 #modal-container, .modal-container {
   position: fixed;
   inset: 0;
@@ -731,7 +808,9 @@ ul, ol { list-style: none; }
   gap: var(--space-md);
 }
 
-/* --- Loading Spinner --- */
+/* --- Modal Wrappers end --- */
+
+/* --- Loading Spinner start --- */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -751,6 +830,7 @@ ul, ol { list-style: none; }
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  margin: 0 auto; /* Centered by default */
 }
 
 .spinner-sm {
@@ -773,7 +853,9 @@ ul, ol { list-style: none; }
   border-radius: var(--radius-sm);
 }
 
-/* --- Utility Classes --- */
+/* --- Loading Spinner end --- */
+
+/* --- Utility Classes start --- */
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
@@ -784,20 +866,62 @@ ul, ol { list-style: none; }
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger-light); }
 .text-warning { color: var(--warning); }
+.text-xs { font-size: var(--font-xs); }
+.text-sm { font-size: var(--font-sm); }
+.text-base { font-size: var(--font-base); }
+.text-lg { font-size: var(--font-lg); }
+.text-xl { font-size: var(--font-xl); }
+.text-2xl { font-size: var(--font-2xl); }
 .font-bold { font-weight: var(--font-weight-bold); }
 .font-semibold { font-weight: var(--font-weight-semibold); }
 .font-medium { font-weight: var(--font-weight-medium); }
 
+/* --- Utility Classes end --- */
+
+/* --- Table Typography Standardizations start --- */
+.table th {
+  font-size: var(--font-base) !important;
+}
+.table td {
+  font-size: var(--font-base);
+}
+.table td .text-muted,
+.bulk-stock-row .text-muted {
+  font-size: var(--font-base) !important;
+}
+
+.mt-xs { margin-top: var(--space-xs); }
 .mt-sm { margin-top: var(--space-sm); }
 .mt-md { margin-top: var(--space-md); }
 .mt-lg { margin-top: var(--space-lg); }
 .mt-xl { margin-top: var(--space-xl); }
 .mt-2xl { margin-top: var(--space-2xl); }
+.mb-xs { margin-bottom: var(--space-xs); }
 .mb-sm { margin-bottom: var(--space-sm); }
 .mb-md { margin-bottom: var(--space-md); }
 .mb-lg { margin-bottom: var(--space-lg); }
 .mb-xl { margin-bottom: var(--space-xl); }
 .mb-2xl { margin-bottom: var(--space-2xl); }
+.mr-xs { margin-right: var(--space-xs) !important; }
+.mr-sm { margin-right: var(--space-sm) !important; }
+.ml-xs { margin-left: var(--space-xs) !important; }
+.ml-sm { margin-left: var(--space-sm) !important; }
+.divider { margin: var(--space-md) 0; height: 1px; background: var(--border-color); }
+.card-flat-secondary { background: var(--bg-secondary) !important; border: none !important; box-shadow: none !important; }
+.card-header-clean {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.card-title-clean {
+  font-size: var(--font-sm) !important;
+  margin: 0 !important;
+}
 
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
@@ -808,6 +932,11 @@ ul, ol { list-style: none; }
 .gap-md { gap: var(--space-md); }
 .gap-lg { gap: var(--space-lg); }
 .flex-1 { flex: 1; }
+
+.grid { display: grid; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 .w-full { width: 100%; }
 .max-w-xs { max-width: 320px !important; }
@@ -823,7 +952,9 @@ ul, ol { list-style: none; }
 .hidden { display: none !important; }
 .visible { display: block; }
 
-/* --- Animations --- */
+/* --- Table Typography Standardizations end --- */
+
+/* --- Animations start --- */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -970,7 +1101,9 @@ ul, ol { list-style: none; }
 .stagger-children > *:nth-child(10) { animation-delay: 0.30s; }
 .stagger-children > *:nth-child(n+11) { animation-delay: 0.33s; }
 
-/* --- Hide elements based on auth --- */
+/* --- Animations end --- */
+
+/* --- Hide elements based on auth start --- */
 body.not-logged-in #app-header,
 body.not-logged-in #bottom-nav,
 body.not-logged-in #app-content {
@@ -985,7 +1118,9 @@ body.not-logged-in #login-screen {
   display: none;
 }
 
-/* --- Date picker override --- */
+/* --- Hide elements based on auth end --- */
+
+/* --- Date picker override start --- */
 input[type="date"] {
   color-scheme: light;
 }
@@ -1004,7 +1139,9 @@ input[type="date"] {
   display: flex;
 }
 
-/* --- Responsive Layout for Desktop / Tablet --- */
+/* --- Date picker override end --- */
+
+/* --- Responsive Layout for Desktop / Tablet start --- */
 @media (min-width: 1024px) {
   /* Hide mobile elements on desktop */
   #app-header,
@@ -1046,7 +1183,9 @@ input[type="date"] {
   }
 }
 
-/* --- Premium Custom Dropdown (Custom Select) --- */
+/* --- Responsive Layout for Desktop / Tablet end --- */
+
+/* --- Premium Custom Dropdown (Custom Select) start --- */
 .custom-select-wrapper {
   position: relative;
   width: 100%;
@@ -1123,7 +1262,9 @@ input[type="date"] {
   color: white;
 }
 
-/* --- Responsive Utilities --- */
+/* --- Premium Custom Dropdown (Custom Select) end --- */
+
+/* --- Responsive Utilities start --- */
 .show-mobile-only,
 .show-mobile-inline {
   display: none !important;
@@ -1150,4 +1291,290 @@ input[type="date"] {
     display: none !important;
   }
 }
+
+/* --- Responsive Utilities end --- */
+
+/* --- Category Tabs Wrapper start --- */
+.category-tabs {
+  margin-bottom: var(--space-lg);
+  display: flex;
+  gap: var(--space-sm);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: var(--space-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  position: relative;
+  z-index: 99;
+}
+.category-tabs .btn,
+.category-tabs .btn-secondary {
+  border-radius: var(--radius-full) !important;
+  flex-shrink: 0 !important;
+}
+.category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- Category Tabs Wrapper end --- */
+
+/* --- Bulk Stock Management page buttons start --- */
+.btn-bulk-back {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-color-light) !important;
+  color: var(--text-primary) !important;
+  text-decoration: none;
+}
+
+.btn-bulk-back:hover {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color-focus) !important;
+  transform: translateY(-1px);
+}
+
+.btn-bulk-save,
+.btn-bulk-header-save {
+  background: linear-gradient(135deg, #e63946, #b7091b) !important;
+  color: white !important;
+  border: none !important;
+  cursor: pointer;
+}
+
+.btn-bulk-save:hover,
+.btn-bulk-header-save:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Icon spacing inside buttons */
+.btn i, .btn-action i, .btn-modal i, .btn-upload i {
+  margin-right: var(--space-xs) !important;
+}
+
+/* Flex display utility that hides on mobile */
+.hide-mobile-flex {
+  display: flex;
+}
+@media (max-width: 768px) {
+  .hide-mobile-flex {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   Consolidated Common Component Styles
+   ============================================ */
+
+/* --- Bulk Stock Management page buttons end --- */
+
+/* --- Table Row Hover start --- */
+.table-row-hover:hover {
+  background: rgba(139, 3, 19, 0.015) !important;
+}
+
+/* --- Table Row Hover end --- */
+
+/* --- Bulk Hint Box start --- */
+.bulk-hint-box {
+  font-size: var(--font-base);
+  color: var(--text-secondary);
+  text-align: left;
+  background: rgba(255, 171, 43, 0.06);
+  border: 1px solid rgba(255, 171, 43, 0.25);
+  border-left: 6px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  line-height: 1.5;
+}
+.hint-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+.hint-text {
+  flex: 1;
+}
+
+/* --- Bulk Hint Box end --- */
+
+/* --- Category Tab start --- */
+.category-tab {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.category-tab:active {
+  transform: scale(0.97);
+}
+.category-tab.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-glow-primary);
+}
+
+/* --- Category Tab end --- */
+
+/* --- Preset Button start --- */
+.preset-btn {
+  padding: 6px 12px !important;
+  font-size: var(--font-xs) !important;
+  border-radius: var(--radius-full) !important;
+  min-height: unset !important;
+}
+/* --- Preset Button end --- */
+
+/* --- Mobile Universal Design start --- */
+@media (max-width: 768px) {
+  /* 1. Global Font Sizing Upgrades for Legibility */
+  :root {
+    --font-xxs: 0.72rem; /* 11.5px - extra small for compact labels */
+    --font-xs: 0.85rem;  /* 13.6px - upgraded from 0.8rem for readability */
+    --font-sm: 0.95rem;  /* 15.2px - upgraded from 0.9rem */
+  }
+
+  /* 2. Touch Target Heights (Android / iOS standard >= 44px - 48px) */
+  
+  /* Increase padding for secondary buttons (tabs, etc.) */
+  .btn-secondary {
+    padding: 12px 18px !important;
+  }
+
+  /* Reduce category tab, period tabs, csv export, presets, and change method pill button sizes by 1 step on mobile */
+  .category-tab,
+  .category-tabs .btn-secondary,
+  .category-tabs .btn,
+  .period-tabs .btn,
+  .csv-export-btn,
+  .preset-btn,
+  .change-method-btn {
+    padding: 8px 14px !important;
+    font-size: var(--font-xs) !important;
+    border-radius: var(--radius-full) !important;
+    min-height: unset !important;
+  }
+  
+  /* Ensure btn-action touch target is at least 48px */
+  .btn-action {
+    height: 48px !important;
+    font-size: var(--font-base) !important;
+  }
+  
+  /* Modal close buttons touch target */
+  .modal-close {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.5rem !important;
+  }
+  
+  /* Toggle switch touch targets */
+  .toggle-switch {
+    width: 52px !important;
+    height: 28px !important;
+  }
+  .toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px) !important;
+  }
+
+  /* Custom select trigger, input, select controls in filter bars and cards */
+  .custom-select-trigger, 
+  .form-input, 
+  .form-select,
+  select.reports-filter-control,
+  .custom-select-trigger.reports-filter-control,
+  input.reports-filter-control {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    min-height: 44px !important;
+  }
+
+  /* Adjust spacing in tables to prevent elements being too cramped */
+  table th, table td {
+    padding: var(--space-md) var(--space-sm) !important; /* Generous cell padding */
+  }
+
+  /* Consolidated Mobile List Cards */
+  .mobile-menu-card,
+  .mobile-stock-card {
+    background: var(--card-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    -webkit-backdrop-filter: var(--glass-blur) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--space-md) !important;
+    box-shadow: 0 4px 12px rgba(139, 3, 19, 0.03) !important;
+    transition: all var(--transition-base) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .mobile-menu-card-body,
+  .mobile-stock-card-body {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: var(--space-md) !important;
+    width: 100% !important;
+  }
+
+  .mobile-menu-card-details,
+  .mobile-stock-card-details {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+    text-align: left !important;
+  }
+
+  .mobile-menu-card-name,
+  .mobile-stock-card-name {
+    font-size: var(--font-md) !important;
+    font-weight: var(--font-weight-bold) !important;
+    color: var(--text-primary) !important;
+    word-break: break-word !important;
+    text-align: left !important;
+  }
+
+  .mobile-menu-card-meta,
+  .mobile-stock-card-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: var(--space-xs) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-menu-card-actions,
+  .mobile-stock-card-actions {
+    display: flex !important;
+    gap: var(--space-sm) !important;
+    margin-top: var(--space-md) !important;
+    padding-top: var(--space-sm) !important;
+    border-top: 1px dashed var(--border-color) !important;
+    width: 100% !important;
+  }
+
+  .mobile-menu-card-actions button,
+  .mobile-menu-card-actions .btn,
+  .mobile-stock-card-actions button,
+  .mobile-stock-card-actions .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+}
+/* --- Mobile Universal Design end --- */
 

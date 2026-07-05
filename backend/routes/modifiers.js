@@ -374,14 +374,34 @@ router.get('/:id/logs', async (req, res) => {
       });
     }
 
-    const logs = await db.prepare(`
+    let query = `
       SELECT msl.*, u.name as staff_name
       FROM modifier_stock_logs msl
       LEFT JOIN users u ON u.id = msl.staff_id
       WHERE msl.modifier_id = ? AND msl.branch_id = ?
-      ORDER BY msl.created_at DESC
-      LIMIT ?
-    `).all(Number(id), branchId, limit);
+    `;
+    const params = [Number(id), branchId];
+
+    if (req.query.date) {
+      query += ` AND date(msl.created_at) = ? `;
+      params.push(req.query.date);
+    } else if (req.query.month) {
+      query += ` AND strftime('%Y-%m', msl.created_at) = ? `;
+      params.push(req.query.month);
+    } else if (req.query.year) {
+      query += ` AND strftime('%Y', msl.created_at) = ? `;
+      params.push(req.query.year);
+    }
+
+    query += ` ORDER BY msl.created_at DESC `;
+
+    const hasFilter = req.query.date || req.query.month || req.query.year;
+    if (!hasFilter) {
+      query += ` LIMIT ? `;
+      params.push(limit);
+    }
+
+    const logs = await db.prepare(query).all(...params);
 
     res.json({
       success: true,

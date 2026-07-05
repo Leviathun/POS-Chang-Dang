@@ -4,55 +4,54 @@
     <!-- Tab toggles inside Settings page -->
     <div class="category-tabs mb-lg">
       <button 
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'shop' }"
         @click="activeTab = 'shop'"
       >
-        <i class="fa-solid fa-store" style="margin-right: 4px;"></i> ตั้งค่าร้านค้า
+        <i class="fa-solid fa-store"></i> ตั้งค่าร้านค้า
       </button>
       <button 
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'users' }"
         @click="activeTab = 'users'"
       >
-        <i class="fa-solid fa-users" style="margin-right: 4px;"></i> พนักงานหน้าร้าน
+        <i class="fa-solid fa-users"></i> พนักงานหน้าร้าน
       </button>
       <button 
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'branches' }"
         @click="activeTab = 'branches'"
       >
-        <i class="fa-solid fa-code-branch" style="margin-right: 4px;"></i> จัดการสาขา
+        <i class="fa-solid fa-code-branch"></i> จัดการสาขา
       </button>
       <button 
         v-if="currentUser?.role === 'admin'"
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'presets' }"
         @click="activeTab = 'presets'"
       >
-        <i class="fa-solid fa-mortar-pestle" style="margin-right: 4px;"></i> สูตรเครื่องปรุง
+        <i class="fa-solid fa-mortar-pestle"></i> สูตรเครื่องปรุง
       </button>
       <button 
         v-if="currentUser?.role === 'admin'"
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'backup' }"
         @click="activeTab = 'backup'"
       >
-        <i class="fa-solid fa-database" style="margin-right: 4px;"></i> สำรอง & จัดเก็บข้อมูล
+        <i class="fa-solid fa-database"></i> สำรอง & จัดเก็บข้อมูล
       </button>
     </div>
 
     <!-- Tab 1: Shop Settings Form -->
     <div v-if="activeTab === 'shop'" class="card">
       <!-- Branch Selector for Admin -->
-      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl" style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-lg); position: relative; z-index: 10;">
-        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store" style="margin-right: 4px;"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
+      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl settings-branch-header">
+        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store mr-xs"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
         <div class="custom-select-wrapper" @click.stop>
           <div 
-            class="custom-select-trigger" 
+            class="custom-select-trigger settings-branch-trigger" 
             :class="{ 'active': isSettingsBranchDropdownOpen }" 
             @click="toggleSettingsBranchDropdown"
-            style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-md); width: 100%; height: 38px; line-height: 24px; background-position: right 12px center; display: flex; align-items: center;"
           >
             <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
           </div>
@@ -70,7 +69,7 @@
         </div>
       </div>
 
-      <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
+      <div class="card-title text-sm"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
 
 
 
@@ -87,36 +86,36 @@
       </div>
 
       <!-- Save Shop Settings Button -->
-      <button class="btn btn-primary btn-block mt-lg" @click="saveShopSettings" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+      <button class="btn btn-primary btn-block mt-lg" @click="saveShopSettings">
         <i class="fa-solid fa-floppy-disk"></i> บันทึกตั้งค่าระบบร้าน
       </button>
     </div>
 
     <!-- Tab 2: User management -->
-    <div v-if="activeTab === 'users'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'users'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card" style="background: var(--card-bg); gap: var(--space-md); flex-wrap: wrap;">
-        <span class="font-bold" style="font-size: 1.25rem;"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> จัดการพนักงานหน้าร้าน</span>
-        <button class="btn btn-primary" style="font-weight: bold; min-height: 44px; padding: 10px 20px;" @click="openAddUserModal"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มพนักงาน</button>
+      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
+        <span class="font-bold text-lg"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> จัดการพนักงานหน้าร้าน</span>
+        <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
       </div>
 
       <!-- Users list table (Visible on Desktop Only) -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md);">ชื่อพนักงาน</th>
-                <th style="padding: var(--space-md); text-align: center;">สาขา</th>
-                <th style="padding: var(--space-md); text-align: center;">บทบาท</th>
-                <th style="padding: var(--space-md); text-align: center;">รหัส PIN</th>
-                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                <th class="text-left" style="padding: var(--space-md);">ชื่อพนักงาน</th>
+                <th class="text-center" style="padding: var(--space-md);">สาขา</th>
+                <th class="text-center" style="padding: var(--space-md);">บทบาท</th>
+                <th class="text-center" style="padding: var(--space-md);">รหัส PIN</th>
+                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="usersLoading">
-                <td colspan="5" style="text-align: center; padding: var(--space-2xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                <td colspan="5" class="text-center" style="padding: var(--space-2xl);">
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr 
@@ -127,32 +126,32 @@
                 class="table-row-hover"
               >
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold" style="font-size: var(--font-base);">{{ u.name }}</div>
-                  <div style="font-size: 10px; color: var(--text-tertiary);">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+                  <div class="font-bold text-base">{{ u.name }}</div>
+                  <div class="text-base text-muted">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span style="font-size: var(--font-xs); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="text-base text-secondary flex align-center justify-center" style="gap: 4px;">
                     <i class="fa-solid fa-store" style="color: var(--text-tertiary);"></i> {{ getBranchName(u.branch_id) }}
                   </span>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="badge text-base" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
                     {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
                   </span>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; font-weight: bold; vertical-align: middle; color:var(--primary);">
+                <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary);">
                   ••••
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
-                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditUserModal(u)"><i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> แก้ไข</button>
+                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditUserModal(u)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
                     <button 
                       class="btn-action btn-action-delete" 
                       title="ลบ"
                       :disabled="u.id === currentUser?.id"
                       @click="handleDeleteUser(u.id)"
                     >
-                      <i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ
+                      <i class="fa-solid fa-trash-can"></i> ลบ
                     </button>
                   </div>
                 </td>
@@ -165,7 +164,7 @@
       <!-- Mobile Users Cards List (Visible on Mobile Only) -->
       <div class="show-mobile-only p-md mobile-users-list">
         <div v-if="usersLoading" style="text-align: center; padding: var(--space-xl);">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="users.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
           ยังไม่มีข้อมูลพนักงาน
@@ -179,35 +178,34 @@
         >
           <!-- Profile Badge -->
           <div 
-            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: var(--font-md); flex-shrink: 0;"
+            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+            class="font-bold text-md"
           >
             <i v-if="!u.name" class="fa-solid fa-user"></i>
             <span v-else>{{ u.name.charAt(0).toUpperCase() }}</span>
           </div>
 
           <!-- Info & Actions -->
-          <div class="flex-1" style="min-width: 0;">
+          <div class="flex-1 min-w-0">
             <div class="flex flex-between align-center mb-xs">
-              <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ u.name }}</span>
+              <span class="font-bold text-primary text-base">{{ u.name }}</span>
               <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
                 {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
               </span>
             </div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: var(--space-sm); display: inline-flex; align-items: center; gap: 4px;">
+            <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm); display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-store" style="color: var(--text-tertiary);"></i> {{ getBranchName(u.branch_id) }} | PIN: <strong style="color:var(--primary);">••••</strong>
             </div>
             <!-- Actions buttons in card -->
             <div class="flex gap-sm">
               <button 
-                class="btn btn-sm flex-1" 
-                style="background: rgba(255, 171, 43, 0.12); color: var(--accent-dark); border: 1px solid rgba(255, 171, 43, 0.25); min-height: 36px; font-size: 12px; justify-content: center; display: inline-flex; align-items: center; gap: 4px;" 
+                class="btn-action btn-action-edit flex-1" 
                 @click="openEditUserModal(u)"
               >
                 <i class="fa-solid fa-pen-to-square"></i> แก้ไข
               </button>
               <button 
-                class="btn btn-sm flex-1" 
-                style="background: rgba(173, 40, 30, 0.08); color: var(--primary); border: 1px solid rgba(173, 40, 30, 0.18); min-height: 36px; font-size: 12px; justify-content: center; display: inline-flex; align-items: center; gap: 4px;" 
+                class="btn-action btn-action-delete flex-1" 
                 :disabled="u.id === currentUser?.id"
                 @click="handleDeleteUser(u.id)"
               >
@@ -220,7 +218,7 @@
     </div>
 
     <!-- User Add/Edit Dialog Modal -->
-    <div v-if="showUserModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showUserModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showUserModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -303,12 +301,11 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" @click="showUserModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showUserModal = false">ยกเลิก</button>
             <button 
-              class="btn btn-primary flex-1" 
+              class="btn-modal btn-modal-primary flex-1" 
               :disabled="!userForm.name || !userForm.pin || userForm.pin.length !== 4"
               @click="handleSaveUser"
-              style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
             >
               <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
             </button>
@@ -318,27 +315,27 @@
     </div>
 
     <!-- Tab 3: Branch management (Admin only) -->
-    <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card" style="background: var(--card-bg); gap: var(--space-md); flex-wrap: wrap;">
-        <span class="font-bold" style="font-size: 1.25rem;"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> จัดการสาขาของร้าน</span>
-        <button class="btn btn-primary" style="font-weight: bold; min-height: 44px; padding: 10px 20px;" @click="openAddBranchModal"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มสาขา</button>
+      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
+        <span class="font-bold text-lg"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> จัดการสาขาของร้าน</span>
+        <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
       </div>
 
       <!-- Branch list table (Visible on Desktop Only) -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md);">ชื่อสาขา</th>
-                <th style="padding: var(--space-md);">ที่อยู่</th>
-                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                <th class="text-left" style="padding: var(--space-md);">ชื่อสาขา</th>
+                <th class="text-left" style="padding: var(--space-md);">ที่อยู่</th>
+                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="branches.length === 0">
-                <td colspan="3" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+                <td colspan="3" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสาขา
                 </td>
               </tr>
@@ -355,10 +352,10 @@
                 <td style="padding: var(--space-md); vertical-align: middle; color: var(--text-secondary);">
                   {{ b.address || '-' }}
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
-                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditBranchModal(b)"><i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> แก้ไข</button>
-                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteBranch(b.id)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ</button>
+                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditBranchModal(b)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteBranch(b.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
                   </div>
                 </td>
               </tr>
@@ -380,27 +377,26 @@
           style="margin-bottom: var(--space-sm);"
         >
           <div 
-            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--font-md); flex-shrink: 0;"
+            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+            class="text-md"
           >
             <i class="fa-solid fa-store" style="font-size: 1.2rem;"></i>
           </div>
 
-          <div class="flex-1" style="min-width: 0;">
-            <div class="font-bold text-primary mb-xs" style="font-size: var(--font-base);">{{ b.name }}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: var(--space-sm);">
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-primary mb-xs text-base">{{ b.name }}</div>
+            <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm);">
               <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
             </div>
             <div class="flex gap-sm">
               <button 
-                class="btn btn-sm flex-1" 
-                style="background: rgba(255, 171, 43, 0.12); color: var(--accent-dark); border: 1px solid rgba(255, 171, 43, 0.25); min-height: 36px; font-size: 12px; justify-content: center; display: inline-flex; align-items: center; gap: 4px;" 
+                class="btn-action btn-action-edit flex-1" 
                 @click="openEditBranchModal(b)"
               >
                 <i class="fa-solid fa-pen-to-square"></i> แก้ไข
               </button>
               <button 
-                class="btn btn-sm flex-1" 
-                style="background: rgba(173, 40, 30, 0.08); color: var(--primary); border: 1px solid rgba(173, 40, 30, 0.18); min-height: 36px; font-size: 12px; justify-content: center; display: inline-flex; align-items: center; gap: 4px;" 
+                class="btn-action btn-action-delete flex-1" 
                 @click="handleDeleteBranch(b.id)"
               >
                 <i class="fa-solid fa-trash-can"></i> ลบ
@@ -412,7 +408,7 @@
     </div>
 
     <!-- Branch Add/Edit Dialog Modal -->
-    <div v-if="showBranchModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showBranchModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showBranchModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -444,12 +440,11 @@
           </div>
 
           <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" @click="showBranchModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showBranchModal = false">ยกเลิก</button>
             <button 
-              class="btn btn-primary flex-1" 
+              class="btn-modal btn-modal-primary flex-1" 
               :disabled="!branchForm.name || !branchForm.name.trim()"
               @click="handleSaveBranch"
-              style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
             >
               <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
             </button>
@@ -459,33 +454,33 @@
     </div>
 
     <!-- Tab 4: Presets CRUD -->
-    <div v-if="activeTab === 'presets'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'presets'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card" style="background: var(--card-bg); gap: var(--space-md); flex-wrap: wrap;">
-        <span class="font-bold" style="font-size: 1.25rem;"><i class="fa-solid fa-mortar-pestle" style="margin-right: 6px;"></i> สูตรเครื่องปรุงสำเร็จรูป</span>
-        <button class="btn btn-primary" style="font-weight: bold; min-height: 44px; padding: 10px 20px;" @click="openAddPresetModal"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มสูตรสำเร็จ</button>
+      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
+        <span class="font-bold text-lg"><i class="fa-solid fa-mortar-pestle" style="margin-right: 6px;"></i> สูตรเครื่องปรุงสำเร็จรูป</span>
+        <button class="btn btn-primary" @click="openAddPresetModal"><i class="fa-solid fa-plus"></i> เพิ่มสูตรสำเร็จ</button>
       </div>
 
       <!-- Presets List -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="padding: var(--space-md);">ชื่อสูตร</th>
-                <th style="padding: var(--space-md);">เครื่องปรุงที่รวมอยู่</th>
-                <th style="padding: var(--space-md); text-align: center;">สถานะ</th>
-                <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                <th class="text-left" style="padding: var(--space-md);">ชื่อสูตร</th>
+                <th class="text-left" style="padding: var(--space-md);">เครื่องปรุงที่รวมอยู่</th>
+                <th class="text-center" style="padding: var(--space-md);">สถานะ</th>
+                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="presetsLoading">
-                <td colspan="4" style="text-align: center; padding: var(--space-2xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                <td colspan="4" class="text-center" style="padding: var(--space-2xl);">
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="presets.length === 0">
-                <td colspan="4" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+                <td colspan="4" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
                 </td>
               </tr>
@@ -506,15 +501,15 @@
                     </span>
                   </div>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
-                  <span class="badge" :class="p.active ? 'badge-primary' : 'badge-neutral'">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                  <span class="badge text-base" :class="p.active ? 'badge-primary' : 'badge-neutral'">
                     {{ p.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
                   </span>
                 </td>
-                <td style="padding: var(--space-md); text-align: center; vertical-align: middle;">
+                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
-                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditPresetModal(p)"><i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> แก้ไข</button>
-                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeletePreset(p.id)"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ลบ</button>
+                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditPresetModal(p)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeletePreset(p.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
                   </div>
                 </td>
               </tr>
@@ -526,7 +521,7 @@
       <!-- Mobile Presets List -->
       <div class="show-mobile-only" style="display: none;">
         <div v-if="presetsLoading" class="card p-lg text-center" style="background: var(--card-bg);">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="presets.length === 0" class="card p-lg text-center text-secondary" style="background: var(--card-bg);">
           ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
@@ -539,13 +534,13 @@
             style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg);"
           >
             <div class="flex flex-between align-center">
-              <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ p.name }}</span>
+              <span class="font-bold text-primary text-base">{{ p.name }}</span>
               <span class="badge" :class="p.active ? 'badge-primary' : 'badge-neutral'">
                 {{ p.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
               </span>
             </div>
             
-            <div class="text-secondary" style="font-size: var(--font-xs);">
+            <div class="text-xs text-secondary">
               <div class="mb-xs font-semibold" style="color: var(--text-secondary);">เครื่องปรุงที่รวมอยู่:</div>
               <div class="flex gap-xs" style="flex-wrap: wrap;">
                 <span v-for="mid in p.modifier_ids" :key="mid" class="modifier-pill">
@@ -557,8 +552,8 @@
             <div class="divider" style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
 
             <div class="flex gap-sm justify-end">
-              <button class="btn btn-sm btn-secondary flex-1" style="min-height: 36px; font-size: var(--font-xs); display: inline-flex; align-items: center; justify-content: center; gap: 4px;" @click="openEditPresetModal(p)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
-              <button class="btn btn-sm btn-ghost text-danger flex-1" style="min-height: 36px; font-size: var(--font-xs); border: 1px solid var(--danger-light); display: inline-flex; align-items: center; justify-content: center; gap: 4px;" @click="handleDeletePreset(p.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
+              <button class="btn-action btn-action-edit flex-1" @click="openEditPresetModal(p)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+              <button class="btn-action btn-action-delete flex-1" @click="handleDeletePreset(p.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
             </div>
           </div>
         </div>
@@ -566,19 +561,19 @@
     </div>
 
     <!-- Tab 5: Backup, Restore & Archive -->
-    <div v-if="activeTab === 'backup'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'backup'" class="flex flex-col gap-lg w-full">
       <!-- Card 1: Data Backup & Restore -->
       <div class="card">
-        <div class="card-title mb-md" style="font-size: var(--font-base);"><i class="fa-solid fa-database" style="margin-right: 6px;"></i> สำรองและกู้คืนข้อมูล (Backup & Restore)</div>
-        <p class="text-secondary mb-lg" style="font-size: var(--font-sm); line-height: 1.5;">
+        <div class="card-title mb-md text-base"><i class="fa-solid fa-database" style="margin-right: 6px;"></i> สำรองและกู้คืนข้อมูล (Backup & Restore)</div>
+        <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
           คุณสามารถดาวน์โหลดข้อมูลระบบทั้งหมดเป็นไฟล์ JSON เพื่อเก็บสำรองไว้ หรืออัปโหลดไฟล์ที่ดาวน์โหลดไปเพื่อกู้คืนข้อมูลระบบได้
         </p>
 
-        <div class="flex gap-md backup-btns-container" style="flex-wrap: wrap; margin-bottom: var(--space-lg);">
-          <button class="btn btn-secondary flex-1" style="min-height:48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" @click="downloadJSONBackup">
+        <div class="flex gap-md backup-btns-container">
+          <button class="btn-modal btn-modal-secondary flex-1" @click="downloadJSONBackup">
             <i class="fa-solid fa-file-arrow-down"></i> ดาวน์โหลดสำรองข้อมูล (JSON)
           </button>
-          <button class="btn btn-secondary flex-1" style="min-height:48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" @click="downloadSQLiteDB">
+          <button class="btn-modal btn-modal-secondary flex-1" @click="downloadSQLiteDB">
             <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูลดิบ (SQLite)
           </button>
         </div>
@@ -599,8 +594,8 @@
 
       <!-- Card 2: Old Orders Archiving -->
       <div class="card">
-        <div class="card-title mb-md" style="font-size: var(--font-base);"><i class="fa-solid fa-box-archive" style="margin-right: 6px;"></i> ย้ายและบีบอัดข้อมูลเก่า (Order Archive)</div>
-        <p class="text-secondary mb-lg" style="font-size: var(--font-sm); line-height: 1.5;">
+        <div class="card-title mb-md text-base"><i class="fa-solid fa-box-archive" style="margin-right: 6px;"></i> ย้ายและบีบอัดข้อมูลเก่า (Order Archive)</div>
+        <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
           เพื่อช่วยให้ฐานข้อมูลทำงานได้รวดเร็วและป้องกันไม่ให้ฐานข้อมูลบวม คุณสามารถย้ายออเดอร์และประวัติการขายที่เก่ากว่าช่วงเวลาที่กำหนด ไปไว้ที่ตารางเก็บประวัติถาวร (Archived Orders) ได้
         </p>
 
@@ -628,7 +623,7 @@
                 </div>
               </div>
             </div>
-            <button class="btn btn-primary" style="font-weight:bold; min-height:44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" @click="handleArchiveOrders">
+            <button class="btn btn-primary" @click="handleArchiveOrders">
               <i class="fa-solid fa-box-archive"></i> เริ่มจัดเก็บออเดอร์เก่า
             </button>
           </div>
@@ -637,7 +632,7 @@
     </div>
 
     <!-- Preset Add/Edit Dialog Modal -->
-    <div v-if="showPresetModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showPresetModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showPresetModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -666,8 +661,8 @@
               <label 
                 v-for="mod in availableModifiers" 
                 :key="mod.id" 
-                class="flex align-center gap-sm"
-                style="cursor: pointer; font-size: var(--font-sm); padding: 4px 0;"
+                class="flex align-center gap-sm text-sm"
+                style="cursor: pointer; padding: 4px 0;"
               >
                 <input 
                   type="checkbox" 
@@ -688,17 +683,16 @@
               v-model="presetForm.active" 
               style="width: 18px; height: 18px;" 
             />
-            <label for="preset-active-checkbox" style="cursor: pointer; font-size: var(--font-sm);">เปิดใช้งานสูตรสำเร็จนี้</label>
+            <label for="preset-active-checkbox" class="text-sm" style="cursor: pointer;">เปิดใช้งานสูตรสำเร็จนี้</label>
           </div>
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" @click="showPresetModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showPresetModal = false">ยกเลิก</button>
             <button 
-              class="btn btn-primary flex-1" 
+              class="btn-modal btn-modal-primary flex-1" 
               :disabled="!presetForm.name.trim() || presetForm.modifier_ids.length === 0"
               @click="handleSavePreset"
-              style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
             >
               <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
             </button>
@@ -1266,50 +1260,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* --- Category Tabs --- */
-.category-tabs {
-  display: flex;
-  gap: var(--space-sm);
-  overflow-x: auto;
-  padding-bottom: var(--space-md);
-  margin-bottom: var(--space-lg);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.category-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.category-tab {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all var(--transition-base);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.category-tab:active {
-  transform: scale(0.97);
-}
-
-.category-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
-}
-
-.table-row-hover:hover {
-  background: rgba(139, 3, 19, 0.015) !important;
-}
 
 /* --- Setting Item --- */
 .setting-item {
@@ -1397,9 +1347,13 @@ onUnmounted(() => {
     flex-direction: column !important;
     gap: var(--space-sm) !important;
   }
-  .backup-btns-container .btn {
+  .backup-btns-container .btn,
+  .backup-btns-container .btn-modal {
     width: 100% !important;
     flex: none !important;
+    height: 48px !important;
+    font-size: var(--font-base) !important;
+    border-radius: var(--radius-md) !important;
   }
   .archive-inputs-container {
     flex-direction: column !important;
@@ -1410,6 +1364,10 @@ onUnmounted(() => {
     width: 100% !important;
     flex: none !important;
   }
+  .modifier-pill {
+    font-size: var(--font-xs) !important;
+    padding: 2px 8px !important;
+  }
 }
 
 .modifier-pill {
@@ -1419,10 +1377,29 @@ onUnmounted(() => {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
-  font-size: var(--font-xs);
+  font-size: var(--font-base);
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
   box-shadow: var(--shadow-sm);
   white-space: nowrap;
+}
+.settings-branch-header {
+  background: var(--bg-secondary);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-lg);
+  position: relative;
+  z-index: 10;
+}
+.settings-branch-trigger {
+  padding: 6px 36px 6px var(--space-md);
+  border-radius: var(--radius-md);
+  width: 100%;
+  height: 38px;
+  line-height: 24px;
+  background-position: right 12px center;
+  display: flex;
+  align-items: center;
 }
 </style>

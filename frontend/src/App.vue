@@ -9,10 +9,10 @@
 
       <div class="login-card card glass p-6 w-full max-w-sm text-center">
         <!-- Brand Logo Image (No animation) -->
-        <div class="brand-logo mb-2" style="display: flex; justify-content: center; height: 6.5rem; align-items: center;">
+        <div class="brand-logo mb-2 flex flex-center" style="height: 6.5rem;">
           <img src="@/assets/image/Logo POS.png" alt="Logo" style="height: 100%; object-fit: contain;" />
         </div>
-        <h2 class="font-bold text-gradient mb-1" style="font-size: 1.8rem;">
+        <h2 class="font-bold text-gradient mb-1" style="font-size: var(--font-lg);">
           ร้านไก่ทอดช้างแดง
         </h2>
         <p class="text-secondary text-sm mb-lg">กรุณาเลือกสาขาและระบุรหัส PIN เพื่อเข้าใช้งาน</p>
@@ -73,8 +73,8 @@
       <aside id="app-sidebar">
         <!-- Brand / Logo -->
         <div class="sidebar-brand">
-          <span class="brand-emoji" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;">
-            <img src="@/assets/image/Logo POS.png" alt="Logo" style="width: 28px; height: 28px; object-fit: contain;" />
+          <span class="brand-emoji">
+            <img src="@/assets/image/Logo POS.png" alt="Logo" class="brand-logo-img" />
           </span>
           <div class="brand-text">
             <span class="brand-name">ร้านไก่ทอดช้างแดง</span>
@@ -86,12 +86,12 @@
 
         <!-- User profile widget -->
         <div class="sidebar-user" v-if="user">
-          <div class="user-avatar" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;">
-            <i class="fa-solid fa-circle-user" style="font-size: 2.2rem; color: var(--primary);"></i>
+          <div class="user-avatar">
+            <i class="fa-solid fa-circle-user avatar-icon"></i>
           </div>
           <div class="user-info">
             <div class="user-name">{{ user.name }}</div>
-            <div class="user-role-badge" :class="user.role">{{ user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน' }}</div>
+            <div class="user-role-badge" :class="user.role">{{ user.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}</div>
           </div>
         </div>
 
@@ -134,7 +134,7 @@
       <div class="main-layout">
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
-          <span class="header-title" style="display: flex; align-items: center; gap: 6px;">
+          <span class="header-title flex align-center gap-xs">
             <img v-if="route.path === '/pos'" src="@/assets/image/Logo POS.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
             <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
             <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
@@ -143,9 +143,9 @@
             <span>{{ activeTitle }}</span>
           </span>
           <div class="header-right">
-            <button class="header-btn" id="btn-logout" @click="handleLogout" style="display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fa-solid fa-right-from-bracket" style="font-size: 14px;"></i>
-              <span style="font-size: 11px; font-weight: bold;">ออก</span>
+            <button class="header-btn inline-flex align-center gap-xs" id="btn-logout" @click="handleLogout">
+              <i class="fa-solid fa-right-from-bracket" style="font-size: var(--font-sm);"></i>
+              <span style="font-size: var(--font-xs); font-weight: bold;">ออก</span>
             </button>
           </div>
         </header>
@@ -157,7 +157,7 @@
             <h2 class="desktop-page-title">{{ activeTitle }}</h2>
             <div class="desktop-user-profile" v-if="user">
               <span class="user-greeting">สวัสดี, <strong>{{ user.name }}</strong></span>
-              <span class="user-badge" :class="user.role">{{ user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน' }}</span>
+              <span class="user-badge" :class="user.role">{{ user.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}</span>
             </div>
           </div>
 
@@ -171,23 +171,23 @@
         <!-- Bottom Navigation (Visible on Mobile) -->
         <nav id="bottom-nav">
           <router-link to="/pos" class="nav-item" active-class="active" data-page="pos">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-house"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-house"></i></span>
             <span class="nav-label">ขาย</span>
           </router-link>
           <router-link to="/menu" class="nav-item" active-class="active" data-page="menu">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-utensils"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-utensils"></i></span>
             <span class="nav-label">เมนู</span>
           </router-link>
           <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-boxes-stacked"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="nav-label">สต็อก</span>
           </router-link>
           <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-chart-line"></i></span>
-            <span class="nav-label">รายงานยอด</span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
+            <span class="nav-label">รายงาน</span>
           </router-link>
           <router-link v-if="adminUser" to="/settings" class="nav-item" active-class="active" data-page="settings">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-gear"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-label">ตั้งค่า</span>
           </router-link>
         </nav>
@@ -198,7 +198,7 @@
     <div id="toast-container">
       <transition-group name="toast-anim">
         <div v-for="t in uiState.toasts" :key="t.id" class="toast" :class="t.type">
-          <span class="toast-icon" style="display: inline-flex; align-items: center;">
+          <span class="toast-icon inline-flex align-center">
             <i v-if="t.type === 'success'" class="fa-solid fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i>
             <i v-else-if="t.type === 'error'" class="fa-solid fa-circle-xmark" style="color: var(--danger); font-size: 1.2rem;"></i>
             <i v-else-if="t.type === 'info'" class="fa-solid fa-circle-info" style="color: var(--accent); font-size: 1.2rem;"></i>
@@ -211,14 +211,14 @@
     </div>
 
     <!-- Reactive Global Modal Container (Confirm dialog) -->
-    <div id="modal-container" :class="{ 'active': uiState.confirm }" :style="uiState.confirm ? 'display:flex; align-items:center;' : ''">
+    <div id="modal-container" :class="{ 'active flex align-center': uiState.confirm }">
       <div v-if="uiState.confirm" class="modal-overlay" @click="uiState.confirm.resolve(false)"></div>
       <div v-if="uiState.confirm" class="confirm-dialog" style="position:relative; z-index:2;">
         <div class="confirm-title">{{ uiState.confirm.title }}</div>
         <div class="confirm-message">{{ uiState.confirm.message }}</div>
         <div class="confirm-actions">
-          <button class="btn btn-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
-          <button class="btn btn-danger flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
+          <button class="btn-modal btn-modal-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
+          <button class="btn-modal btn-modal-primary flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
         </div>
       </div>
     </div>
@@ -400,10 +400,83 @@ const closeBranchDropdown = () => {
   isBranchDropdownOpen.value = false;
 };
 
+let dragScrollObserver = null;
+
+const initDragToScroll = () => {
+  const attachEvents = (el) => {
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+    let hasDragged = false;
+
+    el.addEventListener('mousedown', (e) => {
+      isDown = true;
+      hasDragged = false;
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+      el.style.cursor = 'grabbing';
+      el.style.userSelect = 'none';
+    });
+
+    el.addEventListener('mouseleave', () => {
+      isDown = false;
+      el.style.cursor = 'grab';
+    });
+
+    el.addEventListener('mouseup', () => {
+      isDown = false;
+      el.style.cursor = 'grab';
+    });
+
+    el.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      if (Math.abs(walk) > 5) {
+        hasDragged = true;
+      }
+      el.scrollLeft = scrollLeft - walk;
+    });
+
+    // Capture phase click handler to block click if dragged
+    el.addEventListener('click', (e) => {
+      if (hasDragged) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    // Initial cursor style
+    el.style.cursor = 'grab';
+  };
+
+  // Find all current elements
+  document.querySelectorAll('.category-tabs').forEach(attachEvents);
+
+  // Monitor DOM for new category-tabs dynamically loaded by views
+  dragScrollObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) {
+          if (node.classList && node.classList.contains('category-tabs')) {
+            attachEvents(node);
+          }
+          const nested = node.querySelectorAll ? node.querySelectorAll('.category-tabs') : [];
+          nested.forEach(attachEvents);
+        }
+      });
+    });
+  });
+
+  dragScrollObserver.observe(document.body, { childList: true, subtree: true });
+};
+
 onMounted(() => {
   user.value = getUser();
   loadSettings();
   loadBranches();
+  initDragToScroll();
 
   // Listen to global events for cart bar visibility
   window.addEventListener('cart-state-change', (e) => {
@@ -416,6 +489,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('click', closeBranchDropdown);
+  if (dragScrollObserver) {
+    dragScrollObserver.disconnect();
+  }
 });
 </script>
 
@@ -693,11 +769,13 @@ onUnmounted(() => {
 }
 
 .nav-item {
+  flex: 1;
+  max-width: 75px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 16px; /* Premium pill shape padding */
+  padding: 6px 0; /* Premium uniform size */
   color: var(--text-tertiary);
   font-size: var(--font-xs);
   font-weight: var(--font-weight-medium);
@@ -708,8 +786,9 @@ onUnmounted(() => {
 }
 
 .nav-item .nav-icon {
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
   transition: var(--transition-base);
+  height: 1.35rem;
 }
 
 .nav-item.active {
@@ -943,10 +1022,21 @@ onUnmounted(() => {
 
   .sidebar-brand .brand-emoji {
     font-size: 2.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+  }
+
+  .sidebar-brand .brand-logo-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
   }
 
   .sidebar-brand .brand-name {
-    font-size: var(--font-md);
+    font-size: var(--font-lg);
     font-weight: var(--font-weight-bold);
     color: var(--primary);
     background: var(--gradient-primary);
@@ -956,7 +1046,7 @@ onUnmounted(() => {
   }
 
   .sidebar-brand .brand-tagline {
-    font-size: 10px;
+    font-size: var(--font-xs);
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -985,12 +1075,17 @@ onUnmounted(() => {
   .sidebar-user .user-avatar {
     font-size: 1.5rem;
     background: var(--bg-tertiary);
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .sidebar-user .user-avatar .avatar-icon {
+    font-size: 2.2rem;
+    color: var(--primary);
   }
 
   .sidebar-user .user-name {
@@ -1000,8 +1095,8 @@ onUnmounted(() => {
   }
 
   .sidebar-user .user-role-badge {
-    font-size: 10px;
-    padding: 1px 6px;
+    font-size: var(--font-xs);
+    padding: 2px 8px;
     border-radius: var(--radius-full);
     display: inline-block;
     font-weight: var(--font-weight-medium);
@@ -1038,7 +1133,7 @@ onUnmounted(() => {
   }
 
   .sidebar-item .sidebar-icon {
-    font-size: 1.3rem;
+    font-size: var(--font-lg);
   }
 
   .sidebar-item:hover {
@@ -1089,7 +1184,7 @@ onUnmounted(() => {
   }
 
   .desktop-content-header .desktop-page-title {
-    font-size: var(--font-xl);
+    font-size: var(--font-lg);
     font-weight: var(--font-weight-bold);
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -1101,7 +1196,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
   }
 
   .desktop-content-header .desktop-user-profile .user-badge {

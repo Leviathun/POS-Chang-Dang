@@ -1,53 +1,61 @@
 <template>
   <div id="reports-page" class="page-enter">
     
-    <!-- Tab toggles placed at the very top, styled as category tabs -->
-    <div class="category-tabs mb-lg">
+    <!-- Tab toggles placed at the very top, styled as category tabs (Matches Menu.vue style) -->
+    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
       <button 
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'sales' }"
         @click="activeTab = 'sales'"
       >
-        <i class="fa-solid fa-chart-column" style="margin-right: 4px;"></i> ยอดขาย
+        <i class="fa-solid fa-chart-column"></i> ยอดขาย
       </button>
       <button 
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'order_history' }"
         @click="activeTab = 'order_history'"
       >
-        <i class="fa-solid fa-clock-rotate-left" style="margin-right: 4px;"></i> ประวัติออเดอร์ย้อนหลัง
+        <i class="fa-solid fa-clock-rotate-left"></i> ประวัติออเดอร์ย้อนหลัง
       </button>
       <button 
         v-if="isAdminUser"
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'expenses' }"
         @click="activeTab = 'expenses'"
       >
-        <i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่ายประจำวัน
+        <i class="fa-solid fa-wallet"></i> บันทึกค่าใช้จ่ายประจำวัน
       </button>
       <button 
         v-if="isAdminUser"
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'top_menus' }"
         @click="activeTab = 'top_menus'"
       >
-        <i class="fa-solid fa-fire" style="margin-right: 4px;"></i> 10 อันดับเมนูขายดี
+        <i class="fa-solid fa-fire"></i> 10 อันดับเมนูขายดี
       </button>
       <button 
         v-if="isAdminUser"
-        class="category-tab" 
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'activity_logs' }"
         @click="activeTab = 'activity_logs'"
       >
-        <i class="fa-solid fa-user-shield" style="margin-right: 4px;"></i> ประวัติกิจกรรมพนักงาน
+        <i class="fa-solid fa-user-shield"></i> ประวัติกิจกรรมพนักงาน
       </button>
       <button 
         v-if="isAdminUser"
-        class="category-tab" 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeTab === 'stock_history' }"
+        @click="activeTab = 'stock_history'"
+      >
+        <i class="fa-solid fa-boxes-stacked"></i> ประวัติสต็อก
+      </button>
+      <button 
+        v-if="isAdminUser"
+        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'cash_audit' }"
         @click="activeTab = 'cash_audit'"
       >
-        <i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> ตรวจสอบยอดลิ้นชัก
+        <i class="fa-solid fa-cash-register"></i> ตรวจสอบยอดลิ้นชัก
       </button>
     </div>
 
@@ -55,33 +63,30 @@
     <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 50;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
-        <div class="flex gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <button 
             type="button"
-            class="btn btn-sm" 
-            :class="periodMode === 'daily' ? 'btn-primary' : 'btn-secondary'"
+            class="btn btn-secondary btn-sm" 
+            :class="{ 'active': periodMode === 'daily' }"
             @click="setPeriodMode('daily')"
-            style="min-height:32px; font-size:12px; padding: 4px 12px; border-radius: 4px;"
           >
-            <i class="fa-solid fa-calendar-day" style="margin-right: 4px;"></i> รายวัน
+            <i class="fa-solid fa-calendar-day"></i> รายวัน
           </button>
           <button 
             type="button"
-            class="btn btn-sm" 
-            :class="periodMode === 'monthly' ? 'btn-primary' : 'btn-secondary'"
+            class="btn btn-secondary btn-sm" 
+            :class="{ 'active': periodMode === 'monthly' }"
             @click="setPeriodMode('monthly')"
-            style="min-height:32px; font-size:12px; padding: 4px 12px; border-radius: 4px;"
           >
-            <i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> รายเดือน
+            <i class="fa-solid fa-calendar-days"></i> รายเดือน
           </button>
           <button 
             type="button"
-            class="btn btn-sm" 
-            :class="periodMode === 'yearly' ? 'btn-primary' : 'btn-secondary'"
+            class="btn btn-secondary btn-sm" 
+            :class="{ 'active': periodMode === 'yearly' }"
             @click="setPeriodMode('yearly')"
-            style="min-height:32px; font-size:12px; padding: 4px 12px; border-radius: 4px;"
           >
-            <i class="fa-solid fa-calendar" style="margin-right: 4px;"></i> รายปี
+            <i class="fa-solid fa-calendar"></i> รายปี
           </button>
         </div>
 
@@ -105,16 +110,16 @@
               <div v-if="isDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 280px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
                 <!-- Header: Month & Year Selector -->
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
-                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustDatePickerMonth(-1)">
+                  <button class="btn btn-secondary" @click.stop="adjustDatePickerMonth(-1)">
                     <i class="fa-solid fa-chevron-left"></i>
                   </button>
-                  <span class="font-bold" style="font-size: 13px;">{{ datePickerMonthName }} {{ datePickerYear + 543 }}</span>
-                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustDatePickerMonth(1)">
+                  <span class="font-bold" style="font-size: var(--font-sm);">{{ datePickerMonthName }} {{ datePickerYear + 543 }}</span>
+                  <button class="btn btn-secondary" @click.stop="adjustDatePickerMonth(1)">
                     <i class="fa-solid fa-chevron-right"></i>
                   </button>
                 </div>
                 <!-- Weekday Labels -->
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
                   <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                 </div>
                 <!-- Days Grid -->
@@ -123,9 +128,9 @@
                   <button 
                     v-for="dNum in datePickerDaysCount" 
                     :key="dNum"
-                    class="btn btn-sm"
+                    class="btn btn-sm calendar-day-btn"
                     :class="isDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                    style="min-height: 28px; width: 100%; padding: 0; font-size: 11px; display: flex; align-items: center; justify-content: center; border-radius: 4px;"
+                    style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
                     @click="selectDatePickerDay(dNum)"
                   >
                     {{ dNum }}
@@ -140,17 +145,16 @@
                 class="custom-select-trigger reports-filter-control" 
                 :class="{ 'active': isMonthDropdownOpen }" 
                 @click="toggleMonthDropdown"
-                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
               >
                 <span class="custom-select-text">{{ selectedMonthLabel }}</span>
               </div>
               <div v-if="isMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
-                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustMonthPickerYear(-1)">
+                  <button class="btn btn-secondary" @click.stop="adjustMonthPickerYear(-1)">
                     <i class="fa-solid fa-chevron-left"></i>
                   </button>
                   <span class="font-bold">ปี พ.ศ. {{ monthPickerYear + 543 }}</span>
-                  <button class="btn btn-sm btn-secondary" style="min-height: 28px; padding: 2px 8px;" @click.stop="adjustMonthPickerYear(1)">
+                  <button class="btn btn-secondary" @click.stop="adjustMonthPickerYear(1)">
                     <i class="fa-solid fa-chevron-right"></i>
                   </button>
                 </div>
@@ -158,9 +162,8 @@
                   <button 
                     v-for="(mName, idx) in thaiMonthsShort" 
                     :key="idx" 
-                    class="btn btn-sm"
-                    :class="isMonthPickerSelected(idx + 1) ? 'btn-primary' : 'btn-secondary'"
-                    style="min-height: 32px; padding: 4px; font-size: 12px;"
+                    class="btn btn-secondary"
+                    :class="{ 'active': isMonthPickerSelected(idx + 1) }"
                     @click="selectMonthPicker(idx + 1)"
                   >
                     {{ mName }}
@@ -225,62 +228,84 @@
               </div>
             </div>
           </div>
+
+          <!-- Time Filter (ช่วงเวลา) - Active only on daily mode for specific tabs -->
+          <div v-if="periodMode === 'daily' && ['order_history', 'expenses', 'activity_logs', 'stock_history'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
+            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">ช่วงเวลา:</div>
+            <div class="flex align-center gap-xs">
+              <input 
+                type="text" 
+                v-model="customStartTime" 
+                placeholder="00.00" 
+                class="form-input reports-filter-control" 
+                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
+              />
+              <span style="font-size: var(--font-sm); color: var(--text-secondary);">ถึง</span>
+              <input 
+                type="text" 
+                v-model="customEndTime" 
+                placeholder="23.59" 
+                class="form-input reports-filter-control" 
+                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Loading spinner for reports -->
     <div v-if="loading" class="card text-center p-3xl">
-      <div class="spinner" style="margin:0 auto;"></div>
+      <div class="spinner mx-auto"></div>
     </div>
 
     <template v-else>
       <!-- Tab 1: Sales (ยอดขาย) -->
-      <div v-if="activeTab === 'sales'" style="display: flex; flex-direction: column; gap: var(--space-lg);">
+      <div v-if="activeTab === 'sales'" class="flex flex-col gap-lg">
         
         <!-- Admin Only: Top summary widgets (moved inside Tab 1) -->
-        <div v-if="isAdminUser" class="grid grid-2 gap-md" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-md);">
+        <div v-if="isAdminUser" class="grid grid-2 gap-md">
           <div class="card text-center p-md">
-            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px;">ยอดขายวันนี้</div>
-            <div class="font-bold text-primary" style="font-size: var(--font-xl);">{{ formatCurrency(summary.today_sales) }}</div>
-            <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</div>
+            <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดขายวันนี้</div>
+            <div class="font-bold text-primary text-xl">{{ formatCurrency(summary.today_sales) }}</div>
+            <div class="text-xs text-muted" style="margin-top: 2px;">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</div>
           </div>
           <div class="card text-center p-md">
-            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px;">ยอดรวมเดือนนี้</div>
-            <div class="font-bold text-accent" style="font-size: var(--font-xl);">{{ formatCurrency(summary.month_sales) }}</div>
-            <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">{{ summary.month_orders }} รายการขาย</div>
+            <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดรวมเดือนนี้</div>
+            <div class="font-bold text-accent text-xl">{{ formatCurrency(summary.month_sales) }}</div>
+            <div class="text-xs text-muted" style="margin-top: 2px;">{{ summary.month_orders }} รายการขาย</div>
           </div>
         </div>
 
         <!-- Admin Only: Daily Summary Card -->
         <div v-if="isAdminUser" class="card">
-          <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> {{ summaryCardTitle }}</div>
+          <div class="card-title text-sm"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> {{ summaryCardTitle }}</div>
           
-          <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+          <div class="flex flex-between mb-sm text-sm">
             <span>ยอดขายทั้งหมด (สุทธิ):</span>
-            <strong class="text-accent" style="font-size: var(--font-md);">{{ formatCurrency(dailyReport.total_sales) }}</strong>
+            <strong class="text-accent text-md">{{ formatCurrency(dailyReport.total_sales) }}</strong>
           </div>
-          <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+          <div class="flex flex-between mb-sm text-sm">
             <span>จำนวนคำสั่งซื้อ:</span>
             <span>{{ dailyReport.total_orders }} บิล</span>
           </div>
-          <div class="flex flex-between mb-sm" style="font-size: var(--font-sm);">
+          <div class="flex flex-between mb-sm text-sm">
             <span>เฉลี่ยต่อบิล:</span>
             <span>{{ formatCurrency(dailyReport.average_bill) }}</span>
           </div>
 
-          <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
+          <div class="divider"></div>
           
           <!-- Payment Methods Breakdowns -->
           <div class="payment-methods-grid">
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
                 {{ formatCurrency(dailyReport.cash_sales) }}
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.cash_orders }} บิล</div>
             </div>
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i>
                 <span class="hide-mobile">QR Code</span>
@@ -291,7 +316,7 @@
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
             </div>
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-landmark" style="color: var(--accent);"></i>
                 <span class="hide-mobile">โครงการรัฐ</span>
@@ -302,7 +327,7 @@
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.gov_orders }} บิล</div>
             </div>
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-motorcycle" style="color: #ff9500;"></i>
                 <span class="hide-mobile">เดลิเวอรี</span>
@@ -318,22 +343,14 @@
 
         <!-- Today's Transaction Logs (ALL ROLES) -->
         <div class="card">
-          <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-            <div class="card-title" style="font-size: var(--font-sm); margin: 0;"><i class="fa-solid fa-list" style="margin-right: 6px;"></i> {{ dailyOrdersListTitle }}</div>
-            <button 
-              v-if="dailyReport.orders?.length > 0"
-              class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
-              @click="exportSalesCSV"
-            >
-              <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกรายงานยอดขาย (CSV)
-            </button>
+          <div class="card-header-clean">
+            <div class="card-title card-title-clean"><i class="fa-solid fa-list mr-xs"></i> {{ dailyOrdersListTitle }}</div>
           </div>
           
           <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
             {{ dailyOrdersEmptyLabel }}
           </div>
-          <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
+          <div v-else class="flex flex-col gap-sm">
             <div 
               v-for="order in paginatedDailyReportOrders" 
               :key="order.id" 
@@ -346,37 +363,37 @@
                   #{{ order.order_number }}
                 </span>
                 <div>
-                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:11px; margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
+                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:var(--font-xs); margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
+                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
                   <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                 </div>
               </div>
-              <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
+              <div class="flex flex-between" style="font-size:var(--font-xs); color:var(--text-secondary); margin-top:2px;">
                 <span style="display: inline-flex; align-items: center; gap: 4px;">
                   <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
                   {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
                 </span>
                 <span>เวลา: {{ formatTime(order.created_at) }}</span>
               </div>
-              <div v-if="order.cancel_reason" style="font-size: 11px; color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
+              <div v-if="order.cancel_reason" style="font-size: var(--font-xs); color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
                 เหตุผลยกเลิก: {{ order.cancel_reason }}
               </div>
 
               <!-- Expandable: Order Items Detail -->
               <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);">
-                <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
+                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
                 <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
+                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
                     <span>{{ item.item_name }} x{{ item.quantity }}</span>
                     <span>{{ formatCurrency(item.subtotal) }}</span>
                   </div>
                   <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-secondary);">
-                    <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
+                    <div class="flex flex-between">
                       <span>ยอดรวม (ก่อนหัก):</span>
                       <span>{{ formatCurrency(order.subtotal) }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
                       <span>ส่วนลด:</span>
                       <span>-{{ formatCurrency(order.discount) }}</span>
                     </div>
@@ -389,7 +406,7 @@
                   style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
                   @click.stop="openVoidModal(order)"
                 >
-                  <i class="fa-solid fa-ban"></i> ยกเลิกบิลนี้ (Void)
+                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
                 </button>
               </div>
             </div>
@@ -398,7 +415,7 @@
             <div v-if="totalDailyOrdersPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
               <button 
                 class="btn btn-secondary" 
-                style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+                style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
                 :disabled="dailyOrdersCurrentPage === 1" 
                 @click="dailyOrdersCurrentPage--"
               >
@@ -409,7 +426,7 @@
               </span>
               <button 
                 class="btn btn-secondary" 
-                style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+                style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
                 :disabled="dailyOrdersCurrentPage === totalDailyOrdersPages" 
                 @click="dailyOrdersCurrentPage++"
               >
@@ -422,57 +439,113 @@
 
       <!-- Tab: Order History (ประวัติออเดอร์ย้อนหลัง) -->
       <div v-if="activeTab === 'order_history'" class="card">
-        <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-          <div class="card-title" style="font-size: var(--font-sm); margin:0;"><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติออเดอร์ย้อนหลัง</div>
+        <div class="card-header-clean">
+          <div class="card-title card-title-clean"><i class="fa-solid fa-clock-rotate-left mr-xs"></i> ประวัติออเดอร์ย้อนหลัง</div>
           <div class="flex align-center gap-sm" style="flex-wrap: wrap;">
             <button 
               v-if="historyOrders.length > 0"
-              class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              class="btn btn-sm btn-secondary csv-export-btn" 
+              style="display:inline-flex; align-items:center; gap:4px;"
               @click="exportHistoryOrdersCSV"
             >
               <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกประวัติออเดอร์ (CSV)
             </button>
+            
+            <!-- Staff Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">พนักงาน:</span>
+              <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isHistoryStaffDropdownOpen }" 
+                  @click="isHistoryStaffDropdownOpen = !isHistoryStaffDropdownOpen; isHistoryPaymentDropdownOpen = false; isHistoryStatusDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text">
+                    {{ historyStaffFilter === 'all' ? 'ทั้งหมด' : historyStaffFilter }}
+                  </span>
+                </div>
+                <div v-if="isHistoryStaffDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 200px; overflow-y: auto;">
+                  <div class="custom-select-option" :class="{ 'selected': historyStaffFilter === 'all' }" @click="historyStaffFilter = 'all'; isHistoryStaffDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div 
+                    v-for="staff in staffList" 
+                    :key="staff.id" 
+                    class="custom-select-option" 
+                    :class="{ 'selected': historyStaffFilter === staff.name }" 
+                    @click="historyStaffFilter = staff.name; isHistoryStaffDropdownOpen = false;" 
+                    style="padding: 6px 12px; font-size: var(--font-sm);"
+                  >
+                    {{ staff.name }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">ชำระเงิน:</span>
+              <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isHistoryPaymentDropdownOpen }" 
+                  @click="isHistoryPaymentDropdownOpen = !isHistoryPaymentDropdownOpen; isHistoryStaffDropdownOpen = false; isHistoryStatusDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text">
+                    {{ getPaymentLabel(historyPaymentFilter) }}
+                  </span>
+                </div>
+                <div v-if="isHistoryPaymentDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'all' }" @click="historyPaymentFilter = 'all'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'cash' }" @click="historyPaymentFilter = 'cash'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">เงินสด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'qr' }" @click="historyPaymentFilter = 'qr'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">QR Code</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'gov' }" @click="historyPaymentFilter = 'gov'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">โครงการรัฐ</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyPaymentFilter === 'delivery' }" @click="historyPaymentFilter = 'delivery'; isHistoryPaymentDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">เดลิเวอรี</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status Filter -->
             <div class="flex align-center gap-xs">
               <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
                   :class="{ 'active': isHistoryStatusDropdownOpen }" 
-                  @click="isHistoryStatusDropdownOpen = !isHistoryStatusDropdownOpen"
-                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: 12px; display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                  @click="isHistoryStatusDropdownOpen = !isHistoryStatusDropdownOpen; isHistoryStaffDropdownOpen = false; isHistoryPaymentDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
                 >
                   <span class="custom-select-text">
                     {{ selectedHistoryStatusLabel }}
                   </span>
                 </div>
                 <div v-if="isHistoryStatusDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'all' }" @click="selectHistoryStatus('all')" style="padding: 6px 12px; font-size: 12px;">ทั้งหมด</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'completed' }" @click="selectHistoryStatus('completed')" style="padding: 6px 12px; font-size: 12px;">ชำระเงินแล้ว</div>
-                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'cancelled' }" @click="selectHistoryStatus('cancelled')" style="padding: 6px 12px; font-size: 12px;">ยกเลิก</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'all' }" @click="selectHistoryStatus('all')" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'completed' }" @click="selectHistoryStatus('completed')" style="padding: 6px 12px; font-size: var(--font-sm);">ชำระเงินแล้ว</div>
+                  <div class="custom-select-option" :class="{ 'selected': historyStatusFilter === 'cancelled' }" @click="selectHistoryStatus('cancelled')" style="padding: 6px 12px; font-size: var(--font-sm);">ยกเลิก</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-if="historyOrders.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-xl);">
+        <div v-if="historyOrders.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
           ไม่มีรายการออเดอร์ในช่วงเวลาที่เลือก
         </div>
         <div v-else>
           <!-- Desktop Table (Desktop Only) -->
           <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-            <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-sm);">
+            <table class="table" style="width: 100%; border-collapse: collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                   <th style="padding: var(--space-md); text-align: left;">วัน-เวลา</th>
                   <th style="padding: var(--space-md); text-align: left;">เลขที่บิล</th>
-                  <th style="padding: var(--space-md); text-align: left;">พนักงาน</th>
-                  <th style="padding: var(--space-md); text-align: left;">สาขา</th>
-                  <th style="padding: var(--space-md); text-align: center;">ชำระเงิน</th>
-                  <th style="padding: var(--space-md); text-align: right;">ยอดสุทธิ</th>
-                  <th style="padding: var(--space-md); text-align: center;">สถานะ</th>
-                  <th style="padding: var(--space-md); text-align: center;">จัดการ</th>
+                  <th class="text-center" style="padding: var(--space-md);">พนักงาน</th>
+                  <th class="text-center" style="padding: var(--space-md);">สาขา</th>
+                  <th class="text-center" style="padding: var(--space-md);">ชำระเงิน</th>
+                  <th class="text-center" style="padding: var(--space-md);">ยอดสุทธิ</th>
+                  <th class="text-center" style="padding: var(--space-md);">สถานะ</th>
+                  <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
                 </tr>
               </thead>
               <tbody>
@@ -482,41 +555,40 @@
                     class="table-row-hover"
                     @click="toggleExpandOrder(order.id)"
                   >
-                    <td style="padding: var(--space-sm) var(--space-md); font-size: 11px; color:var(--text-secondary);">
+                    <td style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
                       {{ formatDate(order.created_at) }}<br/>{{ formatTime(order.created_at) }}
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
                       #{{ order.order_number }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md);">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
                       {{ order.staff_name || 'ระบบ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md);">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
                       {{ order.branch_name || 'ไม่ระบุ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: center; white-space: nowrap;">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); white-space: nowrap;">
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
                       {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
                     </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: right; font-weight:bold;">
-                      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
+                      <div class="flex flex-col align-center" style="gap: 2px;">
                         <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
-                        <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 1px 4px; border-radius: var(--radius-sm); font-weight: normal; display: inline-block;">ลด -{{ formatCurrency(order.discount) }}</span>
+                        <span v-if="order.discount > 0" class="badge animate-fade-in" style="background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 1px 4px; border-radius: var(--radius-sm); font-weight: normal; display: inline-block;">ลด -{{ formatCurrency(order.discount) }}</span>
                       </div>
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                      <span v-if="order.status === 'completed'" class="text-success" style="font-size:12px;"><i class="fa-solid fa-circle-check text-success" style="margin-right: 4px;"></i> สำเร็จ</span>
-                      <span v-else-if="order.status === 'cancelled'" class="text-danger" style="font-size:12px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
-                      <span v-else class="text-warning" style="font-size:12px;"><i class="fa-solid fa-hourglass-half text-warning" style="margin-right: 4px;"></i> รอชำระ</span>
+                      <span v-if="order.status === 'completed'" class="text-success"><i class="fa-solid fa-circle-check text-success" style="margin-right: 4px;"></i> สำเร็จ</span>
+                      <span v-else-if="order.status === 'cancelled'" class="text-danger"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
+                      <span v-else class="text-warning"><i class="fa-solid fa-hourglass-half text-warning" style="margin-right: 4px;"></i> รอชำระ</span>
                     </td>
                     <td style="padding: var(--space-sm) var(--space-md); text-align: center;" @click.stop>
                       <button 
                         v-if="order.status === 'completed'" 
-                        class="btn btn-sm" 
-                        style="background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); padding:4px 8px; font-size:11px; min-height:28px; display: inline-flex; align-items: center; gap: 4px;"
+                        class="btn-delete-action"
                         @click="openVoidModal(order)"
                       >
-                        <i class="fa-solid fa-ban"></i> Void
+                        <i class="fa-solid fa-trash-can"></i> ลบ
                       </button>
                       <span v-else>-</span>
                     </td>
@@ -525,30 +597,30 @@
                   <tr v-if="expandedOrderId === order.id" :key="'expand-' + order.id" style="background: rgba(139, 3, 19, 0.01);">
                     <td colspan="8" style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
                       <div style="max-width: 500px; margin: 0 auto; border: 1px dashed var(--border-color); padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-primary);">
-                        <div class="font-bold mb-xs" style="font-size: 13px; color: var(--primary);">รายละเอียดสินค้า:</div>
-                        <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
+                        <div class="font-bold mb-xs" style="color: var(--primary);">รายละเอียดสินค้า:</div>
+                        <div v-if="expandedItems.length === 0" class="text-center" style="color:var(--text-tertiary);">กำลังโหลด...</div>
                         <div v-else>
-                          <div v-for="item in expandedItems" :key="item.id" class="flex flex-between mb-xs" style="font-size:12px; border-bottom:1px solid rgba(0,0,0,0.03); padding-bottom:2px;">
+                          <div v-for="item in expandedItems" :key="item.id" class="flex flex-between mb-xs" style="border-bottom:1px solid rgba(0,0,0,0.03); padding-bottom:2px;">
                             <span>{{ item.item_name }} x{{ item.quantity }}</span>
                             <span class="font-bold">{{ formatCurrency(item.subtotal) }}</span>
                           </div>
                           <!-- Discount Info if applied -->
-                          <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary);">
-                            <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                          <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);">
+                            <div class="flex flex-between">
                               <span>ยอดรวม (ก่อนหัก):</span>
                               <span>{{ formatCurrency(order.subtotal) }}</span>
                             </div>
-                            <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                            <div class="flex flex-between font-bold" style="color: #ff3b30;">
                               <span>ส่วนลด:</span>
                               <span>-{{ formatCurrency(order.discount) }}</span>
                             </div>
-                            <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
+                            <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
                               <span>ยอดสุทธิ:</span>
                               <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                             </div>
                           </div>
                         </div>
-                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); font-size:11px; color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
+                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
                           <i class="fa-solid fa-triangle-exclamation text-danger"></i> <strong>เหตุผลที่ยกเลิก:</strong> {{ order.cancel_reason }}
                         </div>
                       </div>
@@ -573,15 +645,24 @@
                   #{{ order.order_number }}
                 </span>
                 <div>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:10px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
+                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
                   <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                 </div>
               </div>
-              <div class="flex flex-between" style="font-size:11px; color:var(--text-secondary);">
-                <span><i class="fa-solid fa-user" style="margin-right: 2px;"></i> {{ order.staff_name || 'ระบบ' }} | <i class="fa-solid fa-store" style="margin-right: 2px;"></i> {{ order.branch_name || 'ไม่ระบุ' }}</span>
-                <span>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}</span>
+              <div class="flex flex-col gap-xs" style="font-size:var(--font-xs); color:var(--text-secondary); text-align: left; margin-top: 4px; margin-bottom: 4px;">
+                <div class="flex align-center">
+                  <i class="fa-solid fa-user" style="margin-right: 4px; opacity: 0.7;"></i> 
+                  {{ order.staff_name || 'ระบบ' }} 
+                  <span style="margin: 0 6px; color: var(--border-color);">|</span>
+                  <i class="fa-solid fa-store" style="margin-right: 4px; opacity: 0.7;"></i> 
+                  {{ order.branch_name || 'ไม่ระบุ' }}
+                </div>
+                <div class="flex align-center" style="color: var(--text-tertiary);">
+                  <i class="fa-solid fa-clock" style="margin-right: 4px; opacity: 0.7;"></i> 
+                  {{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}
+                </div>
               </div>
-              <div class="flex flex-between align-center mt-xs" style="font-size:11px;">
+              <div class="flex flex-between align-center mt-xs" style="font-size:var(--font-xs);">
                 <span style="display: inline-flex; align-items: center; gap: 4px;">
                   <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
                   {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
@@ -594,29 +675,29 @@
 
               <!-- Expanded detail for Mobile card -->
               <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);" @click.stop>
-                <div v-if="expandedItems.length === 0" style="font-size:11px; color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
+                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
                 <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:12px; padding:2px 0;">
+                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
                     <span>{{ item.item_name }} x{{ item.quantity }}</span>
                     <span>{{ formatCurrency(item.subtotal) }}</span>
                   </div>
                   <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-secondary);">
-                    <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
+                    <div class="flex flex-between">
                       <span>ยอดรวม (ก่อนหัก):</span>
                       <span>{{ formatCurrency(order.subtotal) }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
                       <span>ส่วนลด:</span>
                       <span>-{{ formatCurrency(order.discount) }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
+                    <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
                       <span>ยอดสุทธิ:</span>
                       <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                     </div>
                   </div>
                 </div>
-                <div v-if="order.cancel_reason" style="font-size:11px; color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
+                <div v-if="order.cancel_reason" style="font-size:var(--font-xs); color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
                   <i class="fa-solid fa-triangle-exclamation text-danger"></i> เหตุผลยกเลิก: {{ order.cancel_reason }}
                 </div>
                 <!-- Void Button inside Mobile Expanded Card -->
@@ -626,7 +707,7 @@
                   style="width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); min-height:36px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
                   @click="openVoidModal(order)"
                 >
-                  <i class="fa-solid fa-ban"></i> ยกเลิกบิลนี้ (Void)
+                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
                 </button>
               </div>
             </div>
@@ -636,7 +717,7 @@
           <div v-if="totalPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
             <button 
               class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
               :disabled="historyCurrentPage === 1" 
               @click="historyCurrentPage--"
             >
@@ -647,7 +728,7 @@
             </span>
             <button 
               class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
               :disabled="historyCurrentPage === totalPages" 
               @click="historyCurrentPage++"
             >
@@ -680,6 +761,7 @@
                 </div>
                 <div v-if="isExpenseCategoryDropdownOpen" class="custom-select-dropdown" style="max-height: 250px; overflow-y: auto;">
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_chicken' }" @click="selectExpenseCategory('raw_chicken')"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> ไก่สด</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'sticky_rice' }" @click="selectExpenseCategory('sticky_rice')"><i class="fa-solid fa-bowl-rice" style="margin-right: 4px;"></i> ข้าวเหนียว</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'meatballs' }" @click="selectExpenseCategory('meatballs')"><i class="fa-solid fa-circle" style="margin-right: 4px;"></i> ลูกชิ้น</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salapao' }" @click="selectExpenseCategory('salapao')"><i class="fa-solid fa-cookie" style="margin-right: 4px;"></i> ซาลาเปา</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'fuel_oil' }" @click="selectExpenseCategory('fuel_oil')"><i class="fa-solid fa-gas-pump" style="margin-right: 4px;"></i> น้ำมัน</div>
@@ -687,7 +769,7 @@
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salary' }" @click="selectExpenseCategory('salary')"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 4px;"></i> เงินเดือน</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'utility_bills' }" @click="selectExpenseCategory('utility_bills')"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> ค่าไฟ/น้ำ</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> บรรจุภัณฑ์/ถุง</div>
-                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'debt' }" @click="selectExpenseCategory('debt')"><i class="fa-solid fa-file-invoice-dollar" style="margin-right: 4px;"></i> รายจ่าย - หนี้</div>
+                  <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'debt' }" @click="selectExpenseCategory('debt')"><i class="fa-solid fa-file-invoice-dollar" style="margin-right: 4px;"></i> หนี้</div>
                   <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')"><i class="fa-solid fa-paperclip" style="margin-right: 4px;"></i> อื่นๆ</div>
                 </div>
               </div>
@@ -717,8 +799,28 @@
           <div class="form-group mb-xs">
             <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." />
           </div>
-          <div class="form-group mb-xs">
-            <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0" style="white-space:nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+          <!-- Presets Row (placed inside the grid to manage mobile order and desktop columns) -->
+          <div class="expense-form-presets flex gap-sm align-center flex-wrap">
+            <span class="text-secondary font-bold text-sm"><i class="fa-solid fa-tags"></i> บันทึกด่วน:</span>
+            <button 
+              type="button" 
+              class="btn btn-secondary btn-sm preset-btn" 
+              :class="{ 'active': expenseForm.note === 'แม็คโคร' }"
+              @click="expenseForm.note = 'แม็คโคร'"
+            >
+              แม็คโคร
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-secondary btn-sm preset-btn" 
+              :class="{ 'active': expenseForm.note === 'เลี้ยงลูกน้อง' }"
+              @click="expenseForm.note = 'เลี้ยงลูกน้อง'"
+            >
+              เลี้ยงลูกน้อง
+            </button>
+          </div>
+          <div class="form-group mb-xs expense-form-submit-group">
+            <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0">
               <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
           </div>
@@ -733,9 +835,9 @@
           </div>
           <div style="display:flex; align-items:center; gap:var(--space-sm);">
             <button 
-              v-if="ledgerTransactions.length > 0"
-              class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size:12px; min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              v-if="filteredLedgerTransactions.length > 0"
+              class="btn btn-sm btn-secondary csv-export-btn" 
+              style="display:inline-flex; align-items:center; gap:4px;"
               @click="exportExpensesCSV"
             >
               <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกบัญชี (CSV)
@@ -749,43 +851,42 @@
           <div class="p-xs card" style="background:rgba(42, 157, 143, 0.05); border:none; text-align:center;">
             <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายรับรวม</div>
             <div class="font-bold text-success" style="font-size:var(--font-base);">
-              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.income, 0)) }}
+              {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.income, 0)) }}
             </div>
           </div>
           <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
             <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายจ่ายรวม</div>
             <div class="font-bold text-danger" style="font-size:var(--font-base);">
-              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.expense, 0)) }}
+              {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.expense, 0)) }}
             </div>
           </div>
           <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
             <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">คงเหลือสุทธิ</div>
             <div class="font-bold" style="font-size:var(--font-base); color: var(--text-primary);">
-              {{ formatCurrency(ledgerTransactions.reduce((sum, t) => sum + t.income - t.expense, 0)) }}
+              {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.income - t.expense, 0)) }}
             </div>
           </div>
         </div>
 
-        <!-- Ledger Table (Desktop Only) -->
         <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-          <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-sm); table-layout: fixed;">
+          <table class="table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: left !important;">วัน-เวลา</th>
-                <th style="width: 35%; padding: var(--space-md); font-size:12px; font-weight:bold; text-align: left !important;">ชื่อรายการ</th>
-                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">รายรับ</th>
-                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">รายจ่าย</th>
-                <th style="width: 15%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">คงเหลือ</th>
-                <th style="width: 5%; padding: var(--space-md); font-size:12px; font-weight:bold; white-space:nowrap; text-align: center !important;">จัดการ</th>
+                <th class="text-left" style="width: 15%; padding: var(--space-md); white-space:nowrap;">วัน-เวลา</th>
+                <th class="text-left" style="width: 30%; padding: var(--space-md);">ชื่อรายการ</th>
+                <th class="text-center" style="width: 15%; padding: var(--space-md); white-space:nowrap;">รายรับ</th>
+                <th class="text-center" style="width: 15%; padding: var(--space-md); white-space:nowrap;">รายจ่าย</th>
+                <th class="text-center" style="width: 15%; padding: var(--space-md); white-space:nowrap;">คงเหลือ</th>
+                <th class="text-center" style="width: 10%; padding: var(--space-md); white-space:nowrap;">จัดการ</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="ledgerLoading && ledgerTransactions.length === 0">
+              <tr v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
                 <td colspan="6" style="text-align: center; padding: var(--space-xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
-              <tr v-else-if="ledgerTransactions.length === 0">
+              <tr v-else-if="filteredLedgerTransactions.length === 0">
                 <td colspan="6" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
                   ไม่มีรายการธุรกรรมในเดือนนี้
                 </td>
@@ -797,31 +898,30 @@
                 style="border-bottom: 1px solid var(--border-color);"
                 class="table-row-hover"
               >
-                <td style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; font-size:11px; color:var(--text-secondary); text-align: left !important;">
+                <td class="text-left" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; white-space:nowrap; color:var(--text-secondary);">
                   {{ item.formattedDate }}<br/>{{ item.formattedTime }}
                 </td>
-                <td style="width: 35%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500; text-align: left !important; white-space: normal; word-break: break-word;">
+                <td class="text-left" style="width: 30%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight: 500; white-space: normal; word-break: break-word;">
                   {{ item.name }}
                 </td>
-                <td class="text-success" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; text-align: center !important;">
+                <td class="text-success text-center" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold;">
                   {{ item.income > 0 ? formatCurrency(item.income) : '-' }}
                 </td>
-                <td class="text-danger" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; text-align: center !important;">
+                <td class="text-danger text-center" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold;">
                   {{ item.expense > 0 ? '-' + formatCurrency(item.expense) : '-' }}
                 </td>
-                <td style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; color: var(--text-primary); text-align: center !important;">
+                <td class="text-center" style="width: 15%; padding: var(--space-sm) var(--space-md); vertical-align: middle; font-weight:bold; color: var(--text-primary);">
                   {{ formatCurrency(item.runningBalance) }}
                 </td>
-                <td style="width: 5%; padding: var(--space-sm) var(--space-md); vertical-align: middle; text-align: center !important;">
+                <td class="text-center" style="width: 10%; padding: var(--space-sm) var(--space-md); vertical-align: middle;">
                   <button 
                     v-if="item.type === 'expense'" 
-                    class="btn btn-sm" 
-                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:4px 8px; font-size:11px; border-radius:var(--radius-sm); cursor:pointer; display: inline-flex; align-items: center; justify-content: center;" 
+                    class="btn-delete-action"
                     @click="handleDeleteExpense(item.id)"
                   >
-                    <i class="fa-solid fa-trash-can"></i>
+                    <i class="fa-solid fa-trash-can"></i> ลบ
                   </button>
-                  <span v-else style="color:var(--text-tertiary); font-size:10px;">-</span>
+                  <span v-else style="color:var(--text-tertiary);">-</span>
                 </td>
               </tr>
             </tbody>
@@ -830,10 +930,10 @@
 
         <!-- Mobile Ledger List (Mobile Only) -->
         <div class="ledger-mobile-list show-mobile-only">
-          <div v-if="ledgerLoading && ledgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
-            <div class="spinner" style="margin: 0 auto;"></div>
+          <div v-if="ledgerLoading && filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
+            <div class="spinner mx-auto"></div>
           </div>
-          <div v-else-if="ledgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+          <div v-else-if="filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ไม่มีรายการธุรกรรมในเดือนนี้
           </div>
           <div v-else style="display:flex; flex-direction:column; gap:var(--space-sm);">
@@ -846,8 +946,8 @@
               <div class="flex flex-between align-center">
                 <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ item.name }}</span>
               </div>
-              <div class="flex flex-between align-center mt-xs" style="font-size: 11px; color: var(--text-secondary);">
-                <span><i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> {{ item.formattedDate }} {{ item.formattedTime }}</span>
+              <div class="flex flex-between align-center mt-xs" style="font-size: var(--font-xs); color: var(--text-secondary);">
+                <span><i class="fa-solid fa-clock" style="margin-right: 4px;"></i> {{ item.formattedDate }} {{ item.formattedTime }}</span>
                 <div class="flex align-center gap-md">
                   <span v-if="item.income > 0" class="font-bold text-success" style="font-size: var(--font-base);">
                     +{{ formatCurrency(item.income) }}
@@ -858,7 +958,7 @@
                   <button 
                     v-if="item.type === 'expense'"
                     class="btn btn-sm" 
-                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 14px; font-size:13px; border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px;" 
+                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:0; font-size:var(--font-sm); border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px; height:36px; width:36px;" 
                     @click="handleDeleteExpense(item.id)"
                   >
                     <i class="fa-solid fa-trash-can"></i>
@@ -873,7 +973,7 @@
         <div v-if="totalLedgerPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="ledgerCurrentPage === 1" 
             @click="ledgerCurrentPage--"
           >
@@ -884,7 +984,7 @@
           </span>
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="ledgerCurrentPage === totalLedgerPages" 
             @click="ledgerCurrentPage++"
           >
@@ -896,13 +996,13 @@
       <!-- Tab 3: Top Selling Menus (10 อันดับเมนูขายดีที่สุด) -->
       <div v-if="activeTab === 'top_menus' && isAdminUser" class="card" style="position:relative; overflow:hidden; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
         <!-- Header -->
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: var(--space-md);">
+        <div class="flex align-center gap-sm mb-md">
           <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-glow); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 171, 43, 0.3);">
             <i class="fa-solid fa-fire text-accent animate-pulse" style="font-size: 1.2rem; color: var(--accent);"></i>
           </div>
           <div>
             <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">10 อันดับสินค้าขายดีที่สุด</span>
-            <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">สถิติการใช้วัตถุดิบและเมนูจากการขายจริง</span>
+            <span style="font-size: var(--font-xs); color: var(--text-secondary); font-weight: normal;">สถิติการใช้วัตถุดิบและเมนูจากการขายจริง</span>
           </div>
         </div>
 
@@ -919,7 +1019,7 @@
                 boxShadow: topItemsDays === d ? 'var(--shadow-sm)' : 'none',
                 fontWeight: topItemsDays === d ? 'bold' : 'normal'
               }"
-              style="padding: 6px 18px; border-radius: var(--radius-full); font-size: 11px; transition: all 0.2s ease; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 70px;"
+              style="padding: 6px 18px; border-radius: var(--radius-full); font-size: var(--font-xs); transition: all 0.2s ease; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 70px;"
             >
               {{ d === 1 ? 'วันนี้' : d + ' วัน' }}
             </button>
@@ -934,7 +1034,7 @@
           ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
         
-        <div v-else style="display: flex; flex-direction: column; gap: var(--space-xs);">
+        <div v-else class="flex flex-col gap-xs">
           <!-- Top 3 Items Cards -->
           <div 
             v-for="(item, index) in topItems.slice(0, 3)" 
@@ -951,7 +1051,7 @@
             <!-- Middle Side: Name (top) and Type Badge (bottom) -->
             <div class="card-info-middle">
               <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
-              <div style="display: flex; align-items: center;">
+              <div class="flex align-center">
                 <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
                 <span v-else class="badge-type main">ทั่วไป</span>
               </div>
@@ -970,7 +1070,7 @@
           </div>
 
           <!-- Divider label for ranks 4-10 -->
-          <div v-if="topItems.length > 3" style="font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding-left: 6px; margin: var(--space-md) 0 var(--space-sm) 0; border-left: 3px solid var(--primary);">
+          <div v-if="topItems.length > 3" style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding-left: 6px; margin: var(--space-md) 0 var(--space-sm) 0; border-left: 3px solid var(--primary);">
             อันดับที่ 4 - 10
           </div>
 
@@ -988,7 +1088,7 @@
             <!-- Middle Side: Name (top) and Type Badge (bottom) -->
             <div class="card-info-middle">
               <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
-              <div style="display: flex; align-items: center;">
+              <div class="flex align-center">
                 <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
                 <span v-else class="badge-type main">ทั่วไป</span>
               </div>
@@ -1012,32 +1112,67 @@
       <div v-if="activeTab === 'activity_logs' && isAdminUser" class="card">
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
         
-        <!-- Filter dropdown -->
-        <div class="form-group mb-md">
-          <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภทกิจกรรม:</label>
-          <div class="custom-select-wrapper" @click.stop>
-            <div 
-              class="custom-select-trigger" 
-              :class="{ 'active': isFilterActionDropdownOpen }" 
-              @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen"
-              style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
-            >
-              <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px;">
-                <i :class="getFilterActionIcon(filterAction)"></i>
-                {{ selectedFilterActionLabel }}
-              </span>
-            </div>
-            <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อก / ของเสีย (Stock & Waste)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
-              <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+        <!-- Filter dropdowns in a 2-column grid -->
+        <div class="grid grid-2 gap-md mb-md">
+          
+          <!-- Category Filter -->
+          <div class="form-group">
+            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภท:</label>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isFilterActionDropdownOpen }" 
+                @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
+              >
+                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
+                  <i :class="getFilterActionIcon(filterAction)"></i>
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ selectedFilterActionLabel }}</span>
+                </span>
+              </div>
+              <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับปรุงยอด / ของเสีย (Stock & Waste)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+              </div>
             </div>
           </div>
+
+          <!-- Staff Filter -->
+          <div class="form-group">
+            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-user" style="margin-right: 6px;"></i> กรองพนักงาน:</label>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isActivityStaffDropdownOpen }" 
+                @click="isActivityStaffDropdownOpen = !isActivityStaffDropdownOpen; isFilterActionDropdownOpen = false;"
+              >
+                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
+                  <i class="fa-solid fa-user"></i>
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                    {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
+                  </span>
+                </span>
+              </div>
+              <div v-if="isActivityStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; overflow-y: auto; top: calc(100% + 2px);">
+                <div class="custom-select-option" :class="{ 'selected': activityStaffFilter === 'all' }" @click="activityStaffFilter = 'all'; isActivityStaffDropdownOpen = false;"><i class="fa-solid fa-users" style="margin-right: 4px;"></i> ทั้งหมด</div>
+                <div 
+                  v-for="staff in staffList" 
+                  :key="staff.id" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': activityStaffFilter === staff.name }" 
+                  @click="activityStaffFilter = staff.name; isActivityStaffDropdownOpen = false;"
+                >
+                  <i class="fa-solid fa-user" style="margin-right: 4px;"></i> {{ staff.name }}
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <div v-if="filteredActivityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
@@ -1064,7 +1199,7 @@
         <div v-if="totalActivityPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="activityCurrentPage === 1" 
             @click="activityCurrentPage--"
           >
@@ -1075,7 +1210,7 @@
           </span>
           <button 
             class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size:12px; display: inline-flex; align-items: center; gap: 4px;"
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
             :disabled="activityCurrentPage === totalActivityPages" 
             @click="activityCurrentPage++"
           >
@@ -1086,11 +1221,11 @@
     </template>
 
     <!-- Void Order Modal -->
-    <div v-if="showVoidModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showVoidModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showVoidModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
-          <h3><i class="fa-solid fa-ban" style="margin-right: 6px;"></i> ยกเลิกบิล #{{ voidOrder?.order_number }}</h3>
+          <h3 class="void-modal-title"><i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> ลบบิล #{{ voidOrder?.order_number }}</h3>
           <button class="modal-close" @click="showVoidModal = false">✕</button>
         </div>
         <div class="modal-body">
@@ -1098,19 +1233,19 @@
             ยอดรวม: <strong class="text-accent">{{ formatCurrency(voidOrder?.total) }}</strong>
           </div>
 
-          <div class="form-label" style="margin-bottom:var(--space-sm);">เลือกเหตุผลการยกเลิก:</div>
+          <div class="form-label" style="margin-bottom:var(--space-sm);">เลือกเหตุผลการลบ:</div>
           
           <!-- Preset Buttons -->
           <div style="display:flex; flex-direction:column; gap:var(--space-sm); margin-bottom:var(--space-md);">
             <button 
               v-for="preset in voidPresets" 
               :key="preset.value"
-              class="btn"
-              :class="voidReason === preset.value ? 'btn-primary' : 'btn-secondary'"
-              style="text-align:left; min-height:44px; display: inline-flex; align-items: center; gap: 8px;"
+              class="btn-action w-full"
+              :class="{ 'btn-action-primary': voidReason === preset.value }"
+              style="text-align: left; justify-content: flex-start;"
               @click="voidReason = preset.value"
             >
-              <i :class="preset.icon"></i> {{ preset.label }}
+              <i :class="preset.icon"></i> {{ preset.label.replace('ยกเลิกออเดอร์', 'ลบออเดอร์') }}
             </button>
           </div>
 
@@ -1121,16 +1256,169 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" @click="showVoidModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showVoidModal = false">ยกเลิก</button>
             <button 
-              class="btn flex-1" 
-              style="background:rgba(255,59,48,0.9); color:#fff; border:none; display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
+              class="btn-modal btn-modal-primary flex-1" 
               :disabled="!voidReason || (voidReason === 'custom' && !voidCustomReason.trim())"
               @click="handleVoidOrder"
             >
-              <i class="fa-solid fa-circle-check"></i> ยืนยันยกเลิกบิล
+              <i class="fa-solid fa-circle-check"></i> ยืนยันลบบิล
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Stock History (ประวัติสต็อก) -->
+    <div v-if="activeTab === 'stock_history' && isAdminUser" class="card">
+      <div class="card-header-clean">
+        <div class="card-title card-title-clean">
+          <i class="fa-solid fa-boxes-stacked mr-xs"></i> ประวัติสต็อก
+        </div>
+
+        <!-- Menu Item Filter -->
+        <div class="flex align-center gap-xs">
+          <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สินค้า:</span>
+          <div class="custom-select-wrapper" style="width: 200px;" @click.stop>
+            <div 
+              class="custom-select-trigger" 
+              :class="{ 'active': isStockItemDropdownOpen }" 
+              @click="isStockItemDropdownOpen = !isStockItemDropdownOpen"
+              style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+            >
+              <span class="custom-select-text">
+                {{ selectedStockItemName }}
+              </span>
+            </div>
+            <div v-if="isStockItemDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 200px; overflow-y: auto; z-index:1001;">
+              <div 
+                v-for="item in reportsStockItems" 
+                :key="item.id" 
+                class="custom-select-option" 
+                :class="{ 'selected': selectedReportsStockItemId === item.id }" 
+                @click="selectReportsStockItem(item)" 
+                style="padding: 6px 12px; font-size: var(--font-sm);"
+              >
+                {{ item.name }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="stockHistoryLoading" style="text-align: center; padding: var(--space-xl);">
+        <div class="spinner mx-auto"></div>
+      </div>
+      <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
+        ไม่มีรายการประวัติสต็อกในช่วงเวลาที่เลือก
+      </div>
+      <div v-else>
+        <!-- Desktop Table (Desktop Only) -->
+        <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                <th style="padding: var(--space-md); text-align: left;">สินค้า</th>
+                <th class="text-center" style="padding: var(--space-md);">ชื่อพนักงาน</th>
+                <th style="padding: var(--space-md); text-align: left;">กิจกรรม</th>
+                <th class="text-center" style="padding: var(--space-md);">เวลา</th>
+                <th class="text-center" style="padding: var(--space-md);">จำนวนก่อนปรับ</th>
+                <th class="text-center" style="padding: var(--space-md);">จำนวนที่ปรับ</th>
+                <th class="text-center" style="padding: var(--space-md);">จำนวนหลังปรับ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                v-for="log in paginatedStockLogs" 
+                :key="log.id"
+                style="border-bottom: 1px solid var(--border-color);"
+                class="table-row-hover"
+              >
+                <td style="padding: var(--space-sm) var(--space-md);">
+                  {{ selectedStockItemName }}
+                </td>
+                <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
+                  {{ log.staff_name || 'ระบบ' }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md);">
+                  <span class="font-bold flex align-center" style="gap: 6px;">
+                    <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
+                    <span>{{ getStockReasonLabel(log.reason) }}</span>
+                  </span>
+                </td>
+                <td class="text-center" style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
+                  {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
+                  {{ log.previous_stock }}
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); text-align: center;" :class="log.change_qty > 0 ? 'text-success' : 'text-danger'">
+                  <strong>{{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}</strong>
+                </td>
+                <td style="padding: var(--space-sm) var(--space-md); text-align: center; font-weight:bold;">
+                  {{ log.new_stock }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile List View (Mobile Only) -->
+        <div class="show-mobile-only">
+          <div class="flex flex-col gap-md">
+            <div 
+              v-for="log in paginatedStockLogs" 
+              :key="log.id" 
+              class="card p-md flex flex-between align-center gap-md"
+              style="font-size: var(--font-sm); background: var(--bg-primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);"
+            >
+              <div class="flex-1 min-w-0" style="text-align: left;">
+                <div class="font-bold mb-xs" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
+                  <span>{{ getStockReasonLabel(log.reason) }}</span>
+                  <span 
+                    :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
+                    style="margin-left: 4px;"
+                  >
+                    {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
+                  </span>
+                </div>
+                <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-xs);">
+                  โดย: {{ log.staff_name || 'ระบบ' }} <span style="margin: 0 4px; color: var(--border-color);">|</span> {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
+                </div>
+                <div v-if="log.note" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 6px; border-left: 3px solid var(--primary-light); padding-left: 8px; background: rgba(139, 3, 19, 0.01); padding-top: 4px; padding-bottom: 4px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; line-height: 1.4; word-break: break-word;">
+                  {{ log.note }}
+                </div>
+              </div>
+              <div style="text-align: right; flex-shrink: 0; min-width: 75px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-size: var(--font-xxs); color: var(--text-tertiary); letter-spacing: 0.5px;">ยอดหลังปรับ</div>
+                <div class="font-bold text-base" style="color: var(--text-primary);">{{ log.new_stock }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination UI -->
+        <div v-if="totalStockLogsPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="stockLogsCurrentPage === 1" 
+            @click="stockLogsCurrentPage--"
+          >
+            <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+          </button>
+          <span style="font-size: var(--font-sm); font-weight: bold;">
+            หน้า {{ stockLogsCurrentPage }} / {{ totalStockLogsPages }}
+          </span>
+          <button 
+            class="btn btn-secondary" 
+            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+            :disabled="stockLogsCurrentPage === totalStockLogsPages" 
+            @click="stockLogsCurrentPage++"
+          >
+            ถัดไป <i class="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -1138,7 +1426,7 @@
     <!-- Cash Drawer Audit Tab (Admin Only) -->
     <div v-if="activeTab === 'cash_audit' && isAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
-        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--text-primary);">
+        <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
           <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>
           ตรวจสอบเงินสดในลิ้นชักประจำวัน (ลับเฉพาะเจ้าของร้าน)
         </h3>
@@ -1169,35 +1457,35 @@
         <table class="table" style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">วันที่</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินทอนตั้งต้น</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดขายเงินสด</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดจ่ายเงินสด</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดที่ควรมี</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดนับจริง</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ผลต่าง (ขาด/เกิน)</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">สถานะ</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ตรวจสอบ</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">วันที่</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินทอนตั้งต้น</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดขายเงินสด</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดจ่ายเงินสด</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดที่ควรมี</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินสดนับจริง</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ผลต่าง (ขาด/เกิน)</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">สถานะ</th>
+              <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ตรวจสอบ</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="session in cashDrawerSessions" :key="session.id" style="border-bottom: 1px solid var(--border-color);">
-              <td style="padding: 12px; font-weight: 600; text-align: center; vertical-align: middle; white-space: nowrap;">{{ formatDate(session.session_date) }}</td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.opening_cash) }}</td>
-              <td style="padding: 12px; color: #34c759; font-weight: 500; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; font-weight: 600; vertical-align: middle; white-space: nowrap;">{{ formatDate(session.session_date) }}</td>
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.opening_cash) }}</td>
+              <td class="text-center" style="padding: 12px; color: #34c759; font-weight: 500; vertical-align: middle; white-space: nowrap;">
                 +{{ formatCurrency(session.cash_sales) }}
               </td>
-              <td style="padding: 12px; color: #ff3b30; font-weight: 500; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; color: #ff3b30; font-weight: 500; vertical-align: middle; white-space: nowrap;">
                 -{{ formatCurrency(session.cash_expenses) }}
               </td>
-              <td style="padding: 12px; font-weight: 600; text-align: center; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.calculated_expected_cash) }}</td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; font-weight: 600; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.calculated_expected_cash) }}</td>
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
                 <span v-if="session.status === 'closed'" style="font-weight: 600;">
                   {{ formatCurrency(session.actual_cash) }}
                 </span>
                 <span v-else style="color: var(--text-light); font-style: italic;">ยังไม่ได้ตรวจนับ</span>
               </td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
                 <span v-if="session.status === 'closed'">
                   <span v-if="session.difference === 0" style="color: #34c759; font-weight: bold; background: rgba(52,199,89,0.15); padding: 2px 6px; border-radius: 4px; display: inline-block; white-space: nowrap;">
                     ครบถ้วน (ยอดเท่ากัน)
@@ -1211,14 +1499,13 @@
                 </span>
                 <span v-else style="color: var(--text-light); font-style: italic;">รอปิดยอดประจำวัน</span>
               </td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
                 <span 
                   :style="{
                     background: session.status === 'closed' ? 'rgba(52,199,89,0.2)' : 'rgba(255,149,0,0.2)',
                     color: session.status === 'closed' ? '#30d158' : '#ff9f0a',
                     padding: '4px 8px',
                     borderRadius: '4px',
-                    fontSize: '0.8rem',
                     fontWeight: '600',
                     display: 'inline-block',
                     whiteSpace: 'nowrap'
@@ -1227,13 +1514,13 @@
                   {{ session.status === 'closed' ? 'ตรวจสอบแล้ว' : 'เปิดอยู่' }}
                 </span>
               </td>
-              <td style="padding: 12px; text-align: center; vertical-align: middle; white-space: nowrap;">
-                <div style="display: inline-flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; width: 100%;">
-                  <button class="btn btn-secondary" @click="openOpeningCashModal(session)" style="display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding: 6px 12px; font-size: 0.85rem; font-weight: 700; border: 1.5px solid var(--border-color-light); width: 150px;">
-                    <i class="fa-solid fa-coins" style="font-size: 1rem;"></i> กรอกยอดเงินทอน
+              <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
+                <div class="flex flex-col align-center justify-center" style="gap: 6px; width: 100%;">
+                  <button class="btn-action btn-drawer-action" @click="openOpeningCashModal(session)">
+                    <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
                   </button>
-                  <button class="btn btn-primary" @click="openAuditModal(session)" style="display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding: 6px 12px; font-size: 0.85rem; font-weight: 700; background: var(--gradient-primary) !important; color: white !important; width: 150px;">
-                    <i class="fa-solid fa-circle-check" style="font-size: 1rem;"></i> ปิดยอดประจำวัน
+                  <button class="btn-action btn-action-primary btn-drawer-action" @click="openAuditModal(session)">
+                    <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
                   </button>
                 </div>
               </td>
@@ -1308,10 +1595,10 @@
 
           <!-- Card Actions: Buttons -->
           <div class="cash-card-actions">
-            <button class="btn btn-secondary flex-1" @click="openOpeningCashModal(session)">
+            <button class="btn-action flex-1" @click="openOpeningCashModal(session)">
               <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
             </button>
-            <button class="btn btn-primary flex-1" @click="openAuditModal(session)">
+            <button class="btn-action btn-action-primary flex-1" @click="openAuditModal(session)">
               <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
             </button>
           </div>
@@ -1320,18 +1607,18 @@
     </div>
 
     <!-- Cash Audit Modal -->
-    <div v-if="showAuditModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showAuditModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showAuditModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 90vh; overflow-y: auto; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-lg) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
+          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-calculator"></i> ปิดยอดประจำวันที่ {{ formatDate(activeAuditSession.session_date) }}
           </h3>
           <button class="modal-close" @click="showAuditModal = false" style="color: var(--text-secondary) !important;">✕</button>
         </div>
         <div class="modal-body" style="padding: var(--space-lg) !important; text-align: left !important;">
           <!-- Session Summary details -->
-          <div class="mb-md p-sm" style="background: rgba(139, 3, 19, 0.04) !important; border: 1px solid var(--border-color-light) !important; border-radius: 8px; display: flex; flex-direction: column; gap: var(--space-xs); font-size: 0.9rem; margin-bottom:var(--space-md); padding:var(--space-sm); color: var(--text-primary) !important;">
+          <div class="mb-md p-sm" style="background: rgba(139, 3, 19, 0.04) !important; border: 1px solid var(--border-color-light) !important; border-radius: 8px; display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-sm); margin-bottom:var(--space-md); padding:var(--space-sm); color: var(--text-primary) !important;">
             <div class="flex justify-between" style="display:flex; justify-content:space-between; align-items: center;">
               <span style="color: var(--text-secondary) !important;">เงินทอนตั้งต้น:</span>
               <span style="font-weight: 700; color: var(--text-primary) !important;">{{ formatCurrency(activeAuditSession.opening_cash) }}</span>
@@ -1344,41 +1631,48 @@
               <span style="color: var(--text-secondary) !important;">ยอดจ่ายเงินสดสะสม:</span>
               <span style="font-weight: 700; color: var(--danger) !important;">-{{ formatCurrency(activeAuditSession.cash_expenses) }}</span>
             </div>
-            <div class="flex justify-between" style="display:flex; justify-content:space-between; align-items: center; border-top: 1px solid var(--border-color-light) !important; padding-top: var(--space-xs); font-weight: 700; font-size: 0.95rem; color: var(--text-primary) !important;">
+            <div class="flex justify-between" style="display:flex; justify-content:space-between; align-items: center; border-top: 1px solid var(--border-color-light) !important; padding-top: var(--space-xs); font-weight: 700; font-size: var(--font-sm); color: var(--text-primary) !important;">
               <span>เงินสดที่ระบบคำนวณว่าควรมี:</span>
-              <span style="color: var(--primary) !important; font-size: 1.05rem !important;">{{ formatCurrency(activeAuditSession.calculated_expected_cash) }}</span>
+              <span style="color: var(--primary) !important; font-size: var(--font-base) !important;">{{ formatCurrency(activeAuditSession.calculated_expected_cash) }}</span>
             </div>
           </div>
 
           <!-- Cash Calculator Helper -->
           <div class="mb-md" style="margin-bottom:var(--space-md);">
             <div class="flex justify-between align-center mb-xs" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-xs);">
-              <span class="form-label" style="font-weight: 700; color: var(--text-primary) !important; margin:0;">เครื่องช่วยคำนวณเงินสด (นับเหรียญ & ธนบัตร)</span>
-              <button type="button" class="btn btn-secondary" style="border: 1.5px solid var(--border-color-light) !important; padding: 6px 12px !important; font-size: 12px !important; color: var(--text-primary) !important; min-height: 32px; font-weight: bold; border-radius: 6px;" @click="toggleCalculatorHelper">
-                {{ showCalculatorHelper ? 'ซ่อนเครื่องช่วยนับ' : 'แสดงเครื่องช่วยนับ' }}
+              <span class="form-label" style="font-weight: 700; color: var(--text-primary) !important; margin:0;">เครื่องช่วยนับเงิน</span>
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                :class="{ 'active': showCalculatorHelper }"
+                style="border: 1.5px solid var(--border-color-light) !important; padding: 6px 12px !important; font-size: var(--font-sm) !important; min-height: 32px; font-weight: bold; border-radius: 6px;"
+                :style="showCalculatorHelper ? 'color: white !important; background: var(--gradient-primary) !important; border-color: transparent !important;' : 'color: var(--text-primary) !important; background: #ffffff !important; border-color: var(--border-color-light) !important;'"
+                @click="toggleCalculatorHelper"
+              >
+                {{ showCalculatorHelper ? 'ซ่อน' : 'แสดง' }}
               </button>
             </div>
 
             <div v-if="showCalculatorHelper" class="calculator-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: rgba(139, 3, 19, 0.03) !important; border: 1px dashed var(--border-color-light) !important; padding: 12px; border-radius: 12px; margin-top:6px;">
               <div v-for="denom in denominations" :key="denom.value" class="denom-card" style="background: var(--card-bg) !important; border: 1px solid var(--border-color-light) !important; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: var(--shadow-sm);">
-                <span style="font-weight: 700; color: var(--primary) !important; font-size: 0.9rem;">{{ denom.label }}</span>
+                <span style="font-weight: 700; color: var(--primary) !important; font-size: var(--font-sm);">{{ denom.label }}</span>
                 <div style="display: flex; align-items: center; gap: 2px; width: 100%; justify-content: center;">
-                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: 16px;" @click="decrementDenom(denom)">-</button>
+                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: var(--font-base);" @click="decrementDenom(denom)">-</button>
                   <input 
                     type="number" 
                     class="form-input text-center" 
-                    style="padding: 2px !important; font-size: 0.9rem !important; width: 44px !important; text-align: center !important; height: 28px !important; border: 1px solid var(--border-color-light) !important; background: var(--bg-primary) !important; color: var(--text-primary) !important; border-radius: 4px; font-weight: bold;" 
+                    style="padding: 2px !important; font-size: var(--font-sm) !important; width: 44px !important; text-align: center !important; height: 28px !important; border: 1px solid var(--border-color-light) !important; background: var(--bg-primary) !important; color: var(--text-primary) !important; border-radius: 4px; font-weight: bold;" 
                     min="0" 
                     v-model.number="denom.count" 
                     @input="calculateTotalFromDenoms"
                   />
-                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: 16px;" @click="incrementDenom(denom)">+</button>
+                  <button type="button" class="btn btn-secondary" style="min-width: 28px; height: 28px; padding: 0 !important; font-weight: bold; border-radius: 4px; border: 1.5px solid var(--border-color-light); display: flex; align-items: center; justify-content: center; font-size: var(--font-base);" @click="incrementDenom(denom)">+</button>
                 </div>
-                <span style="color: var(--text-secondary) !important; font-size: 0.75rem; font-weight: 700; text-align: center; word-break: break-all;">{{ formatCurrency(denom.count * denom.value) }}</span>
+                <span style="color: var(--text-secondary) !important; font-size: var(--font-xs); font-weight: 700; text-align: center; word-break: break-all;">{{ formatCurrency(denom.count * denom.value) }}</span>
               </div>
               <div style="grid-column: 1 / -1; border-top: 1px dashed var(--border-color-light) !important; padding-top: var(--space-xs); display:flex; justify-content:space-between; align-items:center; font-weight: 700; margin-top:8px;">
-                <span style="color: var(--text-primary) !important; font-size: 0.9rem;">ยอดคำนวณรวม: <span style="color:var(--primary); font-size: 1.15rem !important; font-weight: 800;">{{ formatCurrency(calculatorTotalSum) }}</span></span>
-                <button type="button" class="btn btn-primary" style="background: var(--gradient-primary) !important; color: #fff !important; padding: 6px 12px !important; font-size: 12px !important; font-weight: bold; border-radius: 6px; min-height: 32px;" @click="useCalculatorSum">ใช้ยอดนี้</button>
+                <span style="color: var(--text-primary) !important; font-size: var(--font-sm);">ยอดคำนวณรวม: <span style="color:var(--primary); font-size: var(--font-md) !important; font-weight: 800;">{{ formatCurrency(calculatorTotalSum) }}</span></span>
+                <button type="button" class="btn btn-primary" style="background: var(--gradient-primary) !important; color: #fff !important; padding: 6px 12px !important; font-size: var(--font-sm) !important; font-weight: bold; border-radius: 6px; min-height: 32px;" @click="useCalculatorSum">ใช้ยอดนี้</button>
               </div>
             </div>
           </div>
@@ -1412,11 +1706,10 @@
             ></textarea>
           </div>
 
-          <!-- Action buttons -->
-          <div class="flex gap-md mt-lg" style="display:flex !important; gap:var(--space-md) !important; margin-top:var(--space-lg) !important;">
-            <button class="btn btn-secondary flex-1" style="flex:1 !important; border: 1px solid var(--border-color-light) !important; color: var(--text-primary) !important;" @click="showAuditModal = false">ยกเลิก</button>
-            <button class="btn btn-primary flex-1" style="flex:1 !important; background: var(--gradient-primary) !important; color: #fff !important;" @click="submitCashAudit" :disabled="actualCashInput === '' || actualCashInput === null || actualCashInput < 0">
-              <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
+          <div class="flex gap-md mt-lg">
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showAuditModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-primary flex-1" @click="submitCashAudit" :disabled="actualCashInput === '' || actualCashInput === null || actualCashInput < 0">
+              <i class="fa-solid fa-circle-check"></i> ปิดยอด
             </button>
           </div>
         </div>
@@ -1424,11 +1717,11 @@
     </div>
 
     <!-- Set Opening Cash Modal -->
-    <div v-if="showOpeningCashModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showOpeningCashModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="showOpeningCashModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-lg) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
+          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอนตั้งต้นประจำวัน
           </h3>
           <button class="modal-close" @click="showOpeningCashModal = false" style="color: var(--text-secondary) !important;">✕</button>
@@ -1453,9 +1746,9 @@
             />
           </div>
 
-          <div class="flex gap-md mt-lg" style="display: flex !important; gap: var(--space-md) !important; margin-top: var(--space-lg) !important;">
-            <button class="btn btn-secondary flex-1" style="flex: 1 !important; border: 1px solid var(--border-color-light) !important; color: var(--text-primary) !important;" @click="showOpeningCashModal = false">ยกเลิก</button>
-            <button class="btn btn-primary flex-1" style="flex: 1 !important; background: var(--gradient-primary) !important; color: #fff !important;" @click="submitOpeningCash" :disabled="openingCashInput === '' || openingCashInput === null || openingCashInput < 0">
+          <div class="flex gap-md mt-lg">
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showOpeningCashModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-primary flex-1" @click="submitOpeningCash" :disabled="openingCashInput === '' || openingCashInput === null || openingCashInput < 0">
               <i class="fa-solid fa-floppy-disk"></i> บันทึกเงินทอน
             </button>
           </div>
@@ -1480,6 +1773,86 @@ const currentUser = getUser();
 const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
 
 const activeTab = ref('sales');
+
+// New Filters State & Helpers
+const customStartTime = ref('00.00');
+const customEndTime = ref('23.59');
+
+const staffList = computed(() => store.users || []);
+const historyStaffFilter = ref('all');
+const historyPaymentFilter = ref('all');
+const activityStaffFilter = ref('all');
+
+const isHistoryStaffDropdownOpen = ref(false);
+const isHistoryPaymentDropdownOpen = ref(false);
+const isActivityStaffDropdownOpen = ref(false);
+const isStockItemDropdownOpen = ref(false);
+
+const reportsStockItems = computed(() => store.stockItems || []);
+const selectedReportsStockItemId = ref(null);
+
+const selectedStockItemName = computed(() => {
+  const found = reportsStockItems.value.find(item => item.id === selectedReportsStockItemId.value);
+  return found ? found.name : 'เลือกสินค้า...';
+});
+
+const parseTimeDot = (timeStr) => {
+  if (!timeStr) return { hour: 0, minute: 0 };
+  const normalized = timeStr.replace(':', '.');
+  const parts = normalized.split('.');
+  const hour = Number(parts[0]) || 0;
+  const minute = Number(parts[1]) || 0;
+  return { hour, minute };
+};
+
+const getBangkokTimeComponents = (dateStr) => {
+  if (!dateStr) return { hour: 0, minute: 0 };
+  let d;
+  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+    const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
+    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
+    d = new Date(isoStr);
+  } else {
+    d = new Date(dateStr);
+  }
+  const bkkString = d.toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  const [h, m] = bkkString.split(':').map(Number);
+  return { hour: h, minute: m };
+};
+
+const isTimeInRange = (dateStr, startStr, endStr) => {
+  const start = parseTimeDot(startStr || '00.00');
+  const end = parseTimeDot(endStr || '23.59');
+  
+  const { hour, minute } = getBangkokTimeComponents(dateStr);
+  const timeVal = hour * 60 + minute;
+  
+  const startVal = start.hour * 60 + start.minute;
+  const endVal = end.hour * 60 + end.minute;
+  
+  if (startVal <= endVal) {
+    return timeVal >= startVal && timeVal <= endVal;
+  } else {
+    return timeVal >= startVal || timeVal <= endVal;
+  }
+};
+
+const getPaymentLabel = (pm) => {
+  const map = {
+    'all': 'ทั้งหมด',
+    'cash': 'เงินสด',
+    'qr': 'QR Code',
+    'gov': 'โครงการรัฐ',
+    'delivery': 'เดลิเวอรี'
+  };
+  return map[pm] || pm;
+};
 
 // --- CASH DRAWER AUDIT STATE ---
 const cashDrawerSessions = ref([]);
@@ -1749,14 +2122,33 @@ const historyOrders = ref([]);
 const historyCurrentPage = ref(1);
 const historyOrdersPerPage = 20;
 
+const filteredHistoryOrders = computed(() => {
+  let list = historyOrders.value;
+  
+  if (historyStaffFilter.value !== 'all') {
+    list = list.filter(o => o.staff_name === historyStaffFilter.value);
+  }
+  
+  if (historyPaymentFilter.value !== 'all') {
+    list = list.filter(o => o.payment_method === historyPaymentFilter.value);
+  }
+  
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    list = list.filter(o => isTimeInRange(o.created_at, customStartTime.value, customEndTime.value));
+  }
+  
+  return list;
+});
+
 const paginatedHistoryOrders = computed(() => {
   const start = (historyCurrentPage.value - 1) * historyOrdersPerPage;
   const end = start + historyOrdersPerPage;
-  return historyOrders.value.slice(start, end);
+  return filteredHistoryOrders.value.slice(start, end);
 });
 
 const totalPages = computed(() => {
-  return Math.ceil(historyOrders.value.length / historyOrdersPerPage) || 1;
+  return Math.ceil(filteredHistoryOrders.value.length / historyOrdersPerPage) || 1;
 });
 
 
@@ -1766,6 +2158,8 @@ watch(activeTab, (newVal) => {
     loadOrderHistory();
   } else if (newVal === 'cash_audit') {
     fetchCashDrawerSummary();
+  } else if (newVal === 'stock_history') {
+    loadStockHistoryLogs();
   }
 });
 
@@ -1804,21 +2198,73 @@ const expenses = ref([]);
 const activityLogs = ref([]);
 const filterAction = ref('all');
 
+const getExpenseCategoryLabel = (cat) => {
+  const map = {
+    raw_chicken: 'ไก่สด',
+    sticky_rice: 'ข้าวเหนียว',
+    meatballs: 'ลูกชิ้น',
+    salapao: 'ซาลาเปา',
+    fuel_oil: 'น้ำมัน',
+    gas_lpg: 'แก๊ส',
+    salary: 'เงินเดือน',
+    utility_bills: 'ค่าไฟ/น้ำ',
+    packaging: 'บรรจุภัณฑ์/ถุง',
+    debt: 'หนี้',
+    other: 'อื่นๆ',
+    raw_materials: 'วัตถุดิบ (เดิม)',
+    gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
+  };
+  return map[cat] || cat;
+};
+
 const filteredActivityLogs = computed(() => {
-  // Filter out create_order entirely to prevent duplicate count & confusion
-  const list = activityLogs.value.filter(log => log.action !== 'create_order');
-  if (filterAction.value === 'all') return list;
-  return list.filter(log => {
-    const act = log.action;
-    if (filterAction.value === 'login') return act === 'login';
-    if (filterAction.value === 'sales') return act === 'complete_order';
-    if (filterAction.value === 'cancel') return act === 'cancel_order';
-    if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
-    if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
-    if (filterAction.value === 'credit') return act === 'staff_credit';
-    if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
-    return true;
-  });
+  // 1. Get database activity logs, filtering out database log_expense to avoid duplicates with actual expenses
+  let dbLogs = activityLogs.value.filter(log => log.action !== 'log_expense');
+  
+  // 2. Map actual expense records dynamically to mock activity logs
+  const mappedExpenses = expenses.value.map(e => ({
+    id: `expense-${e.id}`,
+    branch_id: e.branch_id,
+    user_id: e.staff_id,
+    action: 'log_expense',
+    details: `บันทึกค่าใช้จ่าย หมวดหมู่ ${getExpenseCategoryLabel(e.category)} จำนวน ${e.amount} บาท${e.note ? ` (บันทึกเพิ่มเติม: ${e.note})` : ''}`,
+    created_at: e.created_at,
+    staff_name: e.staff_name || 'ผู้ดูแลระบบ'
+  }));
+
+  // 3. Combine both lists
+  let combined = [...dbLogs, ...mappedExpenses];
+
+  // 4. Sort by created_at descending
+  combined.sort((a, b) => new Date(b.created_at.replace(' ', 'T')) - new Date(a.created_at.replace(' ', 'T')));
+  
+  // 5. Apply activity category filter
+  if (filterAction.value !== 'all') {
+    combined = combined.filter(log => {
+      const act = log.action;
+      if (filterAction.value === 'login') return act === 'login';
+      if (filterAction.value === 'sales') return act === 'complete_order' || act === 'create_order';
+      if (filterAction.value === 'cancel') return act === 'cancel_order';
+      if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
+      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
+      if (filterAction.value === 'credit') return act === 'staff_credit';
+      if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
+      return true;
+    });
+  }
+
+  // 6. Filter by staff
+  if (activityStaffFilter.value !== 'all') {
+    combined = combined.filter(log => log.staff_name === activityStaffFilter.value);
+  }
+
+  // 7. Filter by time range if periodMode === 'daily'
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    combined = combined.filter(log => isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
+  }
+
+  return combined;
 });
 
 // Expanded order state
@@ -1850,6 +2296,16 @@ const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.
 const ledgerTransactions = ref([]);
 const ledgerLoading = ref(false);
 
+const filteredLedgerTransactions = computed(() => {
+  let list = ledgerTransactions.value;
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    list = list.filter(item => isTimeInRange(item.created_at, customStartTime.value, customEndTime.value));
+  }
+  return list;
+});
+
+
 // Pagination States for Daily/Monthly Orders
 const dailyOrdersCurrentPage = ref(1);
 const dailyOrdersPerPage = 15;
@@ -1868,13 +2324,13 @@ const paginatedDailyReportOrders = computed(() => {
 const ledgerCurrentPage = ref(1);
 const ledgerPerPage = 15;
 const totalLedgerPages = computed(() => {
-  const count = ledgerTransactions.value.length;
+  const count = filteredLedgerTransactions.value.length;
   return Math.ceil(count / ledgerPerPage) || 1;
 });
 const paginatedLedgerTransactions = computed(() => {
   const start = (ledgerCurrentPage.value - 1) * ledgerPerPage;
   const end = start + ledgerPerPage;
-  return ledgerTransactions.value.slice(start, end);
+  return filteredLedgerTransactions.value.slice(start, end);
 });
 
 // Pagination States for Activity Logs
@@ -1890,7 +2346,119 @@ const paginatedActivityLogs = computed(() => {
   return filteredActivityLogs.value.slice(start, end);
 });
 
+// Pagination States for Stock Logs
+const stockLogsCurrentPage = ref(1);
+const stockLogsPerPage = 15;
+const stockHistoryLogs = ref([]);
+const stockHistoryLoading = ref(false);
+
+const filteredStockLogs = computed(() => {
+  let list = stockHistoryLogs.value;
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value === 'daily' && isTimeFilterActive) {
+    list = list.filter(log => isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
+  }
+  return list;
+});
+
+const totalStockLogsPages = computed(() => {
+  const count = filteredStockLogs.value.length;
+  return Math.ceil(count / stockLogsPerPage) || 1;
+});
+const paginatedStockLogs = computed(() => {
+  const start = (stockLogsCurrentPage.value - 1) * stockLogsPerPage;
+  const end = start + stockLogsPerPage;
+  return filteredStockLogs.value.slice(start, end);
+});
+
+const loadStockHistoryLogs = async () => {
+  if (!selectedReportsStockItemId.value) return;
+  stockHistoryLoading.value = true;
+  try {
+    const params = {};
+    if (periodMode.value === 'daily') {
+      params.date = selectedDate.value;
+    } else if (periodMode.value === 'monthly') {
+      params.month = selectedMonth.value;
+    } else {
+      params.year = selectedYear.value;
+    }
+    const res = await api.stock.getLogs(selectedReportsStockItemId.value, params);
+    stockHistoryLogs.value = res.data?.logs || res.data || res || [];
+  } catch (e) {
+    console.error(e);
+    ui.showToast('ไม่สามารถดึงข้อมูลประวัติสต็อกได้', 'error');
+  } finally {
+    stockHistoryLoading.value = false;
+  }
+};
+
+const selectReportsStockItem = (item) => {
+  selectedReportsStockItemId.value = item.id;
+  isStockItemDropdownOpen.value = false;
+  loadStockHistoryLogs();
+};
+
+const getStockReasonLabel = (reason) => {
+  const map = {
+    'sale': 'หักจากการขาย',
+    'restock': 'เติมสต็อกสินค้า',
+    'adjustment': 'ปรับปรุงจำนวนสต็อก',
+    'waste': 'สินค้าเสีย/ทิ้ง',
+    'cancel_restore': 'คืนสต็อก (ยกเลิกบิล)',
+    'staff_benefit': 'แจกพนักงาน/เครดิต',
+    'fry': 'ทอดสุกพร้อมขาย'
+  };
+  return map[reason] || reason;
+};
+
+const getStockReasonIconClass = (reason) => {
+  const map = {
+    'sale': 'fa-solid fa-cart-shopping',
+    'restock': 'fa-solid fa-plus',
+    'adjustment': 'fa-solid fa-wrench',
+    'waste': 'fa-solid fa-trash-can',
+    'cancel_restore': 'fa-solid fa-rotate-left',
+    'staff_benefit': 'fa-solid fa-utensils',
+    'fry': 'fa-solid fa-fire'
+  };
+  return map[reason] || 'fa-solid fa-circle-info';
+};
+
+// Watch stockItems list to default to "ไส้กรอกดอกแดง"
+watch(reportsStockItems, (newVal) => {
+  if (newVal.length > 0 && selectedReportsStockItemId.value === null) {
+    const defaultItem = newVal.find(item => item.name.includes('ไส้กรอกดอกแดง'));
+    if (defaultItem) {
+      selectedReportsStockItemId.value = defaultItem.id;
+    } else {
+      selectedReportsStockItemId.value = newVal[0].id;
+    }
+  }
+}, { immediate: true });
+
+// Refetch stock history when item or date changes
+watch(selectedReportsStockItemId, () => {
+  stockLogsCurrentPage.value = 1;
+  loadStockHistoryLogs();
+});
+
 watch(filterAction, () => {
+  activityCurrentPage.value = 1;
+});
+
+watch([customStartTime, customEndTime], () => {
+  historyCurrentPage.value = 1;
+  ledgerCurrentPage.value = 1;
+  activityCurrentPage.value = 1;
+  stockLogsCurrentPage.value = 1;
+});
+
+watch([historyStaffFilter, historyPaymentFilter], () => {
+  historyCurrentPage.value = 1;
+});
+
+watch(activityStaffFilter, () => {
   activityCurrentPage.value = 1;
 });
 
@@ -1899,6 +2467,7 @@ const isExpenseCategoryDropdownOpen = ref(false);
 const selectedExpenseCategoryLabel = computed(() => {
   const categoryLabels = {
     raw_chicken: 'ไก่สด',
+    sticky_rice: 'ข้าวเหนียว',
     meatballs: 'ลูกชิ้น',
     salapao: 'ซาลาเปา',
     fuel_oil: 'น้ำมัน',
@@ -1906,7 +2475,7 @@ const selectedExpenseCategoryLabel = computed(() => {
     salary: 'เงินเดือน',
     utility_bills: 'ค่าไฟ/น้ำ',
     packaging: 'บรรจุภัณฑ์/ถุง',
-    debt: 'รายจ่าย - หนี้',
+    debt: 'หนี้',
     other: 'อื่นๆ',
     raw_materials: 'วัตถุดิบ (เดิม)',
     gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
@@ -1916,6 +2485,7 @@ const selectedExpenseCategoryLabel = computed(() => {
 const getExpenseCategoryIcon = (cat) => {
   const map = {
     raw_chicken: 'fa-solid fa-drumstick-bite',
+    sticky_rice: 'fa-solid fa-bowl-rice',
     meatballs: 'fa-solid fa-circle',
     salapao: 'fa-solid fa-cookie',
     fuel_oil: 'fa-solid fa-gas-pump',
@@ -1949,7 +2519,7 @@ const selectedFilterActionLabel = computed(() => {
     sales: 'การขาย / ออกบิล (Sales)',
     cancel: 'การยกเลิกบิล (Void)',
     expenses: 'บันทึกค่าใช้จ่าย (Expenses)',
-    stock: 'จัดการสต็อก / ของเสีย (Stock & Waste)',
+    stock: 'ปรับปรุงยอด / ของเสีย (Stock & Waste)',
     credit: 'เครดิตพนักงาน (Staff Credit)',
     cash_drawer: 'การจัดการลิ้นชักเงินสด (Cash Drawer)'
   };
@@ -2187,6 +2757,10 @@ const closeReportsDropdowns = () => {
   isYearDropdownOpen.value = false;
   isMonthDropdownOpen.value = false;
   isDateDropdownOpen.value = false;
+  isHistoryStaffDropdownOpen.value = false;
+  isHistoryPaymentDropdownOpen.value = false;
+  isActivityStaffDropdownOpen.value = false;
+  isStockItemDropdownOpen.value = false;
 };
 
 const loadMonthlyLedger = async () => {
@@ -2210,10 +2784,11 @@ const loadMonthlyLedger = async () => {
       expenseParams.year = selectedYear.value;
     }
 
-    const ordersRes = await api.orders.getAll(params);
+    const [ordersRes, expensesRes] = await Promise.all([
+      api.orders.getAll(params),
+      api.expenses.get(expenseParams)
+    ]);
     const periodOrders = ordersRes.success ? (ordersRes.data || []) : [];
-
-    const expensesRes = await api.expenses.get(expenseParams);
     const periodExpenses = expensesRes.success ? (expensesRes.data || []) : [];
 
     const list = [];
@@ -2399,60 +2974,72 @@ const loadReportData = async () => {
 
   loading.value = true;
   try {
-    let res;
-    if (periodMode.value === 'daily') {
-      res = await api.reports.daily(selectedDate.value, selectedBranchId.value);
-    } else if (periodMode.value === 'monthly') {
-      res = await api.reports.monthly(selectedMonth.value, selectedBranchId.value);
-    } else {
-      res = await api.reports.yearly(selectedYear.value, selectedBranchId.value);
-    }
+    const promises = [];
 
-    if (res.success && res.data) {
-      const data = res.data;
-      dailyReport.value = {
-        total_sales: data.total_revenue || 0,
-        total_orders: data.total_orders || 0,
-        average_bill: data.avg_order_value || 0,
-        cash_sales: data.payment_breakdown?.cash_total || 0,
-        cash_orders: data.payment_breakdown?.cash_count || 0,
-        qr_sales: data.payment_breakdown?.qr_total || 0,
-        qr_orders: data.payment_breakdown?.qr_count || 0,
-        gov_sales: data.payment_breakdown?.gov_total || 0,
-        gov_orders: data.payment_breakdown?.gov_count || 0,
-        delivery_sales: data.payment_breakdown?.delivery_total || 0,
-        delivery_orders: data.payment_breakdown?.delivery_count || 0,
-        orders: data.orders || []
-      };
-    } else {
-      dailyReport.value = {
-        total_sales: 0,
-        total_orders: 0,
-        average_bill: 0,
-        cash_sales: 0,
-        cash_orders: 0,
-        qr_sales: 0,
-        qr_orders: 0,
-        gov_sales: 0,
-        gov_orders: 0,
-        delivery_sales: 0,
-        delivery_orders: 0,
-        orders: []
-      };
-    }
+    // Promise 1: Main report data depending on period mode
+    const loadMainReport = async () => {
+      let res;
+      if (periodMode.value === 'daily') {
+        res = await api.reports.daily(selectedDate.value, selectedBranchId.value);
+      } else if (periodMode.value === 'monthly') {
+        res = await api.reports.monthly(selectedMonth.value, selectedBranchId.value);
+      } else {
+        res = await api.reports.yearly(selectedYear.value, selectedBranchId.value);
+      }
 
-    // Load expenses and activity logs (admin only)
+      if (res.success && res.data) {
+        const data = res.data;
+        dailyReport.value = {
+          total_sales: data.total_revenue || 0,
+          total_orders: data.total_orders || 0,
+          average_bill: data.avg_order_value || 0,
+          cash_sales: data.payment_breakdown?.cash_total || 0,
+          cash_orders: data.payment_breakdown?.cash_count || 0,
+          qr_sales: data.payment_breakdown?.qr_total || 0,
+          qr_orders: data.payment_breakdown?.qr_count || 0,
+          gov_sales: data.payment_breakdown?.gov_total || 0,
+          gov_orders: data.payment_breakdown?.gov_count || 0,
+          delivery_sales: data.payment_breakdown?.delivery_total || 0,
+          delivery_orders: data.payment_breakdown?.delivery_count || 0,
+          orders: data.orders || []
+        };
+      } else {
+        dailyReport.value = {
+          total_sales: 0,
+          total_orders: 0,
+          average_bill: 0,
+          cash_sales: 0,
+          cash_orders: 0,
+          qr_sales: 0,
+          qr_orders: 0,
+          gov_sales: 0,
+          gov_orders: 0,
+          delivery_sales: 0,
+          delivery_orders: 0,
+          orders: []
+        };
+      }
+    };
+    promises.push(loadMainReport());
+
+    // Promise 2: Admin only data loads
     if (isAdmin()) {
-      await loadExpensesForPeriod();
-      await loadActivityLogsForPeriod();
-      await loadMonthlyLedger();
+      promises.push(loadExpensesForPeriod());
+      promises.push(loadActivityLogsForPeriod());
+      promises.push(loadMonthlyLedger());
       if (activeTab.value === 'cash_audit') {
-        await fetchCashDrawerSummary();
+        promises.push(fetchCashDrawerSummary());
+      }
+      if (activeTab.value === 'stock_history') {
+        promises.push(loadStockHistoryLogs());
       }
     }
 
-    // Load history orders if currently active
-    await loadOrderHistory();
+    // Promise 3: Order history
+    promises.push(loadOrderHistory());
+
+    // Execute all concurrently!
+    await Promise.all(promises);
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถดึงข้อมูลรายงานได้', 'error');
@@ -2522,11 +3109,15 @@ const handleVoidOrder = async () => {
     if (res.success) {
       ui.showToast(`ยกเลิกบิล #${voidOrder.value.order_number} สำเร็จ`, 'success');
       showVoidModal.value = false;
-      store.clearReportsCache(); // Clear store cache!
+      ui.hideLoading(); // Hide full-screen blocking loader immediately!
+      
+      // Reload reports silently in background
+      store.clearReportsCache();
       loadReportData();
       if (isAdmin()) {
         loadReportSummary();
       }
+      return; // Skip the finally block to prevent double hiding
     }
   } catch (e) {
     ui.showToast('ยกเลิกบิลไม่สำเร็จ: ' + e.message, 'error');
@@ -2594,6 +3185,7 @@ const setPeriodMode = (mode) => {
 const getCategoryLabel = (cat) => {
   const map = {
     'raw_chicken': 'ไก่สด',
+    'sticky_rice': 'ข้าวเหนียว',
     'meatballs': 'ลูกชิ้น',
     'salapao': 'ซาลาเปา',
     'fuel_oil': 'น้ำมัน',
@@ -2615,16 +3207,16 @@ const getActionIconClass = (action) => {
     'create_order': 'fa-solid fa-cart-shopping text-success',
     'complete_order': 'fa-solid fa-circle-check text-success',
     'cancel_order': 'fa-solid fa-ban text-danger',
-    'adjust_stock': 'fa-solid fa-boxes-stacked text-primary',
+    'adjust_stock': 'fa-solid fa-boxes-stacked text-accent',
     'record_waste': 'fa-solid fa-trash-can text-danger',
-    'staff_credit': 'fa-solid fa-user-check text-primary',
+    'staff_credit': 'fa-solid fa-user-check text-warning',
     'log_expense': 'fa-solid fa-wallet text-danger',
     'delete_expense': 'fa-solid fa-trash-can text-danger',
     'cash_opening_set': 'fa-solid fa-cash-register text-success',
-    'cash_audit': 'fa-solid fa-cash-register text-primary',
-    'setting_change': 'fa-solid fa-gear text-neutral'
+    'cash_audit': 'fa-solid fa-cash-register text-success',
+    'setting_change': 'fa-solid fa-gear text-warning'
   };
-  return map[action] || 'fa-solid fa-bookmark text-neutral';
+  return map[action] || 'fa-solid fa-bookmark text-warning';
 };
 
 const onBranchChange = () => {
@@ -2637,21 +3229,33 @@ const onBranchChange = () => {
   }
 };
 
-onMounted(async () => {
+onMounted(() => {
   if (isAdmin()) {
-    try {
-      const res = await api.auth.getBranches();
-      if (res.success) {
-        branches.value = res.data || [];
-      }
-    } catch (e) {
-      console.warn('Failed to load branches:', e);
-    }
+    // Non-blocking fetch of branches
+    api.auth.getBranches()
+      .then(res => {
+        if (res.success) {
+          branches.value = res.data || [];
+        }
+      })
+      .catch(e => console.warn('Failed to load branches:', e));
+
+    // Load staff/users list for filters (non-blocking)
+    store.fetchSettingsData(selectedBranchId.value)
+      .catch(e => console.warn('Failed to load settings:', e));
+
+    // Load summary and top items (non-blocking)
     loadReportSummary();
     loadTopItems();
-    loadMonthlyLedger();
+
+    // Fetch stock items for stock logs (non-blocking)
+    store.fetchStock()
+      .catch(e => console.warn('Failed to load stock:', e));
   }
+
+  // Load report data (which handles ledger internally)
   loadReportData();
+
   window.addEventListener('click', closeReportsDropdowns);
 });
 
@@ -2749,7 +3353,7 @@ const exportHistoryOrdersCSV = () => {
 
 const exportExpensesCSV = () => {
   const headers = ['วันที่-เวลา', 'รายการ', 'รายรับ (บาท)', 'รายจ่าย (บาท)', 'คงเหลือสุทธิ (บาท)'];
-  const rows = ledgerTransactions.value.map(t => [
+  const rows = filteredLedgerTransactions.value.map(t => [
     formatDate(t.created_at) + ' ' + formatTime(t.created_at),
     t.name,
     t.income > 0 ? t.income : 0,
@@ -2807,46 +3411,7 @@ select.reports-filter-control,
   }
 }
 
-/* --- Category Tabs --- */
-.category-tabs {
-  display: flex;
-  gap: var(--space-sm);
-  overflow-x: auto;
-  padding-bottom: var(--space-md);
-  margin-bottom: var(--space-lg);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-}
 
-.category-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.category-tab {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all var(--transition-base);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.category-tab:active {
-  transform: scale(0.97);
-}
-
-.category-tab.active {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
-}
 
 .stat-card {
   background: var(--card-bg);
@@ -2873,10 +3438,24 @@ select.reports-filter-control,
   background-position: right 12px center !important;
 }
 
+.expense-form-presets {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
 @media (max-width: 768px) {
   .expense-form-grid {
     grid-template-columns: 1fr;
     gap: var(--space-xs);
+  }
+  .expense-form-presets {
+    order: 5;
+  }
+  .expense-form-submit-group {
+    order: 6;
+  }
+  .void-modal-title {
+    font-size: var(--font-base) !important;
   }
 }
 
@@ -2897,7 +3476,7 @@ select.reports-filter-control,
 
 /* --- Ledger Mobile Card --- */
 .ledger-mobile-card {
-  background: var(--card-bg);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: var(--space-md);
@@ -2937,15 +3516,15 @@ select.reports-filter-control,
   display: flex;
   gap: var(--space-md);
   padding: var(--space-md);
-  background: var(--card-bg);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   transition: all var(--transition-base);
 }
 
 .activity-log-item:hover {
-  background: var(--card-bg-hover);
-  border-color: var(--border-color-light);
+  background: var(--bg-secondary);
+  border-color: var(--border-color-focus);
 }
 
 .log-badge-wrapper {
@@ -2962,18 +3541,18 @@ select.reports-filter-control,
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: var(--font-md);
   background: rgba(139, 3, 19, 0.04);
 }
 
 /* Log badge colors */
-.log-badge.login { background: rgba(255, 171, 43, 0.1); }
-.log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); }
-.log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); }
-.log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); }
-.log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); }
-.log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); }
-.log-badge.cash_opening_set, .log-badge.cash_audit { background: rgba(42, 157, 143, 0.1); }
+.log-badge.login { background: rgba(255, 171, 43, 0.1); color: #f4a261; }
+.log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
+.log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); color: #e63946; }
+.log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); color: #e63946; }
+.log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
+.log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); color: #8b0313; }
+.log-badge.cash_opening_set, .log-badge.cash_audit { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
 
 .log-content-wrapper {
   flex: 1;
@@ -2995,7 +3574,7 @@ select.reports-filter-control,
 .log-meta {
   display: flex;
   gap: var(--space-md);
-  font-size: 10px;
+  font-size: var(--font-xs);
   color: var(--text-tertiary);
 }
 
@@ -3090,7 +3669,7 @@ select.reports-filter-control,
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   flex-shrink: 0;
 }
 
@@ -3132,7 +3711,7 @@ select.reports-filter-control,
 }
 
 .badge-type {
-  font-size: 9px;
+  font-size: var(--font-xs);
   font-weight: 700;
   padding: 1px 6px;
   border-radius: var(--radius-sm);
@@ -3177,7 +3756,7 @@ select.reports-filter-control,
 }
 
 .qty-unit {
-  font-size: 9px;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -3187,7 +3766,7 @@ select.reports-filter-control,
   border: 1px solid rgba(139, 3, 19, 0.12);
   padding: 4px 12px;
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xs);
   color: var(--primary);
   font-weight: 700;
   min-width: 80px;
@@ -3242,7 +3821,7 @@ select.reports-filter-control,
 .session-status-badge {
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: var(--font-xs);
   font-weight: 700;
   text-align: center;
   white-space: nowrap;
@@ -3312,7 +3891,7 @@ select.reports-filter-control,
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--font-sm);
   display: inline-block;
   white-space: nowrap;
 }
@@ -3341,41 +3920,19 @@ select.reports-filter-control,
   margin-top: var(--space-xs);
 }
 
-.cash-card-actions .btn {
-  flex: 1;
-  min-height: 40px;
-  font-size: var(--font-sm);
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-/* Hint box alert */
-.bulk-hint-box {
-  font-size: var(--font-base);
-  color: var(--text-secondary);
-  text-align: left;
-  background: rgba(255, 171, 43, 0.06);
-  border: 1px solid rgba(255, 171, 43, 0.25);
-  border-left: 6px solid var(--accent);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  line-height: 1.5;
-}
-.hint-icon {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-  line-height: 1;
-  margin-top: 2px;
-}
-.hint-text {
-  flex: 1;
+.cash-card-actions .btn-action {
+  flex: 1 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  font-size: var(--font-xs) !important;
+  font-weight: 700 !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  padding: 0 4px !important;
+  white-space: nowrap !important;
 }
 
 /* Payment Methods Grid */
@@ -3390,5 +3947,30 @@ select.reports-filter-control,
   .payment-methods-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+}
+
+.calendar-day-btn {
+  border-radius: var(--radius-full) !important;
+}
+
+.btn-delete-action {
+  background: rgba(255, 59, 48, 0.1) !important;
+  color: #ff3b30 !important;
+  border: 1px solid rgba(255, 59, 48, 0.2) !important;
+  padding: 4px 8px !important;
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer;
+}
+
+.btn-delete-action:active {
+  background: rgba(255, 59, 48, 0.2) !important;
+}
+
+.btn-drawer-action {
+  width: 180px !important;
 }
 </style>
