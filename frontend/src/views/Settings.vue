@@ -45,14 +45,13 @@
     <!-- Tab 1: Shop Settings Form -->
     <div v-if="activeTab === 'shop'" class="card">
       <!-- Branch Selector for Admin -->
-      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl" style="background: var(--bg-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-lg); position: relative; z-index: 10;">
-        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store" style="margin-right: 4px;"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
+      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl settings-branch-header">
+        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store mr-xs"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
         <div class="custom-select-wrapper" @click.stop>
           <div 
-            class="custom-select-trigger" 
+            class="custom-select-trigger settings-branch-trigger" 
             :class="{ 'active': isSettingsBranchDropdownOpen }" 
             @click="toggleSettingsBranchDropdown"
-            style="padding: 6px 36px 6px var(--space-md); border-radius: var(--radius-md); width: 100%; height: 38px; line-height: 24px; background-position: right 12px center; display: flex; align-items: center;"
           >
             <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
           </div>
@@ -93,9 +92,9 @@
     </div>
 
     <!-- Tab 2: User management -->
-    <div v-if="activeTab === 'users'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'users'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card" style="background: var(--card-bg); gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
         <span class="font-bold text-lg"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> จัดการพนักงานหน้าร้าน</span>
         <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
       </div>
@@ -103,7 +102,7 @@
       <!-- Users list table (Visible on Desktop Only) -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th class="text-left" style="padding: var(--space-md);">ชื่อพนักงาน</th>
@@ -116,7 +115,7 @@
             <tbody>
               <tr v-if="usersLoading">
                 <td colspan="5" class="text-center" style="padding: var(--space-2xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr 
@@ -165,7 +164,7 @@
       <!-- Mobile Users Cards List (Visible on Mobile Only) -->
       <div class="show-mobile-only p-md mobile-users-list">
         <div v-if="usersLoading" style="text-align: center; padding: var(--space-xl);">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="users.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
           ยังไม่มีข้อมูลพนักงาน
@@ -187,7 +186,7 @@
           </div>
 
           <!-- Info & Actions -->
-          <div class="flex-1" style="min-width: 0;">
+          <div class="flex-1 min-w-0">
             <div class="flex flex-between align-center mb-xs">
               <span class="font-bold text-primary text-base">{{ u.name }}</span>
               <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
@@ -316,9 +315,9 @@
     </div>
 
     <!-- Tab 3: Branch management (Admin only) -->
-    <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card" style="background: var(--card-bg); gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
         <span class="font-bold text-lg"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> จัดการสาขาของร้าน</span>
         <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
       </div>
@@ -326,7 +325,7 @@
       <!-- Branch list table (Visible on Desktop Only) -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th class="text-left" style="padding: var(--space-md);">ชื่อสาขา</th>
@@ -384,7 +383,7 @@
             <i class="fa-solid fa-store" style="font-size: 1.2rem;"></i>
           </div>
 
-          <div class="flex-1" style="min-width: 0;">
+          <div class="flex-1 min-w-0">
             <div class="font-bold text-primary mb-xs text-base">{{ b.name }}</div>
             <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm);">
               <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
@@ -455,9 +454,9 @@
     </div>
 
     <!-- Tab 4: Presets CRUD -->
-    <div v-if="activeTab === 'presets'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'presets'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card" style="background: var(--card-bg); gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
         <span class="font-bold text-lg"><i class="fa-solid fa-mortar-pestle" style="margin-right: 6px;"></i> สูตรเครื่องปรุงสำเร็จรูป</span>
         <button class="btn btn-primary" @click="openAddPresetModal"><i class="fa-solid fa-plus"></i> เพิ่มสูตรสำเร็จ</button>
       </div>
@@ -465,7 +464,7 @@
       <!-- Presets List -->
       <div class="card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th class="text-left" style="padding: var(--space-md);">ชื่อสูตร</th>
@@ -477,7 +476,7 @@
             <tbody>
               <tr v-if="presetsLoading">
                 <td colspan="4" class="text-center" style="padding: var(--space-2xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="presets.length === 0">
@@ -522,7 +521,7 @@
       <!-- Mobile Presets List -->
       <div class="show-mobile-only" style="display: none;">
         <div v-if="presetsLoading" class="card p-lg text-center" style="background: var(--card-bg);">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="presets.length === 0" class="card p-lg text-center text-secondary" style="background: var(--card-bg);">
           ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
@@ -562,7 +561,7 @@
     </div>
 
     <!-- Tab 5: Backup, Restore & Archive -->
-    <div v-if="activeTab === 'backup'" class="flex flex-col gap-lg" style="width: 100%;">
+    <div v-if="activeTab === 'backup'" class="flex flex-col gap-lg w-full">
       <!-- Card 1: Data Backup & Restore -->
       <div class="card">
         <div class="card-title mb-md text-base"><i class="fa-solid fa-database" style="margin-right: 6px;"></i> สำรองและกู้คืนข้อมูล (Backup & Restore)</div>
@@ -1348,9 +1347,13 @@ onUnmounted(() => {
     flex-direction: column !important;
     gap: var(--space-sm) !important;
   }
-  .backup-btns-container .btn {
+  .backup-btns-container .btn,
+  .backup-btns-container .btn-modal {
     width: 100% !important;
     flex: none !important;
+    height: 48px !important;
+    font-size: var(--font-base) !important;
+    border-radius: var(--radius-md) !important;
   }
   .archive-inputs-container {
     flex-direction: column !important;
@@ -1360,6 +1363,10 @@ onUnmounted(() => {
   .archive-inputs-container .btn {
     width: 100% !important;
     flex: none !important;
+  }
+  .modifier-pill {
+    font-size: var(--font-xs) !important;
+    padding: 2px 8px !important;
   }
 }
 
@@ -1375,5 +1382,24 @@ onUnmounted(() => {
   font-weight: var(--font-weight-semibold);
   box-shadow: var(--shadow-sm);
   white-space: nowrap;
+}
+.settings-branch-header {
+  background: var(--bg-secondary);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-lg);
+  position: relative;
+  z-index: 10;
+}
+.settings-branch-trigger {
+  padding: 6px 36px 6px var(--space-md);
+  border-radius: var(--radius-md);
+  width: 100%;
+  height: 38px;
+  line-height: 24px;
+  background-position: right 12px center;
+  display: flex;
+  align-items: center;
 }
 </style>

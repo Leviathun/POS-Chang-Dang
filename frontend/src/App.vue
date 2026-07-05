@@ -9,7 +9,7 @@
 
       <div class="login-card card glass p-6 w-full max-w-sm text-center">
         <!-- Brand Logo Image (No animation) -->
-        <div class="brand-logo mb-2" style="display: flex; justify-content: center; height: 6.5rem; align-items: center;">
+        <div class="brand-logo mb-2 flex flex-center" style="height: 6.5rem;">
           <img src="@/assets/image/Logo POS.png" alt="Logo" style="height: 100%; object-fit: contain;" />
         </div>
         <h2 class="font-bold text-gradient mb-1" style="font-size: var(--font-lg);">
@@ -134,7 +134,7 @@
       <div class="main-layout">
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
-          <span class="header-title" style="display: flex; align-items: center; gap: 6px;">
+          <span class="header-title flex align-center gap-xs">
             <img v-if="route.path === '/pos'" src="@/assets/image/Logo POS.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
             <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
             <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
@@ -143,7 +143,7 @@
             <span>{{ activeTitle }}</span>
           </span>
           <div class="header-right">
-            <button class="header-btn" id="btn-logout" @click="handleLogout" style="display: inline-flex; align-items: center; gap: 4px;">
+            <button class="header-btn inline-flex align-center gap-xs" id="btn-logout" @click="handleLogout">
               <i class="fa-solid fa-right-from-bracket" style="font-size: var(--font-sm);"></i>
               <span style="font-size: var(--font-xs); font-weight: bold;">ออก</span>
             </button>
@@ -171,23 +171,23 @@
         <!-- Bottom Navigation (Visible on Mobile) -->
         <nav id="bottom-nav">
           <router-link to="/pos" class="nav-item" active-class="active" data-page="pos">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-house"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-house"></i></span>
             <span class="nav-label">ขาย</span>
           </router-link>
           <router-link to="/menu" class="nav-item" active-class="active" data-page="menu">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-utensils"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-utensils"></i></span>
             <span class="nav-label">เมนู</span>
           </router-link>
           <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-boxes-stacked"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="nav-label">สต็อก</span>
           </router-link>
           <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-chart-line"></i></span>
-            <span class="nav-label">รายงานยอด</span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
+            <span class="nav-label">รายงาน</span>
           </router-link>
           <router-link v-if="adminUser" to="/settings" class="nav-item" active-class="active" data-page="settings">
-            <span class="nav-icon" style="display: flex; justify-content: center; height: 1.35rem;"><i class="fa-solid fa-gear"></i></span>
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-label">ตั้งค่า</span>
           </router-link>
         </nav>
@@ -198,7 +198,7 @@
     <div id="toast-container">
       <transition-group name="toast-anim">
         <div v-for="t in uiState.toasts" :key="t.id" class="toast" :class="t.type">
-          <span class="toast-icon" style="display: inline-flex; align-items: center;">
+          <span class="toast-icon inline-flex align-center">
             <i v-if="t.type === 'success'" class="fa-solid fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i>
             <i v-else-if="t.type === 'error'" class="fa-solid fa-circle-xmark" style="color: var(--danger); font-size: 1.2rem;"></i>
             <i v-else-if="t.type === 'info'" class="fa-solid fa-circle-info" style="color: var(--accent); font-size: 1.2rem;"></i>
@@ -211,7 +211,7 @@
     </div>
 
     <!-- Reactive Global Modal Container (Confirm dialog) -->
-    <div id="modal-container" :class="{ 'active': uiState.confirm }" :style="uiState.confirm ? 'display:flex; align-items:center;' : ''">
+    <div id="modal-container" :class="{ 'active flex align-center': uiState.confirm }">
       <div v-if="uiState.confirm" class="modal-overlay" @click="uiState.confirm.resolve(false)"></div>
       <div v-if="uiState.confirm" class="confirm-dialog" style="position:relative; z-index:2;">
         <div class="confirm-title">{{ uiState.confirm.title }}</div>
@@ -769,11 +769,13 @@ onUnmounted(() => {
 }
 
 .nav-item {
+  flex: 1;
+  max-width: 75px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 16px; /* Premium pill shape padding */
+  padding: 6px 0; /* Premium uniform size */
   color: var(--text-tertiary);
   font-size: var(--font-xs);
   font-weight: var(--font-weight-medium);
@@ -786,6 +788,7 @@ onUnmounted(() => {
 .nav-item .nav-icon {
   font-size: var(--font-lg);
   transition: var(--transition-base);
+  height: 1.35rem;
 }
 
 .nav-item.active {

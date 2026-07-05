@@ -36,7 +36,7 @@
       <!-- Desktop Stock Table (Visible on desktop only) -->
       <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th class="text-left" style="padding: var(--space-md); width: 30%;">เมนูอาหาร</th>
@@ -48,7 +48,7 @@
             <tbody>
               <tr v-if="loading">
                 <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="stockItems.length === 0">
@@ -66,9 +66,7 @@
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-base text-muted flex align-center" style="gap: var(--space-sm);">
-                    <span>ID: {{ item.id }}</span>
-                    <span style="color: var(--border-color);">|</span>
+                  <div class="text-base text-muted flex align-center gap-sm">
                     <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)"><i class="fa-solid fa-file-medical" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
@@ -91,7 +89,7 @@
                 </td>
                 <!-- Actions -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: nowrap;">
+                  <div class="stock-actions flex justify-center gap-sm">
                     <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn-action btn-action-fry" @click="openActionModal('fry', item, false)"><i class="fa-solid fa-fire"></i> ทอดสินค้า</button>
                     <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
                     <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
@@ -106,7 +104,7 @@
       <!-- Mobile Stock Card List (Visible on mobile only) -->
       <div class="mobile-stock-list-container">
         <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="stockItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก
@@ -122,16 +120,14 @@
               <!-- Left: Name & ID -->
               <div class="mobile-stock-card-details">
                 <div class="mobile-stock-card-name">{{ item.name }}</div>
-                <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
-                  <span>ID: {{ item.id }}</span>
-                  <span style="color: var(--border-color);">|</span>
+                <div class="mobile-stock-card-id flex align-center gap-sm flex-wrap">
                   <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, false)"><i class="fa-solid fa-file-medical"></i> ประวัติ</a>
                 </div>
               </div>
               
               <!-- Right: Stock Quantity & Badge -->
               <div class="mobile-stock-card-meta">
-                <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-column align-end gap-xs" style="text-align: right;">
+                <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-col align-end gap-xs" style="text-align: right;">
                   <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 2px;">
                     ทอดแล้ว: <strong :class="{ 'text-danger': isItemLowStock(item, item.quantity) }">{{ formatStockQty(item.quantity, item.uom) }}</strong>
                   </div>
@@ -181,7 +177,7 @@
                 style="grid-column: span 2;" 
                 @click="openActionModal('fry', item, false)"
               >
-                <i class="fa-solid fa-fire"></i> ทอดสินค้า (หักของสด ➔ ทอดสุก)
+                <i class="fa-solid fa-fire"></i> ทอด
               </button>
               <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
               <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
@@ -196,7 +192,7 @@
       <!-- Desktop Free Modifiers Table -->
       <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th class="text-left" style="padding: var(--space-md); width: 30%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
@@ -208,7 +204,7 @@
             <tbody>
               <tr v-if="loading">
                 <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="modifierItems.length === 0">
@@ -225,19 +221,17 @@
               >
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold text-base">
-                    {{ item.name }}
-                    <span v-if="!item.active" class="badge badge-neutral text-base" style="margin-left:6px;">ปิดใช้งาน</span>
+                  <div class="font-bold text-base flex align-center gap-xs">
+                    <span>{{ item.name }}</span>
+                    <span v-if="!item.active" class="badge badge-neutral">ปิดใช้งาน</span>
                   </div>
-                  <div class="text-base text-muted flex align-center" style="gap: var(--space-sm);">
-                    <span>ID: {{ item.id }}</span>
-                    <span style="color: var(--border-color);">|</span>
+                  <div class="text-base text-muted flex align-center gap-sm">
                     <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
                   </div>
                 </td>
                 <!-- Category -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge text-base" :class="getModifierCategoryClass(item.category)">
+                  <span class="badge" :class="getModifierCategoryClass(item.category)">
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </td>
@@ -251,7 +245,7 @@
                 </td>
                 <!-- Actions -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="stock-actions flex justify-center gap-sm" style="flex-wrap: nowrap;">
+                  <div class="stock-actions flex justify-center gap-sm">
                     <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
                       <i class="fa-solid fa-plus"></i> เติมสต็อก
                     </button>
@@ -269,7 +263,7 @@
       <!-- Mobile Free Modifiers Card List -->
       <div class="mobile-stock-list-container">
         <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการเครื่องปรุงในระบบ
@@ -284,17 +278,15 @@
             <div class="mobile-stock-card-body">
               <!-- Left: Name & ID -->
               <div class="mobile-stock-card-details">
-                <div class="mobile-stock-card-name">
-                  {{ item.name }}
-                  <span v-if="!item.active" class="badge badge-sm badge-neutral" style="margin-left:4px;">ปิดใช้งาน</span>
+                <div class="mobile-stock-card-name flex align-center gap-xs flex-wrap">
+                  <span>{{ item.name }}</span>
+                  <span v-if="!item.active" class="badge badge-neutral">ปิดใช้งาน</span>
                 </div>
-                <div class="mobile-stock-card-id" style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
-                  <span>ID: {{ item.id }}</span>
-                  <span style="color: var(--border-color);">|</span>
+                <div class="mobile-stock-card-id flex align-center gap-sm flex-wrap">
                   <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ประวัติ</a>
                 </div>
                 <div style="margin-top: 4px;">
-                  <span class="badge badge-sm" :class="getModifierCategoryClass(item.category)">
+                  <span class="badge" :class="getModifierCategoryClass(item.category)">
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </div>
@@ -493,7 +485,7 @@
           </div>
 
           <div v-if="logsLoading" style="text-align: center; padding: var(--space-2xl);">
-            <div class="spinner" style="margin:0 auto;"></div>
+            <div class="spinner mx-auto"></div>
           </div>
           <div v-else-if="logs.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ยังไม่มีบันทึกประวัติการปรับปรุงสต็อกสำหรับสินค้าชิ้นนี้
@@ -942,47 +934,9 @@ onMounted(() => {
     gap: var(--space-md);
     padding-bottom: var(--space-2xl);
   }
-  
-  .mobile-stock-card {
-    background: #ffffff;
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: var(--space-md);
-    box-shadow: 0 4px 12px rgba(139, 3, 19, 0.03);
-    transition: all var(--transition-base);
-    display: flex;
-    flex-direction: column;
-  }
-  
   .mobile-stock-card.out-of-stock-card {
     border-color: rgba(173, 40, 30, 0.2);
     background: #fff5f5;
-  }
-  
-  .mobile-stock-card-body {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-md);
-    width: 100%;
-  }
-  
-  .mobile-stock-card-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    text-align: left;
-  }
-  
-  .mobile-stock-card-name {
-    font-size: var(--font-md);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-primary);
-    word-break: break-word;
   }
   
   .mobile-stock-card-id {
@@ -990,16 +944,8 @@ onMounted(() => {
     color: var(--text-tertiary);
   }
   
-  .mobile-stock-card-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--space-xs);
-    flex-shrink: 0;
-  }
-  
   .mobile-stock-card-qty {
-    font-size: var(--font-md);
+    font-size: var(--font-base);
     font-weight: var(--font-weight-bold);
     color: var(--text-secondary);
   }
@@ -1011,16 +957,6 @@ onMounted(() => {
   .mobile-stock-card-badge {
     display: flex;
     align-items: center;
-  }
-  
-  .mobile-stock-card-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
-    padding-top: var(--space-md);
-    border-top: 1px dashed var(--border-color);
-    width: 100%;
   }
   
   .mobile-stock-card-actions .btn {

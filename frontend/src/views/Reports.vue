@@ -63,7 +63,7 @@
     <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 50;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
-        <div class="flex gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <button 
             type="button"
             class="btn btn-secondary btn-sm" 
@@ -256,15 +256,15 @@
 
     <!-- Loading spinner for reports -->
     <div v-if="loading" class="card text-center p-3xl">
-      <div class="spinner" style="margin:0 auto;"></div>
+      <div class="spinner mx-auto"></div>
     </div>
 
     <template v-else>
       <!-- Tab 1: Sales (ยอดขาย) -->
-      <div v-if="activeTab === 'sales'" style="display: flex; flex-direction: column; gap: var(--space-lg);">
+      <div v-if="activeTab === 'sales'" class="flex flex-col gap-lg">
         
         <!-- Admin Only: Top summary widgets (moved inside Tab 1) -->
-        <div v-if="isAdminUser" class="grid grid-2 gap-md" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-md);">
+        <div v-if="isAdminUser" class="grid grid-2 gap-md">
           <div class="card text-center p-md">
             <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดขายวันนี้</div>
             <div class="font-bold text-primary text-xl">{{ formatCurrency(summary.today_sales) }}</div>
@@ -294,18 +294,18 @@
             <span>{{ formatCurrency(dailyReport.average_bill) }}</span>
           </div>
 
-          <div class="divider" style="margin: var(--space-md) 0; height:1px; background:var(--border-color);"></div>
+          <div class="divider"></div>
           
           <!-- Payment Methods Breakdowns -->
           <div class="payment-methods-grid">
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
                 {{ formatCurrency(dailyReport.cash_sales) }}
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.cash_orders }} บิล</div>
             </div>
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i>
                 <span class="hide-mobile">QR Code</span>
@@ -316,7 +316,7 @@
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
             </div>
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-landmark" style="color: var(--accent);"></i>
                 <span class="hide-mobile">โครงการรัฐ</span>
@@ -327,7 +327,7 @@
               </div>
               <div style="color:var(--text-tertiary);">{{ dailyReport.gov_orders }} บิล</div>
             </div>
-            <div class="p-xs card" style="background:var(--bg-secondary); border:none;">
+            <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-motorcycle" style="color: #ff9500;"></i>
                 <span class="hide-mobile">เดลิเวอรี</span>
@@ -343,14 +343,14 @@
 
         <!-- Today's Transaction Logs (ALL ROLES) -->
         <div class="card">
-          <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-            <div class="card-title" style="font-size: var(--font-sm); margin: 0;"><i class="fa-solid fa-list" style="margin-right: 6px;"></i> {{ dailyOrdersListTitle }}</div>
+          <div class="card-header-clean">
+            <div class="card-title card-title-clean"><i class="fa-solid fa-list mr-xs"></i> {{ dailyOrdersListTitle }}</div>
           </div>
           
           <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
             {{ dailyOrdersEmptyLabel }}
           </div>
-          <div v-else style="display: flex; flex-direction: column; gap: var(--space-sm);">
+          <div v-else class="flex flex-col gap-sm">
             <div 
               v-for="order in paginatedDailyReportOrders" 
               :key="order.id" 
@@ -389,11 +389,11 @@
                   </div>
                   <!-- Discount Info if applied -->
                   <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
-                    <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                    <div class="flex flex-between">
                       <span>ยอดรวม (ก่อนหัก):</span>
                       <span>{{ formatCurrency(order.subtotal) }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
                       <span>ส่วนลด:</span>
                       <span>-{{ formatCurrency(order.discount) }}</span>
                     </div>
@@ -439,13 +439,13 @@
 
       <!-- Tab: Order History (ประวัติออเดอร์ย้อนหลัง) -->
       <div v-if="activeTab === 'order_history'" class="card">
-        <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-          <div class="card-title" style="font-size: var(--font-sm); margin:0;"><i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> ประวัติออเดอร์ย้อนหลัง</div>
+        <div class="card-header-clean">
+          <div class="card-title card-title-clean"><i class="fa-solid fa-clock-rotate-left mr-xs"></i> ประวัติออเดอร์ย้อนหลัง</div>
           <div class="flex align-center gap-sm" style="flex-wrap: wrap;">
             <button 
               v-if="historyOrders.length > 0"
-              class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size: var(--font-sm); min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              class="btn btn-sm btn-secondary csv-export-btn" 
+              style="display:inline-flex; align-items:center; gap:4px;"
               @click="exportHistoryOrdersCSV"
             >
               <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกประวัติออเดอร์ (CSV)
@@ -606,15 +606,15 @@
                           </div>
                           <!-- Discount Info if applied -->
                           <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);">
-                            <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                            <div class="flex flex-between">
                               <span>ยอดรวม (ก่อนหัก):</span>
                               <span>{{ formatCurrency(order.subtotal) }}</span>
                             </div>
-                            <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                            <div class="flex flex-between font-bold" style="color: #ff3b30;">
                               <span>ส่วนลด:</span>
                               <span>-{{ formatCurrency(order.discount) }}</span>
                             </div>
-                            <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
+                            <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
                               <span>ยอดสุทธิ:</span>
                               <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                             </div>
@@ -649,9 +649,18 @@
                   <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                 </div>
               </div>
-              <div class="flex flex-between" style="font-size:var(--font-xs); color:var(--text-secondary);">
-                <span><i class="fa-solid fa-user" style="margin-right: 2px;"></i> {{ order.staff_name || 'ระบบ' }} | <i class="fa-solid fa-store" style="margin-right: 2px;"></i> {{ order.branch_name || 'ไม่ระบุ' }}</span>
-                <span>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}</span>
+              <div class="flex flex-col gap-xs" style="font-size:var(--font-xs); color:var(--text-secondary); text-align: left; margin-top: 4px; margin-bottom: 4px;">
+                <div class="flex align-center">
+                  <i class="fa-solid fa-user" style="margin-right: 4px; opacity: 0.7;"></i> 
+                  {{ order.staff_name || 'ระบบ' }} 
+                  <span style="margin: 0 6px; color: var(--border-color);">|</span>
+                  <i class="fa-solid fa-store" style="margin-right: 4px; opacity: 0.7;"></i> 
+                  {{ order.branch_name || 'ไม่ระบุ' }}
+                </div>
+                <div class="flex align-center" style="color: var(--text-tertiary);">
+                  <i class="fa-solid fa-clock" style="margin-right: 4px; opacity: 0.7;"></i> 
+                  {{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}
+                </div>
               </div>
               <div class="flex flex-between align-center mt-xs" style="font-size:var(--font-xs);">
                 <span style="display: inline-flex; align-items: center; gap: 4px;">
@@ -674,15 +683,15 @@
                   </div>
                   <!-- Discount Info if applied -->
                   <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
-                    <div class="flex flex-between" style="display: flex; justify-content: space-between;">
+                    <div class="flex flex-between">
                       <span>ยอดรวม (ก่อนหัก):</span>
                       <span>{{ formatCurrency(order.subtotal) }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; color: #ff3b30;">
+                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
                       <span>ส่วนลด:</span>
                       <span>-{{ formatCurrency(order.discount) }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
+                    <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
                       <span>ยอดสุทธิ:</span>
                       <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
                     </div>
@@ -806,8 +815,8 @@
           <div style="display:flex; align-items:center; gap:var(--space-sm);">
             <button 
               v-if="filteredLedgerTransactions.length > 0"
-              class="btn btn-sm btn-secondary" 
-              style="padding: 4px 12px; font-size: var(--font-sm); min-height:32px; display:inline-flex; align-items:center; gap:4px; border-radius: var(--radius-md);"
+              class="btn btn-sm btn-secondary csv-export-btn" 
+              style="display:inline-flex; align-items:center; gap:4px;"
               @click="exportExpensesCSV"
             >
               <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกบัญชี (CSV)
@@ -853,7 +862,7 @@
             <tbody>
               <tr v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
                 <td colspan="6" style="text-align: center; padding: var(--space-xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="filteredLedgerTransactions.length === 0">
@@ -901,7 +910,7 @@
         <!-- Mobile Ledger List (Mobile Only) -->
         <div class="ledger-mobile-list show-mobile-only">
           <div v-if="ledgerLoading && filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
-            <div class="spinner" style="margin: 0 auto;"></div>
+            <div class="spinner mx-auto"></div>
           </div>
           <div v-else-if="filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ไม่มีรายการธุรกรรมในเดือนนี้
@@ -917,7 +926,7 @@
                 <span class="font-bold text-primary" style="font-size: var(--font-base);">{{ item.name }}</span>
               </div>
               <div class="flex flex-between align-center mt-xs" style="font-size: var(--font-xs); color: var(--text-secondary);">
-                <span><i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> {{ item.formattedDate }} {{ item.formattedTime }}</span>
+                <span><i class="fa-solid fa-clock" style="margin-right: 4px;"></i> {{ item.formattedDate }} {{ item.formattedTime }}</span>
                 <div class="flex align-center gap-md">
                   <span v-if="item.income > 0" class="font-bold text-success" style="font-size: var(--font-base);">
                     +{{ formatCurrency(item.income) }}
@@ -928,7 +937,7 @@
                   <button 
                     v-if="item.type === 'expense'"
                     class="btn btn-sm" 
-                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 14px; font-size:var(--font-sm); border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px;" 
+                    style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:0; font-size:var(--font-sm); border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:36px; min-width:36px; height:36px; width:36px;" 
                     @click="handleDeleteExpense(item.id)"
                   >
                     <i class="fa-solid fa-trash-can"></i>
@@ -966,7 +975,7 @@
       <!-- Tab 3: Top Selling Menus (10 อันดับเมนูขายดีที่สุด) -->
       <div v-if="activeTab === 'top_menus' && isAdminUser" class="card" style="position:relative; overflow:hidden; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
         <!-- Header -->
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: var(--space-md);">
+        <div class="flex align-center gap-sm mb-md">
           <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-glow); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 171, 43, 0.3);">
             <i class="fa-solid fa-fire text-accent animate-pulse" style="font-size: 1.2rem; color: var(--accent);"></i>
           </div>
@@ -1004,7 +1013,7 @@
           ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
         
-        <div v-else style="display: flex; flex-direction: column; gap: var(--space-xs);">
+        <div v-else class="flex flex-col gap-xs">
           <!-- Top 3 Items Cards -->
           <div 
             v-for="(item, index) in topItems.slice(0, 3)" 
@@ -1021,7 +1030,7 @@
             <!-- Middle Side: Name (top) and Type Badge (bottom) -->
             <div class="card-info-middle">
               <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
-              <div style="display: flex; align-items: center;">
+              <div class="flex align-center">
                 <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
                 <span v-else class="badge-type main">ทั่วไป</span>
               </div>
@@ -1058,7 +1067,7 @@
             <!-- Middle Side: Name (top) and Type Badge (bottom) -->
             <div class="card-info-middle">
               <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
-              <div style="display: flex; align-items: center;">
+              <div class="flex align-center">
                 <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
                 <span v-else class="badge-type main">ทั่วไป</span>
               </div>
@@ -1083,21 +1092,20 @@
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
         
         <!-- Filter dropdowns in a 2-column grid -->
-        <div class="grid grid-2 gap-md mb-md" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:var(--space-md);">
+        <div class="grid grid-2 gap-md mb-md">
           
           <!-- Category Filter -->
           <div class="form-group">
-            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภทกิจกรรม:</label>
+            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภท:</label>
             <div class="custom-select-wrapper" @click.stop>
               <div 
                 class="custom-select-trigger" 
                 :class="{ 'active': isFilterActionDropdownOpen }" 
                 @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
-                style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
               >
-                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px;">
+                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
                   <i :class="getFilterActionIcon(filterAction)"></i>
-                  {{ selectedFilterActionLabel }}
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ selectedFilterActionLabel }}</span>
                 </span>
               </div>
               <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
@@ -1106,7 +1114,7 @@
                 <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
                 <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
                 <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> จัดการสต็อก / ของเสีย (Stock & Waste)</div>
+                <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับปรุงยอด / ของเสีย (Stock & Waste)</div>
                 <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
                 <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
               </div>
@@ -1121,11 +1129,12 @@
                 class="custom-select-trigger" 
                 :class="{ 'active': isActivityStaffDropdownOpen }" 
                 @click="isActivityStaffDropdownOpen = !isActivityStaffDropdownOpen; isFilterActionDropdownOpen = false;"
-                style="height: 40px; padding: 8px 40px 8px var(--space-lg);"
               >
-                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px;">
+                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
                   <i class="fa-solid fa-user"></i>
-                  {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                    {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
+                  </span>
                 </span>
               </div>
               <div v-if="isActivityStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; overflow-y: auto; top: calc(100% + 2px);">
@@ -1241,9 +1250,9 @@
 
     <!-- Tab 5: Stock History (ประวัติสต็อก) -->
     <div v-if="activeTab === 'stock_history' && isAdminUser" class="card">
-      <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-        <div class="card-title" style="font-size: var(--font-sm); margin:0;">
-          <i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> ประวัติสต็อก
+      <div class="card-header-clean">
+        <div class="card-title card-title-clean">
+          <i class="fa-solid fa-boxes-stacked mr-xs"></i> ประวัติสต็อก
         </div>
 
         <!-- Menu Item Filter -->
@@ -1277,7 +1286,7 @@
       </div>
 
       <div v-if="stockHistoryLoading" style="text-align: center; padding: var(--space-xl);">
-        <div class="spinner" style="margin: 0 auto;"></div>
+        <div class="spinner mx-auto"></div>
       </div>
       <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
         ไม่มีรายการประวัติสต็อกในช่วงเวลาที่เลือก
@@ -1334,34 +1343,36 @@
         </div>
 
         <!-- Mobile List View (Mobile Only) -->
-        <div class="show-mobile-only" style="display: flex; flex-direction: column; gap: var(--space-sm);">
-          <div 
-            v-for="log in paginatedStockLogs" 
-            :key="log.id" 
-            class="card p-sm flex flex-between align-center"
-            style="font-size: var(--font-sm); background: var(--bg-primary);"
-          >
-            <div>
-              <div class="font-bold" style="display: inline-flex; align-items: center; gap: 6px;">
-                <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
-                <span>{{ getStockReasonLabel(log.reason) }}</span>
-                <span 
-                  :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
-                  style="margin-left: 4px;"
-                >
-                  {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
-                </span>
+        <div class="show-mobile-only">
+          <div class="flex flex-col gap-md">
+            <div 
+              v-for="log in paginatedStockLogs" 
+              :key="log.id" 
+              class="card p-md flex flex-between align-center gap-md"
+              style="font-size: var(--font-sm); background: var(--bg-primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);"
+            >
+              <div class="flex-1 min-w-0" style="text-align: left;">
+                <div class="font-bold mb-xs" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
+                  <span>{{ getStockReasonLabel(log.reason) }}</span>
+                  <span 
+                    :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
+                    style="margin-left: 4px;"
+                  >
+                    {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
+                  </span>
+                </div>
+                <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-xs);">
+                  โดย: {{ log.staff_name || 'ระบบ' }} <span style="margin: 0 4px; color: var(--border-color);">|</span> {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
+                </div>
+                <div v-if="log.note" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 6px; border-left: 3px solid var(--primary-light); padding-left: 8px; background: rgba(139, 3, 19, 0.01); padding-top: 4px; padding-bottom: 4px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; line-height: 1.4; word-break: break-word;">
+                  {{ log.note }}
+                </div>
               </div>
-              <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px;">
-                โดย: {{ log.staff_name || 'ระบบ' }} | {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
+              <div style="text-align: right; flex-shrink: 0; min-width: 75px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-size: var(--font-xxs); color: var(--text-tertiary); letter-spacing: 0.5px;">ยอดหลังปรับ</div>
+                <div class="font-bold text-base" style="color: var(--text-primary);">{{ log.new_stock }}</div>
               </div>
-              <div v-if="log.note" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; border-left: 2px solid var(--border-color); padding-left: 6px;">
-                {{ log.note }}
-              </div>
-            </div>
-            <div style="text-align: right;">
-              <div style="font-size: var(--font-xs); color: var(--text-tertiary);">ยอดหลังปรับ</div>
-              <div class="font-bold">{{ log.new_stock }}</div>
             </div>
           </div>
         </div>
@@ -1579,7 +1590,7 @@
       <div class="modal-overlay" @click="showAuditModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 90vh; overflow-y: auto; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-lg) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
+          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-calculator"></i> ปิดยอดประจำวันที่ {{ formatDate(activeAuditSession.session_date) }}
           </h3>
           <button class="modal-close" @click="showAuditModal = false" style="color: var(--text-secondary) !important;">✕</button>
@@ -1608,9 +1619,16 @@
           <!-- Cash Calculator Helper -->
           <div class="mb-md" style="margin-bottom:var(--space-md);">
             <div class="flex justify-between align-center mb-xs" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-xs);">
-              <span class="form-label" style="font-weight: 700; color: var(--text-primary) !important; margin:0;">เครื่องช่วยคำนวณเงินสด (นับเหรียญ & ธนบัตร)</span>
-              <button type="button" class="btn btn-secondary" style="border: 1.5px solid var(--border-color-light) !important; padding: 6px 12px !important; font-size: var(--font-sm) !important; color: var(--text-primary) !important; min-height: 32px; font-weight: bold; border-radius: 6px;" @click="toggleCalculatorHelper">
-                {{ showCalculatorHelper ? 'ซ่อนเครื่องช่วยนับ' : 'แสดงเครื่องช่วยนับ' }}
+              <span class="form-label" style="font-weight: 700; color: var(--text-primary) !important; margin:0;">เครื่องช่วยนับเงิน</span>
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                :class="{ 'active': showCalculatorHelper }"
+                style="border: 1.5px solid var(--border-color-light) !important; padding: 6px 12px !important; font-size: var(--font-sm) !important; min-height: 32px; font-weight: bold; border-radius: 6px;"
+                :style="showCalculatorHelper ? 'color: white !important; background: var(--gradient-primary) !important; border-color: transparent !important;' : 'color: var(--text-primary) !important; background: #ffffff !important; border-color: var(--border-color-light) !important;'"
+                @click="toggleCalculatorHelper"
+              >
+                {{ showCalculatorHelper ? 'ซ่อน' : 'แสดง' }}
               </button>
             </div>
 
@@ -1670,7 +1688,7 @@
           <div class="flex gap-md mt-lg">
             <button class="btn-modal btn-modal-secondary flex-1" @click="showAuditModal = false">ยกเลิก</button>
             <button class="btn-modal btn-modal-primary flex-1" @click="submitCashAudit" :disabled="actualCashInput === '' || actualCashInput === null || actualCashInput < 0">
-              <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
+              <i class="fa-solid fa-circle-check"></i> ปิดยอด
             </button>
           </div>
         </div>
@@ -1682,7 +1700,7 @@
       <div class="modal-overlay" @click="showOpeningCashModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-lg) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
+          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอนตั้งต้นประจำวัน
           </h3>
           <button class="modal-close" @click="showOpeningCashModal = false" style="color: var(--text-secondary) !important;">✕</button>
@@ -2477,7 +2495,7 @@ const selectedFilterActionLabel = computed(() => {
     sales: 'การขาย / ออกบิล (Sales)',
     cancel: 'การยกเลิกบิล (Void)',
     expenses: 'บันทึกค่าใช้จ่าย (Expenses)',
-    stock: 'จัดการสต็อก / ของเสีย (Stock & Waste)',
+    stock: 'ปรับปรุงยอด / ของเสีย (Stock & Waste)',
     credit: 'เครดิตพนักงาน (Staff Credit)',
     cash_drawer: 'การจัดการลิ้นชักเงินสด (Cash Drawer)'
   };
@@ -3160,16 +3178,16 @@ const getActionIconClass = (action) => {
     'create_order': 'fa-solid fa-cart-shopping text-success',
     'complete_order': 'fa-solid fa-circle-check text-success',
     'cancel_order': 'fa-solid fa-ban text-danger',
-    'adjust_stock': 'fa-solid fa-boxes-stacked text-primary',
+    'adjust_stock': 'fa-solid fa-boxes-stacked text-accent',
     'record_waste': 'fa-solid fa-trash-can text-danger',
-    'staff_credit': 'fa-solid fa-user-check text-primary',
+    'staff_credit': 'fa-solid fa-user-check text-warning',
     'log_expense': 'fa-solid fa-wallet text-danger',
     'delete_expense': 'fa-solid fa-trash-can text-danger',
     'cash_opening_set': 'fa-solid fa-cash-register text-success',
-    'cash_audit': 'fa-solid fa-cash-register text-primary',
-    'setting_change': 'fa-solid fa-gear text-neutral'
+    'cash_audit': 'fa-solid fa-cash-register text-success',
+    'setting_change': 'fa-solid fa-gear text-warning'
   };
-  return map[action] || 'fa-solid fa-bookmark text-neutral';
+  return map[action] || 'fa-solid fa-bookmark text-warning';
 };
 
 const onBranchChange = () => {
@@ -3415,7 +3433,7 @@ select.reports-filter-control,
 
 /* --- Ledger Mobile Card --- */
 .ledger-mobile-card {
-  background: var(--card-bg);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: var(--space-md);
@@ -3455,15 +3473,15 @@ select.reports-filter-control,
   display: flex;
   gap: var(--space-md);
   padding: var(--space-md);
-  background: var(--card-bg);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   transition: all var(--transition-base);
 }
 
 .activity-log-item:hover {
-  background: var(--card-bg-hover);
-  border-color: var(--border-color-light);
+  background: var(--bg-secondary);
+  border-color: var(--border-color-focus);
 }
 
 .log-badge-wrapper {
@@ -3485,13 +3503,13 @@ select.reports-filter-control,
 }
 
 /* Log badge colors */
-.log-badge.login { background: rgba(255, 171, 43, 0.1); }
-.log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); }
-.log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); }
-.log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); }
-.log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); }
-.log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); }
-.log-badge.cash_opening_set, .log-badge.cash_audit { background: rgba(42, 157, 143, 0.1); }
+.log-badge.login { background: rgba(255, 171, 43, 0.1); color: #f4a261; }
+.log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
+.log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); color: #e63946; }
+.log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); color: #e63946; }
+.log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
+.log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); color: #8b0313; }
+.log-badge.cash_opening_set, .log-badge.cash_audit { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
 
 .log-content-wrapper {
   flex: 1;
@@ -3859,16 +3877,19 @@ select.reports-filter-control,
   margin-top: var(--space-xs);
 }
 
-.cash-card-actions .btn {
-  flex: 1;
-  min-height: 40px;
-  font-size: var(--font-sm);
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+.cash-card-actions .btn-action {
+  flex: 1 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  font-size: var(--font-xs) !important;
+  font-weight: 700 !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  padding: 0 4px !important;
+  white-space: nowrap !important;
 }
 
 /* Payment Methods Grid */

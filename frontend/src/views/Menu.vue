@@ -2,7 +2,7 @@
   <div id="menu-page" class="page-enter">
 
     <!-- Tab Selector -->
-    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+    <div class="category-tabs mb-lg">
       <button 
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'menu_items' }"
@@ -35,7 +35,7 @@
       <!-- Desktop Menu List Table (Visible on desktop only) -->
       <div class="card p-0 overflow-hidden desktop-menu-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
@@ -48,7 +48,7 @@
             <tbody>
               <tr v-if="loading">
                 <td colspan="5" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="menuItems.length === 0">
@@ -83,7 +83,7 @@
                 </td>
                 <!-- Toggle Active Switch -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <label class="toggle-switch" style="margin: 0 auto; display: block;" :class="{ 'disabled': !isAdminUser }">
+                  <label class="toggle-switch mx-auto block" :class="{ 'disabled': !isAdminUser }">
                     <input 
                       type="checkbox" 
                       :checked="item.active !== 0 && item.active !== false"
@@ -109,7 +109,7 @@
       <!-- Mobile Menu Card List (Visible on mobile only) -->
       <div class="mobile-menu-list-container">
         <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
@@ -176,7 +176,7 @@
       <!-- Desktop Modifiers Table -->
       <div class="card p-0 overflow-hidden desktop-menu-table-container">
         <div style="overflow-x: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
+          <table class="table w-full" style="border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                 <th class="text-left" style="padding: var(--space-md); width: 45%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
@@ -187,7 +187,7 @@
             <tbody>
               <tr v-if="modifiersLoading">
                 <td colspan="3" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner" style="margin: 0 auto;"></div>
+                  <div class="spinner mx-auto"></div>
                 </td>
               </tr>
               <tr v-else-if="modifierItems.length === 0">
@@ -205,17 +205,16 @@
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-base text-muted">ID: {{ item.id }}</div>
                 </td>
                 <!-- Category -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge text-base" :class="getModifierCategoryClass(item.category)">
+                  <span class="badge" :class="getModifierCategoryClass(item.category)">
                     {{ getModifierCategoryLabel(item.category) }}
                   </span>
                 </td>
                 <!-- Toggle switch -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <label class="toggle-switch" style="margin: 0 auto; display: block;" :class="{ 'disabled': !isAdminUser }">
+                  <label class="toggle-switch mx-auto block" :class="{ 'disabled': !isAdminUser }">
                     <input 
                       type="checkbox" 
                       :checked="item.active !== 0 && item.active !== false"
@@ -234,7 +233,7 @@
       <!-- Mobile Modifiers List -->
       <div class="mobile-menu-list-container">
         <div v-if="modifiersLoading" class="text-center py-3xl">
-          <div class="spinner" style="margin: 0 auto;"></div>
+          <div class="spinner mx-auto"></div>
         </div>
         <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการเครื่องปรุงในระบบ
@@ -275,7 +274,7 @@
     </div>
 
     <!-- Category Modal -->
-    <div v-if="showCatModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showCatModal" class="modal-container active">
       <div class="modal-overlay" @click="showCatModal = false"></div>
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
@@ -337,7 +336,7 @@
     </div>
 
     <!-- Add/Edit Menu Item Modal -->
-    <div v-if="showItemModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showItemModal" class="modal-container active">
       <div class="modal-overlay" @click="showItemModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
@@ -538,7 +537,7 @@
               @click="handleSaveItem"
             >
               <i class="fa-solid fa-floppy-disk"></i>
-              {{ isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกรายการใหม่' }}
+              บันทึก
             </button>
           </div>
         </div>
@@ -1146,32 +1145,12 @@ onUnmounted(() => {
     padding-bottom: var(--space-2xl);
   }
   
-  .mobile-menu-card {
-    background: var(--card-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: var(--space-md);
-    box-shadow: 0 4px 12px rgba(139, 3, 19, 0.03);
-    transition: all var(--transition-base);
-    display: flex;
-    flex-direction: column;
-  }
-  
   .mobile-menu-card.inactive-item {
     border-color: rgba(110, 78, 55, 0.1);
     box-shadow: none;
   }
   .mobile-menu-card.inactive-item .mobile-menu-card-body {
     opacity: 0.55;
-  }
-
-  .mobile-menu-card-body {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-    width: 100%;
   }
   
   .mobile-menu-card-img-container {
@@ -1196,39 +1175,14 @@ onUnmounted(() => {
   .mobile-menu-card-placeholder {
     font-size: var(--font-lg);
   }
-  
-  .mobile-menu-card-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-  
-  .mobile-menu-card-name {
-    font-size: var(--font-md);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-primary);
-    word-break: break-word;
-    text-align: left;
-  }
-  
   .mobile-menu-card-category {
     font-size: var(--font-xs);
     color: var(--text-tertiary);
     text-align: left;
   }
   
-  .mobile-menu-card-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--space-xs);
-    flex-shrink: 0;
-  }
-  
   .mobile-menu-card-price {
-    font-size: var(--font-md);
+    font-size: var(--font-base);
     font-weight: var(--font-weight-bold);
     color: var(--primary);
   }
@@ -1237,15 +1191,6 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-  }
-  
-  .mobile-menu-card-actions {
-    display: flex;
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
-    padding-top: var(--space-sm);
-    border-top: 1px dashed var(--border-color);
-    width: 100%;
   }
   
   .mobile-menu-card-actions .btn-action {

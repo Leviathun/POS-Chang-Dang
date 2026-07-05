@@ -13,10 +13,10 @@
       </div>
       <div class="header-right">
         <button 
-          class="btn btn-primary btn-bulk-save" 
+          class="btn btn-primary btn-bulk-header-save" 
           @click="handleSaveBulkAdjust"
         >
-          <i class="fa-solid fa-floppy-disk"></i> บันทึกสต็อกด่วน
+          <i class="fa-solid fa-floppy-disk"></i> บันทึก
         </button>
       </div>
     </div>
@@ -92,24 +92,23 @@
         <!-- Desktop Grid Header -->
         <div class="bulk-stock-header-row desktop-only">
           <div style="text-align: left; padding-left: var(--space-md);">เมนูอาหาร</div>
-          <div style="text-align: center;">ของสดคงเหลือ</div>
-          <div style="text-align: center;">ปรับยอดของสด</div>
-          <div style="text-align: center;">ทอดสุกคงเหลือ</div>
-          <div style="text-align: center;">ปรับยอดทอดสุก</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-snowflake text-accent"></i> คงเหลือ (ของสด)</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-snowflake text-accent"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด (ของสด)' : 'ปรับยอด (ของสด)' }}</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> คงเหลือ (ของทอด)</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด (ของทอด)' : 'ปรับยอด (ของทอด)' }}</div>
         </div>
 
         <!-- Scrollable content -->
         <div class="bulk-stock-rows-container">
-          <div v-for="item in bulkFormItems" :key="item.menu_item_id" class="bulk-stock-row">
+          <div v-for="item in bulkFormItems" :key="item.menu_item_id" class="bulk-stock-row" :class="{ 'has-linkage-warning': item.name.includes('แร็ปไก่') || isLinkedBun(item) }">
             <!-- Col 1: Name -->
             <div class="bulk-item-name-col">
               <div class="font-bold text-base">{{ item.name }}</div>
-              <div class="mobile-only text-base text-muted" style="margin-top: 2px;">ID: {{ item.menu_item_id }}</div>
             </div>
 
             <!-- Col 2: Raw stock quantity -->
             <div class="bulk-item-current-col text-center">
-              <span class="mobile-label"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> คงเหลือ:</span>
+              <span class="mobile-label"><i class="fa-solid fa-snowflake text-accent" style="margin-right: 4px;"></i> คงเหลือ ของสด:</span>
               <span :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" class="font-bold text-base">
                 {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? formatStockQty(item.raw_quantity, item.uom) : '-' }}
               </span>
@@ -118,7 +117,7 @@
             <!-- Col 3: Raw stock input -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> ปรับยอด:</span>
+                <span class="mobile-label"><i class="fa-solid fa-snowflake text-accent" style="margin-right: 4px;"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด ของสด:' : 'ปรับยอด ของสด:' }}</span>
                 <input 
                   type="text" 
                   v-model="item.raw"
@@ -132,7 +131,7 @@
 
             <!-- Col 4: Cooked stock quantity -->
             <div class="bulk-item-current-col text-center">
-              <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> คงเหลือ:</span>
+              <span class="mobile-label"><i class="fa-solid fa-fire text-primary" style="margin-right: 4px;"></i> คงเหลือ ของทอด:</span>
               <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" class="font-bold text-base">
                 {{ item.quantity !== null && item.quantity !== undefined ? formatStockQty(item.quantity, item.uom) : formatStockQty(0, item.uom) }}
               </span>
@@ -141,14 +140,14 @@
             <!-- Col 5: Cooked stock input -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> ปรับยอด:</span>
+                <span class="mobile-label"><i class="fa-solid fa-fire text-primary" style="margin-right: 4px;"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด ของทอด:' : 'ปรับยอด ของทอด:' }}</span>
                  <input 
                   type="text" 
                   v-model="item.cooked"
                   :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0')"
                   class="form-input"
                 />
-                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" class="text-base text-danger font-bold text-center" style="margin-top: 6px; line-height: 1.3;">
+                <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" class="linkage-warning-text text-danger font-bold text-center">
                   {{ getLinkageWarningText(item) }}
                 </div>
               </div>
@@ -204,7 +203,7 @@
             class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
             @click="handleSaveBulkAdjust"
           >
-            <i class="fa-solid fa-floppy-disk"></i> บันทึกสต็อกด่วน
+            <i class="fa-solid fa-floppy-disk"></i> บันทึก
           </button>
         </div>
       </div>
@@ -214,10 +213,10 @@
         <!-- Desktop Grid Header -->
         <div class="bulk-stock-header-row desktop-only" style="grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr;">
           <div style="text-align: left; padding-left: var(--space-md);">ชื่อเครื่องปรุง / ซอส / ผงปรุงรส</div>
-          <div style="text-align: center;">ประเภท</div>
-          <div style="text-align: center;">คงเหลือปัจจุบัน</div>
+          <div class="text-center">ประเภท</div>
+          <div class="text-center">คงเหลือปัจจุบัน</div>
           <div style="text-align: center;">
-            {{ bulkTab === 'relative' ? 'จำนวนที่ปรับ (ถุง/ซองเล็ก) *' : 'จำนวนรอบเสิร์ฟเป้าหมาย *' }}
+            {{ bulkTab === 'relative' ? 'จำนวนที่เพิ่ม (ถุง/ซองเล็ก) *' : 'จำนวนรอบเสิร์ฟเป้าหมาย *' }}
           </div>
         </div>
 
@@ -231,12 +230,11 @@
           >
             <!-- Col 1: Name & Mobile Badge -->
             <div class="bulk-item-name-col">
-              <div class="flex flex-between align-center" style="width: 100%; gap: var(--space-xs);">
+              <div class="flex flex-between align-center w-full gap-xs">
                 <div>
-                  <div class="font-bold text-base" style="text-align: left;">{{ item.name }}</div>
-                  <div class="text-base text-muted" style="margin-top: 2px; text-align: left;">ID: {{ item.modifier_id }}</div>
+                  <div class="font-bold text-base text-left">{{ item.name }}</div>
                 </div>
-                <span class="badge show-mobile-inline text-base" :class="getModifierCategoryClass(item.category)" style="padding: 3px 8px; margin-left: auto;">
+                <span class="badge show-mobile-inline" :class="getModifierCategoryClass(item.category)" style="padding: 3px 8px; margin-left: auto;">
                   {{ getModifierCategoryLabel(item.category) }}
                 </span>
               </div>
@@ -244,7 +242,7 @@
 
             <!-- Col 2: Category Badge (Desktop Only) -->
             <div class="hide-mobile-flex align-center justify-center font-semibold">
-              <span class="badge text-base" :class="getModifierCategoryClass(item.category)">
+              <span class="badge" :class="getModifierCategoryClass(item.category)">
                 {{ getModifierCategoryLabel(item.category) }}
               </span>
             </div>
@@ -261,7 +259,7 @@
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
                 <span class="mobile-label">
-                  {{ bulkTab === 'relative' ? (item.category === 'sauce_small' ? 'ซองที่ปรับ:' : 'ถุงที่ปรับ:') : 'รอบเสิร์ฟ:' }}
+                  {{ bulkTab === 'relative' ? (item.category === 'sauce_small' ? 'ซองที่เพิ่ม:' : 'ถุงที่เพิ่ม:') : 'รอบเสิร์ฟ:' }}
                 </span>
                 <input 
                   type="text" 
@@ -322,7 +320,7 @@
             class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
             @click="handleSaveBulkAdjust"
           >
-            <i class="fa-solid fa-floppy-disk"></i> บันทึกสต็อกด่วน
+            <i class="fa-solid fa-floppy-disk"></i> บันทึก
           </button>
         </div>
       </div>
@@ -790,6 +788,26 @@ onUnmounted(() => {
   padding: var(--space-lg) var(--space-md);
   border-bottom: 1px solid var(--border-color);
   gap: var(--space-md);
+  position: relative;
+}
+
+.bulk-stock-row.has-linkage-warning {
+  padding-bottom: 34px !important;
+}
+
+.linkage-warning-text {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  line-height: 1.2;
+  font-size: var(--font-xxs) !important;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  color: var(--danger) !important;
+  white-space: normal;
+  pointer-events: none;
 }
 
 .bulk-stock-row:last-child {
@@ -810,6 +828,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
+  position: relative;
 }
 
 .bulk-input-wrapper input {
@@ -979,12 +998,17 @@ onUnmounted(() => {
     gap: var(--space-md);
     width: 100%;
   }
-  .btn-bulk-back, .btn-bulk-save {
+  .btn-bulk-back, .btn-bulk-header-save {
     flex: 1;
     min-width: 0 !important;
     width: 100%;
-    padding: 0 var(--space-sm);
-    font-size: var(--font-sm);
+    padding: 10px 16px !important;
+    font-size: var(--font-base) !important;
+    height: 44px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
 
   .bulk-main-card {
@@ -1020,7 +1044,7 @@ onUnmounted(() => {
     width: 100%;
   }
   
-  .btn-bulk-back, .btn-bulk-save {
+  .btn-bulk-back, .btn-bulk-header-save {
     width: 100%;
   }
 

@@ -11,10 +11,10 @@
         <button v-if="!success" class="modal-close" @click="handleClose">✕</button>
       </div>
 
-      <div class="modal-body flex-1" style="display: flex; flex-direction: column; overflow-y: auto;">
+      <div class="modal-body flex-1 flex flex-col" style="overflow-y: auto;">
         
         <!-- Step 3: Success Screen -->
-        <div v-if="success" id="success-section" class="flex-1" style="display:flex; align-items:center; justify-content:center;">
+        <div v-if="success" id="success-section" class="flex-1 flex flex-center">
           <div class="success-screen card" style="max-width: 480px; width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-2xl); padding: var(--space-3xl); box-shadow: var(--shadow-lg);">
             <div class="success-checkmark">✓</div>
             <div class="success-title text-success font-bold text-2xl" style="margin-bottom: var(--space-md);">ชำระเงินสำเร็จ!</div>
@@ -103,15 +103,15 @@
                 </div>
 
                 <div style="border-top: 2px dashed var(--border-color); padding-top: var(--space-md); display: flex; flex-direction: column; gap: var(--space-xs);">
-                  <div class="flex flex-between text-base text-secondary" style="display: flex; justify-content: space-between;">
+                  <div class="flex flex-between text-base text-secondary">
                     <span>ยอดรวม</span>
                     <span>{{ formatCurrency(total) }}</span>
                   </div>
-                  <div v-if="discount > 0" class="flex flex-between animate-fade-in text-base text-danger font-bold" style="display: flex; justify-content: space-between;">
+                  <div v-if="discount > 0" class="flex flex-between animate-fade-in text-base text-danger font-bold">
                     <span>ส่วนลด</span>
                     <span>-{{ formatCurrency(discount) }}</span>
                   </div>
-                  <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: var(--space-xs);">
+                  <div class="flex flex-between align-center" style="border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: var(--space-xs);">
                     <span class="font-bold text-lg">ยอดชำระทั้งสิ้น</span>
                     <span class="font-bold text-accent text-2xl">{{ formatCurrency(netTotal) }}</span>
                   </div>
@@ -124,11 +124,11 @@
               <div class="card" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: var(--space-lg) var(--space-xl);">
                 
                 <!-- Grouped header showing active channel and change method button -->
-                <div v-if="paymentMethod" class="flex flex-between align-center" style="margin-bottom: var(--space-lg); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
+                <div v-if="paymentMethod" class="flex flex-between align-center mb-lg" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
                   <span class="font-bold text-primary text-md">
                     <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> ช่องทาง: {{ getPaymentMethodLabel(paymentMethod) }}
                   </span>
-                  <button class="btn btn-secondary" @click="paymentMethod = null">
+                  <button class="btn btn-secondary change-method-btn" @click="paymentMethod = null">
                     <i class="fa-solid fa-arrow-left"></i> เปลี่ยนช่องทาง
                   </button>
                 </div>
@@ -145,7 +145,7 @@
                     </button>
                     <button class="payment-method-btn" @click="selectPaymentMethod('qr')">
                       <div class="method-icon"><i class="fa-solid fa-qrcode" style="color: var(--primary); font-size: 2.2rem;"></i></div>
-                      <div class="method-label">QR Code / โอนเงิน</div>
+                      <div class="method-label">QR / โอน</div>
                     </button>
                     <button class="payment-method-btn" @click="selectPaymentMethod('gov')">
                       <div class="method-icon"><i class="fa-solid fa-landmark" style="color: var(--accent); font-size: 2.2rem;"></i></div>
@@ -180,7 +180,7 @@
                   </div>
 
                   <!-- Quick Amount Selector -->
-                  <div class="quick-amounts" style="margin-bottom: var(--space-md); display: flex; gap: var(--space-sm); overflow-x: auto; padding-bottom: var(--space-xs);">
+                  <div class="quick-amounts flex gap-sm mb-md" style="overflow-x: auto; padding-bottom: var(--space-xs);">
                     <button 
                       class="quick-amount-btn" 
                       :class="{ 'active': Number(enteredAmount) === netTotal }"
@@ -410,7 +410,7 @@ const pressNum = (key) => {
 const getPaymentMethodLabel = (method) => {
   const map = {
     'cash': 'เงินสด (Cash)',
-    'qr': 'QR Code / โอนเงิน',
+    'qr': 'QR / โอน',
     'gov': 'โครงการรัฐ',
     'delivery': 'เดลิเวอรี'
   };
@@ -722,5 +722,11 @@ const confirmDeliveryPayment = () => {
 .keypad-key:active {
   transform: scale(0.95);
   background: var(--border-color);
+}
+
+@media (max-width: 768px) {
+  .payment-methods {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 </style>

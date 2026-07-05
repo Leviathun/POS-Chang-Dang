@@ -27,19 +27,19 @@
       <div class="pos-grid" :class="{ 'stagger-children': isVisualStaggerActive }" id="pos-menu-grid">
         <!-- Skeleton loader while loading -->
         <template v-if="loading">
-          <div v-for="i in 8" :key="i" class="pos-item skeleton-card" style="pointer-events:none;">
+          <div v-for="i in 8" :key="i" class="pos-item skeleton-card pos-skeleton-container">
             <!-- Matches pos-item-img-container -->
             <div class="pos-item-img-container">
-              <div class="skeleton" style="width:100%; height:100%;"></div>
+              <div class="skeleton skeleton-img-placeholder"></div>
             </div>
             <!-- Matches pos-item-name -->
             <div class="pos-item-name">
-              <div class="skeleton" style="width:80%; height:16px; border-radius:4px; margin:0 auto;"></div>
+              <div class="skeleton skeleton-text-80"></div>
             </div>
             <!-- Matches pos-item-details -->
             <div class="pos-item-details">
-              <div class="skeleton" style="width:50%; height:18px; border-radius:4px; margin:0 auto;"></div>
-              <div class="skeleton" style="width:35%; height:12px; border-radius:4px; margin:var(--space-xs) auto 0;"></div>
+              <div class="skeleton skeleton-text-50"></div>
+              <div class="skeleton skeleton-text-35"></div>
             </div>
           </div>
         </template>
@@ -62,7 +62,7 @@
             <!-- Product Image / Styled Emoji Placeholder -->
             <div class="pos-item-img-container">
               <img v-if="item.image_url" :src="item.image_url" class="pos-item-img" alt="เมนู" />
-              <div v-else class="pos-item-placeholder" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+              <div v-else class="pos-item-placeholder flex flex-center h-full">
                 <i :class="getIconClass(item.category_id)" style="font-size: 2.2rem; opacity: 0.65;"></i>
               </div>
             </div>
@@ -99,7 +99,7 @@
     <div class="pos-cart-section-desktop">
       <div class="desktop-cart-card">
         <div class="desktop-cart-header">
-          <h3 class="font-bold text-base flex align-center gap-sm" style="display:flex; align-items:center;">
+          <h3 class="font-bold text-base flex align-center gap-sm">
             <span><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> รายการสั่งซื้อ</span>
             <span class="badge badge-primary" style="margin-left: 6px;" v-if="cartCount > 0">{{ cartCount }} รายการ</span>
           </h3>
@@ -136,10 +136,10 @@
         <!-- Checkout summary -->
         <div class="desktop-cart-summary" v-if="cart.size > 0">
           <!-- Free Modifiers Toggle & Pills inside Desktop summary -->
-          <div class="free-modifiers-section mb-md p-sm card" style="border: 1px dashed var(--border-color); background: rgba(255, 247, 223, 0.3); border-radius: var(--radius-md);">
+          <div class="free-modifiers-section mb-md p-sm card free-modifiers-box">
             <div class="flex flex-between align-center">
-              <span class="font-semibold text-sm text-primary" style="display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px; color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
+              <span class="font-semibold text-sm text-primary flex align-center gap-xs">
+                <i class="fa-solid fa-bottle-droplet mr-xs" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
               </span>
               <label class="switch-toggle">
                 <input type="checkbox" v-model="useModifiers" @change="onModifiersToggleChange" />
@@ -148,18 +148,17 @@
             </div>
 
             <!-- Expanded Options Panel -->
-            <div v-if="useModifiers" class="modifiers-options-panel mt-sm animate-fade-in" style="max-height: 200px; overflow-y: auto; text-align: left;">
+            <div v-if="useModifiers" class="modifiers-options-panel mt-sm animate-fade-in modifiers-options-container">
               <!-- Presets -->
               <div v-if="activePresets.length > 0" class="presets-row mb-sm">
                 <div class="text-muted mb-xs" style="font-size: var(--font-xs); font-weight: bold;">สูตรสำเร็จ (Presets):</div>
-                <div class="flex gap-xs" style="flex-wrap: wrap;">
+                <div class="flex gap-xs flex-wrap">
                   <button 
                     v-for="preset in activePresets" 
                     :key="preset.id" 
                     class="btn btn-sm btn-secondary preset-btn"
                     @click="applyPreset(preset)"
                     type="button"
-                    style="padding: 4px 8px; font-size: var(--font-xs); min-height: 28px;"
                   >
                     <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                   </button>
@@ -167,13 +166,13 @@
               </div>
 
               <!-- Modifiers Categories -->
-              <div class="modifiers-categories" style="display: flex; flex-direction: column; gap: var(--space-xs);">
+              <div class="modifiers-categories flex flex-col gap-xs">
                 <template v-for="cat in modifierCategories" :key="cat.key">
                   <div v-if="getModifiersByCategory(cat.key).length > 0" class="modifier-cat-group">
                     <div class="text-secondary mb-xs font-semibold" style="font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.5px;">
                       {{ cat.label }}:
                     </div>
-                    <div class="flex gap-xs" style="flex-wrap: wrap; margin-bottom: 6px;">
+                    <div class="flex gap-xs flex-wrap" style="margin-bottom: 6px;">
                       <button
                         v-for="mod in getModifiersByCategory(cat.key)"
                         :key="mod.id"
@@ -204,9 +203,9 @@
             <span>-{{ formatCurrency(discountAmount) }}</span>
           </div>
           <!-- Discount Selector Area -->
-          <div class="discount-selector-area mt-sm mb-sm p-xs card" style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 8px;">
-            <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px;">
-              <span class="font-semibold text-xs" style="display: flex; align-items: center; gap: 4px;">
+          <div class="discount-selector-area mt-sm mb-sm p-xs card discount-selector-box">
+            <div class="flex flex-between align-center" style="padding: 2px 4px;">
+              <span class="font-semibold text-xs text-primary flex align-center gap-xs">
                 <i class="fa-solid fa-percent" style="color: var(--primary);"></i> เลือกส่วนลด
               </span>
               <button 
@@ -219,7 +218,7 @@
               </button>
             </div>
             <!-- Discount buttons & custom input -->
-            <div class="flex gap-xs mt-xs align-center" style="display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-top: 6px; padding: 2px 4px; align-items: center;">
+            <div class="flex gap-xs flex-wrap align-center" style="margin-top: 6px; padding: 2px 4px;">
               <button 
                 class="btn btn-secondary btn-sm"
                 :class="{ 'active': activeDiscountType === 'bun_promo' }"
@@ -297,9 +296,9 @@
         </div>
 
         <!-- Mobile Discount Selector Area -->
-        <div class="discount-selector-area p-sm" style="border-top: 1px dashed var(--border-color); background: rgba(0, 0, 0, 0.02); text-align: left; padding: 12px 16px;">
-          <div class="flex flex-between align-center" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span class="font-bold text-base text-primary" style="display: flex; align-items: center; gap: 6px;">
+        <div class="discount-selector-area p-sm mobile-discount-selector">
+          <div class="flex flex-between align-center" style="margin-bottom: 8px;">
+            <span class="font-bold text-base text-primary flex align-center gap-xs">
               <i class="fa-solid fa-percent" style="color: var(--primary);"></i> เลือกส่วนลด
             </span>
             <button 
@@ -311,7 +310,7 @@
               ล้างส่วนลด (ลดอยู่ -{{ formatCurrency(discountAmount) }})
             </button>
           </div>
-          <div class="flex gap-xs align-center" style="display: flex; gap: var(--space-xs); flex-wrap: wrap; align-items: center;">
+          <div class="flex gap-xs flex-wrap align-center">
             <button 
               class="btn btn-secondary btn-sm"
               :class="{ 'active': activeDiscountType === 'bun_promo' }"
@@ -338,12 +337,7 @@
         </div>
 
         <!-- Mobile Free Modifiers Toggle & Pills -->
-        <div class="free-modifiers-section" :style="{ 
-          borderTop: '1px dashed var(--border-color)', 
-          background: 'rgba(255, 247, 223, 0.3)', 
-          padding: useModifiers ? '16px 20px 80px 20px' : '16px 20px 36px 20px', 
-          marginBottom: '0px' 
-        }">
+        <div class="free-modifiers-section mobile-modifiers-box" :class="{ 'expanded': useModifiers }">
           <div class="flex flex-between align-center" style="margin-bottom: 8px;">
             <span class="font-bold" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
               <i class="fa-solid fa-bottle-droplet" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
@@ -366,7 +360,6 @@
                   class="btn btn-sm btn-secondary preset-btn"
                   @click="applyPreset(preset)"
                   type="button"
-                  style="padding: 6px 12px; font-size: var(--font-sm); min-height: 32px; border-radius: var(--radius-md);"
                 >
                   <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
                 </button>
@@ -405,7 +398,7 @@
     </div>
 
     <!-- Unified Options Modal -->
-    <div v-if="showOptionsModal" class="modal-container active" style="display:flex; align-items:center; justify-content:center; position: fixed; inset:0; z-index:1000;">
+    <div v-if="showOptionsModal" class="modal-container active">
       <div class="modal-overlay" @click="showOptionsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
         <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
@@ -1407,7 +1400,7 @@ onUnmounted(() => {
 }
 
 .pos-item-name {
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   font-weight: var(--font-weight-semibold);
   line-height: 1.25;
   color: var(--text-primary);
@@ -2011,5 +2004,69 @@ input:checked + .slider-toggle:before {
 .bun-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+.pos-item-stock {
+    font-size: var(--font-xxs) !important;
+  }
+}
+
+.pos-skeleton-container {
+  pointer-events: none;
+}
+.skeleton-img-placeholder {
+  width: 100%;
+  height: 100%;
+}
+.skeleton-text-80 {
+  width: 80%;
+  height: 16px;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+.skeleton-text-50 {
+  width: 50%;
+  height: 18px;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+.skeleton-text-35 {
+  width: 35%;
+  height: 12px;
+  border-radius: 4px;
+  margin: var(--space-xs) auto 0;
+}
+.free-modifiers-box {
+  border: 1px dashed var(--border-color);
+  background: rgba(255, 247, 223, 0.3);
+  border-radius: var(--radius-md);
+}
+.modifiers-options-container {
+  max-height: 200px;
+  overflow-y: auto;
+  text-align: left;
+}
+.discount-selector-box {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px;
+}
+.mobile-discount-selector {
+  border-top: 1px dashed var(--border-color);
+  background: rgba(0, 0, 0, 0.02);
+  text-align: left;
+  padding: 12px 16px;
+}
+.mobile-modifiers-box {
+  border-top: 1px dashed var(--border-color);
+  background: rgba(255, 247, 223, 0.3);
+  margin-bottom: 0px;
+  padding: 16px 20px 36px 20px;
+  text-align: left;
+}
+.mobile-modifiers-box.expanded {
+  padding: 16px 20px 80px 20px;
 }
 </style>
