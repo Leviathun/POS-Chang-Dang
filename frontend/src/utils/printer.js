@@ -238,20 +238,49 @@ export async function sendRawToPrinter(bytes) {
   const config = getSavedPrinterConfig();
   
   if (config.connectionType === 'rawbt') {
+    // 1. Try printing via Server for RawBT WebSocket API (Port 40213 - Silent Print)
     try {
-      const response = await fetch('http://localhost:8080/raw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream'
-        },
-        body: bytes
+      await new Promise((resolve, reject) => {
+        const socket = new WebSocket("ws://localhost:40213/");
+        socket.binaryType = "arraybuffer";
+        
+        const timeout = setTimeout(() => {
+          socket.close();
+          reject(new Error("WebSocket timeout"));
+        }, 1500);
+        
+        socket.onopen = () => {
+          clearTimeout(timeout);
+          socket.send(bytes.buffer);
+          setTimeout(() => {
+            socket.close();
+            resolve();
+          }, 120);
+        };
+        
+        socket.onerror = (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        };
       });
-      if (!response.ok) {
-        throw new Error('แอป RawBT ตอบกลับด้วยข้อผิดพลาด');
-      }
+      console.log('Printed silently via RawBT WebSocket server successfully!');
+      return;
     } catch (e) {
-      console.error('RawBT print failed:', e);
-      throw new Error('ไม่สามารถพิมพ์ผ่าน RawBT ได้ (โปรดตรวจดูว่าคุณเปิดเซิร์ฟเวอร์เว็บในแอป RawBT แล้วหรือยัง)');
+      console.warn('RawBT WebSocket print failed, trying URL Scheme redirect:', e);
+    }
+
+    // 2. Fallback: Use URL Scheme redirect (opens RawBT app)
+    try {
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      window.location.href = 'rawbt:base64:' + base64Data;
+    } catch (err) {
+      console.error('RawBT URL redirect failed:', err);
+      throw new Error('ไม่สามารถพิมพ์ผ่าน RawBT ได้: ' + err.message);
     }
     return;
   }

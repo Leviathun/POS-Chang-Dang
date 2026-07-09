@@ -1,75 +1,90 @@
 <template>
   <!-- Print Receipt Area -->
   <div id="receipt-print-area" class="print-only-receipt">
-    <div class="receipt-header">
-      <h2>ร้านไก่ทอดช้างแดง</h2>
-      <div class="receipt-subheader">สาขา: {{ activeBranchName }}</div>
-      <div class="receipt-subheader" v-if="activeBranchPhone">โทร: {{ activeBranchPhone }}</div>
+    <!-- Logo -->
+    <div class="receipt-logo-container">
+      <img src="@/assets/image/Logo POS.png" alt="Logo" class="receipt-logo" />
     </div>
-    
-    <div class="receipt-divider">================================</div>
-    
+
+    <!-- Order Number Box -->
+    <div class="receipt-order-box">
+      <div class="receipt-order-number">#{{ orderId }}</div>
+    </div>
+    <div class="receipt-copy-indicator">***** ใบเสร็จรับเงิน *****</div>
+
+    <div class="receipt-divider-solid"></div>
+
+    <!-- Meta Info -->
     <div class="receipt-meta">
-      <div>เลขที่บิล: #{{ orderId }}</div>
-      <div>วันที่: {{ formattedOrderDate }}</div>
+      <div class="meta-row">
+        <span>เวลา:</span>
+        <strong>{{ formattedOrderDate }}</strong>
+      </div>
+      <div class="meta-row">
+        <span>สาขา:</span>
+        <strong>{{ activeBranchName }}</strong>
+      </div>
+      <div class="meta-row" v-if="activeBranchPhone">
+        <span>โทร:</span>
+        <strong>{{ activeBranchPhone }}</strong>
+      </div>
     </div>
-    
-    <div class="receipt-divider">--------------------------------</div>
-    
+
+    <div class="receipt-divider-solid"></div>
+
+    <!-- Item List -->
     <div class="receipt-items">
-      <div v-for="[itemId, cartItem] in cart" :key="itemId" class="receipt-item-row">
-        <div class="item-name-qty">
-          {{ cartItem.item.name }} x{{ cartItem.quantity }}
+      <div v-for="[itemId, cartItem] in cart" :key="itemId" class="receipt-item-group">
+        <div class="receipt-item-row">
+          <span class="item-qty-name">{{ cartItem.quantity }} x  {{ cartItem.item.name }}</span>
+          <span class="item-price">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
         </div>
-        <div class="item-subtotal">
-          {{ formatCurrency(cartItem.item.price * cartItem.quantity) }}
+        <!-- Modifiers (if any) -->
+        <div v-for="mod in freeModifiers" :key="mod.id" class="receipt-item-row modifier-row">
+          <span class="item-qty-name">+  {{ mod.name }}</span>
+          <span class="item-price">฿0</span>
         </div>
-      </div>
-      <!-- Modifiers -->
-      <div v-for="mod in freeModifiers" :key="mod.id" class="receipt-item-row receipt-modifier-row">
-        <div class="item-name-qty">+ {{ mod.name }}</div>
-        <div class="item-subtotal">฿0</div>
+        <div class="receipt-divider-dashed"></div>
       </div>
     </div>
-    
-    <div class="receipt-divider">--------------------------------</div>
-    
+
+    <!-- Totals -->
     <div class="receipt-totals">
-      <div class="total-row" v-if="discount > 0">
-        <div>ยอดรวม:</div>
-        <div>{{ formatCurrency(total) }}</div>
+      <div class="total-row">
+        <span>ค่าอาหาร</span>
+        <span>{{ formatCurrency(total) }}</span>
       </div>
       <div class="total-row" v-if="discount > 0">
-        <div>ส่วนลด:</div>
-        <div>-{{ formatCurrency(discount) }}</div>
-      </div>
-      <div class="total-row net-total-row">
-        <div>ยอดชำระทั้งสิ้น:</div>
-        <div>{{ formatCurrency(netTotal) }}</div>
+        <span>ส่วนลด</span>
+        <span>-{{ formatCurrency(discount) }}</span>
       </div>
       
-      <div class="receipt-divider">--------------------------------</div>
+      <div class="receipt-divider-dashed"></div>
       
-      <template v-if="paymentMethod === 'cash'">
-        <div class="total-row">
-          <div>รับเงินสด:</div>
-          <div>{{ formatCurrency(Number(enteredAmount) || 0) }}</div>
-        </div>
-        <div class="total-row">
-          <div>เงินทอน:</div>
-          <div>{{ formatCurrency(cashChange) }}</div>
-        </div>
-      </template>
-      <template v-else>
-        <div class="total-row">
-          <div>ชำระเงินผ่าน:</div>
-          <div>{{ getPaymentMethodLabel(paymentMethod) }}</div>
-        </div>
-      </template>
+      <div class="total-row grand-total-row">
+        <span>รวมทั้งหมด</span>
+        <span>{{ formatCurrency(netTotal) }}</span>
+      </div>
+      
+      <div class="receipt-divider-dashed"></div>
+      
+      <div class="total-row payment-method-row">
+        <span>ชำระผ่าน:</span>
+        <span>{{ getPaymentMethodLabel(paymentMethod) }}</span>
+      </div>
+      <div class="total-row" v-if="paymentMethod === 'cash'">
+        <span>รับเงิน:</span>
+        <span>{{ formatCurrency(Number(enteredAmount) || 0) }}</span>
+      </div>
+      <div class="total-row" v-if="paymentMethod === 'cash'">
+        <span>เงินทอน:</span>
+        <span>{{ formatCurrency(cashChange) }}</span>
+      </div>
     </div>
-    
-    <div class="receipt-divider">================================</div>
-    
+
+    <div class="receipt-divider-solid" style="margin-top: 15px;"></div>
+
+    <!-- Footer -->
     <div class="receipt-footer">
       <div>ขอบคุณที่ใช้บริการ</div>
       <div>อร่อยสะท้านฟากฟ้า ไก่ทอดช้างแดง</div>
@@ -952,91 +967,128 @@ const confirmDeliveryPayment = () => {
   }
 }
 
-/* --- Print Styles --- */
+</style>
+
+<style>
+/* Global Print Styles (Unscoped to hide other page elements like home/sidebar/grids) */
 @media print {
   body * {
     visibility: hidden !important;
   }
+  
   #receipt-print-area, #receipt-print-area * {
     visibility: visible !important;
   }
+  
   #receipt-print-area {
-    position: absolute !important;
+    position: fixed !important;
     left: 0 !important;
     top: 0 !important;
-    width: 80mm !important;
+    width: 76mm !important;
+    display: block !important;
+    background: #fff !important;
+    color: #000 !important;
     margin: 0 !important;
-    padding: 10px !important;
+    padding: 0 !important;
     font-family: 'Prompt', monospace !important;
     font-size: 12px !important;
-    color: #000 !important;
-    background: #fff !important;
-    display: block !important;
+    line-height: 1.4 !important;
   }
   
-  #modal-container, .modal-content, .success-screen, .success-screen * {
-    display: none !important;
-  }
-  
-  .receipt-header {
+  .receipt-logo-container {
     text-align: center;
+    margin-bottom: 12px;
+  }
+  .receipt-logo {
+    max-height: 48px;
+    object-fit: contain;
+  }
+  .receipt-order-box {
+    border: 2px solid #000;
+    padding: 8px 12px;
+    text-align: center;
+    margin: 6px auto;
+    max-width: 90%;
+  }
+  .receipt-order-number {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .receipt-copy-indicator {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 4px;
     margin-bottom: 8px;
   }
-  .receipt-header h2 {
-    margin: 0 0 4px 0;
-    font-size: 16px;
-    font-weight: 700;
+  .receipt-divider-solid {
+    border-top: 1px solid #000;
+    margin: 8px 0;
   }
-  .receipt-subheader {
-    font-size: 11px;
-    color: #333;
-  }
-  .receipt-divider {
-    text-align: center;
-    margin: 4px 0;
-    letter-spacing: -1px;
-    font-size: 11px;
+  .receipt-divider-dashed {
+    border-top: 1px dashed #000;
+    margin: 6px 0;
   }
   .receipt-meta {
-    font-size: 11px;
-    margin-bottom: 6px;
+    font-size: 12px;
+    line-height: 1.4;
   }
-  .receipt-meta div {
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
     margin-bottom: 2px;
   }
   .receipt-items {
-    margin-bottom: 6px;
+    margin-top: 8px;
+  }
+  .receipt-item-group {
+    margin-bottom: 4px;
   }
   .receipt-item-row {
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
-    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    align-items: flex-start;
   }
-  .receipt-modifier-row {
-    color: #555;
-    padding-left: 8px;
-    font-style: italic;
+  .receipt-item-row .item-qty-name {
+    flex: 1;
+    padding-right: 12px;
+    word-break: break-word;
+    text-align: left;
+  }
+  .receipt-item-row .item-price {
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .receipt-item-row.modifier-row {
+    color: #444;
+    font-size: 11px;
+    padding-left: 12px;
   }
   .receipt-totals {
-    font-size: 11px;
+    margin-top: 8px;
   }
   .total-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 2px;
+    font-size: 12px;
+    margin-bottom: 3px;
   }
-  .net-total-row {
-    font-size: 13px;
-    font-weight: 700;
-    margin-top: 4px;
-    border-top: 1px dashed #000;
-    padding-top: 4px;
+  .grand-total-row {
+    font-size: 15px;
+    font-weight: 800;
+  }
+  .payment-method-row {
+    color: #333;
+    font-weight: 600;
   }
   .receipt-footer {
     text-align: center;
-    font-size: 10px;
-    margin-top: 8px;
+    font-size: 11px;
+    margin-top: 12px;
+    line-height: 1.4;
   }
 }
 
