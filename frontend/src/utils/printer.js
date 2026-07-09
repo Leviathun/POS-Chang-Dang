@@ -237,6 +237,22 @@ export function isPrinterConnected() {
 export async function sendRawToPrinter(bytes) {
   const config = getSavedPrinterConfig();
   
+  if (config.connectionType === 'rawbt_intent') {
+    try {
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      window.location.href = 'rawbt:base64:' + base64Data;
+    } catch (err) {
+      console.error('RawBT Intent redirect failed:', err);
+      throw new Error('ไม่สามารถพิมพ์ผ่านหน้าต่างแอป RawBT ได้: ' + err.message);
+    }
+    return;
+  }
+  
   if (config.connectionType === 'rawbt') {
     // 1. Try printing via Server for RawBT WebSocket API (Port 40213 - Silent Print)
     try {

@@ -582,7 +582,7 @@ const handlePrintReceipt = async (orderData = null) => {
     }
 
     const config = getSavedPrinterConfig();
-    if (config.connectionType === 'rawbt' || (config.connectionType === 'usb' && isPrinterConnected())) {
+    if (config.connectionType === 'rawbt' || config.connectionType === 'rawbt_intent' || (config.connectionType === 'usb' && isPrinterConnected())) {
       const currentOrder = orderData || {
         order_number: orderId.value,
         created_at: new Date().toISOString(),
@@ -615,7 +615,7 @@ const handlePrintReceipt = async (orderData = null) => {
 
 const triggerAutoPrinterAndDrawer = async (orderData) => {
   const config = getSavedPrinterConfig();
-  if (!navigator.usb && config.connectionType !== 'rawbt') return;
+  if (!navigator.usb && config.connectionType !== 'rawbt' && config.connectionType !== 'rawbt_intent') return;
   
   if (isPrinterConnected()) {
     if (config.autoPrint) {
