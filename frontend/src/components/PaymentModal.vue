@@ -407,7 +407,9 @@ import {
   autoConnectPrinter, 
   isPrinterConnected, 
   kickDrawer, 
+  kickDrawerSync,
   printReceipt, 
+  printReceiptSync,
   getSavedPrinterConfig 
 } from '../utils/printer';
 
@@ -582,7 +584,25 @@ const handlePrintReceipt = async (orderData = null) => {
     }
 
     const config = getSavedPrinterConfig();
-    if (config.connectionType === 'rawbt' || (config.connectionType === 'usb' && isPrinterConnected())) {
+    if (config.connectionType === 'rawbt') {
+      const currentOrder = orderData || {
+        order_number: orderId.value,
+        created_at: new Date().toISOString(),
+        payment_method: paymentMethod.value || 'cash',
+        cash_received: Number(enteredAmount.value) || 0,
+        discount: props.discount,
+        total: netTotal.value,
+        modifiers: props.freeModifiers
+      };
+      
+      printReceiptSync(currentOrder, props.cart, {
+        shopName: 'ร้านไก่ทอดช้างแดง',
+        branchName: activeBranch.name,
+        phone: activeBranch.phone || '',
+        forceKick: false
+      });
+      ui.showToast('ส่งข้อมูลสั่งพิมพ์แล้ว 🖨️', 'success');
+    } else if (config.connectionType === 'usb' && isPrinterConnected()) {
       const currentOrder = orderData || {
         order_number: orderId.value,
         created_at: new Date().toISOString(),
@@ -620,14 +640,23 @@ const triggerAutoPrinterAndDrawer = async (orderData) => {
   if (isPrinterConnected()) {
     if (config.autoPrint) {
       try {
-        await handlePrintReceipt(orderData);
+        if (config.connectionType === 'rawbt') {
+          handlePrintReceipt(orderData);
+        } else {
+          await handlePrintReceipt(orderData);
+        }
       } catch (e) {
         ui.showToast('พิมพ์ใบเสร็จอัตโนมัติล้มเหลว: ' + e.message, 'error');
       }
     } else if (config.autoKick) {
       try {
-        await kickDrawer();
-        ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+        if (config.connectionType === 'rawbt') {
+          kickDrawerSync();
+          ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+        } else {
+          await kickDrawer();
+          ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+        }
       } catch (e) {
         ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
       }

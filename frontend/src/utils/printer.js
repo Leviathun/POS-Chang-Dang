@@ -263,10 +263,16 @@ export async function sendRawToPrinter(bytes) {
   await activeDevice.transferOut(activeEndpointOut, bytes);
 }
 
-// Open cash drawer only
+// Open cash drawer only (Async WebUSB path)
 export async function kickDrawer() {
   const bytes = new EscPosBuilder().kick().build();
   await sendRawToPrinter(bytes);
+}
+
+// Open cash drawer only (Sync Chrome Intent path)
+export function kickDrawerSync() {
+  const bytes = new EscPosBuilder().kick().build();
+  sendRawToPrinterSync(bytes);
 }
 
 // Helper to format currency
@@ -286,8 +292,29 @@ function formatLine(leftText, rightText, width = 42) {
   return leftText + ' '.repeat(padLength) + rightText;
 }
 
-// Print Receipt
-export async function printReceipt(order, cartItems = [], options = {}) {
+// Synchronous version to bypass Chrome Android async microtask gesture blocks
+export function sendRawToPrinterSync(bytes) {
+  const config = getSavedPrinterConfig();
+  if (config.connectionType === 'rawbt') {
+    try {
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      window.location.href = 'intent://data:application/octet-stream;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      return true;
+    } catch (err) {
+      console.error('RawBT Intent redirect failed:', err);
+      throw new Error('ไม่สามารถพิมพ์ผ่านหน้าต่างแอป RawBT ได้: ' + err.message);
+    }
+  }
+  return false;
+}
+
+// Format and build receipt ESC/POS byte array
+function buildReceiptBytes(order, cartItems = [], options = {}) {
   const config = getSavedPrinterConfig();
   const builder = new EscPosBuilder();
   
@@ -398,6 +425,17 @@ export async function printReceipt(order, cartItems = [], options = {}) {
          .feed(4)
          .cut();
 
-  const bytes = builder.build();
+  return builder.build();
+}
+
+// Print Receipt (Async WebUSB path)
+export async function printReceipt(order, cartItems = [], options = {}) {
+  const bytes = buildReceiptBytes(order, cartItems, options);
   await sendRawToPrinter(bytes);
+}
+
+// Print Receipt (Sync Chrome Intent path)
+export function printReceiptSync(order, cartItems = [], options = {}) {
+  const bytes = buildReceiptBytes(order, cartItems, options);
+  sendRawToPrinterSync(bytes);
 }

@@ -882,14 +882,10 @@ import api from '../api';
 import { ui, formatDate, getUser } from '../helpers';
 import { store } from '../store';
 import { 
-  getSavedPrinterConfig, 
-  savePrinterConfig, 
-  requestAndConnectPrinter, 
-  autoConnectPrinter, 
-  disconnectPrinter, 
-  isPrinterConnected, 
   kickDrawer, 
-  printReceipt 
+  kickDrawerSync,
+  printReceipt,
+  printReceiptSync
 } from '../utils/printer';
 
 // --- Printer & Cash Drawer States & Actions ---
@@ -970,8 +966,14 @@ const setConnectionType = (type) => {
 
 const handleTestKick = async () => {
   try {
-    await kickDrawer();
-    ui.showToast('ส่งคำสั่งเปิดลิ้นชักแล้ว 🔓', 'success');
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      kickDrawerSync();
+      ui.showToast('ส่งคำสั่งเปิดลิ้นชักแล้ว 🔓', 'success');
+    } else {
+      await kickDrawer();
+      ui.showToast('ส่งคำสั่งเปิดลิ้นชักแล้ว 🔓', 'success');
+    }
   } catch (e) {
     ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
   }
@@ -995,13 +997,24 @@ const handleTestPrint = async () => {
     
     const activeBranch = store.branches.find(b => b.id === selectedSettingsBranchId.value) || { name: 'สาขาทดสอบ' };
     
-    await printReceipt(testOrder, testItems, {
-      shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
-      branchName: activeBranch.name,
-      phone: '081-234-5678',
-      forceKick: false
-    });
-    ui.showToast('พิมพ์ใบเสร็จทดสอบสำเร็จแล้ว 🖨️', 'success');
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      printReceiptSync(testOrder, testItems, {
+        shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
+        branchName: activeBranch.name,
+        phone: '081-234-5678',
+        forceKick: false
+      });
+      ui.showToast('ส่งข้อมูลสั่งพิมพ์ใบเสร็จทดสอบแล้ว 🖨️', 'success');
+    } else {
+      await printReceipt(testOrder, testItems, {
+        shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
+        branchName: activeBranch.name,
+        phone: '081-234-5678',
+        forceKick: false
+      });
+      ui.showToast('พิมพ์ใบเสร็จทดสอบสำเร็จแล้ว 🖨️', 'success');
+    }
   } catch (e) {
     ui.showToast('การพิมพ์ล้มเหลว: ' + e.message, 'error');
   }
