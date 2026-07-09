@@ -1,4 +1,81 @@
 <template>
+  <!-- Print Receipt Area -->
+  <div id="receipt-print-area" class="print-only-receipt">
+    <div class="receipt-header">
+      <h2>ร้านไก่ทอดช้างแดง</h2>
+      <div class="receipt-subheader">สาขา: {{ activeBranchName }}</div>
+      <div class="receipt-subheader" v-if="activeBranchPhone">โทร: {{ activeBranchPhone }}</div>
+    </div>
+    
+    <div class="receipt-divider">================================</div>
+    
+    <div class="receipt-meta">
+      <div>เลขที่บิล: #{{ orderId }}</div>
+      <div>วันที่: {{ formattedOrderDate }}</div>
+    </div>
+    
+    <div class="receipt-divider">--------------------------------</div>
+    
+    <div class="receipt-items">
+      <div v-for="[itemId, cartItem] in cart" :key="itemId" class="receipt-item-row">
+        <div class="item-name-qty">
+          {{ cartItem.item.name }} x{{ cartItem.quantity }}
+        </div>
+        <div class="item-subtotal">
+          {{ formatCurrency(cartItem.item.price * cartItem.quantity) }}
+        </div>
+      </div>
+      <!-- Modifiers -->
+      <div v-for="mod in freeModifiers" :key="mod.id" class="receipt-item-row receipt-modifier-row">
+        <div class="item-name-qty">+ {{ mod.name }}</div>
+        <div class="item-subtotal">฿0</div>
+      </div>
+    </div>
+    
+    <div class="receipt-divider">--------------------------------</div>
+    
+    <div class="receipt-totals">
+      <div class="total-row" v-if="discount > 0">
+        <div>ยอดรวม:</div>
+        <div>{{ formatCurrency(total) }}</div>
+      </div>
+      <div class="total-row" v-if="discount > 0">
+        <div>ส่วนลด:</div>
+        <div>-{{ formatCurrency(discount) }}</div>
+      </div>
+      <div class="total-row net-total-row">
+        <div>ยอดชำระทั้งสิ้น:</div>
+        <div>{{ formatCurrency(netTotal) }}</div>
+      </div>
+      
+      <div class="receipt-divider">--------------------------------</div>
+      
+      <template v-if="paymentMethod === 'cash'">
+        <div class="total-row">
+          <div>รับเงินสด:</div>
+          <div>{{ formatCurrency(Number(enteredAmount) || 0) }}</div>
+        </div>
+        <div class="total-row">
+          <div>เงินทอน:</div>
+          <div>{{ formatCurrency(cashChange) }}</div>
+        </div>
+      </template>
+      <template v-else>
+        <div class="total-row">
+          <div>ชำระเงินผ่าน:</div>
+          <div>{{ getPaymentMethodLabel(paymentMethod) }}</div>
+        </div>
+      </template>
+    </div>
+    
+    <div class="receipt-divider">================================</div>
+    
+    <div class="receipt-footer">
+      <div>ขอบคุณที่ใช้บริการ</div>
+      <div>อร่อยสะท้านฟากฟ้า ไก่ทอดช้างแดง</div>
+    </div>
+  </div>
+
   <div id="modal-container" class="active full-screen-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -354,6 +431,16 @@ const isCheckingOut = ref(false);
 const printerConnected = ref(false);
 const printLoading = ref(false);
 
+// Active Branch & Date States for Browser Print Template
+const activeBranchName = ref('สาขาหลัก');
+const activeBranchPhone = ref('');
+const orderDateStr = ref(new Date().toISOString());
+
+const formattedOrderDate = computed(() => {
+  const d = new Date(orderDateStr.value);
+  return d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH');
+});
+
 onMounted(() => {
   if (navigator.usb) {
     setTimeout(async () => {
@@ -468,30 +555,24 @@ const handlePrintReceipt = async (orderData = null) => {
   try {
     printLoading.value = true;
     
-    const currentOrder = orderData || {
-      order_number: orderId.value,
-      created_at: new Date().toISOString(),
-      payment_method: paymentMethod.value || 'cash',
-      cash_received: Number(enteredAmount.value) || 0,
-      discount: props.discount,
-      total: netTotal.value,
-      modifiers: props.freeModifiers
-    };
-
+    // Set active branch details for the template
     const user = getUser();
     const branchId = user ? user.branch_id : null;
     const activeBranch = store.branches.find(b => b.id === branchId) || { name: 'สาขาหลัก' };
+    activeBranchName.value = activeBranch.name;
+    activeBranchPhone.value = activeBranch.phone || '';
+    
+    if (orderData && orderData.created_at) {
+      orderDateStr.value = orderData.created_at;
+    }
 
-    await printReceipt(currentOrder, props.cart, {
-      shopName: 'ร้านไก่ทอดช้างแดง',
-      branchName: activeBranch.name,
-      phone: activeBranch.phone || '',
-      forceKick: false
-    });
-    ui.showToast('พิมพ์ใบเสร็จสำเร็จแล้ว 🖨️', 'success');
+    // Trigger standard browser print dialog
+    window.print();
+    
+    ui.showToast('เปิดหน้าต่างสั่งพิมพ์ใบเสร็จเรียบร้อยแล้ว 🖨️', 'success');
   } catch (e) {
     console.error(e);
-    ui.showToast('การพิมพ์ใบเสร็จล้มเหลว: ' + e.message, 'error');
+    ui.showToast('การเรียกพิมพ์ใบเสร็จล้มเหลว: ' + e.message, 'error');
   } finally {
     printLoading.value = false;
   }
@@ -545,6 +626,7 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
         cash_received: cashReceivedVal
       });
       orderId.value = res.data?.order_number || res.data?.id || res.id;
+      orderDateStr.value = res.data?.created_at || new Date().toISOString();
       store.clearReportsCache();
       ui.showToast(`ชำระเงินผ่าน ${getPaymentMethodLabel(paymentMethodType)} สำเร็จ!`, 'success');
       
@@ -848,6 +930,100 @@ const confirmDeliveryPayment = () => {
   .success-actions .btn-modal {
     width: 100% !important;
     flex: none !important;
+  }
+}
+
+/* --- Print Styles --- */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #receipt-print-area, #receipt-print-area * {
+    visibility: visible !important;
+  }
+  #receipt-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    font-family: 'Prompt', monospace !important;
+    font-size: 12px !important;
+    color: #000 !important;
+    background: #fff !important;
+    display: block !important;
+  }
+  
+  #modal-container, .modal-content, .success-screen, .success-screen * {
+    display: none !important;
+  }
+  
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .receipt-header h2 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .receipt-subheader {
+    font-size: 11px;
+    color: #333;
+  }
+  .receipt-divider {
+    text-align: center;
+    margin: 4px 0;
+    letter-spacing: -1px;
+    font-size: 11px;
+  }
+  .receipt-meta {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .receipt-meta div {
+    margin-bottom: 2px;
+  }
+  .receipt-items {
+    margin-bottom: 6px;
+  }
+  .receipt-item-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .receipt-modifier-row {
+    color: #555;
+    padding-left: 8px;
+    font-style: italic;
+  }
+  .receipt-totals {
+    font-size: 11px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+  .net-total-row {
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 4px;
+    border-top: 1px dashed #000;
+    padding-top: 4px;
+  }
+  .receipt-footer {
+    text-align: center;
+    font-size: 10px;
+    margin-top: 8px;
+  }
+}
+
+@media screen {
+  #receipt-print-area {
+    display: none !important;
   }
 }
 </style>
