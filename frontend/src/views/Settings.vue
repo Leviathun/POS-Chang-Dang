@@ -672,7 +672,7 @@
               </div>
             </div>
 
-            <!-- 2. RawBT WebSocket (Silent Print) -->
+            <!-- 2. Sunmi Printer Connection -->
             <div 
               class="connection-option-card"
               :class="{ selected: printerConfig.connectionType === 'rawbt' }"
@@ -682,26 +682,8 @@
                 <i class="fa-solid fa-tablet-screen-button font-xl"></i>
               </div>
               <div class="option-info">
-                <div class="option-title">เครื่องพิมพ์ Sunmi (พิมพ์ผ่าน Server)</div>
-                <div class="option-desc">พิมพ์เงียบใน 1 คลิกผ่านแอป Server for RawBT</div>
-              </div>
-              <div class="option-badge">
-                <i class="fa-solid fa-circle-check"></i>
-              </div>
-            </div>
-
-            <!-- 3. RawBT App Intent (Direct Redirect) -->
-            <div 
-              class="connection-option-card"
-              :class="{ selected: printerConfig.connectionType === 'rawbt_intent' }"
-              @click="setConnectionType('rawbt_intent')"
-            >
-              <div class="option-icon">
-                <i class="fa-solid fa-share-from-square font-xl"></i>
-              </div>
-              <div class="option-info">
-                <div class="option-title">เครื่องพิมพ์ Sunmi (สลับหน้าต่างแอป)</div>
-                <div class="option-desc">เปิดหน้าแอปหลักตรงๆ (ไม่ต้องตั้งเซิร์ฟเวอร์)</div>
+                <div class="option-title">เครื่องพิมพ์ในตัวเครื่อง POS (Sunmi)</div>
+                <div class="option-desc">สั่งงานพิมพ์สลับแอปผ่านหน้าต่างแอปหลัก (ไม่ต้องเปิดแอป Server)</div>
               </div>
               <div class="option-badge">
                 <i class="fa-solid fa-circle-check"></i>
@@ -742,7 +724,7 @@
           </div>
         </div>
 
-        <!-- Connection Status (RawBT Mode - WebSocket) -->
+        <!-- Connection Status (RawBT Mode) -->
         <div 
           v-if="printerConfig.connectionType === 'rawbt'"
           :style="{
@@ -763,34 +745,6 @@
           <div style="flex: 1; min-width: 0;">
             <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
               สถานะ: เปิดใช้งานร่วมกับเครื่องพิมพ์ในตัวเครื่อง (Sunmi) เรียบร้อยแล้ว
-            </div>
-            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
-              ระบบจะทำการพิมพ์ใบเสร็จและเปิดลิ้นชักผ่านบริการพิมพ์ของตัวเครื่องให้อัตโนมัติทันทีที่ชำระเงินสำเร็จ
-            </div>
-          </div>
-        </div>
-
-        <!-- Connection Status (RawBT Intent Mode) -->
-        <div 
-          v-if="printerConfig.connectionType === 'rawbt_intent'"
-          :style="{
-            background: 'rgba(42, 157, 143, 0.08)',
-            border: '1px solid var(--success)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-md) var(--space-lg)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-md)',
-            marginBottom: 'var(--space-xl)',
-            transition: 'all 0.3s ease'
-          }"
-        >
-          <div style="font-size: 2.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-          </div>
-          <div style="flex: 1; min-width: 0;">
-            <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
-              สถานะ: พิมพ์สลับแอปผ่านหน้าต่างแอปหลัก (RawBT App)
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
               ระบบจะเปิดแอป RawBT เพื่อปริ้นใบเสร็จและดีดลิ้นชักโดยตรงโดยอัตโนมัติ (ไม่จำเป็นต้องใช้งานแอป Server เพิ่มเติม)

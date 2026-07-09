@@ -237,7 +237,7 @@ export function isPrinterConnected() {
 export async function sendRawToPrinter(bytes) {
   const config = getSavedPrinterConfig();
   
-  if (config.connectionType === 'rawbt_intent') {
+  if (config.connectionType === 'rawbt') {
     try {
       let binary = '';
       const len = bytes.byteLength;
@@ -245,58 +245,10 @@ export async function sendRawToPrinter(bytes) {
         binary += String.fromCharCode(bytes[i]);
       }
       const base64Data = btoa(binary);
-      window.location.href = 'rawbt:data:application/octet-stream;base64,' + base64Data;
+      window.location.href = 'intent://data:application/octet-stream;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
     } catch (err) {
       console.error('RawBT Intent redirect failed:', err);
       throw new Error('ไม่สามารถพิมพ์ผ่านหน้าต่างแอป RawBT ได้: ' + err.message);
-    }
-    return;
-  }
-  
-  if (config.connectionType === 'rawbt') {
-    // 1. Try printing via Server for RawBT WebSocket API (Port 40213 - Silent Print)
-    try {
-      await new Promise((resolve, reject) => {
-        const socket = new WebSocket("ws://localhost:40213/");
-        socket.binaryType = "arraybuffer";
-        
-        const timeout = setTimeout(() => {
-          socket.close();
-          reject(new Error("WebSocket timeout"));
-        }, 1500);
-        
-        socket.onopen = () => {
-          clearTimeout(timeout);
-          socket.send(bytes.buffer);
-          setTimeout(() => {
-            socket.close();
-            resolve();
-          }, 120);
-        };
-        
-        socket.onerror = (err) => {
-          clearTimeout(timeout);
-          reject(err);
-        };
-      });
-      console.log('Printed silently via RawBT WebSocket server successfully!');
-      return;
-    } catch (e) {
-      console.warn('RawBT WebSocket print failed, trying URL Scheme redirect:', e);
-    }
-
-    // 2. Fallback: Use URL Scheme redirect (opens RawBT app)
-    try {
-      let binary = '';
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Data = btoa(binary);
-      window.location.href = 'rawbt:data:application/octet-stream;base64,' + base64Data;
-    } catch (err) {
-      console.error('RawBT URL redirect failed:', err);
-      throw new Error('ไม่สามารถพิมพ์ผ่าน RawBT ได้: ' + err.message);
     }
     return;
   }
