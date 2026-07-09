@@ -245,7 +245,7 @@ export async function sendRawToPrinter(bytes) {
         binary += String.fromCharCode(bytes[i]);
       }
       const base64Data = btoa(binary);
-      window.location.href = 'rawbt:base64:' + base64Data;
+      window.location.href = 'rawbt:data:application/octet-stream;base64,' + base64Data;
     } catch (err) {
       console.error('RawBT Intent redirect failed:', err);
       throw new Error('ไม่สามารถพิมพ์ผ่านหน้าต่างแอป RawBT ได้: ' + err.message);
@@ -293,7 +293,7 @@ export async function sendRawToPrinter(bytes) {
         binary += String.fromCharCode(bytes[i]);
       }
       const base64Data = btoa(binary);
-      window.location.href = 'rawbt:base64:' + base64Data;
+      window.location.href = 'rawbt:data:application/octet-stream;base64,' + base64Data;
     } catch (err) {
       console.error('RawBT URL redirect failed:', err);
       throw new Error('ไม่สามารถพิมพ์ผ่าน RawBT ได้: ' + err.message);
@@ -313,7 +313,7 @@ export async function sendRawToPrinter(bytes) {
 
 // Open cash drawer only
 export async function kickDrawer() {
-  const bytes = new EscPosBuilder().init().kick().build();
+  const bytes = new EscPosBuilder().kick().build();
   await sendRawToPrinter(bytes);
 }
 
