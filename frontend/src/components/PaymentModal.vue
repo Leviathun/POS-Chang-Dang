@@ -53,9 +53,31 @@
               </div>
             </div>
 
-            <div class="w-full">
-              <button class="btn-modal btn-modal-primary" @click="finishPayment">
-                <i class="fa-solid fa-circle-check"></i> เสร็จสิ้น (กลับหน้าขาย)
+            <!-- Printer Status Indicator -->
+            <div class="text-xs text-secondary mt-sm mb-md flex align-center justify-center gap-xs" style="margin-top: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span :style="{ 
+                width: '8px', 
+                height: '8px', 
+                borderRadius: '50%', 
+                background: printerConnected ? 'var(--success)' : '#d1d1d6',
+                display: 'inline-block'
+              }"></span>
+              <span>เครื่องพิมพ์: {{ printerConnected ? 'พร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}</span>
+            </div>
+
+            <div class="w-full flex gap-md success-actions" style="display: flex; gap: var(--space-md); width: 100%;">
+              <button 
+                class="btn-modal btn-modal-secondary flex-1" 
+                @click="() => handlePrintReceipt()"
+                :disabled="printLoading"
+                style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
+              >
+                <i v-if="printLoading" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-print"></i>
+                <span>พิมพ์ใบเสร็จ</span>
+              </button>
+              <button class="btn-modal btn-modal-primary flex-1" @click="finishPayment" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);">
+                <i class="fa-solid fa-circle-check"></i> เสร็จสิ้น
               </button>
             </div>
           </div>
@@ -285,10 +307,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, roundUp, showConfetti } from '../helpers';
+import { ui, formatCurrency, roundUp, showConfetti, getUser } from '../helpers';
 import { store } from '../store';
+import { 
+  autoConnectPrinter, 
+  isPrinterConnected, 
+  kickDrawer, 
+  printReceipt, 
+  getSavedPrinterConfig 
+} from '../utils/printer';
 
 // Props
 const props = defineProps({
@@ -320,6 +349,23 @@ const orderId = ref(null);
 const success = ref(false);
 const checkoutPromise = ref(null);
 const isCheckingOut = ref(false);
+
+// Printer States & Hook
+const printerConnected = ref(false);
+const printLoading = ref(false);
+
+onMounted(() => {
+  if (navigator.usb) {
+    setTimeout(async () => {
+      try {
+        const dev = await autoConnectPrinter();
+        printerConnected.value = !!dev;
+      } catch (e) {
+        console.warn('Auto connect printer in modal failed:', e);
+      }
+    }, 50);
+  }
+});
 
 const netTotal = computed(() => Math.max(0, props.total - (props.discount || 0)));
 
@@ -417,6 +463,63 @@ const getPaymentMethodLabel = (method) => {
   return map[method] || method;
 };
 
+// --- Printer Trigger Actions ---
+const handlePrintReceipt = async (orderData = null) => {
+  try {
+    printLoading.value = true;
+    
+    const currentOrder = orderData || {
+      order_number: orderId.value,
+      created_at: new Date().toISOString(),
+      payment_method: paymentMethod.value || 'cash',
+      cash_received: Number(enteredAmount.value) || 0,
+      discount: props.discount,
+      total: netTotal.value,
+      modifiers: props.freeModifiers
+    };
+
+    const user = getUser();
+    const branchId = user ? user.branch_id : null;
+    const activeBranch = store.branches.find(b => b.id === branchId) || { name: 'สาขาหลัก' };
+
+    await printReceipt(currentOrder, props.cart, {
+      shopName: 'ร้านไก่ทอดช้างแดง',
+      branchName: activeBranch.name,
+      phone: activeBranch.phone || '',
+      forceKick: false
+    });
+    ui.showToast('พิมพ์ใบเสร็จสำเร็จแล้ว 🖨️', 'success');
+  } catch (e) {
+    console.error(e);
+    ui.showToast('การพิมพ์ใบเสร็จล้มเหลว: ' + e.message, 'error');
+  } finally {
+    printLoading.value = false;
+  }
+};
+
+const triggerAutoPrinterAndDrawer = async (orderData) => {
+  if (!navigator.usb) return;
+  
+  if (isPrinterConnected()) {
+    const config = getSavedPrinterConfig();
+    
+    if (config.autoPrint) {
+      try {
+        await handlePrintReceipt(orderData);
+      } catch (e) {
+        ui.showToast('พิมพ์ใบเสร็จอัตโนมัติล้มเหลว: ' + e.message, 'error');
+      }
+    } else if (config.autoKick) {
+      try {
+        await kickDrawer();
+        ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+      } catch (e) {
+        ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
+      }
+    }
+  }
+};
+
 // Unified Checkout Submitter for Optimistic UI
 const submitCheckout = (paymentMethodType, cashReceivedVal) => {
   success.value = true;
@@ -444,6 +547,16 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
       orderId.value = res.data?.order_number || res.data?.id || res.id;
       store.clearReportsCache();
       ui.showToast(`ชำระเงินผ่าน ${getPaymentMethodLabel(paymentMethodType)} สำเร็จ!`, 'success');
+      
+      // 🟢 Trigger Auto Printer & Drawer Kick
+      triggerAutoPrinterAndDrawer(res.data || { 
+        order_number: orderId.value, 
+        payment_method: paymentMethodType, 
+        cash_received: cashReceivedVal,
+        discount: props.discount,
+        total: netTotal.value
+      });
+
       return res;
     } catch (error) {
       console.error(error);
@@ -727,6 +840,14 @@ const confirmDeliveryPayment = () => {
 @media (max-width: 768px) {
   .payment-methods {
     grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .success-actions {
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+  }
+  .success-actions .btn-modal {
+    width: 100% !important;
+    flex: none !important;
   }
 }
 </style>
