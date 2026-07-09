@@ -566,24 +566,43 @@ const handlePrintReceipt = async (orderData = null) => {
       orderDateStr.value = orderData.created_at;
     }
 
-    // Trigger standard browser print dialog
-    window.print();
-    
-    ui.showToast('เปิดหน้าต่างสั่งพิมพ์ใบเสร็จเรียบร้อยแล้ว 🖨️', 'success');
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt' || (config.connectionType === 'usb' && isPrinterConnected())) {
+      const currentOrder = orderData || {
+        order_number: orderId.value,
+        created_at: new Date().toISOString(),
+        payment_method: paymentMethod.value || 'cash',
+        cash_received: Number(enteredAmount.value) || 0,
+        discount: props.discount,
+        total: netTotal.value,
+        modifiers: props.freeModifiers
+      };
+      
+      await printReceipt(currentOrder, props.cart, {
+        shopName: 'ร้านไก่ทอดช้างแดง',
+        branchName: activeBranch.name,
+        phone: activeBranch.phone || '',
+        forceKick: false
+      });
+      ui.showToast('พิมพ์ใบเสร็จสำเร็จแล้ว 🖨️', 'success');
+    } else {
+      // Fallback: Trigger standard browser print dialog
+      window.print();
+      ui.showToast('เปิดหน้าต่างสั่งพิมพ์ใบเสร็จเรียบร้อยแล้ว 🖨️', 'success');
+    }
   } catch (e) {
     console.error(e);
-    ui.showToast('การเรียกพิมพ์ใบเสร็จล้มเหลว: ' + e.message, 'error');
+    ui.showToast('การพิมพ์ใบเสร็จล้มเหลว: ' + e.message, 'error');
   } finally {
     printLoading.value = false;
   }
 };
 
 const triggerAutoPrinterAndDrawer = async (orderData) => {
-  if (!navigator.usb) return;
+  const config = getSavedPrinterConfig();
+  if (!navigator.usb && config.connectionType !== 'rawbt') return;
   
   if (isPrinterConnected()) {
-    const config = getSavedPrinterConfig();
-    
     if (config.autoPrint) {
       try {
         await handlePrintReceipt(orderData);

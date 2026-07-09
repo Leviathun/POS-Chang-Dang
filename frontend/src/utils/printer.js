@@ -103,26 +103,30 @@ export function getSavedPrinterConfig() {
   const productId = localStorage.getItem('printer_product_id');
   const autoPrint = localStorage.getItem('printer_auto_print') !== 'false';
   const autoKick = localStorage.getItem('printer_auto_kick') !== 'false';
+  const connectionType = localStorage.getItem('printer_connection_type') || 'usb';
   return {
     vendorId: vendorId ? parseInt(vendorId, 10) : null,
     productId: productId ? parseInt(productId, 10) : null,
     autoPrint,
     autoKick,
+    connectionType,
   };
 }
 
 // Save configuration
-export function savePrinterConfig(vendorId, productId, autoPrint, autoKick) {
+export function savePrinterConfig(vendorId, productId, autoPrint, autoKick, connectionType) {
   if (vendorId !== undefined && vendorId !== null) localStorage.setItem('printer_vendor_id', vendorId);
   if (productId !== undefined && productId !== null) localStorage.setItem('printer_product_id', productId);
   if (autoPrint !== undefined && autoPrint !== null) localStorage.setItem('printer_auto_print', String(autoPrint));
   if (autoKick !== undefined && autoKick !== null) localStorage.setItem('printer_auto_kick', String(autoKick));
+  if (connectionType !== undefined && connectionType !== null) localStorage.setItem('printer_connection_type', connectionType);
 }
 
 // Clear configuration
 export function clearPrinterConfig() {
   localStorage.removeItem('printer_vendor_id');
   localStorage.removeItem('printer_product_id');
+  localStorage.removeItem('printer_connection_type');
   // keep auto settings intact
 }
 
@@ -222,11 +226,37 @@ export async function disconnectPrinter() {
 
 // Check status
 export function isPrinterConnected() {
+  const config = getSavedPrinterConfig();
+  if (config.connectionType === 'rawbt') {
+    return true; // RawBT uses local HTTP requests, so it is always ready to accept print payloads
+  }
   return activeDevice !== null;
 }
 
 // Send raw byte array to printer
 export async function sendRawToPrinter(bytes) {
+  const config = getSavedPrinterConfig();
+  
+  if (config.connectionType === 'rawbt') {
+    try {
+      const response = await fetch('http://localhost:8080/raw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream'
+        },
+        body: bytes
+      });
+      if (!response.ok) {
+        throw new Error('แอป RawBT ตอบกลับด้วยข้อผิดพลาด');
+      }
+    } catch (e) {
+      console.error('RawBT print failed:', e);
+      throw new Error('ไม่สามารถพิมพ์ผ่าน RawBT ได้ (โปรดตรวจดูว่าคุณเปิดเซิร์ฟเวอร์เว็บในแอป RawBT แล้วหรือยัง)');
+    }
+    return;
+  }
+
+  // WebUSB Connection fallback
   if (!activeDevice || !activeEndpointOut) {
     const device = await autoConnectPrinter();
     if (!device) {

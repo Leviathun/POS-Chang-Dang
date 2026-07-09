@@ -642,14 +642,57 @@
     <div v-if="activeTab === 'printer'" class="flex flex-col gap-lg w-full">
       <div class="card">
         <div class="card-title mb-md text-base">
-          <i class="fa-solid fa-print" style="margin-right: 6px; color: var(--primary);"></i> ตั้งค่าเครื่องพิมพ์ & ลิ้นชัก (WebUSB)
+          <i class="fa-solid fa-print" style="margin-right: 6px; color: var(--primary);"></i> ตั้งค่าเครื่องพิมพ์ & ลิ้นชัก
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          เชื่อมต่อกับเครื่องพิมพ์ใบเสร็จ USB โดยตรงจากเบราว์เซอร์ เพื่อพิมพ์ใบเสร็จและสั่งเปิดลิ้นชักเก็บเงิน (RJ11) เมื่อทำรายการสำเร็จ
+          เชื่อมต่อกับเครื่องพิมพ์ใบเสร็จและสั่งงานลิ้นชักเก็บเงินอเนกประสงค์ โดยเลือกประเภทการเชื่อมต่อที่เหมาะสมกับอุปกรณ์ของคุณ
         </p>
 
-        <!-- Connection Status -->
+        <!-- Connection Type Selection (Premium Cards) -->
+        <div class="mb-xl">
+          <strong class="font-bold text-sm block mb-sm" style="color: var(--text-primary); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm);">
+            ประเภทการเชื่อมต่อเครื่องพิมพ์
+          </strong>
+          <div class="connection-selector-grid">
+            <div 
+              class="connection-option-card"
+              :class="{ selected: printerConfig.connectionType === 'usb' }"
+              @click="setConnectionType('usb')"
+            >
+              <div class="option-icon">
+                <i class="fa-solid fa-plug font-xl"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">เครื่องพิมพ์ทั่วไป (ต่อสาย USB)</div>
+                <div class="option-desc">สั่งพิมพ์และดีดลิ้นชักตรงจากบราวเซอร์</div>
+              </div>
+              <div class="option-badge">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+
+            <div 
+              class="connection-option-card"
+              :class="{ selected: printerConfig.connectionType === 'rawbt' }"
+              @click="setConnectionType('rawbt')"
+            >
+              <div class="option-icon">
+                <i class="fa-solid fa-tablet-screen-button font-xl"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">เครื่องพิมพ์ในตัวเครื่อง POS (Sunmi)</div>
+                <div class="option-desc">สั่งงานผ่านบริการพิมพ์ของตัวเครื่อง POS</div>
+              </div>
+              <div class="option-badge">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connection Status (USB Mode) -->
         <div 
+          v-if="printerConfig.connectionType === 'usb'"
           :style="{
             background: printerConnected ? 'rgba(42, 157, 143, 0.08)' : 'rgba(139, 3, 19, 0.04)',
             border: '1px solid ' + (printerConnected ? 'var(--success)' : 'var(--primary)'),
@@ -671,16 +714,44 @@
               สถานะเครื่องพิมพ์: {{ printerConnected ? 'เชื่อมต่อพร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;" v-if="printerConnected">
-              เชื่อมต่อผ่าน USB (Vendor ID: {{ printerConfig.vendorId }} | Product ID: {{ printerConfig.productId }})
+              เชื่อมต่อผ่านสาย USB พร้อมสำหรับทำรายการขายหน้าร้าน
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;" v-else>
-              คลิกปุ่มเชื่อมต่อด้านล่างเพื่อเลือกเครื่องพิมพ์ความร้อนแบบ USB สำหรับดีดลิ้นชักและพิมพ์ใบเสร็จ
+              คลิกปุ่มเชื่อมต่อด้านล่างเพื่อเลือกเครื่องพิมพ์ความร้อนสำหรับดีดลิ้นชักและพิมพ์ใบเสร็จ
             </div>
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
+        <!-- Connection Status (RawBT Mode) -->
+        <div 
+          v-if="printerConfig.connectionType === 'rawbt'"
+          :style="{
+            background: 'rgba(42, 157, 143, 0.08)',
+            border: '1px solid var(--success)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-md) var(--space-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-md)',
+            marginBottom: 'var(--space-xl)',
+            transition: 'all 0.3s ease'
+          }"
+        >
+          <div style="font-size: 2.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
+              สถานะ: เปิดใช้งานร่วมกับเครื่องพิมพ์ในตัวเครื่อง (Sunmi) เรียบร้อยแล้ว
+            </div>
+            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+              ระบบจะทำการพิมพ์ใบเสร็จและเปิดลิ้นชักผ่านบริการพิมพ์ของตัวเครื่องให้อัตโนมัติทันทีที่ชำระเงินสำเร็จ
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons (USB Mode Only) -->
+        <div v-if="printerConfig.connectionType === 'usb'" class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
           <button class="btn btn-primary" @click="handleConnectPrinter" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i class="fa-solid fa-plug"></i> เชื่อมต่อเครื่องพิมพ์ใหม่
           </button>
@@ -825,16 +896,19 @@ const printerConfig = ref({
   vendorId: null,
   productId: null,
   autoPrint: true,
-  autoKick: true
+  autoKick: true,
+  connectionType: 'usb'
 });
 
 const loadPrinterSettings = async () => {
   const cfg = getSavedPrinterConfig();
   printerConfig.value = cfg;
   
+  printerConnected.value = isPrinterConnected();
+  if (cfg.connectionType === 'rawbt') return;
+  
   if (!navigator.usb) return;
   
-  printerConnected.value = isPrinterConnected();
   if (!printerConnected.value && cfg.vendorId && cfg.productId) {
     try {
       const dev = await autoConnectPrinter();
@@ -876,9 +950,20 @@ const saveLocalPrinterConfig = () => {
     printerConfig.value.vendorId,
     printerConfig.value.productId,
     printerConfig.value.autoPrint,
-    printerConfig.value.autoKick
+    printerConfig.value.autoKick,
+    printerConfig.value.connectionType
   );
-  ui.showToast('บันทึกตั้งค่าระบบพิมพ์สำเร็จ', 'success');
+  printerConnected.value = isPrinterConnected();
+};
+
+const handleConnectionTypeChange = () => {
+  saveLocalPrinterConfig();
+  ui.showToast('เปลี่ยนประเภทการเชื่อมต่อสำเร็จ', 'success');
+};
+
+const setConnectionType = (type) => {
+  printerConfig.value.connectionType = type;
+  handleConnectionTypeChange();
 };
 
 const handleTestKick = async () => {
@@ -1669,5 +1754,95 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(22px);
+}
+
+/* --- Connection Option Cards --- */
+.connection-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  margin-top: var(--space-xs);
+}
+
+.connection-option-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base) ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.connection-option-card:hover {
+  border-color: var(--primary-light);
+  background: rgba(230, 57, 70, 0.02);
+}
+
+.connection-option-card.selected {
+  border-color: var(--primary);
+  background: rgba(230, 57, 70, 0.04);
+}
+
+.connection-option-card .option-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all var(--transition-base) ease;
+  flex-shrink: 0;
+}
+
+.connection-option-card.selected .option-icon {
+  background: var(--primary);
+  color: white;
+}
+
+.connection-option-card .option-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.connection-option-card .option-title {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.connection-option-card .option-desc {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+.connection-option-card .option-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1rem;
+  color: var(--primary);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s ease;
+}
+
+.connection-option-card.selected .option-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (max-width: 768px) {
+  .connection-selector-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-sm) !important;
+  }
 }
 </style>
