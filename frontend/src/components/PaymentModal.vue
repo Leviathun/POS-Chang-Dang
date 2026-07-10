@@ -151,10 +151,10 @@
                 width: '8px', 
                 height: '8px', 
                 borderRadius: '50%', 
-                background: printerConnected ? 'var(--success)' : '#d1d1d6',
+                background: isPrinterAvailable ? 'var(--success)' : '#d1d1d6',
                 display: 'inline-block'
               }"></span>
-              <span>เครื่องพิมพ์: {{ printerConnected ? 'พร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}</span>
+              <span>เครื่องพิมพ์: {{ printerStatusText }}</span>
             </div>
 
             <div class="w-full flex gap-md success-actions" style="display: flex; gap: var(--space-md); width: 100%;">
@@ -469,6 +469,22 @@ onMounted(() => {
       }
     }, 50);
   }
+});
+
+const isPrinterAvailable = computed(() => {
+  const config = getSavedPrinterConfig();
+  if (config.connectionType === 'rawbt') {
+    return true;
+  }
+  return printerConnected.value;
+});
+
+const printerStatusText = computed(() => {
+  const config = getSavedPrinterConfig();
+  if (config.connectionType === 'rawbt') {
+    return 'พร้อมใช้งาน (RawBT)';
+  }
+  return printerConnected.value ? 'พร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ';
 });
 
 const netTotal = computed(() => Math.max(0, props.total - (props.discount || 0)));
