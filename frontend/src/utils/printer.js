@@ -272,6 +272,26 @@ export function printViaWebSocket(bytes) {
   });
 }
 
+// Helper to wrap promises with a timeout
+function timeoutPromise(promise, ms, errorMsg = 'หมดเวลารอคำสั่ง (Timeout)') {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(errorMsg));
+    }, ms);
+    
+    promise.then(
+      (res) => {
+        clearTimeout(timer);
+        resolve(res);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 // Send raw byte array to printer
 export async function sendRawToPrinter(bytes) {
   const config = getSavedPrinterConfig();
@@ -308,7 +328,20 @@ export async function sendRawToPrinter(bytes) {
       throw new Error('เครื่องพิมพ์ไม่ได้เชื่อมต่ออยู่');
     }
   }
-  await activeDevice.transferOut(activeEndpointOut, bytes);
+  
+  try {
+    await timeoutPromise(
+      activeDevice.transferOut(activeEndpointOut, bytes),
+      5000,
+      'ส่งข้อมูลไปยังเครื่องพิมพ์ล้มเหลว (การเชื่อมต่อไม่ตอบสนอง) กรุณาปิด-เปิดเครื่องพิมพ์ใหม่ หรือเสียบสาย USB ใหม่'
+    );
+  } catch (err) {
+    console.error('USB Transfer failed or timed out:', err);
+    // Reset connection state so that next attempt tries a fresh connection
+    activeDevice = null;
+    activeEndpointOut = null;
+    throw err;
+  }
 }
 
 // Open cash drawer only (Async WebUSB path)
