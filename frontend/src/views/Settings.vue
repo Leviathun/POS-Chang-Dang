@@ -788,14 +788,34 @@
             </label>
           </div>
 
+          <div class="setting-item" v-if="printerConfig.connectionType === 'rawbt'">
+            <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
+              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จ (โหมด RawBT)</strong>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือก 'รูปภาพจาก POS' เพื่อใช้รูปภาพฟอนต์ภาษาไทยคมชัดขนาดใหญ่พอดีกระดาษ</span>
+            </div>
+            <select 
+              v-model="printerConfig.printMode" 
+              @change="saveLocalPrinterConfig" 
+              class="form-input" 
+              style="width: 180px; min-height: 38px; padding: 4px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);"
+            >
+              <option value="image">รูปภาพจาก POS (แนะนำ)</option>
+              <option value="text">ข้อความธรรมดา (Text)</option>
+              <option value="html">รูปภาพ HTML (แอป RawBT)</option>
+            </select>
+          </div>
+
         </div>
 
         <div class="divider mb-lg" style="height:1px; background:var(--border-color);"></div>
 
         <!-- Testing Buttons -->
-        <div class="flex gap-md printer-btn-container" style="display: flex; gap: var(--space-md);">
+        <div class="flex gap-md printer-btn-container" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
           <button class="btn btn-secondary" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i class="fa-solid fa-file-invoice"></i> ทดสอบพิมพ์ใบเสร็จทดลอง
+          </button>
+          <button class="btn btn-secondary" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+            <i class="fa-solid fa-key"></i> ทดสอบเปิดลิ้นชักเก็บเงิน
           </button>
         </div>
       </div>
@@ -1014,6 +1034,27 @@ const handleTestPrint = async () => {
     }
   } catch (e) {
     ui.showToast('การพิมพ์ล้มเหลว: ' + e.message, 'error');
+  }
+};
+
+const handleTestKick = async () => {
+  try {
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      kickDrawerSync();
+      ui.showToast('ส่งคำสั่งทดสอบเปิดลิ้นชักแล้ว (ผ่าน RawBT) 🔓', 'success');
+    } else if (config.connectionType === 'usb') {
+      if (isPrinterConnected()) {
+        await kickDrawer();
+        ui.showToast('ดีดเปิดลิ้นชักสำเร็จแล้ว 🔓', 'success');
+      } else {
+        throw new Error('ยังไม่ได้เชื่อมต่อเครื่องพิมพ์สาย USB');
+      }
+    } else {
+      throw new Error('ไม่รองรับการทำงานในโหมดนี้');
+    }
+  } catch (e) {
+    ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
   }
 };
 

@@ -17,7 +17,7 @@ const CMD = {
   FONT_BOLD_ON: [ESC, 69, 1],     // Turn bold on
   FONT_BOLD_OFF: [ESC, 69, 0],    // Turn bold off
   CUT: [GS, 86, 66, 0],           // Feed and cut paper
-  KICK_DRAWER: [ESC, 112, 0, 50, 50, ESC, 112, 1, 50, 50, 16, 20, 0, 0, 0, 16, 20, 1, 0, 1, 16, 20, 1, 1, 1, 16, 20, 1, 0, 5, 7], // Universal kick: Epson/Star (ESC p) + Sunmi integrated (DLE DC4 variations) + Beep (BEL)
+  KICK_DRAWER: [ESC, 112, 0, 20, 100, ESC, 112, 1, 20, 100, 16, 20, 0, 0, 0, 16, 20, 1, 0, 1, 16, 20, 1, 1, 1, 16, 20, 1, 0, 5, 7], // Universal kick: Epson/Star (ESC p) + Sunmi integrated (DLE DC4 variations) + Beep (BEL)
 };
 
 // Convert Thai Unicode characters (0x0E01 - 0x0E5B) to TIS-620 / CP874 bytes
@@ -112,7 +112,7 @@ export function getSavedPrinterConfig() {
   const autoPrint = localStorage.getItem('printer_auto_print') !== 'false';
   const autoKick = localStorage.getItem('printer_auto_kick') !== 'false';
   const connectionType = localStorage.getItem('printer_connection_type') || 'usb';
-  const printMode = localStorage.getItem('printer_print_mode') || 'text'; // 'text' or 'html'
+  const printMode = localStorage.getItem('printer_print_mode') || 'image'; // 'image', 'text', or 'html'
   return {
     vendorId: vendorId ? parseInt(vendorId, 10) : null,
     productId: productId ? parseInt(productId, 10) : null,
@@ -370,6 +370,263 @@ export function sendRawToPrinterSync(bytes) {
   return false;
 }
 
+// Render receipt onto a canvas using high quality layout for raster graphics printing
+// Render receipt onto a canvas using high quality layout for raster graphics printing
+function renderReceiptToCanvas(order, cartItems, options) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  const width = 384; // 58mm (standard thermal printer width)
+  // We will dynamically measure height
+  const drawOps = [];
+  let currentY = 15;
+  
+  // Helper to wrap Thai text
+  function wrapText(text, maxWidth, fontSize, style = 'normal') {
+    ctx.font = `${style === 'bold' ? 'bold' : 'normal'} ${fontSize}px Sarabun, system-ui, -apple-system, sans-serif`;
+    let words = text.split('');
+    let lines = [];
+    let currentLine = '';
+    
+    for (let i = 0; i < words.length; i++) {
+      let testLine = currentLine + words[i];
+      let metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && i > 0) {
+        lines.push(currentLine);
+        currentLine = words[i];
+      } else {
+        currentLine = testLine;
+      }
+    }
+    lines.push(currentLine);
+    return lines;
+  }
+  
+  function addText(text, align = 'left', style = 'normal', size = 20) {
+    const maxTextWidth = width - 20;
+    const lines = wrapText(text, maxTextWidth, size, style);
+    
+    lines.forEach(line => {
+      drawOps.push({
+        type: 'text',
+        text: line,
+        align,
+        style,
+        size,
+        y: currentY
+      });
+      currentY += size + 6;
+    });
+    currentY += 4;
+  }
+  
+  function addRow(leftText, rightText, style = 'normal', size = 20) {
+    ctx.font = `${style === 'bold' ? 'bold' : 'normal'} ${size}px Sarabun, system-ui, -apple-system, sans-serif`;
+    const rightWidth = ctx.measureText(rightText).width;
+    const maxLeftWidth = width - 30 - rightWidth;
+    const leftLines = wrapText(leftText, maxLeftWidth, size, style);
+    
+    drawOps.push({
+      type: 'row',
+      left: leftText,
+      right: rightText,
+      style,
+      size,
+      y: currentY
+    });
+    
+    currentY += (leftLines.length * (size + 4)) + 6;
+  }
+  
+  function addLine() {
+    drawOps.push({
+      type: 'line',
+      y: currentY
+    });
+    currentY += 15;
+  }
+
+  function addSpace(height = 10) {
+    currentY += height;
+  }
+
+  // --- Build operations ---
+  const shopName = options.shopName || 'ร้านไก่ทอดช้างแดง';
+  const branchName = options.branchName || 'สาขาหลัก';
+  const phone = options.phone || '';
+  
+  addText(shopName, 'center', 'bold', 36);
+  addText(`สาขา: ${branchName}`, 'center', 'normal', 24);
+  if (phone) {
+    addText(`โทร: ${phone}`, 'center', 'normal', 24);
+  }
+  
+  addLine();
+  
+  const orderNumber = order.order_number || order.id || '-';
+  const rawDate = order.created_at || new Date().toISOString();
+  const dateObj = new Date(rawDate);
+  const formattedDate = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' +
+                        dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  
+  addText(`เลขที่บิล: #${orderNumber}`, 'left', 'normal', 22);
+  addText(`วันที่: ${formattedDate}`, 'left', 'normal', 22);
+  
+  addLine();
+  
+  const items = Array.isArray(cartItems) ? cartItems : Array.from(cartItems.values() || []);
+  items.forEach(cartItem => {
+    const itemName = cartItem.item?.name || cartItem.name || 'สินค้า';
+    const qty = cartItem.quantity || 1;
+    const itemPrice = cartItem.item?.price || cartItem.price || 0;
+    const subtotal = qty * itemPrice;
+    
+    addRow(`${itemName} x${qty}`, formatCurrencyVal(subtotal), 'normal', 24);
+    
+    if (cartItem.item?.options && Array.isArray(cartItem.item.options.selected_items)) {
+      const opts = cartItem.item.options.selected_items.map(i => `${i.name}`).join(', ');
+      addText(`  * ผสม: ${opts}`, 'left', 'normal', 18);
+    } else if (cartItem.options && Array.isArray(cartItem.options.selected_items)) {
+      const opts = cartItem.options.selected_items.map(i => `${i.name}`).join(', ');
+      addText(`  * ผสม: ${opts}`, 'left', 'normal', 18);
+    }
+  });
+
+  if (order.modifiers && Array.isArray(order.modifiers) && order.modifiers.length > 0) {
+    addText(' - เครื่องปรุงรสเพิ่มเติม -', 'center', 'normal', 20);
+    order.modifiers.forEach(mod => {
+      addRow(`  + ${mod.name}`, '฿0', 'normal', 22);
+    });
+  }
+  
+  addLine();
+  
+  const total = order.total !== undefined ? order.total : (order.net_total || 0);
+  const discount = order.discount || 0;
+  const netTotal = total;
+  const subtotalBeforeDiscount = total + discount;
+  
+  if (discount > 0) {
+    addRow('ยอดรวม:', formatCurrencyVal(subtotalBeforeDiscount), 'normal', 24);
+    addRow('ส่วนลด:', `-${formatCurrencyVal(discount)}`, 'normal', 24);
+  }
+  
+  addRow('ยอดชำระทั้งสิ้น:', formatCurrencyVal(netTotal), 'bold', 32);
+  
+  if (order.payment_method === 'cash') {
+    const cashReceived = order.cash_received || 0;
+    const change = Math.max(0, cashReceived - netTotal);
+    addLine();
+    addRow('รับเงินสด:', formatCurrencyVal(cashReceived), 'normal', 24);
+    addRow('เงินทอน:', formatCurrencyVal(change), 'normal', 24);
+  } else {
+    const paymentLabels = {
+      'qr': 'QR Code / โอนเงิน',
+      'gov': 'โครงการรัฐ',
+      'delivery': 'เดลิเวอรี'
+    };
+    const methodLabel = paymentLabels[order.payment_method] || order.payment_method;
+    addLine();
+    addText(`ชำระเงินผ่าน: ${methodLabel}`, 'left', 'normal', 24);
+  }
+  
+  addLine();
+  addText('ขอบคุณที่ใช้บริการ', 'center', 'bold', 26);
+  addSpace(50); // padding for physical feed
+  
+  // --- Perform drawing ---
+  canvas.width = width;
+  canvas.height = currentY;
+  
+  // Fill white
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, width, currentY);
+  
+  ctx.fillStyle = '#000000';
+  ctx.textBaseline = 'top';
+  
+  drawOps.forEach(op => {
+    const fontName = 'Sarabun, system-ui, -apple-system, sans-serif'; 
+    ctx.font = `${op.style === 'bold' ? 'bold' : 'normal'} ${op.size}px ${fontName}`;
+    
+    if (op.type === 'text') {
+      ctx.textAlign = op.align;
+      let x = 10;
+      if (op.align === 'center') x = width / 2;
+      if (op.align === 'right') x = width - 10;
+      ctx.fillText(op.text, x, op.y);
+    } else if (op.type === 'row') {
+      const rightWidth = ctx.measureText(op.right).width;
+      const maxLeftWidth = width - 30 - rightWidth;
+      const leftLines = wrapText(op.left, maxLeftWidth, op.size, op.style);
+      
+      ctx.textAlign = 'left';
+      let rowY = op.y;
+      leftLines.forEach(line => {
+        ctx.fillText(line, 10, rowY);
+        rowY += op.size + 4;
+      });
+      
+      ctx.textAlign = 'right';
+      ctx.fillText(op.right, width - 10, op.y);
+    } else if (op.type === 'line') {
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]); // dashed line like receipt
+      ctx.moveTo(10, op.y);
+      ctx.lineTo(width - 10, op.y);
+      ctx.stroke();
+      ctx.setLineDash([]); // reset
+    }
+  });
+  
+  return canvas;
+}
+
+// Convert HTML5 Canvas to ESC/POS Raster Image Format (GS v 0)
+function convertCanvasToEscPosRaster(canvas) {
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  const width = canvas.width;
+  const height = canvas.height;
+  const widthBytes = Math.ceil(width / 8);
+  const buffer = [];
+
+  // GS v 0 0 widthBytesL widthBytesH heightL heightH
+  buffer.push(29, 118, 48, 0);
+  buffer.push(widthBytes & 0xFF, (widthBytes >> 8) & 0xFF);
+  buffer.push(height & 0xFF, (height >> 8) & 0xFF);
+
+  for (let y = 0; y < height; y++) {
+    for (let xByte = 0; xByte < widthBytes; xByte++) {
+      let byteVal = 0;
+      for (let bit = 0; bit < 8; bit++) {
+        const x = xByte * 8 + bit;
+        let pixelBlack = 0;
+        if (x < width) {
+          const idx = (y * width + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const a = data[idx + 3];
+          
+          if (a < 128) {
+            pixelBlack = 0;
+          } else {
+            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+            pixelBlack = gray < 128 ? 1 : 0;
+          }
+        }
+        byteVal = (byteVal << 1) | pixelBlack;
+      }
+      buffer.push(byteVal);
+    }
+  }
+  return new Uint8Array(buffer);
+}
+
 // Format and build receipt ESC/POS byte array
 function buildReceiptBytes(order, cartItems = [], options = {}) {
   const config = getSavedPrinterConfig();
@@ -380,109 +637,23 @@ function buildReceiptBytes(order, cartItems = [], options = {}) {
   if (config.autoKick || options.forceKick) {
     builder.kick();
   }
+  const builderBytes = builder.build();
 
-  // 2. Receipt Headers (Centered)
-  const shopName = options.shopName || 'ร้านไก่ทอดช้างแดง';
-  const branchName = options.branchName || 'สาขาหลัก';
-  const phone = options.phone || '';
-  
-  builder.center().large().line(shopName);
-  builder.normal().line(`สาขา: ${branchName}`);
-  if (phone) {
-    builder.line(`โทร: ${phone}`);
-  }
-  builder.line('=========================================='); // 42 chars
+  // 2. Generate raster bytes
+  const canvas = renderReceiptToCanvas(order, cartItems, options);
+  const rasterBytes = convertCanvasToEscPosRaster(canvas);
 
-  // 3. Order Metadata
-  const orderNumber = order.order_number || order.id || '-';
-  const rawDate = order.created_at || new Date().toISOString();
-  // Simple date format
-  const dateObj = new Date(rawDate);
-  const formattedDate = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' +
-                        dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  
-  builder.left().line(`เลขที่บิล: #${orderNumber}`);
-  builder.line(`วันที่: ${formattedDate}`);
-  builder.line('------------------------------------------');
+  // 3. Cut
+  const cutBuilder = new EscPosBuilder();
+  cutBuilder.cut();
+  const cutBytes = cutBuilder.build();
 
-  // 4. Print Items
-  // Normalize items to array
-  const items = Array.isArray(cartItems) ? cartItems : Array.from(cartItems.values() || []);
-  
-  items.forEach(cartItem => {
-    // Left: "ItemName xQty", Right: "Price"
-    const itemName = cartItem.item?.name || cartItem.name || 'สินค้า';
-    const qty = cartItem.quantity || 1;
-    const itemPrice = cartItem.item?.price || cartItem.price || 0;
-    const subtotal = qty * itemPrice;
-
-    const leftPart = `${itemName} x${qty}`;
-    const rightPart = formatCurrencyVal(subtotal);
-    builder.line(formatLine(leftPart, rightPart));
-
-    // Print customized ingredients options if exists
-    if (cartItem.item?.options && Array.isArray(cartItem.item.options.selected_items)) {
-      const opts = cartItem.item.options.selected_items.map(i => `${i.name} (${i.weight}ก.)`).join(', ');
-      builder.line(`  * ผสม: ${opts}`);
-    } else if (cartItem.options && Array.isArray(cartItem.options.selected_items)) {
-      const opts = cartItem.options.selected_items.map(i => `${i.name} (${i.weight}ก.)`).join(', ');
-      builder.line(`  * ผสม: ${opts}`);
-    }
-  });
-
-  // Print Seasonings / Modifiers if exists in order
-  if (order.modifiers && Array.isArray(order.modifiers) && order.modifiers.length > 0) {
-    builder.line(' - เครื่องปรุงรสเพิ่มเติม -');
-    order.modifiers.forEach(mod => {
-      builder.line(formatLine(`  + ${mod.name}`, '฿0'));
-    });
-  }
-
-  builder.line('------------------------------------------');
-
-  // 5. Total Calculations (Right Aligned)
-  const total = order.total !== undefined ? order.total : (order.net_total || 0);
-  const discount = order.discount || 0;
-  const netTotal = total; // Net total is what they pay
-  const subtotalBeforeDiscount = total + discount;
-
-  builder.right();
-  
-  if (discount > 0) {
-    builder.line(formatLine('ยอดรวม:', formatCurrencyVal(subtotalBeforeDiscount)));
-    builder.line(formatLine('ส่วนลด:', `-${formatCurrencyVal(discount)}`));
-  }
-
-  builder.boldOn().large().line(formatLine('ยอดชำระทั้งสิ้น:', formatCurrencyVal(netTotal))).normal().boldOff();
-
-  // Cash Details
-  if (order.payment_method === 'cash') {
-    const cashReceived = order.cash_received || 0;
-    const change = Math.max(0, cashReceived - netTotal);
-    builder.line('------------------------------------------');
-    builder.line(formatLine('รับเงินสด:', formatCurrencyVal(cashReceived)));
-    builder.line(formatLine('เงินทอน:', formatCurrencyVal(change)));
-  } else {
-    // Print payment method label
-    const paymentLabels = {
-      'qr': 'QR Code / โอนเงิน',
-      'gov': 'โครงการรัฐ',
-      'delivery': 'เดลิเวอรี'
-    };
-    const methodLabel = paymentLabels[order.payment_method] || order.payment_method;
-    builder.line(`ชำระเงินผ่าน: ${methodLabel}`);
-  }
-
-  builder.line('==========================================');
-
-  // 6. Footer
-  builder.center()
-         .line('ขอบคุณที่ใช้บริการ')
-         .line('อร่อยสะท้านฟากฟ้า ไก่ทอดช้างแดง')
-         .feed(4)
-         .cut();
-
-  return builder.build();
+  // Combine [init & kick] + [raster image] + [cut]
+  const combined = new Uint8Array(builderBytes.length + rasterBytes.length + cutBytes.length);
+  combined.set(builderBytes, 0);
+  combined.set(rasterBytes, builderBytes.length);
+  combined.set(cutBytes, builderBytes.length + rasterBytes.length);
+  return combined;
 }
 
 // Build plain text receipt string (UTF-8 compatible for RawBT)
@@ -570,7 +741,6 @@ export function buildReceiptTextString(order, cartItems = [], options = {}) {
   
   text += '============================\n';
   text += 'ขอบคุณที่ใช้บริการ\n';
-  text += 'ไก่ทอดช้างแดง\n';
   text += '\n\n\n\n';
   
   return text;
@@ -680,7 +850,7 @@ export function buildReceiptHTMLMinimal(order, cartItems = [], options = {}) {
     `;
   }
   
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:monospace;font-size:11px;color:#000;margin:0;padding:2px;width:100%;box-sizing:border-box;}hr{border:none;border-top:1px solid #000;margin:4px 0;}</style></head><body><div style="font-weight:bold;font-size:14px;text-align:center;font-family:monospace;">${shopName}</div><div style="text-align:center;font-size:10px;font-family:monospace;">สาขา: ${branchName}</div>${phone?`<div style="text-align:center;font-size:10px;font-family:monospace;">โทร: ${phone}</div>`:''}<hr><div style="font-size:10px;font-family:monospace;text-align:left;">บิล: #${orderNumber}</div><div style="font-size:10px;margin-bottom:4px;font-family:monospace;text-align:left;">วันที่: ${formattedDate}</div><hr><table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size:11px;">${itemsRows}<tr><td colspan="2"><hr style="border-top:1px dashed #000;margin:4px 0;"></td></tr>${totalsRows}${paymentRows}</table><hr><div style="text-align:center;font-weight:bold;font-size:11px;margin-top:4px;font-family:monospace;">ขอบคุณที่ใช้บริการ</div><div style="text-align:center;font-size:10px;margin-top:1px;font-family:monospace;">อร่อยสะท้านฟากฟ้า ไก่ทอดช้างแดง</div><div style="height:35px;"></div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:monospace;font-size:11px;color:#000;margin:0;padding:2px;width:100%;box-sizing:border-box;}hr{border:none;border-top:1px solid #000;margin:4px 0;}</style></head><body><div style="font-weight:bold;font-size:14px;text-align:center;font-family:monospace;">${shopName}</div><div style="text-align:center;font-size:10px;font-family:monospace;">สาขา: ${branchName}</div>${phone?`<div style="text-align:center;font-size:10px;font-family:monospace;">โทร: ${phone}</div>`:''}<hr><div style="font-size:10px;font-family:monospace;text-align:left;">บิล: #${orderNumber}</div><div style="font-size:10px;margin-bottom:4px;font-family:monospace;text-align:left;">วันที่: ${formattedDate}</div><hr><table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size:11px;">${itemsRows}<tr><td colspan="2"><hr style="border-top:1px dashed #000;margin:4px 0;"></td></tr>${totalsRows}${paymentRows}</table><hr><div style="text-align:center;font-weight:bold;font-size:11px;margin-top:4px;font-family:monospace;">ขอบคุณที่ใช้บริการ</div><div style="height:35px;"></div></body></html>`;
 }
 
 // Print Receipt (Async WebUSB path)
@@ -691,7 +861,7 @@ export async function printReceipt(order, cartItems = [], options = {}) {
       const htmlString = buildReceiptHTMLMinimal(order, cartItems, options);
       const base64Html = btoa(unescape(encodeURIComponent(htmlString)));
       window.location.href = 'intent:data:text/html;base64,' + base64Html + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else {
+    } else if (config.printMode === 'text') {
       const textString = buildReceiptTextString(order, cartItems, options);
       const utf8Bytes = new TextEncoder().encode(textString);
       let binary = '';
@@ -701,6 +871,16 @@ export async function printReceipt(order, cartItems = [], options = {}) {
       }
       const base64Data = btoa(binary);
       window.location.href = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+    } else {
+      // 'image' mode (default) - Sends raw monochrome raster bytes to RawBT
+      const bytes = buildReceiptBytes(order, cartItems, options);
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      window.location.href = 'intent:#Intent;action=ru.a402d.rawbtprinter.action.PRINT;category=android.intent.category.DEFAULT;type=application/octet-stream;S.base64=' + base64Data + ';end;';
     }
     return;
   }
@@ -716,7 +896,7 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
       const htmlString = buildReceiptHTMLMinimal(order, cartItems, options);
       const base64Html = btoa(unescape(encodeURIComponent(htmlString)));
       window.location.href = 'intent:data:text/html;base64,' + base64Html + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else {
+    } else if (config.printMode === 'text') {
       const textString = buildReceiptTextString(order, cartItems, options);
       const utf8Bytes = new TextEncoder().encode(textString);
       let binary = '';
@@ -726,6 +906,16 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
       }
       const base64Data = btoa(binary);
       window.location.href = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+    } else {
+      // 'image' mode (default) - Sends raw monochrome raster bytes to RawBT
+      const bytes = buildReceiptBytes(order, cartItems, options);
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      window.location.href = 'intent:#Intent;action=ru.a402d.rawbtprinter.action.PRINT;category=android.intent.category.DEFAULT;type=application/octet-stream;S.base64=' + base64Data + ';end;';
     }
     return;
   }

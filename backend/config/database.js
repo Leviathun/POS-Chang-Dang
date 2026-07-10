@@ -60,7 +60,14 @@ class DatabaseMock {
     const tx = transactionStorage.getStore();
     const activeClient = tx || this.client;
     const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
-    return activeClient.execute({ sql: cleanSql, args });
+    const res = await activeClient.execute({ sql: cleanSql, args });
+
+    // Sync replica in background after executing a write query outside a transaction
+    if (!tx && this.isWriteQuery(sql)) {
+      this.syncReplicaInBackground();
+    }
+
+    return res;
   }
 
   async exec(sql) {
@@ -68,6 +75,11 @@ class DatabaseMock {
     const activeClient = tx || this.client;
     const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
     await activeClient.execute(cleanSql);
+
+    // Sync replica in background after exec write outside a transaction
+    if (!tx && this.isWriteQuery(sql)) {
+      this.syncReplicaInBackground();
+    }
   }
 
   transaction(fn) {
@@ -78,6 +90,10 @@ class DatabaseMock {
           return await fn(...args);
         });
         await tx.commit();
+
+        // Sync replica in background after transaction commit
+        this.syncReplicaInBackground();
+
         return result;
       } catch (e) {
         await tx.rollback();
@@ -97,7 +113,36 @@ class DatabaseMock {
         };
       }
     });
-    return this.client.batch(cleanStatements, mode);
+    const res = await this.client.batch(cleanStatements, mode);
+
+    // Sync replica in background after write batch execution
+    if (mode === "write") {
+      this.syncReplicaInBackground();
+    }
+
+    return res;
+  }
+
+  // Check if query is a write operation
+  isWriteQuery(sql) {
+    if (typeof sql !== 'string') return false;
+    const clean = sql.trim().toUpperCase();
+    return clean.startsWith('INSERT') || 
+           clean.startsWith('UPDATE') || 
+           clean.startsWith('DELETE') || 
+           clean.startsWith('REPLACE') || 
+           clean.startsWith('CREATE') || 
+           clean.startsWith('DROP') || 
+           clean.startsWith('ALTER');
+  }
+
+  // Trigger replica sync in the background safely without awaiting
+  syncReplicaInBackground() {
+    if (this.client && typeof this.client.sync === 'function') {
+      this.client.sync().catch(err => {
+        console.warn('⚠️ Background replica sync failed:', err.message);
+      });
+    }
   }
 }
 
