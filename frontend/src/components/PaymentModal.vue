@@ -87,7 +87,6 @@
     <!-- Footer -->
     <div class="receipt-footer">
       <div>ขอบคุณที่ใช้บริการ</div>
-      <div>อร่อยสะท้านฟากฟ้า ไก่ทอดช้างแดง</div>
     </div>
   </div>
 
