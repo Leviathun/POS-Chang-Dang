@@ -149,7 +149,7 @@
             </button>
           </div>
         </header>
-
+ 
         <!-- App Main Content Views -->
         <main id="app-content" :class="{ 'has-cart-bar': hasCartBar }">
           <!-- Desktop Page Title Header (Visible on Desktop) -->
@@ -237,6 +237,7 @@ import { useRoute, useRouter } from 'vue-router';
 import api from './api';
 import { ui, uiState, getUser, isAdmin } from './helpers';
 import { store } from './store';
+import { kickDrawerSync } from './utils/printer';
 
 // States
 const user = ref(null);
@@ -270,6 +271,28 @@ const selectBranch = (id) => {
 
 const route = useRoute();
 const router = useRouter();
+
+const triggerDrawerKick = () => {
+  // 1. Dispatch DOM keyboard event for ESC (in case Sunmi system hooks webview keys)
+  const event = new KeyboardEvent('keydown', {
+    key: 'Escape',
+    code: 'Escape',
+    keyCode: 27,
+    which: 27,
+    bubbles: true,
+    cancelable: true
+  });
+  document.dispatchEvent(event);
+
+  // 2. Call our ESC/POS cash drawer kick command (redirect to RawBT using correct raw intent)
+  try {
+    kickDrawerSync();
+    ui.showToast('ส่งคำสั่งดีดเปิดลิ้นชักแล้ว 🔓', 'success');
+  } catch (err) {
+    console.error('Failed to trigger printer drawer kick:', err);
+    ui.showToast('ดีดลิ้นชักล้มเหลว: ' + err.message, 'error');
+  }
+};
 
 // Watch user state to dynamically apply body class for css display states
 watch(user, (newUser) => {

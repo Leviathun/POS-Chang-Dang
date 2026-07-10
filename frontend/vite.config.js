@@ -12,17 +12,10 @@ export default defineConfig({
   },
   build: {
     outDir: '../dist',
-    emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        // Keep file names predictable or standard
-        entryFileNames: 'js/[name].js',
-        chunkFileNames: 'js/[name].js',
-        assetFileNames: '[ext]/[name].[ext]'
-      }
-    }
+    emptyOutDir: true
   },
   server: {
+    host: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3000',

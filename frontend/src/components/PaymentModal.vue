@@ -1,4 +1,96 @@
 <template>
+  <!-- Print Receipt Area -->
+  <div id="receipt-print-area" class="print-only-receipt">
+    <!-- Logo -->
+    <div class="receipt-logo-container">
+      <img src="@/assets/image/Logo POS.png" alt="Logo" class="receipt-logo" />
+    </div>
+
+    <!-- Order Number Box -->
+    <div class="receipt-order-box">
+      <div class="receipt-order-number">#{{ orderId }}</div>
+    </div>
+    <div class="receipt-copy-indicator">***** ใบเสร็จรับเงิน *****</div>
+
+    <div class="receipt-divider-solid"></div>
+
+    <!-- Meta Info -->
+    <div class="receipt-meta">
+      <div class="meta-row">
+        <span>เวลา:</span>
+        <strong>{{ formattedOrderDate }}</strong>
+      </div>
+      <div class="meta-row">
+        <span>สาขา:</span>
+        <strong>{{ activeBranchName }}</strong>
+      </div>
+      <div class="meta-row" v-if="activeBranchPhone">
+        <span>โทร:</span>
+        <strong>{{ activeBranchPhone }}</strong>
+      </div>
+    </div>
+
+    <div class="receipt-divider-solid"></div>
+
+    <!-- Item List -->
+    <div class="receipt-items">
+      <div v-for="[itemId, cartItem] in cart" :key="itemId" class="receipt-item-group">
+        <div class="receipt-item-row">
+          <span class="item-qty-name">{{ cartItem.quantity }} x  {{ cartItem.item.name }}</span>
+          <span class="item-price">{{ formatCurrency(cartItem.item.price * cartItem.quantity) }}</span>
+        </div>
+        <!-- Modifiers (if any) -->
+        <div v-for="mod in freeModifiers" :key="mod.id" class="receipt-item-row modifier-row">
+          <span class="item-qty-name">+  {{ mod.name }}</span>
+          <span class="item-price">฿0</span>
+        </div>
+        <div class="receipt-divider-dashed"></div>
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="receipt-totals">
+      <div class="total-row">
+        <span>ค่าอาหาร</span>
+        <span>{{ formatCurrency(total) }}</span>
+      </div>
+      <div class="total-row" v-if="discount > 0">
+        <span>ส่วนลด</span>
+        <span>-{{ formatCurrency(discount) }}</span>
+      </div>
+      
+      <div class="receipt-divider-dashed"></div>
+      
+      <div class="total-row grand-total-row">
+        <span>รวมทั้งหมด</span>
+        <span>{{ formatCurrency(netTotal) }}</span>
+      </div>
+      
+      <div class="receipt-divider-dashed"></div>
+      
+      <div class="total-row payment-method-row">
+        <span>ชำระผ่าน:</span>
+        <span>{{ getPaymentMethodLabel(paymentMethod) }}</span>
+      </div>
+      <div class="total-row" v-if="paymentMethod === 'cash'">
+        <span>รับเงิน:</span>
+        <span>{{ formatCurrency(Number(enteredAmount) || 0) }}</span>
+      </div>
+      <div class="total-row" v-if="paymentMethod === 'cash'">
+        <span>เงินทอน:</span>
+        <span>{{ formatCurrency(cashChange) }}</span>
+      </div>
+    </div>
+
+    <div class="receipt-divider-solid" style="margin-top: 15px;"></div>
+
+    <!-- Footer -->
+    <div class="receipt-footer">
+      <div>ขอบคุณที่ใช้บริการ</div>
+      <div>อร่อยสะท้านฟากฟ้า ไก่ทอดช้างแดง</div>
+    </div>
+  </div>
+
   <div id="modal-container" class="active full-screen-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -53,9 +145,31 @@
               </div>
             </div>
 
-            <div class="w-full">
-              <button class="btn-modal btn-modal-primary" @click="finishPayment">
-                <i class="fa-solid fa-circle-check"></i> เสร็จสิ้น (กลับหน้าขาย)
+            <!-- Printer Status Indicator -->
+            <div class="text-xs text-secondary mt-sm mb-md flex align-center justify-center gap-xs" style="margin-top: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span :style="{ 
+                width: '8px', 
+                height: '8px', 
+                borderRadius: '50%', 
+                background: printerConnected ? 'var(--success)' : '#d1d1d6',
+                display: 'inline-block'
+              }"></span>
+              <span>เครื่องพิมพ์: {{ printerConnected ? 'พร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}</span>
+            </div>
+
+            <div class="w-full flex gap-md success-actions" style="display: flex; gap: var(--space-md); width: 100%;">
+              <button 
+                class="btn-modal btn-modal-secondary flex-1" 
+                @click="() => handlePrintReceipt()"
+                :disabled="printLoading"
+                style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
+              >
+                <i v-if="printLoading" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-print"></i>
+                <span>พิมพ์ใบเสร็จ</span>
+              </button>
+              <button class="btn-modal btn-modal-primary flex-1" @click="finishPayment" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);">
+                <i class="fa-solid fa-circle-check"></i> เสร็จสิ้น
               </button>
             </div>
           </div>
@@ -285,10 +399,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, roundUp, showConfetti } from '../helpers';
+import { ui, formatCurrency, roundUp, showConfetti, getUser } from '../helpers';
 import { store } from '../store';
+import { 
+  autoConnectPrinter, 
+  isPrinterConnected, 
+  kickDrawer, 
+  kickDrawerSync,
+  printReceipt, 
+  printReceiptSync,
+  getSavedPrinterConfig 
+} from '../utils/printer';
 
 // Props
 const props = defineProps({
@@ -320,6 +443,33 @@ const orderId = ref(null);
 const success = ref(false);
 const checkoutPromise = ref(null);
 const isCheckingOut = ref(false);
+
+// Printer States & Hook
+const printerConnected = ref(false);
+const printLoading = ref(false);
+
+// Active Branch & Date States for Browser Print Template
+const activeBranchName = ref('สาขาหลัก');
+const activeBranchPhone = ref('');
+const orderDateStr = ref(new Date().toISOString());
+
+const formattedOrderDate = computed(() => {
+  const d = new Date(orderDateStr.value);
+  return d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH');
+});
+
+onMounted(() => {
+  if (navigator.usb) {
+    setTimeout(async () => {
+      try {
+        const dev = await autoConnectPrinter();
+        printerConnected.value = !!dev;
+      } catch (e) {
+        console.warn('Auto connect printer in modal failed:', e);
+      }
+    }, 50);
+  }
+});
 
 const netTotal = computed(() => Math.max(0, props.total - (props.discount || 0)));
 
@@ -417,6 +567,103 @@ const getPaymentMethodLabel = (method) => {
   return map[method] || method;
 };
 
+// --- Printer Trigger Actions ---
+const handlePrintReceipt = async (orderData = null) => {
+  try {
+    printLoading.value = true;
+    
+    // Set active branch details for the template
+    const user = getUser();
+    const branchId = user ? user.branch_id : null;
+    const activeBranch = store.branches.find(b => b.id === branchId) || { name: 'สาขาหลัก' };
+    activeBranchName.value = activeBranch.name;
+    activeBranchPhone.value = activeBranch.phone || '';
+    
+    if (orderData && orderData.created_at) {
+      orderDateStr.value = orderData.created_at;
+    }
+
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      const currentOrder = orderData || {
+        order_number: orderId.value,
+        created_at: new Date().toISOString(),
+        payment_method: paymentMethod.value || 'cash',
+        cash_received: Number(enteredAmount.value) || 0,
+        discount: props.discount,
+        total: netTotal.value,
+        modifiers: props.freeModifiers
+      };
+      
+      printReceiptSync(currentOrder, props.cart, {
+        shopName: 'ร้านไก่ทอดช้างแดง',
+        branchName: activeBranch.name,
+        phone: activeBranch.phone || '',
+        forceKick: false
+      });
+      ui.showToast('ส่งข้อมูลสั่งพิมพ์แล้ว 🖨️', 'success');
+    } else if (config.connectionType === 'usb' && isPrinterConnected()) {
+      const currentOrder = orderData || {
+        order_number: orderId.value,
+        created_at: new Date().toISOString(),
+        payment_method: paymentMethod.value || 'cash',
+        cash_received: Number(enteredAmount.value) || 0,
+        discount: props.discount,
+        total: netTotal.value,
+        modifiers: props.freeModifiers
+      };
+      
+      await printReceipt(currentOrder, props.cart, {
+        shopName: 'ร้านไก่ทอดช้างแดง',
+        branchName: activeBranch.name,
+        phone: activeBranch.phone || '',
+        forceKick: false
+      });
+      ui.showToast('พิมพ์ใบเสร็จสำเร็จแล้ว 🖨️', 'success');
+    } else {
+      // Fallback: Trigger standard browser print dialog
+      window.print();
+      ui.showToast('เปิดหน้าต่างสั่งพิมพ์ใบเสร็จเรียบร้อยแล้ว 🖨️', 'success');
+    }
+  } catch (e) {
+    console.error(e);
+    ui.showToast('การพิมพ์ใบเสร็จล้มเหลว: ' + e.message, 'error');
+  } finally {
+    printLoading.value = false;
+  }
+};
+
+const triggerAutoPrinterAndDrawer = async (orderData) => {
+  const config = getSavedPrinterConfig();
+  if (!navigator.usb && config.connectionType !== 'rawbt') return;
+  
+  if (isPrinterConnected()) {
+    if (config.autoPrint) {
+      try {
+        if (config.connectionType === 'rawbt') {
+          handlePrintReceipt(orderData);
+        } else {
+          await handlePrintReceipt(orderData);
+        }
+      } catch (e) {
+        ui.showToast('พิมพ์ใบเสร็จอัตโนมัติล้มเหลว: ' + e.message, 'error');
+      }
+    } else if (config.autoKick) {
+      try {
+        if (config.connectionType === 'rawbt') {
+          kickDrawerSync();
+          ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+        } else {
+          await kickDrawer();
+          ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+        }
+      } catch (e) {
+        ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
+      }
+    }
+  }
+};
+
 // Unified Checkout Submitter for Optimistic UI
 const submitCheckout = (paymentMethodType, cashReceivedVal) => {
   success.value = true;
@@ -442,8 +689,19 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
         cash_received: cashReceivedVal
       });
       orderId.value = res.data?.order_number || res.data?.id || res.id;
+      orderDateStr.value = res.data?.created_at || new Date().toISOString();
       store.clearReportsCache();
       ui.showToast(`ชำระเงินผ่าน ${getPaymentMethodLabel(paymentMethodType)} สำเร็จ!`, 'success');
+      
+      // 🟢 Trigger Auto Printer & Drawer Kick
+      triggerAutoPrinterAndDrawer(res.data || { 
+        order_number: orderId.value, 
+        payment_method: paymentMethodType, 
+        cash_received: cashReceivedVal,
+        discount: props.discount,
+        total: netTotal.value
+      });
+
       return res;
     } catch (error) {
       console.error(error);
@@ -727,6 +985,145 @@ const confirmDeliveryPayment = () => {
 @media (max-width: 768px) {
   .payment-methods {
     grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .success-actions {
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+  }
+  .success-actions .btn-modal {
+    width: 100% !important;
+    flex: none !important;
+  }
+}
+
+</style>
+
+<style>
+/* Global Print Styles (Unscoped to hide other page elements like home/sidebar/grids) */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  
+  #receipt-print-area, #receipt-print-area * {
+    visibility: visible !important;
+  }
+  
+  #receipt-print-area {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 76mm !important;
+    display: block !important;
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Prompt', monospace !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+  
+  .receipt-logo-container {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .receipt-logo {
+    max-height: 48px;
+    object-fit: contain;
+  }
+  .receipt-order-box {
+    border: 2px solid #000;
+    padding: 8px 12px;
+    text-align: center;
+    margin: 6px auto;
+    max-width: 90%;
+  }
+  .receipt-order-number {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .receipt-copy-indicator {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 4px;
+    margin-bottom: 8px;
+  }
+  .receipt-divider-solid {
+    border-top: 1px solid #000;
+    margin: 8px 0;
+  }
+  .receipt-divider-dashed {
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+  }
+  .receipt-meta {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+  .receipt-items {
+    margin-top: 8px;
+  }
+  .receipt-item-group {
+    margin-bottom: 4px;
+  }
+  .receipt-item-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    line-height: 1.4;
+    align-items: flex-start;
+  }
+  .receipt-item-row .item-qty-name {
+    flex: 1;
+    padding-right: 12px;
+    word-break: break-word;
+    text-align: left;
+  }
+  .receipt-item-row .item-price {
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .receipt-item-row.modifier-row {
+    color: #444;
+    font-size: 11px;
+    padding-left: 12px;
+  }
+  .receipt-totals {
+    margin-top: 8px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+  .grand-total-row {
+    font-size: 15px;
+    font-weight: 800;
+  }
+  .payment-method-row {
+    color: #333;
+    font-weight: 600;
+  }
+  .receipt-footer {
+    text-align: center;
+    font-size: 11px;
+    margin-top: 12px;
+    line-height: 1.4;
+  }
+}
+
+@media screen {
+  #receipt-print-area {
+    display: none !important;
   }
 }
 </style>
