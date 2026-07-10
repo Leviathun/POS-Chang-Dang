@@ -138,10 +138,20 @@ class DatabaseMock {
 
   // Trigger replica sync in the background safely without awaiting
   syncReplicaInBackground() {
+    if (process.env.VERCEL) {
+      return; // Direct cloud database has no local replica to sync
+    }
     if (this.client && typeof this.client.sync === 'function') {
-      this.client.sync().catch(err => {
-        console.warn('⚠️ Background replica sync failed:', err.message);
-      });
+      try {
+        const promise = this.client.sync();
+        if (promise && typeof promise.catch === 'function') {
+          promise.catch(err => {
+            console.warn('⚠️ Background replica sync failed:', err.message);
+          });
+        }
+      } catch (err) {
+        console.warn('⚠️ Background replica sync failed synchronously:', err.message);
+      }
     }
   }
 }
