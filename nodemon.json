@@ -1,0 +1,12 @@
+{
+  "watch": [
+    "backend"
+  ],
+  "ignore": [
+    "data/*",
+    "frontend/*",
+    "dist/*",
+    "node_modules/*"
+  ],
+  "ext": "js,mjs,cjs,json"
+}
