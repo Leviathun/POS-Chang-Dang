@@ -788,10 +788,10 @@
             </label>
           </div>
 
-          <div class="setting-item" v-if="printerConfig.connectionType === 'rawbt'">
+          <div class="setting-item" v-if="printerConfig.connectionType === 'rawbt' || printerConfig.connectionType === 'usb'">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
-              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จ (โหมด RawBT)</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือก 'รูปภาพจาก POS' เพื่อใช้รูปภาพฟอนต์ภาษาไทยคมชัดขนาดใหญ่พอดีกระดาษ</span>
+              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จ (Print Mode)</strong>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือก 'รูปภาพจาก POS' เพื่อใช้ฟอนต์คมชัด หรือเลือก 'ข้อความธรรมดา (Text)' หากเกิดปัญหาพิมพ์ไม่ออก/ยกเลิกกลางทาง</span>
             </div>
             <select 
               v-model="printerConfig.printMode" 
@@ -801,7 +801,7 @@
             >
               <option value="image">รูปภาพจาก POS (แนะนำ)</option>
               <option value="text">ข้อความธรรมดา (Text)</option>
-              <option value="html">รูปภาพ HTML (แอป RawBT)</option>
+              <option value="html" v-if="printerConfig.connectionType === 'rawbt'">รูปภาพ HTML (แอป RawBT)</option>
             </select>
           </div>
 
