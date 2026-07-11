@@ -648,53 +648,8 @@
           เชื่อมต่อกับเครื่องพิมพ์ใบเสร็จและสั่งงานลิ้นชักเก็บเงินอเนกประสงค์ โดยเลือกประเภทการเชื่อมต่อที่เหมาะสมกับอุปกรณ์ของคุณ
         </p>
 
-        <!-- Connection Type Selection (Premium Cards) -->
-        <div class="mb-xl">
-          <strong class="font-bold text-sm block mb-sm" style="color: var(--text-primary); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm);">
-            ประเภทการเชื่อมต่อเครื่องพิมพ์
-          </strong>
-          <div class="connection-selector-grid">
-            <!-- 1. USB Connection -->
-            <div 
-              class="connection-option-card"
-              :class="{ selected: printerConfig.connectionType === 'usb' }"
-              @click="setConnectionType('usb')"
-            >
-              <div class="option-icon">
-                <i class="fa-solid fa-plug font-xl"></i>
-              </div>
-              <div class="option-info">
-                <div class="option-title">เครื่องพิมพ์ทั่วไป (ต่อสาย USB)</div>
-                <div class="option-desc">สั่งพิมพ์และดีดลิ้นชักตรงจากบราวเซอร์</div>
-              </div>
-              <div class="option-badge">
-                <i class="fa-solid fa-circle-check"></i>
-              </div>
-            </div>
-
-            <!-- 2. Sunmi Printer Connection -->
-            <div 
-              class="connection-option-card"
-              :class="{ selected: printerConfig.connectionType === 'rawbt' }"
-              @click="setConnectionType('rawbt')"
-            >
-              <div class="option-icon">
-                <i class="fa-solid fa-tablet-screen-button font-xl"></i>
-              </div>
-              <div class="option-info">
-                <div class="option-title">เครื่องพิมพ์ในตัวเครื่อง POS (Sunmi)</div>
-                <div class="option-desc">สั่งงานพิมพ์สลับแอปผ่านหน้าต่างแอปหลัก (ไม่ต้องเปิดแอป Server)</div>
-              </div>
-              <div class="option-badge">
-                <i class="fa-solid fa-circle-check"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Connection Status (USB Mode) -->
         <div 
-          v-if="printerConfig.connectionType === 'usb'"
           :style="{
             background: printerConnected ? 'rgba(42, 157, 143, 0.08)' : 'rgba(139, 3, 19, 0.04)',
             border: '1px solid ' + (printerConnected ? 'var(--success)' : 'var(--primary)'),
@@ -724,36 +679,8 @@
           </div>
         </div>
 
-        <!-- Connection Status (RawBT Mode) -->
-        <div 
-          v-if="printerConfig.connectionType === 'rawbt'"
-          :style="{
-            background: 'rgba(42, 157, 143, 0.08)',
-            border: '1px solid var(--success)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-md) var(--space-lg)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-md)',
-            marginBottom: 'var(--space-xl)',
-            transition: 'all 0.3s ease'
-          }"
-        >
-          <div style="font-size: 2.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-          </div>
-          <div style="flex: 1; min-width: 0;">
-            <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
-              สถานะ: เปิดใช้งานร่วมกับเครื่องพิมพ์ในตัวเครื่อง (Sunmi) เรียบร้อยแล้ว
-            </div>
-            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
-              ระบบจะเปิดแอป RawBT เพื่อปริ้นใบเสร็จและดีดลิ้นชักโดยตรงโดยอัตโนมัติ (ไม่จำเป็นต้องใช้งานแอป Server เพิ่มเติม)
-            </div>
-          </div>
-        </div>
-
         <!-- Action Buttons (USB Mode Only) -->
-        <div v-if="printerConfig.connectionType === 'usb'" class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
+        <div class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
           <button class="btn btn-primary" @click="handleConnectPrinter" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i class="fa-solid fa-plug"></i> เชื่อมต่อเครื่องพิมพ์ใหม่
           </button>
@@ -788,22 +715,7 @@
             </label>
           </div>
 
-          <div class="setting-item" v-if="printerConfig.connectionType === 'rawbt' || printerConfig.connectionType === 'usb'">
-            <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
-              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จ (Print Mode)</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือก 'รูปภาพจาก POS' เพื่อใช้ฟอนต์คมชัด หรือเลือก 'ข้อความธรรมดา (Text)' หากเกิดปัญหาพิมพ์ไม่ออก/ยกเลิกกลางทาง</span>
-            </div>
-            <select 
-              v-model="printerConfig.printMode" 
-              @change="saveLocalPrinterConfig" 
-              class="form-input" 
-              style="width: 180px; min-height: 38px; padding: 4px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);"
-            >
-              <option value="image">รูปภาพจาก POS (แนะนำ)</option>
-              <option value="text">ข้อความธรรมดา (Text)</option>
-              <option value="html" v-if="printerConfig.connectionType === 'rawbt'">รูปภาพ HTML (แอป RawBT)</option>
-            </select>
-          </div>
+
 
         </div>
 
@@ -920,7 +832,7 @@ const printerConfig = ref({
   autoPrint: true,
   autoKick: true,
   connectionType: 'usb',
-  printMode: 'text'
+  printMode: 'image'
 });
 
 const loadPrinterSettings = async () => {
@@ -928,8 +840,6 @@ const loadPrinterSettings = async () => {
   printerConfig.value = cfg;
   
   printerConnected.value = isPrinterConnected();
-  if (cfg.connectionType === 'rawbt') return;
-  
   if (!navigator.usb) return;
   
   if (!printerConnected.value && cfg.vendorId && cfg.productId) {
@@ -968,26 +878,15 @@ const handleDisconnectPrinter = async () => {
   }
 };
 
+
 const saveLocalPrinterConfig = () => {
   savePrinterConfig(
     printerConfig.value.vendorId,
     printerConfig.value.productId,
     printerConfig.value.autoPrint,
-    printerConfig.value.autoKick,
-    printerConfig.value.connectionType,
-    printerConfig.value.printMode
+    printerConfig.value.autoKick
   );
   printerConnected.value = isPrinterConnected();
-};
-
-const handleConnectionTypeChange = () => {
-  saveLocalPrinterConfig();
-  ui.showToast('เปลี่ยนประเภทการเชื่อมต่อสำเร็จ', 'success');
-};
-
-const setConnectionType = (type) => {
-  printerConfig.value.connectionType = type;
-  handleConnectionTypeChange();
 };
 
 
@@ -1010,16 +909,7 @@ const handleTestPrint = async () => {
     
     const activeBranch = store.branches.find(b => b.id === selectedSettingsBranchId.value) || { name: 'สาขาทดสอบ' };
     
-    const config = getSavedPrinterConfig();
-    if (config.connectionType === 'rawbt') {
-      await printReceipt(testOrder, testItems, {
-        shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
-        branchName: activeBranch.name,
-        phone: '081-234-5678',
-        forceKick: false
-      });
-      ui.showToast('ส่งข้อมูลสั่งพิมพ์ใบเสร็จทดสอบแล้ว 🖨️', 'success');
-    } else if (config.connectionType === 'usb' && isPrinterConnected()) {
+    if (isPrinterConnected()) {
       await printReceipt(testOrder, testItems, {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
         branchName: activeBranch.name,
@@ -1039,19 +929,11 @@ const handleTestPrint = async () => {
 
 const handleTestKick = async () => {
   try {
-    const config = getSavedPrinterConfig();
-    if (config.connectionType === 'rawbt') {
-      kickDrawerSync();
-      ui.showToast('ส่งคำสั่งทดสอบเปิดลิ้นชักแล้ว (ผ่าน RawBT) 🔓', 'success');
-    } else if (config.connectionType === 'usb') {
-      if (isPrinterConnected()) {
-        await kickDrawer();
-        ui.showToast('ดีดเปิดลิ้นชักสำเร็จแล้ว 🔓', 'success');
-      } else {
-        throw new Error('ยังไม่ได้เชื่อมต่อเครื่องพิมพ์สาย USB');
-      }
+    if (isPrinterConnected()) {
+      await kickDrawer();
+      ui.showToast('ดีดเปิดลิ้นชักสำเร็จแล้ว 🔓', 'success');
     } else {
-      throw new Error('ไม่รองรับการทำงานในโหมดนี้');
+      throw new Error('ยังไม่ได้เชื่อมต่อเครื่องพิมพ์สาย USB');
     }
   } catch (e) {
     ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');

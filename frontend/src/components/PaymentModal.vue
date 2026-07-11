@@ -583,7 +583,7 @@ const getPaymentMethodLabel = (method) => {
 };
 
 // --- Printer Trigger Actions ---
-const handlePrintReceipt = async (orderData = null) => {
+const handlePrintReceipt = async (orderData = null, skipKickOption = false) => {
   try {
     printLoading.value = true;
     
@@ -614,7 +614,8 @@ const handlePrintReceipt = async (orderData = null) => {
         shopName: 'ร้านไก่ทอดช้างแดง',
         branchName: activeBranch.name,
         phone: activeBranch.phone || '',
-        forceKick: false
+        forceKick: false,
+        skipKick: skipKickOption
       });
       ui.showToast('ส่งข้อมูลสั่งพิมพ์แล้ว 🖨️', 'success');
     } else if (config.connectionType === 'usb' && isPrinterConnected()) {
@@ -632,7 +633,8 @@ const handlePrintReceipt = async (orderData = null) => {
         shopName: 'ร้านไก่ทอดช้างแดง',
         branchName: activeBranch.name,
         phone: activeBranch.phone || '',
-        forceKick: false
+        forceKick: false,
+        skipKick: skipKickOption
       });
       ui.showToast('พิมพ์ใบเสร็จสำเร็จแล้ว 🖨️', 'success');
     } else {
@@ -655,25 +657,15 @@ const triggerAutoPrinterAndDrawer = async (orderData) => {
   if (isPrinterConnected()) {
     if (config.autoPrint) {
       try {
+        // If it's cash payment and auto-kick is enabled, it was already kicked optimistically
+        const wasAlreadyKicked = config.autoKick && orderData && orderData.payment_method === 'cash';
         if (config.connectionType === 'rawbt') {
-          handlePrintReceipt(orderData);
+          handlePrintReceipt(orderData, wasAlreadyKicked);
         } else {
-          await handlePrintReceipt(orderData);
+          await handlePrintReceipt(orderData, wasAlreadyKicked);
         }
       } catch (e) {
         ui.showToast('พิมพ์ใบเสร็จอัตโนมัติล้มเหลว: ' + e.message, 'error');
-      }
-    } else if (config.autoKick) {
-      try {
-        if (config.connectionType === 'rawbt') {
-          kickDrawerSync();
-          ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
-        } else {
-          await kickDrawer();
-          ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
-        }
-      } catch (e) {
-        ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
       }
     }
   }
@@ -683,6 +675,30 @@ const triggerAutoPrinterAndDrawer = async (orderData) => {
 const submitCheckout = (paymentMethodType, cashReceivedVal) => {
   success.value = true;
   showConfetti();
+  
+  // 🟢 Optimistic Cash Drawer Kick (Open immediately for cash payments)
+  if (paymentMethodType === 'cash') {
+    const config = getSavedPrinterConfig();
+    if (config.autoKick && isPrinterConnected()) {
+      try {
+        if (config.connectionType === 'rawbt') {
+          kickDrawerSync();
+          ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+        } else {
+          // Fire and forget WebUSB kick so we don't block the UI
+          kickDrawer().then(() => {
+            ui.showToast('ดีดลิ้นชักอัตโนมัติสำเร็จ 🔓', 'success');
+          }).catch(err => {
+            console.error('Optimistic WebUSB kick failed:', err);
+            ui.showToast('เปิดลิ้นชักล้มเหลว: ' + err.message, 'error');
+          });
+        }
+      } catch (err) {
+        console.error('Optimistic drawer kick error:', err);
+        ui.showToast('เปิดลิ้นชักล้มเหลว: ' + err.message, 'error');
+      }
+    }
+  }
   
   // สร้างเลขออเดอร์จำลองระหว่างรอเซิร์ฟเวอร์
   const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
