@@ -25,6 +25,53 @@ const getBunLinkageName = (name) => {
   return null;
 };
 
+const getCookMethodLabel = (name) => {
+  if (!name) return 'ของทอด';
+  const isWrapped = name.includes('ข้าวเหนียว') || 
+                    name.includes('เบอร์เกอร์') || 
+                    name.includes('แร็ป');
+  if (isWrapped) {
+    return 'ของห่อ';
+  }
+  const isBunOrDumpling = name.includes('เปา') || 
+                          name.includes('หมั่นโถ') || 
+                          name.includes('ขนมจีบ');
+  if (isBunOrDumpling) {
+    if (name.includes('ทอด')) {
+      return 'ของทอด';
+    }
+    if (name.includes('ปิ้ง')) {
+      return 'ของปิ้ง';
+    }
+    return 'ของนึ่ง';
+  }
+  return 'ของทอด';
+};
+
+const getCookVerb = (name) => {
+  if (!name) return 'ทอด';
+  const isWrapped = name.includes('ข้าวเหนียว') || 
+                    name.includes('เบอร์เกอร์') || 
+                    name.includes('แร็ป');
+  if (isWrapped) {
+    return 'ห่อ';
+  }
+  const isBunOrDumpling = name.includes('เปา') || 
+                          name.includes('หมั่นโถ') || 
+                          name.includes('ขนมจีบ');
+  if (isBunOrDumpling) {
+    if (name.includes('ทอด')) {
+      return 'ทอด';
+    }
+    if (name.includes('ปิ้ง')) {
+      return 'ปิ้ง';
+    }
+    return 'นึ่ง';
+  }
+  return 'ทอด';
+};
+
+
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
@@ -142,7 +189,7 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
         previousVal,
         newVal,
         req.user.id,
-        note || `เติมสต็อก${isRaw ? 'ของสด' : 'ของทอด'} ${item.name} +${quantity}`
+        note || `เติมสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} +${quantity}`
       );
 
       // Auto-deduct ไก่ไร้กระดูก when restocking แร็ปไก่
@@ -287,7 +334,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
     if (currentQty === null || currentQty === undefined) {
       return res.status(400).json({
         success: false,
-        error: `เมนูนี้ไม่ได้ตั้งค่าติดตามสต็อก${isRaw ? 'ของสด' : 'ของทอด'}`
+        error: `เมนูนี้ไม่ได้ตั้งค่าติดตามสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)}`
       });
     }
 
@@ -327,7 +374,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         newVal,
         dbReason,
         req.user.id,
-        note || `ปรับสต็อก${isRaw ? 'ของสด' : 'ของทอด'} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`
+        note || `ปรับสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`
       );
 
       // Auto-adjust ไก่ไร้กระดูก when adjusting แร็ปไก่ stock
@@ -406,7 +453,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
       if (reason === 'waste') actionLabel = isRaw ? 'record_raw_waste' : 'record_waste';
       else if (reason === 'staff_benefit') actionLabel = isRaw ? 'staff_raw_credit' : 'staff_credit';
 
-      let detailsText = `ปรับปรุงสต็อก${isRaw ? 'ของสด' : 'ของทอด'} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} ชิ้น (ก่อนปรับ: ${currentQty}, หลังปรับ: ${newVal})`;
+      let detailsText = `ปรับปรุงสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} ชิ้น (ก่อนปรับ: ${currentQty}, หลังปรับ: ${newVal})`;
       if (reason === 'waste') {
         detailsText = `บันทึกของเสีย${isRaw ? 'ของสด' : ''} ${item.name} ${quantity} ชิ้น (${note || 'ไม่ระบุรายละเอียดเพิ่มเติม'})`;
       } else if (reason === 'staff_benefit') {
@@ -488,7 +535,7 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
     if (item.raw_quantity === null || item.quantity === null) {
       return res.status(400).json({
         success: false,
-        error: 'สินค้าประเภทนี้ไม่ได้ติดตามสต็อกของสดหรือของทอด'
+        error: `สินค้าประเภทนี้ไม่ได้ติดตามสต็อกของสดหรือ${getCookMethodLabel(item.name)}`
       });
     }
 
@@ -524,7 +571,7 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
         note || `หักวัตถุดิบของสดเพื่อนำไปทอด: ${quantity} ชิ้น`
       );
 
-      // 3. บันทึก Stock logs (เพิ่มของทอด)
+      // 3. บันทึก Stock logs (เพิ่มสต็อกปรุงสุก)
       await db.prepare(`
         INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
@@ -546,7 +593,7 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
         branchId,
         req.user.id,
         'fry_chicken',
-        `ทำการทอด ${item.name} จำนวน ${quantity} ชิ้น (ของสดคงเหลือ: ${newRawStock}, ของทอดพร้อมขายคงเหลือ: ${newCookedStock})`
+        `ทำการ${getCookVerb(item.name)} ${item.name} จำนวน ${quantity} ชิ้น (ของสดคงเหลือ: ${newRawStock}, ${getCookMethodLabel(item.name)}พร้อมขายคงเหลือ: ${newCookedStock})`
       );
 
       return { rawStock: newRawStock, cookedStock: newCookedStock };
@@ -718,8 +765,8 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
 
           const logReason = mode === 'relative' ? (deltaCooked > 0 ? 'restock' : 'adjustment') : 'adjustment';
           const logNote = mode === 'relative'
-            ? `เติมสต็อกของทอดสุก (Relative) ${deltaCooked >= 0 ? '+' : ''}${deltaCooked} ชิ้น`
-            : `ปรับปรุงสต็อกของทอดสุก (Absolute): ปรับจาก ${currentCooked} เป็น ${newCooked} ชิ้น [สาเหตุ: ${reason_preset || 'อื่นๆ'}] (${note || 'ไม่ระบุโน้ต'})`;
+            ? `เติมสต็อก${getCookMethodLabel(menuItem.name)}สุก (Relative) ${deltaCooked >= 0 ? '+' : ''}${deltaCooked} ชิ้น`
+            : `ปรับปรุงสต็อก${getCookMethodLabel(menuItem.name)}สุก (Absolute): ปรับจาก ${currentCooked} เป็น ${newCooked} ชิ้น [สาเหตุ: ${reason_preset || 'อื่นๆ'}] (${note || 'ไม่ระบุโน้ต'})`;
 
           await db.prepare(`
             INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
@@ -742,7 +789,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             branchId,
             req.user.id,
             deltaCooked > 0 ? 'restock_stock' : 'adjust_stock',
-            `ปรับปรุงสต็อกของทอด ${menuItem.name} ${deltaCooked >= 0 ? '+' : ''}${deltaCooked} ชิ้น (ก่อนปรับ: ${currentCooked}, หลังปรับ: ${newCooked})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
+            `ปรับปรุงสต็อก${getCookMethodLabel(menuItem.name)} ${menuItem.name} ${deltaCooked >= 0 ? '+' : ''}${deltaCooked} ชิ้น (ก่อนปรับ: ${currentCooked}, หลังปรับ: ${newCooked})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
           );
 
           // Auto-adjust ไก่ไร้กระดูก when adjusting แร็ปไก่ stock in bulk adjust
@@ -908,7 +955,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
         const itemName = txError.message.split(':')[1];
         return res.status(400).json({
           success: false,
-          error: `ไม่สามารถปรับสต็อกของทอด ${itemName} ให้ติดลบได้`
+          error: `ไม่สามารถปรับสต็อก${getCookMethodLabel(itemName)} ${itemName} ให้ติดลบได้`
         });
       }
       throw txError;
