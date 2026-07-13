@@ -115,6 +115,9 @@ const menu = {
   async toggle(id) {
     return request('POST', `/api/menu/${id}/toggle`);
   },
+  async reorder(ids) {
+    return request('POST', '/api/menu/reorder', { ids });
+  },
 };
 
 const orders = {

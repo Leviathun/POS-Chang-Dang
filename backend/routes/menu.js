@@ -457,4 +457,59 @@ router.post('/:id/toggle', requireAdmin, async (req, res) => {
   }
 });
 
+// ─── POST /reorder — เปลี่ยนลำดับเมนูอาหาร ─────────
+router.post('/reorder', requireAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({
+        success: false,
+        error: 'รูปแบบข้อมูลไม่ถูกต้อง'
+      });
+    }
+    const db = getDb();
+    const branchId = await getBranchId(req, db);
+
+    // 1. Fetch current sort orders from local replica database (extremely fast, <1ms)
+    const currentItems = await db.prepare(
+      "SELECT id, sort_order FROM menu_items WHERE branch_id = ? ORDER BY sort_order ASC, id ASC"
+    ).all(branchId);
+
+    const currentOrderMap = new Map(currentItems.map(item => [item.id, item.sort_order]));
+
+    // 2. Identify precisely which items changed their sort order index
+    const batchStatements = [];
+    for (let i = 0; i < ids.length; i++) {
+      const id = Number(ids[i]);
+      const currentSortOrder = currentOrderMap.get(id);
+      
+      if (currentSortOrder !== i) {
+        batchStatements.push({
+          sql: "UPDATE menu_items SET sort_order = ?, updated_at = datetime('now', 'localtime') WHERE id = ? AND branch_id = ?",
+          args: [i, id, branchId]
+        });
+      }
+    }
+
+    // 3. Only send updates if there are actual diffs (run in background to avoid blocking the HTTP response)
+    if (batchStatements.length > 0) {
+      db.batch(batchStatements).catch(err => {
+        console.error('❌ Background menu items reorder failed:', err.message);
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'เปลี่ยนลำดับเมนูอาหารสำเร็จ'
+    });
+  } catch (error) {
+    console.error('❌ Reorder menu items error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการเปลี่ยนลำดับเมนูอาหาร'
+    });
+  }
+});
+
 module.exports = router;
+

@@ -21,140 +21,254 @@
 
     <!-- Tab 1: Menu Items Management -->
     <div v-if="activeTab === 'menu_items'">
-      <!-- Top Action Card -->
-      <div class="card mb-lg menu-top-action-card">
-        <div class="menu-total-count">
-          เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
+      <div v-if="isReorderMode">
+        <!-- Reorder Top Action Card -->
+        <div class="card mb-lg menu-top-action-card">
+          <div class="menu-total-count">
+            จัดเรียงลำดับเมนูอาหาร: <strong>{{ reorderItems.length }}</strong> รายการ
+          </div>
+          <div class="menu-action-buttons">
+            <button class="btn btn-primary btn-bulk-back" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
+            <button class="btn btn-primary btn-bulk-header-save" @click="handleSaveReorder"><i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
+          </div>
         </div>
-        <div class="menu-action-buttons">
-          <button class="btn btn-primary" @click="openCatModal"><i class="fa-solid fa-folder-open"></i> จัดการหมวดหมู่</button>
-          <button class="btn btn-primary" @click="openAddModal"><i class="fa-solid fa-plus"></i> เพิ่มเมนูอาหาร</button>
-        </div>
-      </div>
 
-      <!-- Desktop Menu List Table (Visible on desktop only) -->
-      <div class="card p-0 overflow-hidden desktop-menu-table-container">
-        <div style="overflow-x: auto;">
-          <table class="table w-full" style="border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
-                <th class="text-left" style="padding: var(--space-md);">เมนูอาหาร</th>
-                <th class="text-right" style="padding: var(--space-md);">ราคา</th>
-                <th class="text-center" style="padding: var(--space-md);">ขาย</th>
-                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="loading">
-                <td colspan="5" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
-              <tr v-else-if="menuItems.length === 0">
-                <td colspan="5" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
-                  ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
-                </td>
-              </tr>
-              <tr 
-                v-else 
-                v-for="item in menuItems" 
-                :key="item.id" 
-                style="border-bottom: 1px solid var(--border-color);"
-                class="table-row-hover"
-              >
-                <!-- Image Preview -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
-                    <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
-                    <i v-else :class="getIconClass(item.category_id)" class="text-base text-muted"></i>
-                  </div>
-                </td>
-                <!-- Name & Category -->
-                <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-base text-muted">
-                    {{ getCategoryName(item.category_id) }}
-                  </div>
-                </td>
+        <!-- Desktop Reorder Table (Visible on desktop only) -->
+        <div class="card p-0 overflow-hidden desktop-menu-table-container">
+          <div style="overflow-x: auto;">
+            <table class="table w-full" style="border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                  <th class="text-center" style="padding: var(--space-md); width: 60px;">ลาก</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
+                  <th class="text-left" style="padding: var(--space-md);">เมนูอาหาร</th>
+                  <th class="text-right" style="padding: var(--space-md); width: 150px;">ราคา</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="(item, index) in reorderItems" 
+                  :key="item.id" 
+                  style="border-bottom: 1px solid var(--border-color);"
+                  class="table-row-hover desktop-reorder-row"
+                  :class="{ 'dragging': dragIndex === index }"
+                  draggable="true"
+                  @dragstart="handleDragStart(index, $event)"
+                  @dragover="handleDragOver"
+                  @dragenter="handleDragEnter(index)"
+                  @dragend="handleDragEnd"
+                >
+                  <!-- Drag Handle -->
+                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                    <div class="drag-handle" style="cursor: grab;">
+                      <i class="fa-solid fa-bars"></i>
+                    </div>
+                  </td>
+                  <!-- Image Preview -->
+                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                    <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                      <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
+                      <i v-else :class="getIconClass(item.category_id)" class="text-base text-muted"></i>
+                    </div>
+                  </td>
+                  <!-- Name & Category -->
+                  <td style="padding: var(--space-md); vertical-align: middle;">
+                    <div class="font-bold text-base">{{ item.name }}</div>
+                    <div class="text-base text-muted">
+                      {{ getCategoryName(item.category_id) }}
+                    </div>
+                  </td>
+                  <!-- Price -->
+                  <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
+                    {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile Reorder Cards (Visible on mobile only) -->
+        <div class="mobile-menu-list-container">
+          <div class="mobile-menu-list">
+            <div 
+              v-for="(item, index) in reorderItems" 
+              :key="item.id" 
+              class="mobile-menu-card mobile-reorder-card"
+              :class="{ 'dragging': dragIndex === index }"
+              :data-index="index"
+            >
+              <div class="mobile-menu-card-body" style="align-items: center; display: flex; flex-direction: row; width: 100%;">
+                <!-- Drag Handle -->
+                <div 
+                  class="drag-handle" 
+                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: 1.2rem; color: var(--text-tertiary);"
+                  @touchstart="handleTouchStart(index, $event)"
+                  @touchmove.prevent="handleTouchMove"
+                  @touchend="handleTouchEnd"
+                >
+                  <i class="fa-solid fa-bars"></i>
+                </div>
+
+                <!-- Product Image -->
+                <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
+                  <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
+                  <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i></div>
+                </div>
+                
+                <!-- Middle: Name & Category -->
+                <div class="mobile-menu-card-details" style="flex: 1;">
+                  <div class="mobile-menu-card-name">{{ item.name }}</div>
+                  <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
+                </div>
+                
                 <!-- Price -->
-                <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
-                  {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
-                </td>
-                <!-- Toggle Active Switch -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <label class="toggle-switch mx-auto block" :class="{ 'disabled': !isAdminUser }">
-                    <input 
-                      type="checkbox" 
-                      :checked="item.active !== 0 && item.active !== false"
-                      :disabled="!isAdminUser"
-                      @change="handleToggleActive(item)"
-                    />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </td>
-                <!-- Actions -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="flex justify-center gap-sm">
-                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
-                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Mobile Menu Card List (Visible on mobile only) -->
-      <div class="mobile-menu-list-container">
-        <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner mx-auto"></div>
-        </div>
-        <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
-          ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
-        </div>
-        <div v-else class="mobile-menu-list">
-          <div 
-            v-for="item in menuItems" 
-            :key="item.id" 
-            class="mobile-menu-card"
-            :class="{ 'inactive-item': item.active === 0 || item.active === false }"
-          >
-            <div class="mobile-menu-card-body">
-              <!-- Left: Product Image / Emoji -->
-              <div class="mobile-menu-card-img-container">
-                <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
-                <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i></div>
-              </div>
-              
-              <!-- Middle: Name & Category -->
-              <div class="mobile-menu-card-details">
-                <div class="mobile-menu-card-name">{{ item.name }}</div>
-                <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
-              </div>
-              
-              <!-- Right: Price & Active Switch -->
-              <div class="mobile-menu-card-meta">
-                <div class="mobile-menu-card-price">{{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}</div>
-                <div class="mobile-menu-card-status">
-                  <label class="toggle-switch" :class="{ 'disabled': !isAdminUser }">
-                    <input 
-                      type="checkbox" 
-                      :checked="item.active !== 0 && item.active !== false"
-                      :disabled="!isAdminUser"
-                      @change="handleToggleActive(item)"
-                    />
-                    <span class="toggle-slider"></span>
-                  </label>
+                <div class="mobile-menu-card-meta" style="text-align: right; justify-content: center; width: auto; margin-left: auto;">
+                  <div class="mobile-menu-card-price">{{ formatItemPrice(item) }}</div>
                 </div>
               </div>
             </div>
-            
-            <!-- Bottom Action Buttons -->
-            <div class="mobile-menu-card-actions">
-              <button class="btn-action btn-action-edit" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
-              <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else>
+        <!-- Top Action Card -->
+        <div class="card mb-lg menu-top-action-card">
+          <div class="menu-total-count">
+            เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
+          </div>
+          <div class="menu-action-buttons">
+            <button class="btn btn-primary" @click="openCatModal"><i class="fa-solid fa-folder-open"></i> จัดการหมวดหมู่</button>
+            <button class="btn btn-primary" @click="openReorderMode"><i class="fa-solid fa-sort"></i> เปลี่ยนลำดับ</button>
+            <button class="btn btn-primary" @click="openAddModal"><i class="fa-solid fa-plus"></i> เพิ่มเมนูอาหาร</button>
+          </div>
+        </div>
+
+        <!-- Desktop Menu List Table (Visible on desktop only) -->
+        <div class="card p-0 overflow-hidden desktop-menu-table-container">
+          <div style="overflow-x: auto;">
+            <table class="table w-full" style="border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                  <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
+                  <th class="text-left" style="padding: var(--space-md);">เมนูอาหาร</th>
+                  <th class="text-right" style="padding: var(--space-md);">ราคา</th>
+                  <th class="text-center" style="padding: var(--space-md);">ขาย</th>
+                  <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="loading">
+                  <td colspan="5" class="text-center" style="padding: var(--space-3xl);">
+                    <div class="spinner mx-auto"></div>
+                  </td>
+                </tr>
+                <tr v-else-if="menuItems.length === 0">
+                  <td colspan="5" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
+                    ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
+                  </td>
+                </tr>
+                <tr 
+                  v-else 
+                  v-for="item in menuItems" 
+                  :key="item.id" 
+                  style="border-bottom: 1px solid var(--border-color);"
+                  class="table-row-hover"
+                >
+                  <!-- Image Preview -->
+                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                    <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                      <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
+                      <i v-else :class="getIconClass(item.category_id)" class="text-base text-muted"></i>
+                    </div>
+                  </td>
+                  <!-- Name & Category -->
+                  <td style="padding: var(--space-md); vertical-align: middle;">
+                    <div class="font-bold text-base">{{ item.name }}</div>
+                    <div class="text-base text-muted">
+                      {{ getCategoryName(item.category_id) }}
+                    </div>
+                  </td>
+                  <!-- Price -->
+                  <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
+                    {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
+                  </td>
+                  <!-- Toggle Active Switch -->
+                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                    <label class="toggle-switch mx-auto block" :class="{ 'disabled': !isAdminUser }">
+                      <input 
+                        type="checkbox" 
+                        :checked="item.active !== 0 && item.active !== false"
+                        :disabled="!isAdminUser"
+                        @change="handleToggleActive(item)"
+                      />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </td>
+                  <!-- Actions -->
+                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                    <div class="flex justify-center gap-sm">
+                      <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+                      <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile Menu Card List (Visible on mobile only) -->
+        <div class="mobile-menu-list-container">
+          <div v-if="loading" class="text-center py-3xl">
+            <div class="spinner mx-auto"></div>
+          </div>
+          <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
+            ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
+          </div>
+          <div v-else class="mobile-menu-list">
+            <div 
+              v-for="item in menuItems" 
+              :key="item.id" 
+              class="mobile-menu-card"
+              :class="{ 'inactive-item': item.active === 0 || item.active === false }"
+            >
+              <div class="mobile-menu-card-body">
+                <!-- Left: Product Image / Emoji -->
+                <div class="mobile-menu-card-img-container">
+                  <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
+                  <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i></div>
+                </div>
+                
+                <!-- Middle: Name & Category -->
+                <div class="mobile-menu-card-details">
+                  <div class="mobile-menu-card-name">{{ item.name }}</div>
+                  <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
+                </div>
+                
+                <!-- Right: Price & Active Switch -->
+                <div class="mobile-menu-card-meta">
+                  <div class="mobile-menu-card-price">{{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}</div>
+                  <div class="mobile-menu-card-status">
+                    <label class="toggle-switch" :class="{ 'disabled': !isAdminUser }">
+                      <input 
+                        type="checkbox" 
+                        :checked="item.active !== 0 && item.active !== false"
+                        :disabled="!isAdminUser"
+                        @change="handleToggleActive(item)"
+                      />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Bottom Action Buttons -->
+              <div class="mobile-menu-card-actions">
+                <button class="btn-action btn-action-edit" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+                <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
+              </div>
             </div>
           </div>
         </div>
@@ -660,6 +774,119 @@ const showCatModal = ref(false);
 const showItemModal = ref(false);
 const isEditMode = ref(false);
 const editItemId = ref(null);
+
+const isReorderMode = ref(false);
+const reorderItems = ref([]);
+const dragIndex = ref(null);
+
+const openReorderMode = () => {
+  reorderItems.value = [...store.menuItems];
+  isReorderMode.value = true;
+};
+
+const closeReorderMode = () => {
+  isReorderMode.value = false;
+};
+
+const handleSaveReorder = async () => {
+  ui.showLoading();
+  try {
+    const ids = reorderItems.value.map(item => item.id);
+    const res = await api.menu.reorder(ids);
+    if (res.success) {
+      ui.showToast('เปลี่ยนลำดับเมนูอาหารเรียบร้อยแล้ว', 'success');
+      store.updateItemsOrder(reorderItems.value);
+      isReorderMode.value = false;
+      // Fetch in the background silently
+      store.fetchMenu(true).catch(e => console.warn('Background menu refresh failed:', e));
+    } else {
+      ui.showToast('เปลี่ยนลำดับเมนูอาหารไม่สำเร็จ: ' + (res.error || 'ข้อผิดพลาดระบบ'), 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    ui.showToast('เปลี่ยนลำดับเมนูอาหารไม่สำเร็จ: ' + err.message, 'error');
+  } finally {
+    ui.hideLoading();
+  }
+};
+
+const handleDragStart = (index, event) => {
+  dragIndex.value = index;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+};
+
+const handleDragOver = (event) => {
+  event.preventDefault();
+  // Auto scroll on desktop drag
+  const clientY = event.clientY;
+  const threshold = 120;
+  const scrollSpeed = 15;
+  if (clientY < threshold) {
+    window.scrollBy(0, -scrollSpeed);
+  } else if (clientY > window.innerHeight - threshold) {
+    window.scrollBy(0, scrollSpeed);
+  }
+};
+
+const handleDragEnter = (index) => {
+  if (dragIndex.value !== null && dragIndex.value !== index) {
+    const item = reorderItems.value[dragIndex.value];
+    reorderItems.value.splice(dragIndex.value, 1);
+    reorderItems.value.splice(index, 0, item);
+    dragIndex.value = index;
+  }
+};
+
+const handleDragEnd = () => {
+  dragIndex.value = null;
+};
+
+const handleTouchStart = (index, event) => {
+  dragIndex.value = index;
+  const card = event.target.closest('.mobile-reorder-card');
+  if (card) {
+    card.classList.add('dragging');
+  }
+};
+
+const handleTouchMove = (event) => {
+  if (dragIndex.value === null) return;
+  const touch = event.touches[0];
+  const clientY = touch.clientY;
+
+  // Auto scroll on mobile touch drag
+  const threshold = 120;
+  const scrollSpeed = 15;
+  if (clientY < threshold) {
+    window.scrollBy(0, -scrollSpeed);
+  } else if (clientY > window.innerHeight - threshold) {
+    window.scrollBy(0, scrollSpeed);
+  }
+
+  const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (targetElement) {
+    const card = targetElement.closest('.mobile-reorder-card');
+    if (card) {
+      const targetIndex = Number(card.dataset.index);
+      if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
+        const item = reorderItems.value[dragIndex.value];
+        reorderItems.value.splice(dragIndex.value, 1);
+        reorderItems.value.splice(targetIndex, 0, item);
+        dragIndex.value = targetIndex;
+      }
+    }
+  }
+};
+
+const handleTouchEnd = () => {
+  dragIndex.value = null;
+  const draggingEl = document.querySelector('.mobile-reorder-card.dragging');
+  if (draggingEl) {
+    draggingEl.classList.remove('dragging');
+  }
+};
 
 // Forms
 const catForm = ref({ name: '' });
@@ -1232,4 +1459,27 @@ onUnmounted(() => {
     margin-top: var(--space-xs);
   }
 }
+
+.desktop-reorder-row.dragging,
+.mobile-reorder-card.dragging {
+  opacity: 0.5;
+  background-color: var(--primary-glow) !important;
+  border: 2px dashed var(--primary) !important;
+}
+
+.drag-handle {
+  cursor: grab;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 1.25rem;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
 </style>
+
