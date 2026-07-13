@@ -219,6 +219,30 @@ export const store = reactive({
     this.stockItems = this.stockItems.filter(s => s.id !== itemId);
   },
 
+  updateItemsOrder(orderedItems) {
+    const updatedMenuItems = orderedItems.map((item, index) => ({
+      ...item,
+      sort_order: index
+    }));
+    this.menuItems = updatedMenuItems;
+
+    if (this.stockLoaded) {
+      const stockMap = new Map(this.stockItems.map(s => [s.id, s]));
+      const newStockItems = [];
+      for (let i = 0; i < updatedMenuItems.length; i++) {
+        const item = updatedMenuItems[i];
+        const stockItem = stockMap.get(item.id);
+        if (stockItem) {
+          newStockItems.push({
+            ...stockItem,
+            sort_order: item.sort_order
+          });
+        }
+      }
+      this.stockItems = newStockItems;
+    }
+  },
+
   updateStock(itemId, stock, rawStock) {
     const idx = this.stockItems.findIndex(s => s.id === itemId);
     if (idx !== -1) {

@@ -90,7 +90,7 @@
                 <!-- Actions -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm">
-                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn-action btn-action-fry" @click="openActionModal('fry', item, false)"><i class="fa-solid fa-fire"></i> ทอดสินค้า</button>
+                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn-action btn-action-fry" @click="openActionModal('fry', item, false)"><i :class="getCookActionIcon(item.name)"></i> {{ getCookActionLabel(item.name) }}สินค้า</button>
                     <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
                     <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
                   </div>
@@ -129,7 +129,7 @@
               <div class="mobile-stock-card-meta">
                 <div v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="flex flex-col align-end gap-xs" style="text-align: right;">
                   <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 2px;">
-                    ทอดแล้ว: <strong :class="{ 'text-danger': isItemLowStock(item, item.quantity) }">{{ formatStockQty(item.quantity, item.uom) }}</strong>
+                    {{ getCookActionLabel(item.name) }}แล้ว: <strong :class="{ 'text-danger': isItemLowStock(item, item.quantity) }">{{ formatStockQty(item.quantity, item.uom) }}</strong>
                   </div>
                   <div style="font-size: var(--font-sm); color: var(--text-secondary);">
                     ของสด: <strong :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }">{{ formatStockQty(item.raw_quantity, item.uom) }}</strong>
@@ -177,7 +177,7 @@
                 style="grid-column: span 2;" 
                 @click="openActionModal('fry', item, false)"
               >
-                <i class="fa-solid fa-fire"></i> ทอด
+                <i :class="getCookActionIcon(item.name)"></i> {{ getCookActionLabel(item.name) }}
               </button>
               <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
               <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
@@ -398,7 +398,7 @@
                   {{ actionType === 'restock' ? (activeItem?.category === 'sauce_small' ? 'จำนวนซองที่ต้องการเติม *' : 'จำนวนถุงที่ต้องการเติม *') : 'จำนวนรอบเสิร์ฟที่ต้องการปรับ (ใส่ติดลบเพื่อหักออก) *' }}
                 </template>
                 <template v-else>
-                  <span v-if="actionType === 'fry'">จำนวนที่ต้องการทอด (ชิ้น) *</span>
+                  <span v-if="actionType === 'fry'">จำนวนที่ต้องการ{{ activeItem ? getCookActionLabel(activeItem.name) : 'ทอด' }} (ชิ้น) *</span>
                   <span v-else-if="actionType === 'restock'">จำนวนที่ต้องการเติม ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
                   <span v-else-if="actionType === 'adjust'">จำนวนที่ต้องการปรับปรุง ({{ activeItem?.uom || 'ชิ้น' }}) * (ใส่ติดลบเพื่อหักออก)</span>
                   <span v-else>จำนวนที่ต้องการหัก ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
@@ -418,7 +418,7 @@
           </div>
 
           <div v-if="!activeIsModifier && actionType === 'fry'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
-            * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "ทอดสุก" 
+            * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "{{ activeItem ? getCookActionLabel(activeItem.name) + 'สุก' : 'ทอดสุก' }}" 
           </div>
 
           <div v-if="activeIsModifier && actionType === 'restock'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
@@ -462,8 +462,8 @@
               @click="handleSaveAction"
             >
               <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <i :class="actionType === 'fry' ? 'fa-solid fa-fire' : 'fa-solid fa-floppy-disk'"></i>
-                {{ actionType === 'fry' ? 'เริ่มทอดสินค้า' : 'บันทึกสต็อก' }}
+                <i :class="actionType === 'fry' ? (activeItem ? getCookActionIcon(activeItem.name) : 'fa-solid fa-fire') : 'fa-solid fa-floppy-disk'"></i>
+                {{ actionType === 'fry' ? `เริ่ม${activeItem ? getCookActionLabel(activeItem.name) : 'ทอด'}สินค้า` : 'บันทึกสต็อก' }}
               </span>
             </button>
           </div>
@@ -626,6 +626,52 @@ const getLinkageWarningText = (item) => {
   return isDeduct 
     ? `* การเพิ่มจะหัก "${targetName}" 1 ชิ้น อัตโนมัติ`
     : `* การลบจะเพิ่ม "${targetName}" 1 ชิ้น อัตโนมัติ`;
+};
+
+const getCookActionLabel = (name) => {
+  if (!name) return 'ทอด';
+  const isWrapped = name.includes('ข้าวเหนียว') || 
+                    name.includes('เบอร์เกอร์') || 
+                    name.includes('แร็ป');
+  if (isWrapped) {
+    return 'ห่อ';
+  }
+  const isBunOrDumpling = name.includes('เปา') || 
+                          name.includes('หมั่นโถ') || 
+                          name.includes('ขนมจีบ');
+  if (isBunOrDumpling) {
+    if (name.includes('ทอด')) {
+      return 'ทอด';
+    }
+    if (name.includes('ปิ้ง')) {
+      return 'ปิ้ง';
+    }
+    return 'นึ่ง';
+  }
+  return 'ทอด';
+};
+
+const getCookActionIcon = (name) => {
+  if (!name) return 'fa-solid fa-fire';
+  const isWrapped = name.includes('ข้าวเหนียว') || 
+                    name.includes('เบอร์เกอร์') || 
+                    name.includes('แร็ป');
+  if (isWrapped) {
+    return 'fa-solid fa-box';
+  }
+  const isBunOrDumpling = name.includes('เปา') || 
+                          name.includes('หมั่นโถ') || 
+                          name.includes('ขนมจีบ');
+  if (isBunOrDumpling) {
+    if (name.includes('ทอด')) {
+      return 'fa-solid fa-fire';
+    }
+    if (name.includes('ปิ้ง')) {
+      return 'fa-solid fa-fire-flame-simple';
+    }
+    return 'fa-solid fa-cloud';
+  }
+  return 'fa-solid fa-fire';
 };
 
 // Load System Settings to check Low Stock Threshold
@@ -802,8 +848,10 @@ const getActionIconClass = (type, isMod) => {
   if (isMod) {
     return type === 'restock' ? 'fa-solid fa-plus' : 'fa-solid fa-wrench';
   }
+  if (type === 'fry') {
+    return activeItem.value ? getCookActionIcon(activeItem.value.name) : 'fa-solid fa-fire';
+  }
   const map = {
-    'fry': 'fa-solid fa-fire',
     'restock': 'fa-solid fa-plus',
     'waste': 'fa-solid fa-trash-can',
     'staff_benefit': 'fa-solid fa-user-check',
@@ -816,8 +864,11 @@ const getActionTitleLabel = (type, isMod) => {
   if (isMod) {
     return type === 'restock' ? 'เติมสต็อกเครื่องปรุง' : 'ปรับปรุงยอดเครื่องปรุง';
   }
+  if (type === 'fry') {
+    const label = activeItem.value ? getCookActionLabel(activeItem.value.name) : 'ทอด';
+    return `${label}สินค้า`;
+  }
   const map = {
-    'fry': 'ทอดสินค้า',
     'restock': 'เติมสต็อกสินค้า',
     'waste': 'บันทึกสินค้าเสีย',
     'staff_benefit': 'บันทึกเครดิตพนักงาน',

@@ -94,8 +94,8 @@
           <div style="text-align: left; padding-left: var(--space-md);">เมนูอาหาร</div>
           <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-snowflake text-accent"></i> คงเหลือ (ของสด)</div>
           <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-snowflake text-accent"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด (ของสด)' : 'ปรับยอด (ของสด)' }}</div>
-          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> คงเหลือ (ของทอด)</div>
-          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด (ของทอด)' : 'ปรับยอด (ของทอด)' }}</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> คงเหลือ (พร้อมขาย)</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด (พร้อมขาย)' : 'ปรับยอด (พร้อมขาย)' }}</div>
         </div>
 
         <!-- Scrollable content -->
@@ -129,18 +129,18 @@
               </div>
             </div>
 
-            <!-- Col 4: Cooked stock quantity -->
+            <!-- Col 4: Cooked/Steamed/Grilled stock quantity -->
             <div class="bulk-item-current-col text-center">
-              <span class="mobile-label"><i class="fa-solid fa-fire text-primary" style="margin-right: 4px;"></i> คงเหลือ ของทอด:</span>
+              <span class="mobile-label"><i :class="getProductMethodIcon(item.name) + ' text-primary'" style="margin-right: 4px;"></i> คงเหลือ {{ getProductMethodLabel(item.name) }}:</span>
               <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" class="font-bold text-base">
                 {{ item.quantity !== null && item.quantity !== undefined ? formatStockQty(item.quantity, item.uom) : formatStockQty(0, item.uom) }}
               </span>
             </div>
 
-            <!-- Col 5: Cooked stock input -->
+            <!-- Col 5: Cooked/Steamed/Grilled stock input -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label"><i class="fa-solid fa-fire text-primary" style="margin-right: 4px;"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด ของทอด:' : 'ปรับยอด ของทอด:' }}</span>
+                <span class="mobile-label"><i :class="getProductMethodIcon(item.name) + ' text-primary'" style="margin-right: 4px;"></i> {{ bulkTab === 'relative' ? `เพิ่มยอด ${getProductMethodLabel(item.name)}:` : `ปรับยอด ${getProductMethodLabel(item.name)}:` }}</span>
                  <input 
                   type="text" 
                   v-model="item.cooked"
@@ -420,6 +420,52 @@ const getLinkageWarningText = (item) => {
   return isDeduct 
     ? `* การเพิ่มจะหัก "${targetName}" 1 ชิ้น อัตโนมัติ`
     : `* การลบจะคืน "${targetName}" 1 ชิ้น อัตโนมัติ`;
+};
+
+const getProductMethodLabel = (name) => {
+  if (!name) return 'ของทอด';
+  const isWrapped = name.includes('ข้าวเหนียว') || 
+                    name.includes('เบอร์เกอร์') || 
+                    name.includes('แร็ป');
+  if (isWrapped) {
+    return 'ของห่อ';
+  }
+  const isBunOrDumpling = name.includes('เปา') || 
+                          name.includes('หมั่นโถ') || 
+                          name.includes('ขนมจีบ');
+  if (isBunOrDumpling) {
+    if (name.includes('ทอด')) {
+      return 'ของทอด';
+    }
+    if (name.includes('ปิ้ง')) {
+      return 'ของปิ้ง';
+    }
+    return 'ของนึ่ง';
+  }
+  return 'ของทอด';
+};
+
+const getProductMethodIcon = (name) => {
+  if (!name) return 'fa-solid fa-fire';
+  const isWrapped = name.includes('ข้าวเหนียว') || 
+                    name.includes('เบอร์เกอร์') || 
+                    name.includes('แร็ป');
+  if (isWrapped) {
+    return 'fa-solid fa-box';
+  }
+  const isBunOrDumpling = name.includes('เปา') || 
+                          name.includes('หมั่นโถ') || 
+                          name.includes('ขนมจีบ');
+  if (isBunOrDumpling) {
+    if (name.includes('ทอด')) {
+      return 'fa-solid fa-fire';
+    }
+    if (name.includes('ปิ้ง')) {
+      return 'fa-solid fa-fire-flame-simple';
+    }
+    return 'fa-solid fa-cloud';
+  }
+  return 'fa-solid fa-fire';
 };
 
 // Custom Dropdown logic for StockBulk.vue

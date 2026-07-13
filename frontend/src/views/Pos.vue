@@ -545,7 +545,8 @@ import { store } from '../store';
 
 // Reactive States
 const menuItems = computed(() => {
-  return store.menuItems.filter(item => item.active !== 0 && item.active !== false);
+  const items = store.menuItems.filter(item => item.active !== 0 && item.active !== false);
+  return [...items].sort((a, b) => a.id - b.id);
 });
 const categories = computed(() => store.categories);
 const cart = ref(new Map()); // itemId -> { item, quantity }
