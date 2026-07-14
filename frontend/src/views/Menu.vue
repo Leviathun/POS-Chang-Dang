@@ -52,6 +52,7 @@
                   style="border-bottom: 1px solid var(--border-color);"
                   class="table-row-hover desktop-reorder-row"
                   :class="{ 'dragging': dragIndex === index }"
+                  :data-index="index"
                   draggable="true"
                   @dragstart="handleDragStart(index, $event)"
                   @dragover="handleDragOver"
@@ -60,7 +61,13 @@
                 >
                   <!-- Drag Handle -->
                   <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <div class="drag-handle" style="cursor: grab;">
+                    <div 
+                      class="drag-handle" 
+                      style="cursor: grab;"
+                      @touchstart="handleTouchStart(index, $event)"
+                      @touchmove.prevent="handleTouchMove"
+                      @touchend="handleTouchEnd"
+                    >
                       <i class="fa-solid fa-bars"></i>
                     </div>
                   </td>
@@ -845,9 +852,9 @@ const handleDragEnd = () => {
 
 const handleTouchStart = (index, event) => {
   dragIndex.value = index;
-  const card = event.target.closest('.mobile-reorder-card');
-  if (card) {
-    card.classList.add('dragging');
+  const element = event.target.closest('.mobile-reorder-card, .desktop-reorder-row');
+  if (element) {
+    element.classList.add('dragging');
   }
 };
 
@@ -856,7 +863,7 @@ const handleTouchMove = (event) => {
   const touch = event.touches[0];
   const clientY = touch.clientY;
 
-  // Auto scroll on mobile touch drag
+  // Auto scroll on touch drag (both mobile and desktop)
   const threshold = 120;
   const scrollSpeed = 15;
   if (clientY < threshold) {
@@ -867,9 +874,9 @@ const handleTouchMove = (event) => {
 
   const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
   if (targetElement) {
-    const card = targetElement.closest('.mobile-reorder-card');
-    if (card) {
-      const targetIndex = Number(card.dataset.index);
+    const element = targetElement.closest('.mobile-reorder-card, .desktop-reorder-row');
+    if (element) {
+      const targetIndex = Number(element.dataset.index);
       if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
         const item = reorderItems.value[dragIndex.value];
         reorderItems.value.splice(dragIndex.value, 1);
@@ -882,7 +889,7 @@ const handleTouchMove = (event) => {
 
 const handleTouchEnd = () => {
   dragIndex.value = null;
-  const draggingEl = document.querySelector('.mobile-reorder-card.dragging');
+  const draggingEl = document.querySelector('.mobile-reorder-card.dragging, .desktop-reorder-row.dragging');
   if (draggingEl) {
     draggingEl.classList.remove('dragging');
   }
