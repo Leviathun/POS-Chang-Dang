@@ -1181,12 +1181,18 @@ const onPaymentSuccess = async () => {
   showPaymentModal.value = false;
   useModifiers.value = false;
   selectedModifiers.value = [];
+
+  // Clear menu/stock cache and fetch fresh values from the server in the background
+  store.clearMenuCache();
+  store.clearStockCache();
+  store.fetchMenu(true).catch(e => console.error('Error fetching menu on payment success:', e));
+  store.fetchStock(true).catch(e => console.error('Error fetching stock on payment success:', e));
 };
 
 // Load Menu & Categories from API
 const loadMenuData = async () => {
   try {
-    // Load menu and stock in parallel to maximize speed
+    // Load menu and stock in parallel to maximize speed (loads cache immediately if available)
     await Promise.all([
       store.fetchMenu().catch(err => {
         console.error('Failed to load menu:', err);
@@ -1196,6 +1202,10 @@ const loadMenuData = async () => {
         console.warn('Failed to load stock threshold:', err);
       })
     ]);
+
+    // Trigger background fetch with force reload to sync with the server without delaying page load/rendering
+    store.fetchMenu(true).catch(err => console.warn('Background menu reload failed:', err));
+    store.fetchStock(true).catch(err => console.warn('Background stock reload failed:', err));
   } catch (error) {
     console.error('Failed to load initial POS data:', error);
   }

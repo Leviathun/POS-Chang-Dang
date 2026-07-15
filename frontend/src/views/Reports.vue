@@ -2294,6 +2294,7 @@ const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.
 
 // Ledger States
 const ledgerTransactions = ref([]);
+const ledgerOrders = ref([]);
 const ledgerLoading = ref(false);
 
 const filteredLedgerTransactions = computed(() => {
@@ -2763,6 +2764,51 @@ const closeReportsDropdowns = () => {
   isStockItemDropdownOpen.value = false;
 };
 
+const computeLedgerTransactions = () => {
+  const list = [];
+
+  ledgerOrders.value.forEach(o => {
+    if (o.status !== 'completed') return;
+    list.push({
+      id: o.id,
+      created_at: o.created_at,
+      timestamp: new Date(o.created_at).getTime(),
+      name: `ขายสินค้า (บิล #${o.order_number})`,
+      income: o.total || 0,
+      expense: 0,
+      type: 'order'
+    });
+  });
+
+  expenses.value.forEach(e => {
+    const pmLabel = e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
+    list.push({
+      id: e.id,
+      created_at: e.created_at,
+      timestamp: new Date(e.created_at).getTime(),
+      name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})`,
+      income: 0,
+      expense: e.amount || 0,
+      type: 'expense'
+    });
+  });
+
+  list.sort((a, b) => a.timestamp - b.timestamp);
+
+  let running = 0;
+  const computedList = list.map(item => {
+    running += item.income - item.expense;
+    return {
+      ...item,
+      runningBalance: running,
+      formattedDate: formatDate(item.created_at),
+      formattedTime: formatTime(item.created_at)
+    };
+  });
+
+  ledgerTransactions.value = computedList.reverse();
+};
+
 const loadMonthlyLedger = async () => {
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
@@ -2771,68 +2817,41 @@ const loadMonthlyLedger = async () => {
   ledgerLoading.value = true;
   try {
     const params = { status: 'completed', branch_id: selectedBranchId.value };
-    const expenseParams = { branch_id: selectedBranchId.value };
 
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;
-      expenseParams.date = selectedDate.value;
     } else if (periodMode.value === 'monthly') {
       params.month = selectedMonth.value;
-      expenseParams.month = selectedMonth.value;
     } else {
       params.year = selectedYear.value;
-      expenseParams.year = selectedYear.value;
     }
 
-    const [ordersRes, expensesRes] = await Promise.all([
-      api.orders.getAll(params),
-      api.expenses.get(expenseParams)
-    ]);
-    const periodOrders = ordersRes.success ? (ordersRes.data || []) : [];
-    const periodExpenses = expensesRes.success ? (expensesRes.data || []) : [];
+    let periodExpenses = expenses.value;
+    let ordersRes;
 
-    const list = [];
+    // ถ้ามีข้อมูลรายจ่ายอยู่แล้ว ไม่จำเป็นต้องคิวรีผ่าน API อีกรอบเพื่อประหยัดเน็ตและเวลา
+    if (periodExpenses && periodExpenses.length > 0) {
+      ordersRes = await api.orders.getAll(params);
+    } else {
+      const expenseParams = { branch_id: selectedBranchId.value };
+      if (periodMode.value === 'daily') {
+        expenseParams.date = selectedDate.value;
+      } else if (periodMode.value === 'monthly') {
+        expenseParams.month = selectedMonth.value;
+      } else {
+        expenseParams.year = selectedYear.value;
+      }
 
-    periodOrders.forEach(o => {
-      if (o.status !== 'completed') return;
-      list.push({
-        id: o.id,
-        created_at: o.created_at,
-        timestamp: new Date(o.created_at).getTime(),
-        name: `ขายสินค้า (บิล #${o.order_number})`,
-        income: o.total || 0,
-        expense: 0,
-        type: 'order'
-      });
-    });
+      const [ordersResData, expensesRes] = await Promise.all([
+        api.orders.getAll(params),
+        api.expenses.get(expenseParams)
+      ]);
+      ordersRes = ordersResData;
+      expenses.value = expensesRes.success ? (expensesRes.data || []) : [];
+    }
 
-    periodExpenses.forEach(e => {
-      const pmLabel = e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
-      list.push({
-        id: e.id,
-        created_at: e.created_at,
-        timestamp: new Date(e.created_at).getTime(),
-        name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})`,
-        income: 0,
-        expense: e.amount || 0,
-        type: 'expense'
-      });
-    });
-
-    list.sort((a, b) => a.timestamp - b.timestamp);
-
-    let running = 0;
-    const computedList = list.map(item => {
-      running += item.income - item.expense;
-      return {
-        ...item,
-        runningBalance: running,
-        formattedDate: formatDate(item.created_at),
-        formattedTime: formatTime(item.created_at)
-      };
-    });
-
-    ledgerTransactions.value = computedList.reverse();
+    ledgerOrders.value = ordersRes.success ? (ordersRes.data || []) : [];
+    computeLedgerTransactions();
   } catch (e) {
     console.error('❌ Failed to load ledger:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลบัญชีรายรับ-รายจ่ายได้', 'error');
@@ -2891,8 +2910,15 @@ const loadActivityLogsForPeriod = async () => {
     return;
   }
   try {
+    let limitVal = 200;
+    if (periodMode.value === 'monthly') {
+      limitVal = 1000;
+    } else if (periodMode.value === 'yearly') {
+      limitVal = 5000;
+    }
+
     let res;
-    const params = { branch_id: selectedBranchId.value, limit: 1000 };
+    const params = { branch_id: selectedBranchId.value, limit: limitVal };
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;
     } else if (periodMode.value === 'monthly') {
@@ -2915,8 +2941,15 @@ const loadOrderHistory = async () => {
     return;
   }
   try {
+    let limitVal = 200;
+    if (periodMode.value === 'monthly') {
+      limitVal = 1000;
+    } else if (periodMode.value === 'yearly') {
+      limitVal = 5000;
+    }
+
     const params = {
-      limit: 1000,
+      limit: limitVal,
       branch_id: selectedBranchId.value
     };
     if (periodMode.value === 'daily') {
@@ -3020,30 +3053,29 @@ const loadReportData = async () => {
         };
       }
     };
-    promises.push(loadMainReport());
+    // โหลดรายงานยอดขายหลักก่อนเพื่อให้พนักงานเห็นยอดสรุปได้ทันทีโดยไม่ติดหน้าจอโหลดนิ่ง
+    await loadMainReport();
+    loading.value = false; // ปิดสถานะการโหลดหลักทันที เพื่อให้แสดง Dashboard เร็วสุด (<0.5 วิ)
 
-    // Promise 2: Admin only data loads
+    // สั่งโหลดข้อมูลตารางประวัติอื่นๆ เบื้องหลังแบบขนานโดยไม่ขัดจังหวะผู้ใช้ (Background Async Load)
     if (isAdmin()) {
-      promises.push(loadExpensesForPeriod());
-      promises.push(loadActivityLogsForPeriod());
-      promises.push(loadMonthlyLedger());
+      // โหลดค่าใช้จ่ายให้เสร็จก่อนรันสมุดรายวัน เพื่อหลีกเลี่ยงการเรียก API รายจ่ายซ้ำซ้อน
+      (async () => {
+        await loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
+        loadMonthlyLedger().catch(e => console.warn('Background ledger load error:', e));
+      })();
+      loadActivityLogsForPeriod().catch(e => console.warn('Background activities load error:', e));
       if (activeTab.value === 'cash_audit') {
-        promises.push(fetchCashDrawerSummary());
+        fetchCashDrawerSummary().catch(e => console.warn('Background cash drawer load error:', e));
       }
       if (activeTab.value === 'stock_history') {
-        promises.push(loadStockHistoryLogs());
+        loadStockHistoryLogs().catch(e => console.warn('Background stock logs load error:', e));
       }
     }
-
-    // Promise 3: Order history
-    promises.push(loadOrderHistory());
-
-    // Execute all concurrently!
-    await Promise.all(promises);
+    loadOrderHistory().catch(e => console.warn('Background order history load error:', e));
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถดึงข้อมูลรายงานได้', 'error');
-  } finally {
     loading.value = false;
   }
 };
@@ -3141,9 +3173,13 @@ const handleAddExpense = async () => {
       ui.showToast('บันทึกค่าใช้จ่ายสำเร็จ', 'success');
       expenseForm.value = { amount: null, category: 'raw_chicken', note: '', payment_method: 'transfer' };
       store.clearReportsCache(); // Clear store cache!
-      loadExpensesForPeriod();
-      loadActivityLogsForPeriod();
-      loadMonthlyLedger();
+      if (res.data) {
+        expenses.value.unshift(res.data);
+        computeLedgerTransactions();
+      } else {
+        await loadExpensesForPeriod();
+        loadMonthlyLedger();
+      }
     }
   } catch (e) {
     ui.showToast('บันทึกค่าใช้จ่ายไม่สำเร็จ: ' + e.message, 'error');
@@ -3161,9 +3197,8 @@ const handleDeleteExpense = async (id) => {
     if (res.success) {
       ui.showToast('ลบค่าใช้จ่ายสำเร็จ', 'success');
       store.clearReportsCache(); // Clear store cache!
-      loadExpensesForPeriod();
-      loadActivityLogsForPeriod();
-      loadMonthlyLedger();
+      expenses.value = expenses.value.filter(e => e.id !== id);
+      computeLedgerTransactions();
     }
   } catch (e) {
     ui.showToast('ลบค่าใช้จ่ายไม่สำเร็จ: ' + e.message, 'error');

@@ -9,9 +9,17 @@ function getThailandDateString() {
   return d.toISOString().split('T')[0];
 }
 
+// In-memory cache for daily cash drawer sessions to eliminate redundant database checks/roundtrips
+const sessionCache = new Map(); // Key: `${branchId}-${sessionDate}`, Value: session object
+
 // Stealth Session Helper (Auto-links orders/expenses in the background)
 async function getOrCreateSession(db, branchId) {
   const sessionDate = getThailandDateString();
+  const cacheKey = `${branchId}-${sessionDate}`;
+  
+  if (sessionCache.has(cacheKey)) {
+    return sessionCache.get(cacheKey);
+  }
   
   // Try to find existing session
   let session = await db.prepare(`
@@ -47,6 +55,10 @@ async function getOrCreateSession(db, branchId) {
       `).get(branchId, sessionDate);
       if (!session) throw err;
     }
+  }
+
+  if (session) {
+    sessionCache.set(cacheKey, session);
   }
 
   return session;
