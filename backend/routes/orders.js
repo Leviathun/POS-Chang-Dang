@@ -90,6 +90,25 @@ router.post('/', requireAuth, async (req, res) => {
       `).get(branchId, 'ไก่ไร้กระดูก')
     ]);
 
+    // สร้างแผนผังสต็อกในหน่วยความจำสำหรับการตรวจสอบและการตัดสต็อก (เพื่อป้องกันปัญหาการตัดสต็อกข้ามบิลและการตัดสต็อกล่าช้า)
+    const stockMap = new Map();
+    dbMenuItems.forEach(item => {
+      if (item.stock !== null && item.stock !== undefined) {
+        stockMap.set(Number(item.id), Number(item.stock));
+      }
+    });
+    dbIngredients.forEach(item => {
+      if (item.stock !== null && item.stock !== undefined) {
+        stockMap.set(Number(item.id), Number(item.stock));
+      }
+    });
+    if (chickenItem && chickenItem.stock !== null && chickenItem.stock !== undefined) {
+      stockMap.set(Number(chickenItem.id), Number(chickenItem.stock));
+    }
+
+    // สร้างแผนผังสต็อกชั่วคราวสำหรับขั้นตอนตรวจสอบความถูกต้อง (เพื่อป้องกันการซื้อเกินจำนวนที่มีอยู่จริงในตะกร้าเดียวกัน)
+    const validationStockMap = new Map(stockMap);
+
     // สร้างข้อมูลและตรวจเช็คธุรกิจใน Memory
     const orderItems = [];
     let subtotal = 0;
@@ -120,32 +139,50 @@ router.post('/', requireAuth, async (req, res) => {
       // ตรวจสอบสต็อกของเมนูหรือส่วนผสม
       if (item.options && Array.isArray(item.options.selected_items)) {
         for (const ingredient of item.options.selected_items) {
-          const ingStock = dbIngredients.find(i => i.id === Number(ingredient.id));
+          const ingId = Number(ingredient.id);
+          const ingStock = validationStockMap.get(ingId);
           const requiredQty = Number(ingredient.weight) * item.quantity;
-          if (ingStock && ingStock.stock !== null && ingStock.stock < requiredQty) {
-            return res.status(400).json({
-              success: false,
-              error: `วัตถุดิบ "${ingStock.name}" สต็อกไม่เพียงพอ (ต้องการ ${Math.round(requiredQty * 100) / 100} ก. แต่เหลือ ${Math.round(ingStock.stock * 100) / 100} ก.)`
-            });
+          if (ingStock !== undefined && ingStock !== null) {
+            if (ingStock < requiredQty) {
+              const ingOriginal = dbIngredients.find(i => i.id === ingId) || { name: ingredient.name };
+              return res.status(400).json({
+                success: false,
+                error: `วัตถุดิบ "${ingOriginal.name}" สต็อกไม่เพียงพอ (ต้องการ ${Math.round(requiredQty * 100) / 100} ก. แต่เหลือ ${Math.round(ingStock * 100) / 100} ก.)`
+              });
+            }
+            // ตัดยอดชั่วคราวในแผนผังสำหรับตรวจสอบรายการถัดไปในบิลเดียวกัน
+            validationStockMap.set(ingId, Math.round((ingStock - requiredQty) * 100) / 100);
           }
         }
       } else {
-        if (menuItem.stock !== null && menuItem.stock < item.quantity) {
-          return res.status(400).json({
-            success: false,
-            error: `เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${Math.round(menuItem.stock * 100) / 100} ชิ้น)`
-          });
+        const mId = Number(item.menu_item_id);
+        const mStock = validationStockMap.get(mId);
+        if (mStock !== undefined && mStock !== null) {
+          if (mStock < item.quantity) {
+            return res.status(400).json({
+              success: false,
+              error: `เมนู "${menuItem.name}" สต็อกไม่เพียงพอ (เหลือ ${Math.round(mStock * 100) / 100} ชิ้น)`
+            });
+          }
+          // ตัดยอดชั่วคราวในแผนผังสำหรับตรวจสอบรายการถัดไปในบิลเดียวกัน
+          validationStockMap.set(mId, Math.round((mStock - item.quantity) * 100) / 100);
         }
       }
 
       // ตรวจสอบสต็อกไก่ไร้กระดูก สำหรับแร็ปไก่
-      if (menuItem.name.includes('แร็ปไก่') && chickenItem && chickenItem.stock !== null) {
-        const requiredChicken = item.quantity;
-        if (chickenItem.stock < requiredChicken) {
-          return res.status(400).json({
-            success: false,
-            error: `วัตถุดิบ "ไก่ไร้กระดูก" สต็อกไม่เพียงพอสำหรับเมนูแร็ปไก่ (ต้องการ ${requiredChicken} ชิ้น แต่เหลือ ${chickenItem.stock} ชิ้น)`
-          });
+      if (menuItem.name.includes('แร็ปไก่') && chickenItem) {
+        const chickenId = Number(chickenItem.id);
+        const cStock = validationStockMap.get(chickenId);
+        if (cStock !== undefined && cStock !== null) {
+          const requiredChicken = item.quantity;
+          if (cStock < requiredChicken) {
+            return res.status(400).json({
+              success: false,
+              error: `วัตถุดิบ "ไก่ไร้กระดูก" สต็อกไม่เพียงพอสำหรับเมนูแร็ปไก่ (ต้องการ ${requiredChicken} ชิ้น แต่เหลือ ${cStock} ชิ้น)`
+            });
+          }
+          // ตัดยอดชั่วคราวในแผนผังสำหรับตรวจสอบรายการถัดไปในบิลเดียวกัน
+          validationStockMap.set(chickenId, Math.round((cStock - requiredChicken) * 100) / 100);
         }
       }
 
@@ -240,15 +277,16 @@ router.post('/', requireAuth, async (req, res) => {
 
       if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
         for (const ingredient of optionsObj.selected_items) {
-          const ingItem = dbIngredients.find(i => i.id === Number(ingredient.id));
-          if (ingItem && ingItem.stock !== null) {
-            const previousStock = ingItem.stock;
+          const ingId = Number(ingredient.id);
+          if (stockMap.has(ingId)) {
+            const previousStock = stockMap.get(ingId);
             const deductAmount = Number(ingredient.weight) * oi.quantity;
             const newStock = Math.round((previousStock - deductAmount) * 100) / 100;
+            stockMap.set(ingId, newStock);
 
             statements.push({
               sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
-              args: [deductAmount, branchId, Number(ingredient.id)]
+              args: [deductAmount, branchId, ingId]
             });
 
             statements.push({
@@ -256,7 +294,7 @@ router.post('/', requireAuth, async (req, res) => {
                     VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
               args: [
                 branchId,
-                Number(ingredient.id),
+                ingId,
                 -deductAmount,
                 previousStock,
                 newStock,
@@ -268,14 +306,17 @@ router.post('/', requireAuth, async (req, res) => {
           }
         }
       } else {
-        const menuItem = dbMenuItems.find(i => i.id === oi.menu_item_id);
-        if (menuItem && menuItem.stock !== null) {
-          const previousStock = menuItem.stock;
+        const mId = Number(oi.menu_item_id);
+        const menuItem = dbMenuItems.find(i => i.id === mId);
+        
+        if (stockMap.has(mId)) {
+          const previousStock = stockMap.get(mId);
           const newStock = Math.round((previousStock - oi.quantity) * 100) / 100;
+          stockMap.set(mId, newStock);
 
           statements.push({
             sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
-            args: [oi.quantity, branchId, oi.menu_item_id]
+            args: [oi.quantity, branchId, mId]
           });
 
           statements.push({
@@ -283,7 +324,7 @@ router.post('/', requireAuth, async (req, res) => {
                   VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
             args: [
               branchId,
-              oi.menu_item_id,
+              mId,
               -oi.quantity,
               previousStock,
               newStock,
@@ -295,32 +336,34 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         // Auto-deduct ไก่ไร้กระดูก if this item is แร็ปไก่
-        if (menuItem && menuItem.name.includes('แร็ปไก่') && chickenItem && chickenItem.stock !== null) {
-          const previousChickenStock = chickenItem.stock;
-          const deductChickenAmount = oi.quantity * 1;
-          const newChickenStock = Math.round((previousChickenStock - deductChickenAmount) * 100) / 100;
-          
-          chickenItem.stock = newChickenStock;
+        if (menuItem && menuItem.name.includes('แร็ปไก่') && chickenItem) {
+          const chickenId = Number(chickenItem.id);
+          if (stockMap.has(chickenId)) {
+            const previousChickenStock = stockMap.get(chickenId);
+            const deductChickenAmount = oi.quantity * 1;
+            const newChickenStock = Math.round((previousChickenStock - deductChickenAmount) * 100) / 100;
+            stockMap.set(chickenId, newChickenStock);
 
-          statements.push({
-            sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
-            args: [deductChickenAmount, branchId, chickenItem.id]
-          });
+            statements.push({
+              sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
+              args: [deductChickenAmount, branchId, chickenId]
+            });
 
-          statements.push({
-            sql: `INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-                  VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
-            args: [
-              branchId,
-              chickenItem.id,
-              -deductChickenAmount,
-              previousChickenStock,
-              newChickenStock,
-              orderNumber,
-              req.user.id,
-              `ขาย ${oi.item_name} x${oi.quantity} (หัก ไก่ไร้กระดูก x${deductChickenAmount}) (${orderNumber})`
-            ]
-          });
+            statements.push({
+              sql: `INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                    VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
+              args: [
+                branchId,
+                chickenId,
+                -deductChickenAmount,
+                previousChickenStock,
+                newChickenStock,
+                orderNumber,
+                req.user.id,
+                `ขาย ${oi.item_name} x${oi.quantity} (หัก ไก่ไร้กระดูก x${deductChickenAmount}) (${orderNumber})`
+              ]
+            });
+          }
         }
       }
     }
@@ -460,14 +503,21 @@ router.get('/', async (req, res) => {
     }
 
     if (date) {
-      sql += ' AND date(o.created_at) = ?';
-      params.push(date);
+      sql += ' AND o.created_at >= ? AND o.created_at <= ?';
+      params.push(`${date} 00:00:00`, `${date} 23:59:59`);
     } else if (month) {
-      sql += " AND strftime('%Y-%m', o.created_at) = ?";
-      params.push(month);
+      const [yr, mo] = month.split('-');
+      let nextYr = Number(yr);
+      let nextMo = Number(mo) + 1;
+      if (nextMo > 12) {
+        nextMo = 1;
+        nextYr += 1;
+      }
+      sql += ' AND o.created_at >= ? AND o.created_at < ?';
+      params.push(`${month}-01 00:00:00`, `${nextYr}-${String(nextMo).padStart(2, '0')}-01 00:00:00`);
     } else if (year) {
-      sql += " AND strftime('%Y', o.created_at) = ?";
-      params.push(year);
+      sql += ' AND o.created_at >= ? AND o.created_at < ?';
+      params.push(`${year}-01-01 00:00:00`, `${Number(year) + 1}-01-01 00:00:00`);
     }
 
     if (status) {

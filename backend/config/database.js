@@ -527,7 +527,8 @@ async function initDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`,
     `CREATE INDEX IF NOT EXISTS idx_stock_logs_branch ON stock_logs(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_branch ON activity_logs(branch_id)`,
-    `CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`
+    `CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_expenses_branch_date ON expenses(branch_id, expense_date)`
   ];
 
   for (const index of indexes) {

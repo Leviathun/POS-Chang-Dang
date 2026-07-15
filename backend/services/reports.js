@@ -25,75 +25,70 @@ async function getDailyReport(date, branchId = null) {
     params4.push(branchId);
   }
 
-  // ยอดรวมของวัน
-  const totals = await db.prepare(`
-    SELECT 
-      COUNT(*) as total_orders,
-      COALESCE(SUM(total), 0) as total_revenue,
-      COALESCE(AVG(total), 0) as avg_order_value
-    FROM orders 
-    WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
-  `).get(params1);
-
-  // แยกตามวิธีชำระเงิน
-  const cashStats = await db.prepare(`
-    SELECT 
-      COUNT(*) as count,
-      COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
-  `).get(params2);
-
-  const qrStats = await db.prepare(`
-    SELECT 
-      COUNT(*) as count,
-      COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
-  `).get(params3);
-
-  const govStats = await db.prepare(`
-    SELECT 
-      COUNT(*) as count,
-      COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
-  `).get(params3_gov);
-
-  const deliveryStats = await db.prepare(`
-    SELECT 
-      COUNT(*) as count,
-      COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
-  `).get(params3_delivery);
-
-  // ยอดขายรายชั่วโมง (ระวังการเขียน strftime ใน libSQL/SQLite)
-  const hourlyBreakdown = await db.prepare(`
-    SELECT 
-      CAST(strftime('%H', created_at) AS INTEGER) as hour,
-      COUNT(*) as order_count,
-      COALESCE(SUM(total), 0) as revenue
-    FROM orders 
-    WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
-    GROUP BY strftime('%H', created_at)
-    ORDER BY hour
-  `).all(params4);
-
   // รายการบิลขายของวัน
   const params5 = [date];
   if (branchId) {
     params5.push(branchId);
   }
-  const orders = await db.prepare(`
-    SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
-           b.name as branch_name, u.name as staff_name
-    FROM orders o
-    LEFT JOIN branches b ON b.id = o.branch_id
-    LEFT JOIN users u ON u.id = o.staff_id
-    WHERE date(o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
-    ORDER BY o.id DESC
-  `).all(params5);
+
+  // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์ (เซฟเวลา 5-6 round trips)
+  const [totals, cashStats, qrStats, govStats, deliveryStats, hourlyBreakdown, orders] = await Promise.all([
+    db.prepare(`
+      SELECT 
+        COUNT(*) as total_orders,
+        COALESCE(SUM(total), 0) as total_revenue,
+        COALESCE(AVG(total), 0) as avg_order_value
+      FROM orders 
+      WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
+    `).get(params1),
+    db.prepare(`
+      SELECT 
+        COUNT(*) as count,
+        COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT 
+        COUNT(*) as count,
+        COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+    `).get(params3),
+    db.prepare(`
+      SELECT 
+        COUNT(*) as count,
+        COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+    `).get(params3_gov),
+    db.prepare(`
+      SELECT 
+        COUNT(*) as count,
+        COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+    `).get(params3_delivery),
+    db.prepare(`
+      SELECT 
+        CAST(strftime('%H', created_at) AS INTEGER) as hour,
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as revenue
+      FROM orders 
+      WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
+      GROUP BY strftime('%H', created_at)
+      ORDER BY hour
+    `).all(params4),
+    db.prepare(`
+      SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
+             b.name as branch_name, u.name as staff_name
+      FROM orders o
+      LEFT JOIN branches b ON b.id = o.branch_id
+      LEFT JOIN users u ON u.id = o.staff_id
+      WHERE date(o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+      ORDER BY o.id DESC
+    `).all(params5)
+  ]);
  
   const breakdownData = {
     cash_count: cashStats.count,
@@ -135,53 +130,60 @@ async function getMonthlyReport(month, branchId = null) {
     params2.push(branchId);
   }
 
-  // ยอดรายวันของเดือน
-  const dailyBreakdown = await db.prepare(`
-    SELECT 
-      date(created_at) as date,
-      COUNT(*) as order_count,
-      COALESCE(SUM(total), 0) as revenue
-    FROM orders 
-    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
-    GROUP BY date(created_at)
-    ORDER BY date
-  `).all(params1);
+  // ดึงรายการออเดอร์ทั้งหมดของเดือนนี้
+  const paramsOrders = [month];
+  if (branchId) paramsOrders.push(branchId);
 
-  // ยอดรวมของเดือน
-  const totals = await db.prepare(`
-    SELECT 
-      COUNT(*) as total_orders,
-      COALESCE(SUM(total), 0) as total_revenue,
-      COALESCE(AVG(total), 0) as avg_order_value
-    FROM orders 
-    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
-  `).get(params2);
-
-  // แยกตามวิธีชำระเงิน ของเดือน
-  const cashStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
-  `).get(params2);
-
-  const qrStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
-  `).get(params2);
-
-  const govStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
-  `).get(params2);
-
-  const deliveryStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
-  `).get(params2);
-
+  // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
+  const [dailyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders] = await Promise.all([
+    db.prepare(`
+      SELECT 
+        date(created_at) as date,
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as revenue
+      FROM orders 
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
+      GROUP BY date(created_at)
+      ORDER BY date
+    `).all(params1),
+    db.prepare(`
+      SELECT 
+        COUNT(*) as total_orders,
+        COALESCE(SUM(total), 0) as total_revenue,
+        COALESCE(AVG(total), 0) as avg_order_value
+      FROM orders 
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
+             b.name as branch_name, u.name as staff_name
+      FROM orders o
+      LEFT JOIN branches b ON b.id = o.branch_id
+      LEFT JOIN users u ON u.id = o.staff_id
+      WHERE strftime('%Y-%m', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+      ORDER BY o.id DESC
+    `).all(paramsOrders)
+  ]);
   const breakdownData = {
     cash_count: cashStats.count,
     cash_total: cashStats.total,
@@ -192,19 +194,6 @@ async function getMonthlyReport(month, branchId = null) {
     delivery_count: deliveryStats.count,
     delivery_total: deliveryStats.total
   };
-
-  // ดึงรายการออเดอร์ทั้งหมดของเดือนนี้
-  const paramsOrders = [month];
-  if (branchId) paramsOrders.push(branchId);
-  const orders = await db.prepare(`
-    SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
-           b.name as branch_name, u.name as staff_name
-    FROM orders o
-    LEFT JOIN branches b ON b.id = o.branch_id
-    LEFT JOIN users u ON u.id = o.staff_id
-    WHERE strftime('%Y-%m', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
-    ORDER BY o.id DESC
-  `).all(paramsOrders);
 
   return {
     month,
@@ -235,53 +224,60 @@ async function getYearlyReport(year, branchId = null) {
     params2.push(branchId);
   }
 
-  // ยอดรายเดือนของปี
-  const monthlyBreakdown = await db.prepare(`
-    SELECT 
-      strftime('%Y-%m', created_at) as month,
-      COUNT(*) as order_count,
-      COALESCE(SUM(total), 0) as revenue
-    FROM orders 
-    WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
-    GROUP BY strftime('%Y-%m', created_at)
-    ORDER BY month
-  `).all(params1);
+  // ดึงรายการออเดอร์ทั้งหมดของปีนี้
+  const paramsOrders = [year];
+  if (branchId) paramsOrders.push(branchId);
 
-  // ยอดรวมของปี
-  const totals = await db.prepare(`
-    SELECT 
-      COUNT(*) as total_orders,
-      COALESCE(SUM(total), 0) as total_revenue,
-      COALESCE(AVG(total), 0) as avg_order_value
-    FROM orders 
-    WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
-  `).get(params2);
-
-  // แยกตามวิธีชำระเงิน ของปี
-  const cashStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
-  `).get(params2);
-
-  const qrStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
-  `).get(params2);
-
-  const govStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
-  `).get(params2);
-
-  const deliveryStats = await db.prepare(`
-    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
-    FROM orders 
-    WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
-  `).get(params2);
-
+  // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
+  const [monthlyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders] = await Promise.all([
+    db.prepare(`
+      SELECT 
+        strftime('%Y-%m', created_at) as month,
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as revenue
+      FROM orders 
+      WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY month
+    `).all(params1),
+    db.prepare(`
+      SELECT 
+        COUNT(*) as total_orders,
+        COALESCE(SUM(total), 0) as total_revenue,
+        COALESCE(AVG(total), 0) as avg_order_value
+      FROM orders 
+      WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+      FROM orders 
+      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+    `).get(params2),
+    db.prepare(`
+      SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
+             b.name as branch_name, u.name as staff_name
+      FROM orders o
+      LEFT JOIN branches b ON b.id = o.branch_id
+      LEFT JOIN users u ON u.id = o.staff_id
+      WHERE strftime('%Y', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+      ORDER BY o.id DESC
+    `).all(paramsOrders)
+  ]);
   const breakdownData = {
     cash_count: cashStats.count,
     cash_total: cashStats.total,
@@ -292,19 +288,6 @@ async function getYearlyReport(year, branchId = null) {
     delivery_count: deliveryStats.count,
     delivery_total: deliveryStats.total
   };
-
-  // ดึงรายการออเดอร์ทั้งหมดของปีนี้
-  const paramsOrders = [year];
-  if (branchId) paramsOrders.push(branchId);
-  const orders = await db.prepare(`
-    SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
-           b.name as branch_name, u.name as staff_name
-    FROM orders o
-    LEFT JOIN branches b ON b.id = o.branch_id
-    LEFT JOIN users u ON u.id = o.staff_id
-    WHERE strftime('%Y', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
-    ORDER BY o.id DESC
-  `).all(paramsOrders);
 
   return {
     year,
