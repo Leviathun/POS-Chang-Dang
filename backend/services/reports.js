@@ -8,12 +8,16 @@ const { getDb } = require('../config/database');
 async function getDailyReport(date, branchId = null) {
   const db = getDb();
   let branchFilter = '';
-  const params1 = [date];
-  const params2 = [date];
-  const params3 = [date];
-  const params3_gov = [date];
-  const params3_delivery = [date];
-  const params4 = [date];
+  const startDate = `${date} 00:00:00`;
+  const endDate = `${date} 23:59:59`;
+
+  const params1 = [startDate, endDate];
+  const params2 = [startDate, endDate];
+  const params3 = [startDate, endDate];
+  const params3_gov = [startDate, endDate];
+  const params3_delivery = [startDate, endDate];
+  const params4 = [startDate, endDate];
+  const params5 = [startDate, endDate];
 
   if (branchId) {
     branchFilter = ' AND branch_id = ?';
@@ -23,15 +27,10 @@ async function getDailyReport(date, branchId = null) {
     params3_gov.push(branchId);
     params3_delivery.push(branchId);
     params4.push(branchId);
-  }
-
-  // รายการบิลขายของวัน
-  const params5 = [date];
-  if (branchId) {
     params5.push(branchId);
   }
 
-  // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์ (เซฟเวลา 5-6 round trips)
+  // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
   const [totals, cashStats, qrStats, govStats, deliveryStats, hourlyBreakdown, orders] = await Promise.all([
     db.prepare(`
       SELECT 
@@ -39,35 +38,35 @@ async function getDailyReport(date, branchId = null) {
         COALESCE(SUM(total), 0) as total_revenue,
         COALESCE(AVG(total), 0) as avg_order_value
       FROM orders 
-      WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
+      WHERE created_at >= ? AND created_at <= ? AND status = 'completed'${branchFilter}
     `).get(params1),
     db.prepare(`
       SELECT 
         COUNT(*) as count,
         COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+      WHERE created_at >= ? AND created_at <= ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT 
         COUNT(*) as count,
         COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+      WHERE created_at >= ? AND created_at <= ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
     `).get(params3),
     db.prepare(`
       SELECT 
         COUNT(*) as count,
         COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+      WHERE created_at >= ? AND created_at <= ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
     `).get(params3_gov),
     db.prepare(`
       SELECT 
         COUNT(*) as count,
         COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE date(created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+      WHERE created_at >= ? AND created_at <= ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
     `).get(params3_delivery),
     db.prepare(`
       SELECT 
@@ -75,7 +74,7 @@ async function getDailyReport(date, branchId = null) {
         COUNT(*) as order_count,
         COALESCE(SUM(total), 0) as revenue
       FROM orders 
-      WHERE date(created_at) = ? AND status = 'completed'${branchFilter}
+      WHERE created_at >= ? AND created_at <= ? AND status = 'completed'${branchFilter}
       GROUP BY strftime('%H', created_at)
       ORDER BY hour
     `).all(params4),
@@ -85,7 +84,7 @@ async function getDailyReport(date, branchId = null) {
       FROM orders o
       LEFT JOIN branches b ON b.id = o.branch_id
       LEFT JOIN users u ON u.id = o.staff_id
-      WHERE date(o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+      WHERE o.created_at >= ? AND o.created_at <= ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
       ORDER BY o.id DESC
     `).all(params5)
   ]);
@@ -121,18 +120,27 @@ async function getDailyReport(date, branchId = null) {
 async function getMonthlyReport(month, branchId = null) {
   const db = getDb();
   let branchFilter = '';
-  const params1 = [month];
-  const params2 = [month];
+  
+  const [yr, mo] = month.split('-');
+  let nextYr = Number(yr);
+  let nextMo = Number(mo) + 1;
+  if (nextMo > 12) {
+    nextMo = 1;
+    nextYr += 1;
+  }
+  const startStr = `${month}-01 00:00:00`;
+  const endStr = `${nextYr}-${String(nextMo).padStart(2, '0')}-01 00:00:00`;
+
+  const params1 = [startStr, endStr];
+  const params2 = [startStr, endStr];
+  const paramsOrders = [startStr, endStr];
 
   if (branchId) {
     branchFilter = ' AND branch_id = ?';
     params1.push(branchId);
     params2.push(branchId);
+    paramsOrders.push(branchId);
   }
-
-  // ดึงรายการออเดอร์ทั้งหมดของเดือนนี้
-  const paramsOrders = [month];
-  if (branchId) paramsOrders.push(branchId);
 
   // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
   const [dailyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders] = await Promise.all([
@@ -142,7 +150,7 @@ async function getMonthlyReport(month, branchId = null) {
         COUNT(*) as order_count,
         COALESCE(SUM(total), 0) as revenue
       FROM orders 
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'${branchFilter}
       GROUP BY date(created_at)
       ORDER BY date
     `).all(params1),
@@ -152,27 +160,27 @@ async function getMonthlyReport(month, branchId = null) {
         COALESCE(SUM(total), 0) as total_revenue,
         COALESCE(AVG(total), 0) as avg_order_value
       FROM orders 
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
@@ -180,7 +188,7 @@ async function getMonthlyReport(month, branchId = null) {
       FROM orders o
       LEFT JOIN branches b ON b.id = o.branch_id
       LEFT JOIN users u ON u.id = o.staff_id
-      WHERE strftime('%Y-%m', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+      WHERE o.created_at >= ? AND o.created_at < ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
       ORDER BY o.id DESC
     `).all(paramsOrders)
   ]);
@@ -215,18 +223,20 @@ async function getMonthlyReport(month, branchId = null) {
 async function getYearlyReport(year, branchId = null) {
   const db = getDb();
   let branchFilter = '';
-  const params1 = [year];
-  const params2 = [year];
+  
+  const startStr = `${year}-01-01 00:00:00`;
+  const endStr = `${Number(year) + 1}-01-01 00:00:00`;
+
+  const params1 = [startStr, endStr];
+  const params2 = [startStr, endStr];
+  const paramsOrders = [startStr, endStr];
 
   if (branchId) {
     branchFilter = ' AND branch_id = ?';
     params1.push(branchId);
     params2.push(branchId);
+    paramsOrders.push(branchId);
   }
-
-  // ดึงรายการออเดอร์ทั้งหมดของปีนี้
-  const paramsOrders = [year];
-  if (branchId) paramsOrders.push(branchId);
 
   // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
   const [monthlyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders] = await Promise.all([
@@ -236,7 +246,7 @@ async function getYearlyReport(year, branchId = null) {
         COUNT(*) as order_count,
         COALESCE(SUM(total), 0) as revenue
       FROM orders 
-      WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'${branchFilter}
       GROUP BY strftime('%Y-%m', created_at)
       ORDER BY month
     `).all(params1),
@@ -246,27 +256,27 @@ async function getYearlyReport(year, branchId = null) {
         COALESCE(SUM(total), 0) as total_revenue,
         COALESCE(AVG(total), 0) as avg_order_value
       FROM orders 
-      WHERE strftime('%Y', created_at) = ? AND status = 'completed'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'cash'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'qr'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'gov'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
       FROM orders 
-      WHERE strftime('%Y', created_at) = ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed' AND payment_method = 'delivery'${branchFilter}
     `).get(params2),
     db.prepare(`
       SELECT o.id, o.order_number, o.subtotal, o.discount, o.total, o.payment_method, o.status, o.note, o.cancel_reason, o.created_at,
@@ -274,7 +284,7 @@ async function getYearlyReport(year, branchId = null) {
       FROM orders o
       LEFT JOIN branches b ON b.id = o.branch_id
       LEFT JOIN users u ON u.id = o.staff_id
-      WHERE strftime('%Y', o.created_at) = ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
+      WHERE o.created_at >= ? AND o.created_at < ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
       ORDER BY o.id DESC
     `).all(paramsOrders)
   ]);
@@ -427,13 +437,15 @@ async function getSummary(branchId = null) {
     params.push(branchId);
   }
 
-  // วันนี้
+  // วันนี้ (Range Comparison)
   const today = await db.prepare(`
     SELECT 
       COUNT(*) as total_orders,
       COALESCE(SUM(total), 0) as total_revenue
     FROM orders 
-    WHERE date(created_at) = date('now', 'localtime') AND status = 'completed'${branchFilter}
+    WHERE created_at >= date('now', 'localtime', 'start of day') 
+      AND created_at <= date('now', 'localtime', 'start of day', '+1 day', '-1 second') 
+      AND status = 'completed'${branchFilter}
   `).get(params);
 
   // สัปดาห์นี้ (7 วันย้อนหลัง)
@@ -446,13 +458,15 @@ async function getSummary(branchId = null) {
     WHERE created_at >= datetime('now', 'localtime', ?) AND status = 'completed'${branchFilter}
   `).get(weekParams);
 
-  // เดือนนี้
+  // เดือนนี้ (Range Comparison)
   const month = await db.prepare(`
     SELECT 
       COUNT(*) as total_orders,
       COALESCE(SUM(total), 0) as total_revenue
     FROM orders 
-    WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', 'localtime') AND status = 'completed'${branchFilter}
+    WHERE created_at >= datetime('now', 'localtime', 'start of month') 
+      AND created_at < datetime('now', 'localtime', 'start of month', '+1 month') 
+      AND status = 'completed'${branchFilter}
   `).get(params);
 
   return {
@@ -472,3 +486,4 @@ async function getSummary(branchId = null) {
 }
 
 module.exports = { getDailyReport, getMonthlyReport, getYearlyReport, getTopItems, getSummary };
+

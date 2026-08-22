@@ -32,9 +32,13 @@ async function request(method, path, body, options = {}) {
     headers['x-branch-id'] = String(selectedBranchId);
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
   const config = {
     method,
     headers,
+    signal: controller.signal,
     ...options,
   };
 
@@ -44,6 +48,7 @@ async function request(method, path, body, options = {}) {
 
   try {
     const response = await fetch(url, config);
+    clearTimeout(timeoutId);
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -53,6 +58,10 @@ async function request(method, path, body, options = {}) {
 
     return data;
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('การเชื่อมต่อใช้เวลานานเกินไป (Timeout)');
+    }
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
     }
@@ -156,6 +165,10 @@ const stock = {
       return request('GET', `/api/stock/${id}/logs?${query}`);
     }
     return request('GET', `/api/stock/${id}/logs${dateOrParams ? `?date=${dateOrParams}` : ''}`);
+  },
+  async getAllLogs(params = {}) {
+    const query = typeof params === 'object' ? new URLSearchParams(params).toString() : '';
+    return request('GET', `/api/stock/logs/all${query ? `?${query}` : ''}`);
   },
   async bulkAdjust(data) {
     return request('POST', '/api/stock/bulk-adjust', data);

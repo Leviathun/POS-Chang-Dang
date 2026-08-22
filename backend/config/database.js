@@ -421,6 +421,31 @@ async function initDatabase() {
     await db.exec(table);
   }
 
+  // Migration: Add branch_id to categories and menu_items if not exists
+  try {
+    const catCols = await db.prepare("PRAGMA table_info(categories)").all();
+    if (!catCols.some(c => c.name === 'branch_id')) {
+      await db.exec('ALTER TABLE categories ADD COLUMN branch_id INTEGER REFERENCES branches(id)');
+      await db.exec(`UPDATE categories SET branch_id = ${defaultBranchId} WHERE branch_id IS NULL`);
+    }
+  } catch (e) {}
+
+  try {
+    const menuCols = await db.prepare("PRAGMA table_info(menu_items)").all();
+    if (!menuCols.some(c => c.name === 'branch_id')) {
+      await db.exec('ALTER TABLE menu_items ADD COLUMN branch_id INTEGER REFERENCES branches(id)');
+      await db.exec(`UPDATE menu_items SET branch_id = ${defaultBranchId} WHERE branch_id IS NULL`);
+    }
+  } catch (e) {}
+
+  try {
+    const setCols = await db.prepare("PRAGMA table_info(settings)").all();
+    if (!setCols.some(c => c.name === 'branch_id')) {
+      await db.exec('ALTER TABLE settings ADD COLUMN branch_id INTEGER REFERENCES branches(id)');
+      await db.exec(`UPDATE settings SET branch_id = ${defaultBranchId} WHERE branch_id IS NULL`);
+    }
+  } catch (e) {}
+
   // Migration: Add session_id to orders table if not exists
   try {
     await db.exec('ALTER TABLE orders ADD COLUMN session_id INTEGER REFERENCES cash_drawer_sessions(id)');
@@ -525,14 +550,23 @@ async function initDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_orders_branch ON orders(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_orders_branch_created ON orders(branch_id, created_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_order_items_menu_item_id ON order_items(menu_item_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_menu_items_branch ON menu_items(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_stock_logs_branch ON stock_logs(branch_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_stock_logs_menu_item ON stock_logs(menu_item_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_branch ON activity_logs(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`,
     `CREATE INDEX IF NOT EXISTS idx_expenses_branch_date ON expenses(branch_id, expense_date)`
   ];
 
   for (const index of indexes) {
-    await db.exec(index);
+    try {
+      await db.exec(index);
+    } catch (idxErr) {
+      console.warn(`⚠️ Index creation skipped (${index}):`, idxErr.message);
+    }
   }
 
   // ─── Seed Default Data ────────────────────────────────────

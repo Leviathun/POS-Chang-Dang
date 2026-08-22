@@ -361,8 +361,6 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         `).run(newVal, Number(id), branchId);
       }
 
-      const dbReason = reason === 'staff_benefit' ? 'adjustment' : reason;
-
       await db.prepare(`
         INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
@@ -372,7 +370,7 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         quantity,
         currentQty,
         newVal,
-        dbReason,
+        reason,
         req.user.id,
         note || `ปรับสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`
       );
@@ -615,6 +613,70 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการทอดสินค้า'
+    });
+  }
+});
+
+// ─── GET /logs/all — ดึงประวัติการเปลี่ยนแปลงสต็อกทั้งหมดของสาขา ────────
+router.get('/logs/all', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 1000;
+    const db = getDb();
+
+    let branchId = req.query.branch_id ? Number(req.query.branch_id) : (req.user ? req.user.branch_id : null);
+    if (!branchId) {
+      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+      branchId = defaultBranch ? defaultBranch.id : null;
+    }
+
+    let query = `
+      SELECT sl.*, u.name as staff_name, mi.name as item_name
+      FROM stock_logs sl
+      LEFT JOIN users u ON u.id = sl.staff_id
+      LEFT JOIN menu_items mi ON mi.id = sl.menu_item_id
+      WHERE sl.branch_id = ?
+    `;
+    const params = [branchId];
+
+    if (req.query.date) {
+      query += ` AND sl.created_at >= ? AND sl.created_at <= ? `;
+      params.push(`${req.query.date} 00:00:00`, `${req.query.date} 23:59:59`);
+    } else if (req.query.month) {
+      const [yr, mo] = req.query.month.split('-');
+      let nextYr = Number(yr);
+      let nextMo = Number(mo) + 1;
+      if (nextMo > 12) { nextMo = 1; nextYr += 1; }
+      query += ` AND sl.created_at >= ? AND sl.created_at < ? `;
+      params.push(`${req.query.month}-01 00:00:00`, `${nextYr}-${String(nextMo).padStart(2, '0')}-01 00:00:00`);
+    } else if (req.query.year) {
+      query += ` AND sl.created_at >= ? AND sl.created_at < ? `;
+      params.push(`${req.query.year}-01-01 00:00:00`, `${Number(req.query.year) + 1}-01-01 00:00:00`);
+    }
+
+    if (req.query.reason && req.query.reason !== 'all') {
+      query += ` AND sl.reason = ? `;
+      params.push(req.query.reason);
+    }
+
+    if (req.query.menu_item_id && req.query.menu_item_id !== 'all') {
+      query += ` AND sl.menu_item_id = ? `;
+      params.push(Number(req.query.menu_item_id));
+    }
+
+    query += ` ORDER BY sl.created_at DESC LIMIT ? `;
+    params.push(limit);
+
+    const logs = await db.prepare(query).all(...params);
+
+    res.json({
+      success: true,
+      data: logs
+    });
+  } catch (error) {
+    console.error('❌ Get all stock logs error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงประวัติสต็อกทั้งหมด'
     });
   }
 });

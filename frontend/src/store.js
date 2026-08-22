@@ -379,27 +379,6 @@ export const store = reactive({
     const currentMonth = today.substring(0, 7);
     
     if (this.reportsLoaded && !force && this.reportsBranchId === branchId) {
-      Promise.all([
-        api.reports.summary(branchId),
-        api.reports.topItems(7, branchId),
-        api.reports.daily(today, branchId),
-        api.expenses.get({ date: today, branch_id: branchId }),
-        api.activities.get({ date: today, branch_id: branchId, limit: 1000 }),
-        api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }),
-        api.reports.monthly(currentMonth, branchId),
-        api.expenses.get({ month: currentMonth, branch_id: branchId }),
-        api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId })
-      ]).then(([sum, top, daily, exp, act, hist, monthlyRes, expMonthRes, monthlyOrdersRes]) => {
-        this.reportSummary = sum.success ? sum.data : sum;
-        this.reportTopItems = top.success ? (top.data || []) : [];
-        this.reportDailyData = daily.success ? daily.data : daily;
-        this.reportsExpenses = exp.success ? (exp.data || []) : [];
-        this.reportsActivities = act.success ? (act.data || []) : [];
-        this.reportsHistory = hist.success ? (hist.data || hist || []) : [];
-        this.reportMonthly = monthlyRes.success ? monthlyRes.data : monthlyRes;
-        this.reportMonthlyExpenses = expMonthRes.success ? (expMonthRes.data || []) : [];
-        this.reportMonthlyOrders = monthlyOrdersRes.success ? (monthlyOrdersRes.data || []) : [];
-      }).catch(e => console.error(e));
       return;
     }
 
