@@ -1,18 +1,8 @@
 // Service Worker — POS ร้านไก่ทอดช้างแดง
-const CACHE_NAME = 'changdang-pos-v1';
+const CACHE_NAME = 'changdang-pos-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/css/style.css',
-  '/js/api.js',
-  '/js/utils/helpers.js',
-  '/js/components/pos.js',
-  '/js/components/payment.js',
-  '/js/components/menu.js',
-  '/js/components/stock.js',
-  '/js/components/reports.js',
-  '/js/components/settings.js',
-  '/js/app.js',
   '/manifest.json'
 ];
 
@@ -43,33 +33,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch — Network-first for API, Cache-first for static
+// Fetch — Bypass API calls completely for instant native network speed
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
-
-  // API calls → Network-first
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clone and cache successful API responses
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Fallback to cache for offline
-          return caches.match(request);
-        })
-    );
+  // Skip non-GET requests & API endpoints completely (never cache dynamic API)
+  if (request.method !== 'GET' || url.pathname.startsWith('/api/')) {
     return;
   }
 
