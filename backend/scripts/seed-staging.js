@@ -12,14 +12,25 @@
  *   node backend/scripts/seed-staging.js
  */
 
+const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
+
+// Load .env.staging explicitly
+const stagingEnvPath = path.join(__dirname, '..', '..', '.env.staging');
+if (fs.existsSync(stagingEnvPath)) {
+  const envConfig = dotenv.parse(fs.readFileSync(stagingEnvPath));
+  for (const k in envConfig) {
+    if (envConfig[k]) {
+      process.env[k] = envConfig[k];
+    } else if (k === 'TURSO_DATABASE_URL' || k === 'TURSO_AUTH_TOKEN') {
+      delete process.env[k]; // Ensure local fallback if staging credentials are empty in .env.staging
+    }
+  }
+}
+
 // Force staging flag
 process.env.APP_ENV = 'staging';
-
-// If TURSO_DATABASE_URL is not explicitly set for staging in .env.staging, fallback to local SQLite pos-staging.db
-if (!process.env.STAGING_TURSO_DATABASE_URL && process.env.TURSO_DATABASE_URL && process.env.TURSO_DATABASE_URL.includes('changdang-pos-leviathun')) {
-  delete process.env.TURSO_DATABASE_URL;
-  delete process.env.TURSO_AUTH_TOKEN;
-}
 
 const { getDb, initDatabase } = require('../config/database');
 
