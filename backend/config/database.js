@@ -591,10 +591,53 @@ async function initDatabase() {
     const catCount = await db.prepare('SELECT COUNT(*) as count FROM categories WHERE branch_id = ?').get(b.id);
     if (catCount.count === 0) {
       const insertCat = db.prepare('INSERT INTO categories (branch_id, name, sort_order) VALUES (?, ?, ?)');
-      await insertCat.run(b.id, 'เมนูหลัก', 1);
-      await insertCat.run(b.id, 'ของทานเล่น', 2);
-      await insertCat.run(b.id, 'เครื่องดื่ม', 3);
-      await insertCat.run(b.id, 'อื่นๆ', 4);
+      await insertCat.run(b.id, 'สามกรอบ', 1);
+      await insertCat.run(b.id, 'ไก่ทอด', 2);
+      await insertCat.run(b.id, 'ของทานเล่น', 3);
+      await insertCat.run(b.id, 'ซาลาเปา & ขนมจีบ', 4);
+    }
+  }
+
+  // Seed default 23 store menu items per branch
+  for (const b of branches) {
+    const menuCount = await db.prepare('SELECT COUNT(*) as count FROM menu_items WHERE branch_id = ?').get(b.id);
+    if (menuCount.count === 0) {
+      const cats = await db.prepare('SELECT id, name FROM categories WHERE branch_id = ?').all(b.id);
+      const catMap = {};
+      cats.forEach(c => catMap[c.name] = c.id);
+
+      const items = [
+        { name: 'ไส้กรอกดอกแดง', price: 20, cat: 'สามกรอบ' },
+        { name: 'ไส้กรอกเฟรนฟราย', price: 20, cat: 'สามกรอบ' },
+        { name: 'ปูอัดกรอบคานิจัง', price: 20, cat: 'สามกรอบ' },
+        { name: 'สะโพกไก่', price: 35, cat: 'ไก่ทอด' },
+        { name: 'สะโพกไร้กระดูก', price: 40, cat: 'ไก่ทอด' },
+        { name: 'สะโพกติดน่อง', price: 45, cat: 'ไก่ทอด' },
+        { name: 'น่องไก่ใหญ่', price: 30, cat: 'ไก่ทอด' },
+        { name: 'น่องไก่เล็ก', price: 15, cat: 'ไก่ทอด' },
+        { name: 'ไก่ไร้กระดูก', price: 35, cat: 'ไก่ทอด' },
+        { name: 'ปีกใหญ่', price: 20, cat: 'ไก่ทอด' },
+        { name: 'อกไก่สไปร์ซี่', price: 35, cat: 'ไก่ทอด' },
+        { name: 'ชีสสติ๊ก', price: 20, cat: 'ของทานเล่น' },
+        { name: 'ชีสบอล', price: 20, cat: 'ของทานเล่น' },
+        { name: 'นักเก็ต', price: 20, cat: 'ของทานเล่น' },
+        { name: 'นักเก็ตลาวา', price: 20, cat: 'ของทานเล่น' },
+        { name: 'เบอร์เกอร์', price: 20, cat: 'ของทานเล่น' },
+        { name: 'แร็ปไก่', price: 20, cat: 'ของทานเล่น' },
+        { name: 'หมั่นโถว', price: 20, cat: 'ซาลาเปา & ขนมจีบ' },
+        { name: 'ซาลาเปาไส้หมูสับ ไข่เค็ม', price: 25, cat: 'ซาลาเปา & ขนมจีบ' },
+        { name: 'ซาลาเปาไส้ถั่วดำ', price: 20, cat: 'ซาลาเปา & ขนมจีบ' },
+        { name: 'ซาลาเปาไส้หมูสับ', price: 20, cat: 'ซาลาเปา & ขนมจีบ' },
+        { name: 'ซาลาเปาไส้ครีม', price: 20, cat: 'ซาลาเปา & ขนมจีบ' },
+        { name: 'ขนมจีบหมู', price: 20, cat: 'ซาลาเปา & ขนมจีบ' }
+      ];
+
+      const stmt = db.prepare('INSERT INTO menu_items (branch_id, name, price, category_id) VALUES (?, ?, ?, ?)');
+      for (const item of items) {
+        const catId = catMap[item.cat] || null;
+        await stmt.run(b.id, item.name, item.price, catId);
+      }
+      console.log(`  🍗 Seeded 23 real store menu items for branch ID ${b.id}`);
     }
   }
 
