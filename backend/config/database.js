@@ -138,8 +138,8 @@ class DatabaseMock {
 
   // Trigger replica sync in the background safely without awaiting
   syncReplicaInBackground() {
-    if (process.env.VERCEL) {
-      return; // Direct cloud database has no local replica to sync
+    if (process.env.VERCEL || !process.env.TURSO_DATABASE_URL) {
+      return; // Direct cloud database or local SQLite file has no local replica sync
     }
     if (this.client && typeof this.client.sync === 'function') {
       try {
@@ -177,7 +177,9 @@ function getDb() {
         });
       } else {
         // Embedded Replica for persistent servers / local development (instant read speed)
-        const dbPath = path.join(__dirname, '..', '..', 'data', 'pos_replica.db');
+        const isStaging = process.env.APP_ENV === 'staging' || process.env.NODE_ENV === 'staging';
+        const replicaFileName = isStaging ? 'pos_staging_replica.db' : 'pos_replica.db';
+        const dbPath = path.join(__dirname, '..', '..', 'data', replicaFileName);
         const dir = path.dirname(dbPath);
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
@@ -199,7 +201,9 @@ function getDb() {
       }
     } else {
       // Local fallback using a local SQLite file via @libsql/client
-      const dbPath = path.join(__dirname, '..', '..', 'data', 'pos.db');
+      const isStaging = process.env.APP_ENV === 'staging' || process.env.NODE_ENV === 'staging';
+      const localFileName = isStaging ? 'pos-staging.db' : 'pos.db';
+      const dbPath = path.join(__dirname, '..', '..', 'data', localFileName);
       const dir = path.dirname(dbPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
