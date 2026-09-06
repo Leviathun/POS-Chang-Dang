@@ -241,8 +241,8 @@ export async function disconnectPrinter() {
 // Check status
 export function isPrinterConnected() {
   const config = getSavedPrinterConfig();
-  // Return true if activeDevice is connected OR if a printer is configured (so we can trigger fallbacks if claim fails)
-  return activeDevice !== null || (config.vendorId !== null && config.productId !== null);
+  // Return true if activeDevice is connected OR if a printer is configured OR using RawBT
+  return activeDevice !== null || (config.vendorId !== null && config.productId !== null) || config.connectionType === 'rawbt';
 }
 
 // Print raw bytes via local WebSocket server (companion app Server for RawBT)

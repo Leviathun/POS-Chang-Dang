@@ -443,8 +443,8 @@ async function getSummary(branchId = null) {
       COUNT(*) as total_orders,
       COALESCE(SUM(total), 0) as total_revenue
     FROM orders 
-    WHERE created_at >= date('now', 'localtime', 'start of day') 
-      AND created_at <= date('now', 'localtime', 'start of day', '+1 day', '-1 second') 
+    WHERE created_at >= datetime('now', 'localtime', 'start of day') 
+      AND created_at <= datetime('now', 'localtime', 'start of day', '+1 day', '-1 second') 
       AND status = 'completed'${branchFilter}
   `).get(params);
 

@@ -12,6 +12,8 @@
     "backend": "nodemon backend/server.js",
     "frontend": "npm run dev --workspace=frontend",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "dev:staging": "dotenv -e .env.staging concurrently \"npm run backend\" \"npm run frontend\"",
+    "seed:staging": "node backend/scripts/seed-staging.js",
     "build": "npm run build --workspace=frontend"
   },
   "keywords": [
