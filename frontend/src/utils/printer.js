@@ -342,8 +342,13 @@ export async function sendRawToPrinter(bytes) {
   }
 }
 
-// Open cash drawer only (Async WebUSB path)
+// Open cash drawer only (Async WebUSB path with RawBT sync fallback)
 export async function kickDrawer() {
+  const config = getSavedPrinterConfig();
+  if (config.connectionType === 'rawbt') {
+    kickDrawerSync();
+    return;
+  }
   const bytes = new EscPosBuilder().kick().build();
   await sendRawToPrinter(bytes);
 }
