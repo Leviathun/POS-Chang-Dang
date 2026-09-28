@@ -60,14 +60,7 @@ class DatabaseMock {
     const tx = transactionStorage.getStore();
     const activeClient = tx || this.client;
     const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
-    const res = await activeClient.execute({ sql: cleanSql, args });
-
-    // Sync replica in background after executing a write query outside a transaction
-    if (!tx && this.isWriteQuery(sql)) {
-      this.syncReplicaInBackground();
-    }
-
-    return res;
+    return await activeClient.execute({ sql: cleanSql, args });
   }
 
   async exec(sql) {
@@ -75,11 +68,6 @@ class DatabaseMock {
     const activeClient = tx || this.client;
     const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
     await activeClient.execute(cleanSql);
-
-    // Sync replica in background after exec write outside a transaction
-    if (!tx && this.isWriteQuery(sql)) {
-      this.syncReplicaInBackground();
-    }
   }
 
   transaction(fn) {
@@ -90,10 +78,6 @@ class DatabaseMock {
           return await fn(...args);
         });
         await tx.commit();
-
-        // Sync replica in background after transaction commit
-        this.syncReplicaInBackground();
-
         return result;
       } catch (e) {
         await tx.rollback();
@@ -113,46 +97,7 @@ class DatabaseMock {
         };
       }
     });
-    const res = await this.client.batch(cleanStatements, mode);
-
-    // Sync replica in background after write batch execution
-    if (mode === "write") {
-      this.syncReplicaInBackground();
-    }
-
-    return res;
-  }
-
-  // Check if query is a write operation
-  isWriteQuery(sql) {
-    if (typeof sql !== 'string') return false;
-    const clean = sql.trim().toUpperCase();
-    return clean.startsWith('INSERT') || 
-           clean.startsWith('UPDATE') || 
-           clean.startsWith('DELETE') || 
-           clean.startsWith('REPLACE') || 
-           clean.startsWith('CREATE') || 
-           clean.startsWith('DROP') || 
-           clean.startsWith('ALTER');
-  }
-
-  // Trigger replica sync in the background safely without awaiting
-  syncReplicaInBackground() {
-    if (process.env.VERCEL || !process.env.TURSO_DATABASE_URL) {
-      return; // Direct cloud database or local SQLite file has no local replica sync
-    }
-    if (this.client && typeof this.client.sync === 'function') {
-      try {
-        const promise = this.client.sync();
-        if (promise && typeof promise.catch === 'function') {
-          promise.catch(err => {
-            console.warn('⚠️ Background replica sync failed:', err.message);
-          });
-        }
-      } catch (err) {
-        console.warn('⚠️ Background replica sync failed synchronously:', err.message);
-      }
-    }
+    return await this.client.batch(cleanStatements, mode);
   }
 }
 
@@ -168,39 +113,13 @@ function getDb() {
 
     let client;
     if (dbUrl) {
-      if (process.env.VERCEL) {
-        // Direct cloud connection for Serverless environments (which have no persistent disk)
-        console.log('  🗄️  Connecting directly to Turso Cloud DB (Serverless Mode):', dbUrl);
-        client = createClient({
-          url: dbUrl,
-          authToken: dbToken
-        });
-      } else {
-        // Embedded Replica for persistent servers / local development (instant read speed)
-        const isStaging = process.env.APP_ENV === 'staging' || process.env.NODE_ENV === 'staging';
-        const replicaFileName = isStaging ? 'pos_staging_replica.db' : 'pos_replica.db';
-        const dbPath = path.join(__dirname, '..', '..', 'data', replicaFileName);
-        const dir = path.dirname(dbPath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        console.log('  🗄️  Connecting to Turso Cloud DB via Embedded Replica (Persistent Mode):', `file:${dbPath}`);
-        client = createClient({
-          url: `file:${dbPath}`,
-          syncUrl: dbUrl,
-          authToken: dbToken,
-          syncInterval: 60000 // Automatically sync every 60 seconds
-        });
-
-        // Trigger initial sync on startup asynchronously to not block server boot
-        client.sync().then(() => {
-          console.log('  🔄 Initial Turso Cloud DB sync completed successfully');
-        }).catch(e => {
-          console.warn('  ⚠️ Initial Turso Cloud DB sync failed (operating offline?):', e.message);
-        });
-      }
+      console.log('  🗄️  Connecting directly to Turso Cloud DB:', dbUrl);
+      client = createClient({
+        url: dbUrl,
+        authToken: dbToken
+      });
     } else {
-      // Local fallback using a local SQLite file via @libsql/client
+      // Local development fallback using a local SQLite file when no TURSO_DATABASE_URL is defined
       const isStaging = process.env.APP_ENV === 'staging' || process.env.NODE_ENV === 'staging';
       const localFileName = isStaging ? 'pos-staging.db' : 'pos.db';
       const dbPath = path.join(__dirname, '..', '..', 'data', localFileName);
@@ -208,7 +127,7 @@ function getDb() {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      console.log('  🗄️  Connecting to Local SQLite DB:', `file:${dbPath}`);
+      console.log('  🗄️  Connecting to Local SQLite DB (Dev Fallback):', `file:${dbPath}`);
       client = createClient({
         url: `file:${dbPath}`
       });
