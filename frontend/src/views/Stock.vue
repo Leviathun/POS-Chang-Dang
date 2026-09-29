@@ -413,8 +413,14 @@
             </template>
           </div>
 
-          <div v-if="!activeIsModifier && (activeItem?.name?.includes('แร็ปไก่') || isLinkedBun(activeItem)) && (actionType === 'restock' || actionType === 'adjust')" class="text-sm text-danger font-bold" style="margin-top: -6px; margin-bottom: var(--space-md); text-align: left; line-height: 1.3;">
-            {{ getLinkageWarningText(activeItem) }}
+          <div v-if="!activeIsModifier && (activeItem?.name?.includes('แร็ปไก่') || isLinkedBun(activeItem)) && (actionType === 'restock' || actionType === 'adjust')" class="p-sm card mb-md" style="background: rgba(230, 57, 70, 0.08); border: 1.5px solid var(--primary); border-radius: var(--radius-md); text-align: left;">
+            <div class="text-sm text-danger font-bold flex align-center gap-xs">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span>แจ้งเตือนการหักสต็อกอัตโนมัติ:</span>
+            </div>
+            <div class="text-xs text-primary mt-xs font-semibold" style="line-height: 1.4;">
+              {{ getLinkageWarningText(activeItem) }}
+            </div>
           </div>
 
           <div v-if="!activeIsModifier && actionType === 'fry'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
@@ -455,15 +461,16 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showActionModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSaving" @click="showActionModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="actionForm.quantity === '' || actionForm.quantity === null" 
+              :disabled="isSaving || actionForm.quantity === '' || actionForm.quantity === null" 
               @click="handleSaveAction"
             >
               <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <i :class="actionType === 'fry' ? (activeItem ? getCookActionIcon(activeItem.name) : 'fa-solid fa-fire') : 'fa-solid fa-floppy-disk'"></i>
-                {{ actionType === 'fry' ? `เริ่ม${activeItem ? getCookActionLabel(activeItem.name) : 'ทอด'}สินค้า` : 'บันทึกสต็อก' }}
+                <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else :class="actionType === 'fry' ? (activeItem ? getCookActionIcon(activeItem.name) : 'fa-solid fa-fire') : 'fa-solid fa-floppy-disk'"></i>
+                {{ isSaving ? 'กำลังบันทึกข้อมูล...' : (actionType === 'fry' ? `เริ่ม${activeItem ? getCookActionLabel(activeItem.name) : 'ทอด'}สินค้า` : 'บันทึกสต็อก') }}
               </span>
             </button>
           </div>
@@ -608,6 +615,8 @@ const isLinkedBun = (item) => {
   return !!getSteamedCounterpartName(item.name);
 };
 
+const isSaving = ref(false);
+
 const getLinkageWarningText = (item) => {
   if (!item) return '';
   let isDeduct = true; // default to deduct
@@ -624,8 +633,8 @@ const getLinkageWarningText = (item) => {
   if (!targetName) return '';
 
   return isDeduct 
-    ? `* การเพิ่มจะหัก "${targetName}" 1 ชิ้น อัตโนมัติ`
-    : `* การลบจะเพิ่ม "${targetName}" 1 ชิ้น อัตโนมัติ`;
+    ? `ระบบจะหักสต็อก "${targetName}" ให้อัตโนมัติ (ไม่ต้องไปกดลดสต็อก "${targetName}" ซ้ำด้วยตนเอง)`
+    : `ระบบจะคืนสต็อก "${targetName}" ให้อัตโนมัติ`;
 };
 
 const getCookActionLabel = (name) => {
@@ -735,6 +744,8 @@ const openActionModal = (type, item, isMod = false) => {
 };
 
 const handleSaveAction = async () => {
+  if (isSaving.value) return;
+  isSaving.value = true;
   ui.showLoading();
   try {
     const itemId = activeItem.value.id;
@@ -769,10 +780,8 @@ const handleSaveAction = async () => {
       }
     }
 
-    if (res.success) {
-      let successMsg = 'บันทึกยอดคลังเรียบร้อย';
+    if (res && res.success) {
       if (activeIsModifier.value) {
-        successMsg = actionType.value === 'restock' ? 'เติมสต็อกเครื่องปรุงสำเร็จ' : 'ปรับสต็อกเครื่องปรุงสำเร็จ';
         if (res.data) {
           const mId = res.data.modifier_id;
           const idx = modifierItems.value.findIndex(m => m.id === mId);
@@ -781,22 +790,20 @@ const handleSaveAction = async () => {
           }
         }
       } else {
-        if (actionType.value === 'fry') {
-          successMsg = `ทอดสุกสำเร็จ: หักของสดไป ${qty} ชิ้น และเพิ่มของทอดพร้อมขาย`;
-        } else {
-          successMsg = actionType.value === 'restock' ? 'เติมสต็อกสำเร็จ' : 'ปรับสต็อกสำเร็จ';
-        }
         if (res.data) {
           store.updateStock(res.data.id, res.data.stock, res.data.raw_stock);
         }
       }
-      ui.showToast(successMsg, 'success');
+      ui.showToast('ระบบอัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
       showActionModal.value = false;
+      actionForm.value = { quantity: '', note: '' };
     }
   } catch (e) {
     console.error(e);
-    ui.showToast('บันทึกยอดคลังล้มเหลว: ' + e.message, 'error');
+    // On failure/timeout: Keep modal open and form values intact for retry!
+    ui.showToast(e.message || 'บันทึกยอดคลังล้มเหลว กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง', 'error');
   } finally {
+    isSaving.value = false;
     ui.hideLoading();
   }
 };

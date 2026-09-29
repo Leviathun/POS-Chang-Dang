@@ -323,11 +323,13 @@
                   <div>
                     <button 
                       class="btn btn-primary btn-xl" 
-                      :disabled="Number(enteredAmount) < netTotal"
+                      :disabled="isCheckingOut || Number(enteredAmount) < netTotal"
                       @click="confirmCashPayment"
                       style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
                     >
-                      <i class="fa-solid fa-circle-check"></i> ยืนยันรับเงินสด
+                      <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
+                      <i v-else class="fa-solid fa-circle-check"></i>
+                      <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันรับเงินสด' }}</span>
                     </button>
                   </div>
                 </div>
@@ -345,8 +347,10 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" @click="confirmQRPayment">
-                    <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการชำระเงิน
+                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmQRPayment">
+                    <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
+                    <i v-else class="fa-solid fa-circle-check"></i>
+                    <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการชำระเงิน' }}</span>
                   </button>
                 </div>
 
@@ -363,8 +367,10 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" @click="confirmGovPayment">
-                    <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการโครงการรัฐ
+                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmGovPayment">
+                    <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
+                    <i v-else class="fa-solid fa-circle-check"></i>
+                    <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการโครงการรัฐ' }}</span>
                   </button>
                 </div>
 
@@ -381,8 +387,10 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" @click="confirmDeliveryPayment">
-                    <i class="fa-solid fa-circle-check"></i> ยืนยันผ่านรายการเดลิเวอรี
+                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmDeliveryPayment">
+                    <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
+                    <i v-else class="fa-solid fa-circle-check"></i>
+                    <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการเดลิเวอรี' }}</span>
                   </button>
                 </div>
 
@@ -722,6 +730,40 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
       orderId.value = res.data?.order_number || res.data?.id || res.id;
       orderDateStr.value = res.data?.created_at || new Date().toISOString();
       store.clearReportsCache();
+
+      // 🟢 ตัดสต็อกใน Store ทันทีที่เซิร์ฟเวอร์ตอบรับบิล (Real-time Stock Deduct)
+      props.cart.forEach((cartItem) => {
+        const mItem = store.menuItems.find(m => Number(m.id) === Number(cartItem.item.id));
+        if (mItem && mItem.stock !== null && mItem.stock !== undefined) {
+          store.updateStock(cartItem.item.id, Math.max(0, mItem.stock - cartItem.quantity));
+        }
+        // Deduct ingredients if custom options exist
+        if (cartItem.item.options && Array.isArray(cartItem.item.options.selected_items)) {
+          cartItem.item.options.selected_items.forEach(ing => {
+            const ingItem = store.menuItems.find(m => Number(m.id) === Number(ing.id));
+            if (ingItem && ingItem.stock !== null && ingItem.stock !== undefined) {
+              const deductAmount = Number(ing.weight) * cartItem.quantity;
+              store.updateStock(ing.id, Math.max(0, ingItem.stock - deductAmount));
+            }
+          });
+        }
+      });
+
+      if (props.freeModifiers && props.freeModifiers.length > 0) {
+        props.freeModifiers.forEach(mod => {
+          const currentMod = store.modifiers.find(m => Number(m.id) === Number(mod.id));
+          if (currentMod && currentMod.total_servings !== null && currentMod.total_servings !== undefined) {
+            currentMod.total_servings = Math.max(0, currentMod.total_servings - 1);
+          }
+        });
+      }
+
+      // Clear cache and fetch fresh values in background
+      store.clearMenuCache();
+      store.clearStockCache();
+      store.fetchMenu(true).catch(e => console.error('Error fetching menu on order create:', e));
+      store.fetchStock(true).catch(e => console.error('Error fetching stock on order create:', e));
+
       ui.showToast(`ชำระเงินผ่าน ${getPaymentMethodLabel(paymentMethodType)} สำเร็จ!`, 'success');
       
       // 🟢 Trigger Auto Printer & Drawer Kick

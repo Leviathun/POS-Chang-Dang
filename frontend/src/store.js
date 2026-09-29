@@ -244,16 +244,23 @@ export const store = reactive({
   },
 
   updateStock(itemId, stock, rawStock) {
-    const idx = this.stockItems.findIndex(s => s.id === itemId);
+    const numId = Number(itemId);
+    const idx = this.stockItems.findIndex(s => Number(s.id) === numId);
     if (idx !== -1) {
       if (stock !== undefined) this.stockItems[idx].quantity = stock;
       if (rawStock !== undefined) this.stockItems[idx].raw_quantity = rawStock;
     }
     // Also update menuItems stock to keep POS in sync!
-    const mIdx = this.menuItems.findIndex(m => m.id === itemId);
+    const mIdx = this.menuItems.findIndex(m => Number(m.id) === numId);
     if (mIdx !== -1) {
-      if (stock !== undefined) this.menuItems[mIdx].stock = stock;
-      if (rawStock !== undefined) this.menuItems[mIdx].raw_stock = rawStock;
+      if (stock !== undefined) {
+        this.menuItems[mIdx].stock = stock;
+        this.menuItems[mIdx].quantity = stock;
+      }
+      if (rawStock !== undefined) {
+        this.menuItems[mIdx].raw_stock = rawStock;
+        this.menuItems[mIdx].raw_quantity = rawStock;
+      }
     }
   },
 

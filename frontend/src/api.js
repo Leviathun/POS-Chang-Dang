@@ -33,7 +33,7 @@ async function request(method, path, body, options = {}) {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
 
   const config = {
     method,
@@ -60,10 +60,10 @@ async function request(method, path, body, options = {}) {
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      throw new Error('การเชื่อมต่อใช้เวลานานเกินไป (Timeout)');
+      throw new Error('การเชื่อมต่อใช้เวลานานเกินไป (Timeout) กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง');
     }
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง');
     }
     throw error;
   }
