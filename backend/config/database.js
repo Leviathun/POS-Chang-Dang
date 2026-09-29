@@ -586,7 +586,7 @@ async function initDatabase() {
         { name: 'ขนมจีบหมู', price: 20, cat: 'ซาลาเปา & ขนมจีบ' }
       ];
 
-      const stmt = db.prepare('INSERT INTO menu_items (branch_id, name, price, category_id) VALUES (?, ?, ?, ?)');
+      const stmt = db.prepare('INSERT INTO menu_items (branch_id, name, price, category_id, quantity, raw_quantity) VALUES (?, ?, ?, ?, 100, 100)');
       for (const item of items) {
         const catId = catMap[item.cat] || null;
         await stmt.run(b.id, item.name, item.price, catId);

@@ -263,8 +263,8 @@
       <!-- Tab 1: Sales (ยอดขาย) -->
       <div v-if="activeTab === 'sales'" class="flex flex-col gap-lg">
         
-        <!-- Admin Only: Top summary widgets (moved inside Tab 1) -->
-        <div v-if="isAdminUser" class="grid grid-2 gap-md">
+        <!-- Top summary widgets (moved inside Tab 1) -->
+        <div class="grid grid-2 gap-md">
           <div class="card text-center p-md">
             <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดขายวันนี้</div>
             <div class="font-bold text-primary text-xl">{{ formatCurrency(summary.today_sales) }}</div>
@@ -277,8 +277,8 @@
           </div>
         </div>
 
-        <!-- Admin Only: Daily Summary Card -->
-        <div v-if="isAdminUser" class="card">
+        <!-- Daily Summary Card -->
+        <div class="card">
           <div class="card-title text-sm"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> {{ summaryCardTitle }}</div>
           
           <div class="flex flex-between mb-sm text-sm">
@@ -3581,9 +3581,7 @@ const handleVoidOrder = async () => {
       // Reload reports silently in background
       store.clearReportsCache();
       loadReportData();
-      if (isAdmin()) {
-        loadReportSummary();
-      }
+      loadReportSummary();
       return; // Skip the finally block to prevent double hiding
     }
   } catch (e) {
@@ -3714,14 +3712,16 @@ onMounted(() => {
     store.fetchSettingsData(selectedBranchId.value)
       .catch(e => console.warn('Failed to load settings:', e));
 
-    // Load summary and top items (non-blocking)
-    loadReportSummary();
+    // Load top items (non-blocking)
     loadTopItems();
 
     // Fetch stock items for stock logs (non-blocking)
     store.fetchStock()
       .catch(e => console.warn('Failed to load stock:', e));
   }
+
+  // Load summary for ALL roles (Admin, Manager, Staff)
+  loadReportSummary();
 
   // Load report data (which handles ledger internally)
   loadReportData();
