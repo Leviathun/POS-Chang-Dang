@@ -111,7 +111,7 @@
             <span class="sidebar-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="sidebar-label">คลังสินค้า/สต็อก</span>
           </router-link>
-          <router-link v-if="isManagerOrAdminUser" to="/reports" class="sidebar-item" active-class="active">
+          <router-link to="/reports" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-chart-line"></i></span>
             <span class="sidebar-label">รายงานยอดขาย</span>
           </router-link>
@@ -182,7 +182,7 @@
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="nav-label">สต็อก</span>
           </router-link>
-          <router-link v-if="isManagerOrAdminUser" to="/reports" class="nav-item" active-class="active" data-page="reports">
+          <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
             <span class="nav-label">รายงาน</span>
           </router-link>

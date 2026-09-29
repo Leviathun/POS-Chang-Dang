@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { attachUser, requireAdmin, requireManagerOrAdmin } = require('../middleware/auth');
+const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
 const reportsService = require('../services/reports');
 
 function getThailandDate() {
@@ -22,7 +22,7 @@ function getBranchFilter(req) {
 }
 
 // ─── GET /daily — รายงานยอดขายรายวัน ────────────────────
-router.get('/daily', requireManagerOrAdmin, async (req, res) => {
+router.get('/daily', requireAuth, async (req, res) => {
   try {
     // ค่าเริ่มต้น = วันนี้
     let date = req.query.date;
@@ -50,7 +50,7 @@ router.get('/daily', requireManagerOrAdmin, async (req, res) => {
 });
 
 // ─── GET /monthly — รายงานยอดขายรายเดือน ────────────────
-router.get('/monthly', requireManagerOrAdmin, async (req, res) => {
+router.get('/monthly', requireAuth, async (req, res) => {
   try {
     // ค่าเริ่มต้น = เดือนนี้
     let month = req.query.month;
@@ -77,7 +77,7 @@ router.get('/monthly', requireManagerOrAdmin, async (req, res) => {
 });
 
 // ─── GET /yearly — รายงานยอดขายรายปี ──────────────────
-router.get('/yearly', requireManagerOrAdmin, async (req, res) => {
+router.get('/yearly', requireAuth, async (req, res) => {
   try {
     let year = req.query.year;
     if (!year) {
@@ -122,7 +122,7 @@ router.get('/top-items', requireAdmin, async (req, res) => {
 });
 
 // ─── GET /summary — ภาพรวม (วันนี้ + สัปดาห์ + เดือน) ──
-router.get('/summary', requireManagerOrAdmin, async (req, res) => {
+router.get('/summary', requireAuth, async (req, res) => {
   try {
     const branchId = getBranchFilter(req);
     const summary = await reportsService.getSummary(branchId);

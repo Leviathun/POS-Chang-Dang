@@ -51,7 +51,7 @@ const routes = [
     name: 'Reports',
     component: Reports,
     beforeEnter: (to, from, next) => {
-      if (isManagerOrAdmin()) {
+      if (getUser()) {
         next()
       } else {
         next('/pos')
