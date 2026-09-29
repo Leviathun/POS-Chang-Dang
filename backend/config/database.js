@@ -458,6 +458,7 @@ async function initDatabase() {
     const userSchema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
     if (userSchema && userSchema.sql && !userSchema.sql.includes('manager')) {
       console.log('  🔧 Migration: Upgrading users table to support manager role...');
+      await db.exec('PRAGMA foreign_keys = OFF;');
       await db.exec('BEGIN TRANSACTION;');
       await db.exec(`
         CREATE TABLE users_new (
@@ -477,10 +478,12 @@ async function initDatabase() {
       await db.exec('DROP TABLE users;');
       await db.exec('ALTER TABLE users_new RENAME TO users;');
       await db.exec('COMMIT;');
+      await db.exec('PRAGMA foreign_keys = ON;');
       console.log('  🔧 Migration: Successfully updated users table schema for manager role.');
     }
   } catch (e) {
     try { await db.exec('ROLLBACK;'); } catch (_) {}
+    try { await db.exec('PRAGMA foreign_keys = ON;'); } catch (_) {}
     console.warn('⚠️ Migration update users table failed:', e.message);
   }
 
