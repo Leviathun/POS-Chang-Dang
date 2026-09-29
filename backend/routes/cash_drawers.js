@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireAuth, requireManagerOrAdmin } = require('../middleware/auth');
 
 // Helper to get local date string (Thailand timezone: UTC+7, business day offset by 4 hours to handle late-night closings)
 function getThailandDateString() {
@@ -68,8 +68,8 @@ async function getOrCreateSession(db, branchId) {
 router.use(attachUser);
 router.use(requireAuth);
 
-// ─── POST /opening-cash — Set/Edit Opening Cash (Admin Only) ───────
-router.post('/opening-cash', requireAdmin, async (req, res) => {
+// ─── POST /opening-cash — Set/Edit Opening Cash (Manager/Admin) ───────
+router.post('/opening-cash', requireManagerOrAdmin, async (req, res) => {
   try {
     const { session_id, session_date, opening_cash, branch_id } = req.body;
     const db = getDb();
@@ -143,8 +143,8 @@ router.post('/opening-cash', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── POST /audit — Reconcile & Close Cash Session (Admin Only) ───────
-router.post('/audit', requireAdmin, async (req, res) => {
+// ─── POST /audit — Reconcile & Close Cash Session (Manager/Admin) ───────
+router.post('/audit', requireManagerOrAdmin, async (req, res) => {
   try {
     const { session_id, session_date, actual_cash, note, branch_id } = req.body;
     const db = getDb();
@@ -225,10 +225,11 @@ router.post('/audit', requireAdmin, async (req, res) => {
 
     // Log Activity
     const logBranchId = session ? session.branch_id : branchId;
+    const actorRole = req.user.role === 'admin' ? 'เจ้าของร้าน' : 'ผู้จัดการ';
     await db.prepare(`
       INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
       VALUES (?, ?, 'cash_audit', ?, datetime('now', '+7 hours'))
-    `).run(logBranchId, req.user.id, `เจ้าของร้านตรวจสอบเงินสดวันที่ ${session.session_date} (นับจริง: ${actualCash} บาท, คาดการณ์: ${expectedCash} บาท, ผลต่าง: ${difference} บาท)`);
+    `).run(logBranchId, req.user.id, `${actorRole}ตรวจสอบเงินสดวันที่ ${session.session_date} (นับจริง: ${actualCash} บาท, คาดการณ์: ${expectedCash} บาท, ผลต่าง: ${difference} บาท)`);
 
     res.json({
       success: true,
@@ -254,8 +255,8 @@ router.post('/audit', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── GET /summary — Get Daily Session Summaries (Admin Only) ───────
-router.get('/summary', requireAdmin, async (req, res) => {
+// ─── GET /summary — Get Daily Session Summaries (Manager/Admin) ───────
+router.get('/summary', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
     let branchId = req.user.branch_id;
@@ -378,8 +379,8 @@ router.get('/summary', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── GET /settings — Get Default Opening Cash (Admin Only) ──────────
-router.get('/settings', requireAdmin, async (req, res) => {
+// ─── GET /settings — Get Default Opening Cash (Manager/Admin) ──────────
+router.get('/settings', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
     let branchId = req.user.branch_id;
@@ -408,8 +409,8 @@ router.get('/settings', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── POST /settings — Save Default Opening Cash (Admin Only) ─────────
-router.post('/settings', requireAdmin, async (req, res) => {
+// ─── POST /settings — Save Default Opening Cash (Manager/Admin) ─────────
+router.post('/settings', requireManagerOrAdmin, async (req, res) => {
   try {
     const { default_opening_cash } = req.body;
     const db = getDb();

@@ -34,7 +34,7 @@
         <i class="fa-solid fa-fire"></i> อันดับสินค้าขายดี
       </button>
       <button 
-        v-if="isAdminUser"
+        v-if="isManagerOrAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'activity_logs' }"
         @click="activeTab = 'activity_logs'"
@@ -42,7 +42,7 @@
         <i class="fa-solid fa-user-shield"></i> ประวัติกิจกรรมพนักงาน
       </button>
       <button 
-        v-if="isAdminUser"
+        v-if="isManagerOrAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'stock_history' }"
         @click="activeTab = 'stock_history'"
@@ -50,7 +50,7 @@
         <i class="fa-solid fa-boxes-stacked"></i> ประวัติสต็อก
       </button>
       <button 
-        v-if="isAdminUser"
+        v-if="isManagerOrAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'cash_audit' }"
         @click="activeTab = 'cash_audit'"
@@ -1183,7 +1183,7 @@
       </div>
 
       <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
-      <div v-if="activeTab === 'activity_logs' && isAdminUser" class="card">
+      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" class="card">
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
         
         <!-- Filter dropdowns in a 2-column grid -->
@@ -1344,7 +1344,7 @@
     </div>
 
     <!-- Tab 5: Stock History (ประวัติสต็อก) -->
-    <div v-if="activeTab === 'stock_history' && isAdminUser" class="flex flex-col gap-md">
+    <div v-if="activeTab === 'stock_history' && isManagerOrAdminUser" class="flex flex-col gap-md">
       
       <!-- Summary Stat Cards for Stock History (Waste, Credit, Restock) -->
       <div class="grid grid-3 gap-md">
@@ -1657,12 +1657,12 @@
       </div>
     </div>
 
-    <!-- Cash Drawer Audit Tab (Admin Only) -->
-    <div v-if="activeTab === 'cash_audit' && isAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
+    <!-- Cash Drawer Audit Tab -->
+    <div v-if="activeTab === 'cash_audit' && isManagerOrAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
         <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
           <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>
-          ตรวจสอบเงินสดในลิ้นชักประจำวัน (ลับเฉพาะเจ้าของร้าน)
+          ตรวจสอบเงินสดในลิ้นชักประจำวัน
         </h3>
       </div>
 
@@ -1996,13 +1996,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, getUser } from '../helpers';
+import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, isManagerOrAdmin, getUser } from '../helpers';
 import { store } from '../store';
 
 const formatMoney = (val) => formatCurrency(val).replace('฿', '').trim();
 
-// Role check
+// Role checks
 const isAdminUser = computed(() => isAdmin());
+const isManagerOrAdminUser = computed(() => isManagerOrAdmin());
 
 const branches = ref([]);
 const currentUser = getUser();
@@ -2141,7 +2142,7 @@ const useCalculatorSum = () => {
 };
 
 const fetchCashDrawerSummary = async () => {
-  if (!isAdminUser.value) return;
+  if (!isManagerOrAdminUser.value) return;
   cashDrawerLoading.value = true;
   try {
     const params = { branch_id: selectedBranchId.value };
@@ -3407,7 +3408,7 @@ const loadReportData = async () => {
     applyDataFromStore();
     loading.value = false;
     
-    if (isAdmin() && activeTab.value === 'cash_audit') {
+    if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
       fetchCashDrawerSummary();
     }
     
@@ -3415,7 +3416,7 @@ const loadReportData = async () => {
     store.fetchReports(selectedBranchId.value, false).then(() => {
       if (isUsingDefaultFilters() && store.reportsBranchId === selectedBranchId.value) {
         applyDataFromStore();
-        if (isAdmin() && activeTab.value === 'cash_audit') {
+        if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
           fetchCashDrawerSummary();
         }
       }
@@ -3483,6 +3484,8 @@ const loadReportData = async () => {
         await loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
         loadMonthlyLedger().catch(e => console.warn('Background ledger load error:', e));
       })();
+    }
+    if (isManagerOrAdmin()) {
       loadActivityLogsForPeriod().catch(e => console.warn('Background activities load error:', e));
       if (activeTab.value === 'cash_audit') {
         fetchCashDrawerSummary().catch(e => console.warn('Background cash drawer load error:', e));
@@ -3708,12 +3711,14 @@ onMounted(() => {
       })
       .catch(e => console.warn('Failed to load branches:', e));
 
+    // Load top items (non-blocking)
+    loadTopItems();
+  }
+
+  if (isManagerOrAdmin()) {
     // Load staff/users list for filters (non-blocking)
     store.fetchSettingsData(selectedBranchId.value)
       .catch(e => console.warn('Failed to load settings:', e));
-
-    // Load top items (non-blocking)
-    loadTopItems();
 
     // Fetch stock items for stock logs (non-blocking)
     store.fetchStock()
