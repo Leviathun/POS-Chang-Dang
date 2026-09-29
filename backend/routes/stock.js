@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAuth } = require('../middleware/auth');
+const { attachUser, requireAuth, requireManagerOrAdmin } = require('../middleware/auth');
 
 const getBunLinkageName = (name) => {
   if (!name) return null;
@@ -750,7 +750,7 @@ router.get('/:id/logs', async (req, res) => {
 });
 
 // ─── POST /bulk-adjust — จัดการสต็อกด่วนแบบกลุ่ม ──────────────────────
-router.post('/bulk-adjust', requireAuth, async (req, res) => {
+router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
   try {
     const { mode, items, reason_preset, note } = req.body;
     const db = getDb();
@@ -775,7 +775,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
       branchId = defaultBranch ? defaultBranch.id : null;
     }
 
-    const isAdmin = req.user && req.user.role === 'admin';
+    const isManagerOrAdmin = req.user && ['admin', 'manager'].includes(req.user.role);
 
     const bulkTransaction = db.transaction(async () => {
       for (const item of items) {
@@ -927,7 +927,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
         }
 
         if (deltaRaw !== 0) {
-          if (!isAdmin) {
+          if (!isManagerOrAdmin) {
             throw new Error('FORBIDDEN_RAW');
           }
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireManagerOrAdmin } = require('../middleware/auth');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
@@ -81,7 +81,7 @@ router.get('/categories', async (req, res) => {
 });
 
 // ─── POST /categories — สร้างหมวดหมู่ใหม่ ──────────────
-router.post('/categories', requireAdmin, async (req, res) => {
+router.post('/categories', requireManagerOrAdmin, async (req, res) => {
   try {
     const { name, sort_order } = req.body;
 
@@ -123,7 +123,7 @@ router.post('/categories', requireAdmin, async (req, res) => {
 });
 
 // ─── PUT /categories/:id — แก้ไขหมวดหมู่ ────────────────
-router.put('/categories/:id', requireAdmin, async (req, res) => {
+router.put('/categories/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, sort_order } = req.body;
@@ -169,7 +169,7 @@ router.put('/categories/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /categories/:id — ลบหมวดหมู่ ────────────────
-router.delete('/categories/:id', requireAdmin, async (req, res) => {
+router.delete('/categories/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -215,7 +215,7 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
 // ═══════════════════════════════════════════════════════════
 
 // ─── POST / — สร้างเมนูใหม่ ─────────────────────────────
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requireManagerOrAdmin, async (req, res) => {
   try {
     const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, uom, multiple_prices } = req.body;
 
@@ -288,7 +288,7 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 // ─── PUT /:id — แก้ไขเมนู ────────────────────────────────
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active, uom, multiple_prices } = req.body;
@@ -374,7 +374,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /:id — ลบเมนูออกจากระบบ (hard delete) ───────
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -418,7 +418,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── POST /:id/toggle — สลับสถานะเปิด/ปิดเมนู ─────────
-router.post('/:id/toggle', requireAdmin, async (req, res) => {
+router.post('/:id/toggle', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -458,7 +458,7 @@ router.post('/:id/toggle', requireAdmin, async (req, res) => {
 });
 
 // ─── POST /reorder — เปลี่ยนลำดับเมนูอาหาร ─────────
-router.post('/reorder', requireAdmin, async (req, res) => {
+router.post('/reorder', requireManagerOrAdmin, async (req, res) => {
   try {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {

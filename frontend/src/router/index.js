@@ -5,7 +5,7 @@ import Stock from '../views/Stock.vue'
 import StockBulk from '../views/StockBulk.vue'
 import Reports from '../views/Reports.vue'
 import Settings from '../views/Settings.vue'
-import { isAdmin } from '../helpers'
+import { getUser, isManagerOrAdmin } from '../helpers'
 
 const routes = [
   {
@@ -20,7 +20,14 @@ const routes = [
   {
     path: '/menu',
     name: 'Menu',
-    component: Menu
+    component: Menu,
+    beforeEnter: (to, from, next) => {
+      if (isManagerOrAdmin()) {
+        next()
+      } else {
+        next('/pos')
+      }
+    }
   },
   {
     path: '/stock',
@@ -30,20 +37,33 @@ const routes = [
   {
     path: '/stock/bulk',
     name: 'StockBulk',
-    component: StockBulk
+    component: StockBulk,
+    beforeEnter: (to, from, next) => {
+      if (isManagerOrAdmin()) {
+        next()
+      } else {
+        next('/pos')
+      }
+    }
   },
   {
     path: '/reports',
     name: 'Reports',
-    component: Reports
+    component: Reports,
+    beforeEnter: (to, from, next) => {
+      if (isManagerOrAdmin()) {
+        next()
+      } else {
+        next('/pos')
+      }
+    }
   },
   {
     path: '/settings',
     name: 'Settings',
     component: Settings,
     beforeEnter: (to, from, next) => {
-      // Admin only
-      if (isAdmin()) {
+      if (getUser()) {
         next()
       } else {
         next('/pos')

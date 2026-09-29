@@ -4,6 +4,7 @@
     <!-- Tab toggles inside Settings page -->
     <div class="category-tabs mb-lg">
       <button 
+        v-if="currentUser?.role === 'admin'"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'shop' }"
         @click="activeTab = 'shop'"
@@ -11,6 +12,7 @@
         <i class="fa-solid fa-store"></i> ตั้งค่าร้านค้า
       </button>
       <button 
+        v-if="currentUser?.role === 'admin'"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'users' }"
         @click="activeTab = 'users'"
@@ -18,6 +20,7 @@
         <i class="fa-solid fa-users"></i> พนักงานหน้าร้าน
       </button>
       <button 
+        v-if="currentUser?.role === 'admin'"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'branches' }"
         @click="activeTab = 'branches'"
@@ -25,7 +28,6 @@
         <i class="fa-solid fa-code-branch"></i> จัดการสาขา
       </button>
       <button 
-        v-if="currentUser?.role === 'admin'"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'presets' }"
         @click="activeTab = 'presets'"
@@ -142,8 +144,8 @@
                   </span>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge text-base" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
-                    {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
+                  <span class="badge text-base" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
+                    {{ getRoleLabel(u.role) }}
                   </span>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary);">
@@ -196,8 +198,8 @@
           <div class="flex-1 min-w-0">
             <div class="flex flex-between align-center mb-xs">
               <span class="font-bold text-primary text-base">{{ u.name }}</span>
-              <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : 'badge-neutral'">
-                {{ u.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}
+              <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
+                {{ getRoleLabel(u.role) }}
               </span>
             </div>
             <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm); display: inline-flex; align-items: center; gap: 4px;">
@@ -249,7 +251,7 @@
 
           <!-- PIN -->
           <div class="form-group">
-            <label class="form-label">รหัส PIN 4 หลัก * (สำหรับล็อกอินเข้าร้าน)</label>
+            <label class="form-label">รหัส PIN 4 หลัก * (รหัสเฉพาะบุคคลไม่ซ้ำกันทั่วทั้งระบบ)</label>
             <input 
               type="password" 
               class="form-input" 
@@ -269,12 +271,13 @@
                 @click="isRoleDropdownOpen = !isRoleDropdownOpen"
               >
                 <span class="custom-select-text">
-                  {{ userForm.role === 'admin' ? 'ผู้บริหาร/เจ้าของร้าน (ดูรายงานและแก้การตั้งค่าได้)' : 'พนักงานหน้าร้าน (ขายและคุมสต็อกได้)' }}
+                  {{ userForm.role === 'admin' ? 'เจ้าของร้าน/ผู้บริหาร (เข้าถึงได้ทุกระบบ 100%)' : userForm.role === 'manager' ? 'ผู้จัดการร้าน (ขาย, สต็อก, จัดการเมนู, ดูยอดขายสาขา)' : 'พนักงานหน้าร้าน (ขายหน้าร้าน, ทอด, บันทึกของเสีย/สวัสดิการ)' }}
                 </span>
               </div>
               <div v-if="isRoleDropdownOpen" class="custom-select-dropdown">
-                <div class="custom-select-option" :class="{ 'selected': userForm.role === 'staff' }" @click="selectUserRole('staff')">พนักงานหน้าร้าน (ขายและคุมสต็อกได้)</div>
-                <div class="custom-select-option" :class="{ 'selected': userForm.role === 'admin' }" @click="selectUserRole('admin')">ผู้บริหาร/เจ้าของร้าน (ดูรายงานและแก้การตั้งค่าได้)</div>
+                <div class="custom-select-option" :class="{ 'selected': userForm.role === 'staff' }" @click="selectUserRole('staff')">พนักงานหน้าร้าน (ขายหน้าร้าน, ทอด, บันทึกของเสีย/สวัสดิการ)</div>
+                <div class="custom-select-option" :class="{ 'selected': userForm.role === 'manager' }" @click="selectUserRole('manager')">ผู้จัดการร้าน (ขาย, สต็อก, จัดการเมนู, ดูยอดขายสาขา)</div>
+                <div class="custom-select-option" :class="{ 'selected': userForm.role === 'admin' }" @click="selectUserRole('admin')">เจ้าของร้าน/ผู้บริหาร (เข้าถึงได้ทุกระบบ 100%)</div>
               </div>
             </div>
           </div>
@@ -809,7 +812,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../api';
-import { ui, formatDate, getUser } from '../helpers';
+import { ui, formatDate, getUser, getRoleLabel } from '../helpers';
 import { store } from '../store';
 import { 
   getSavedPrinterConfig, 
@@ -1471,6 +1474,9 @@ const handleArchiveOrders = async () => {
 
 onMounted(() => {
   currentUser.value = getUser();
+  if (currentUser.value && currentUser.value.role !== 'admin') {
+    activeTab.value = 'presets';
+  }
   if (sessionStorage.getItem('selected_branch_id')) {
     selectedSettingsBranchId.value = Number(sessionStorage.getItem('selected_branch_id'));
   } else if (currentUser.value) {

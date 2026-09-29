@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireAuth, requireManagerOrAdmin, requireAdmin } = require('../middleware/auth');
 
 // Apply attachUser globally to all modifier routes
 router.use(attachUser);
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── POST /restock — เติมของเข้าระบบเป็นหน่วย "ถุง" (หรือซอง) ────────────────
-router.post('/restock', requireAuth, async (req, res) => {
+router.post('/restock', requireManagerOrAdmin, async (req, res) => {
   try {
     const { modifier_id, bags, note } = req.body;
     const db = getDb();
@@ -119,7 +119,7 @@ router.post('/restock', requireAuth, async (req, res) => {
 });
 
 // ─── POST /adjust — ปรับปรุงสต็อกแบบละเอียดเป็น "รอบเสิร์ฟ" ──────────────────
-router.post('/adjust', requireAuth, async (req, res) => {
+router.post('/adjust', requireManagerOrAdmin, async (req, res) => {
   try {
     const { modifier_id, quantity, reason, note } = req.body;
     const db = getDb();
@@ -192,7 +192,7 @@ router.post('/adjust', requireAuth, async (req, res) => {
 });
 
 // ─── POST /toggle/:id — สลับเปิด/ปิดการใช้งานเครื่องปรุง ──────────────────
-router.post('/toggle/:id', requireAdmin, async (req, res) => {
+router.post('/toggle/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -253,7 +253,7 @@ router.get('/presets', async (req, res) => {
 });
 
 // ─── POST /presets — เพิ่มสูตรสำเร็จใหม่ ──────────────────────────────────
-router.post('/presets', requireAdmin, async (req, res) => {
+router.post('/presets', requireAuth, async (req, res) => {
   try {
     const { name, modifier_ids } = req.body;
     const db = getDb();
@@ -287,7 +287,7 @@ router.post('/presets', requireAdmin, async (req, res) => {
 });
 
 // ─── PUT /presets/:id — แก้ไขสูตรสำเร็จ ──────────────────────────────────
-router.put('/presets/:id', requireAdmin, async (req, res) => {
+router.put('/presets/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, modifier_ids, active } = req.body;
@@ -329,7 +329,7 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /presets/:id — ลบสูตรสำเร็จ ──────────────────────────────────
-router.delete('/presets/:id', requireAdmin, async (req, res) => {
+router.delete('/presets/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -420,7 +420,7 @@ router.get('/:id/logs', async (req, res) => {
 });
 
 // ─── POST /bulk-adjust — จัดการสต็อกด่วนเครื่องปรุงแบบกลุ่ม ──────────────────
-router.post('/bulk-adjust', requireAuth, async (req, res) => {
+router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
   try {
     const { mode, items, reason_preset, note } = req.body;
     const db = getDb();

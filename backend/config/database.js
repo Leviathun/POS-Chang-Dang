@@ -170,7 +170,7 @@ async function initDatabase() {
       branch_id INTEGER REFERENCES branches(id),
       name TEXT NOT NULL,
       pin TEXT NOT NULL,
-      role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'staff')),
+      role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'staff')),
       active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
@@ -453,6 +453,37 @@ async function initDatabase() {
     console.warn('⚠️ Migration drop expenses CHECK constraint failed:', e.message);
   }
 
+  // Migration: Upgrade users table to support manager role and unique PIN
+  try {
+    const userSchema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
+    if (userSchema && userSchema.sql && !userSchema.sql.includes('manager')) {
+      console.log('  🔧 Migration: Upgrading users table to support manager role...');
+      await db.exec('BEGIN TRANSACTION;');
+      await db.exec(`
+        CREATE TABLE users_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          branch_id INTEGER REFERENCES branches(id),
+          name TEXT NOT NULL,
+          pin TEXT NOT NULL,
+          role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'staff')),
+          active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        );
+      `);
+      await db.exec(`
+        INSERT INTO users_new (id, branch_id, name, pin, role, active, created_at)
+        SELECT id, branch_id, name, pin, role, active, created_at FROM users;
+      `);
+      await db.exec('DROP TABLE users;');
+      await db.exec('ALTER TABLE users_new RENAME TO users;');
+      await db.exec('COMMIT;');
+      console.log('  🔧 Migration: Successfully updated users table schema for manager role.');
+    }
+  } catch (e) {
+    try { await db.exec('ROLLBACK;'); } catch (_) {}
+    console.warn('⚠️ Migration update users table failed:', e.message);
+  }
+
   // Migration: Fix users with NULL branch_id — assign to first branch
   try {
     const firstBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
@@ -481,7 +512,8 @@ async function initDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_stock_logs_menu_item ON stock_logs(menu_item_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_branch ON activity_logs(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`,
-    `CREATE INDEX IF NOT EXISTS idx_expenses_branch_date ON expenses(branch_id, expense_date)`
+    `CREATE INDEX IF NOT EXISTS idx_expenses_branch_date ON expenses(branch_id, expense_date)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_pin_unique ON users(pin) WHERE active = 1`
   ];
 
   for (const index of indexes) {

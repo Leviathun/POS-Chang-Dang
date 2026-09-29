@@ -25,7 +25,7 @@
         ระบบจัดการสต็อกสินค้า
       </div>
       <div>
-        <router-link to="/stock/bulk" class="btn btn-primary">
+        <router-link v-if="isManagerOrAdminUser" to="/stock/bulk" class="btn btn-primary">
           <i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน
         </router-link>
       </div>
@@ -245,7 +245,7 @@
                 </td>
                 <!-- Actions -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="stock-actions flex justify-center gap-sm">
+                  <div v-if="isManagerOrAdminUser" class="stock-actions flex justify-center gap-sm">
                     <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
                       <i class="fa-solid fa-plus"></i> เติมสต็อก
                     </button>
@@ -253,6 +253,7 @@
                       <i class="fa-solid fa-wrench"></i> ปรับปรุง
                     </button>
                   </div>
+                  <span v-else class="text-xs text-muted">เฉพาะผู้จัดการ/เจ้าของร้าน</span>
                 </td>
               </tr>
             </tbody>
@@ -305,7 +306,7 @@
             </div>
             
             <!-- Bottom Stock Actions -->
-            <div class="mobile-stock-card-actions">
+            <div v-if="isManagerOrAdminUser" class="mobile-stock-card-actions">
               <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
                 <i class="fa-solid fa-plus"></i> เติมสต็อก
               </button>
@@ -541,11 +542,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../api';
-import { ui, formatDateTime, getUser, getToday } from '../helpers';
+import { ui, formatDateTime, getUser, getToday, isManagerOrAdmin } from '../helpers';
 
 import { store } from '../store';
 
 // States
+const isManagerOrAdminUser = computed(() => isManagerOrAdmin());
 const activeTab = ref('menu_items'); // 'menu_items' or 'modifiers'
 const stockItems = computed(() => store.stockItems);
 const modifierItems = ref([]);

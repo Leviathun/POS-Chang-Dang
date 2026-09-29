@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { attachUser } = require('../middleware/auth');
+const { attachUser, requireAdmin, requireManagerOrAdmin } = require('../middleware/auth');
 const reportsService = require('../services/reports');
 
 function getThailandDate() {
@@ -10,7 +10,7 @@ function getThailandDate() {
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
-// Helper to get branch filter (isolating by user branch by default)
+// Helper to get branch filter (isolating by user branch by default, only admin can switch branch)
 function getBranchFilter(req) {
   let branchId = req.user ? req.user.branch_id : null;
   if (req.query.branch_id) {
@@ -22,7 +22,7 @@ function getBranchFilter(req) {
 }
 
 // ─── GET /daily — รายงานยอดขายรายวัน ────────────────────
-router.get('/daily', async (req, res) => {
+router.get('/daily', requireManagerOrAdmin, async (req, res) => {
   try {
     // ค่าเริ่มต้น = วันนี้
     let date = req.query.date;
@@ -50,7 +50,7 @@ router.get('/daily', async (req, res) => {
 });
 
 // ─── GET /monthly — รายงานยอดขายรายเดือน ────────────────
-router.get('/monthly', async (req, res) => {
+router.get('/monthly', requireManagerOrAdmin, async (req, res) => {
   try {
     // ค่าเริ่มต้น = เดือนนี้
     let month = req.query.month;
@@ -77,7 +77,7 @@ router.get('/monthly', async (req, res) => {
 });
 
 // ─── GET /yearly — รายงานยอดขายรายปี ──────────────────
-router.get('/yearly', async (req, res) => {
+router.get('/yearly', requireManagerOrAdmin, async (req, res) => {
   try {
     let year = req.query.year;
     if (!year) {
@@ -102,7 +102,7 @@ router.get('/yearly', async (req, res) => {
 });
 
 // ─── GET /top-items — สินค้าขายดี ───────────────────────
-router.get('/top-items', async (req, res) => {
+router.get('/top-items', requireAdmin, async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
     const branchId = getBranchFilter(req);
@@ -122,7 +122,7 @@ router.get('/top-items', async (req, res) => {
 });
 
 // ─── GET /summary — ภาพรวม (วันนี้ + สัปดาห์ + เดือน) ──
-router.get('/summary', async (req, res) => {
+router.get('/summary', requireManagerOrAdmin, async (req, res) => {
   try {
     const branchId = getBranchFilter(req);
     const summary = await reportsService.getSummary(branchId);

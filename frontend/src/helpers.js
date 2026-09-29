@@ -121,6 +121,28 @@ export function isAdmin() {
   return user && user.role === 'admin';
 }
 
+export function isManager() {
+  const user = getUser();
+  return user && user.role === 'manager';
+}
+
+export function isManagerOrAdmin() {
+  const user = getUser();
+  return user && ['admin', 'manager'].includes(user.role);
+}
+
+export function isStaff() {
+  const user = getUser();
+  return user && user.role === 'staff';
+}
+
+export function getRoleLabel(role) {
+  if (role === 'admin') return 'เจ้าของร้าน';
+  if (role === 'manager') return 'ผู้จัดการ';
+  if (role === 'staff') return 'พนักงานหน้าร้าน';
+  return role || '-';
+}
+
 // ─── Confetti (Uses Theme Colors) ───
 export function showConfetti() {
   const container = document.createElement('div');
@@ -200,6 +222,10 @@ export default {
   getCurrentMonth,
   getUser,
   isAdmin,
+  isManager,
+  isManagerOrAdmin,
+  isStaff,
+  getRoleLabel,
   showConfetti,
   roundUp,
   compressImage,
