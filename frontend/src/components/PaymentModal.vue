@@ -160,15 +160,22 @@
               <button 
                 class="btn-modal btn-modal-secondary flex-1" 
                 @click="() => handlePrintReceipt()"
-                :disabled="printLoading"
+                :disabled="isCheckingOut || printLoading"
                 style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
               >
                 <i v-if="printLoading" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-print"></i>
                 <span>พิมพ์ใบเสร็จ</span>
               </button>
-              <button class="btn-modal btn-modal-primary flex-1" @click="finishPayment" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);">
-                <i class="fa-solid fa-circle-check"></i> เสร็จสิ้น
+              <button 
+                class="btn-modal btn-modal-primary flex-1" 
+                :disabled="isCheckingOut" 
+                @click="finishPayment" 
+                style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
+              >
+                <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-circle-check"></i>
+                <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'เสร็จสิ้น' }}</span>
               </button>
             </div>
           </div>
@@ -764,7 +771,7 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
       store.fetchMenu(true).catch(e => console.error('Error fetching menu on order create:', e));
       store.fetchStock(true).catch(e => console.error('Error fetching stock on order create:', e));
 
-      ui.showToast(`ชำระเงินผ่าน ${getPaymentMethodLabel(paymentMethodType)} สำเร็จ!`, 'success');
+      ui.showToast(`ระบบบันทึกบิลและอัปเดตสต็อกเรียบร้อยแล้ว (${getPaymentMethodLabel(paymentMethodType)})`, 'success');
       
       // 🟢 Trigger Auto Printer & Drawer Kick
       triggerAutoPrinterAndDrawer(res.data || { 
