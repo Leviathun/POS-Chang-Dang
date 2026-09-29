@@ -771,7 +771,7 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
       store.fetchMenu(true).catch(e => console.error('Error fetching menu on order create:', e));
       store.fetchStock(true).catch(e => console.error('Error fetching stock on order create:', e));
 
-      ui.showToast(`ระบบบันทึกบิลและอัปเดตสต็อกเรียบร้อยแล้ว (${getPaymentMethodLabel(paymentMethodType)})`, 'success');
+      ui.showToast(`ระบบบันทึกบิลและอัปเดตสต็อกเรียบร้อยแล้ว`, 'success');
       
       // 🟢 Trigger Auto Printer & Drawer Kick
       triggerAutoPrinterAndDrawer(res.data || { 
@@ -785,7 +785,7 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
       return res;
     } catch (error) {
       console.error(error);
-      ui.showToast(`ชำระเงินไม่สำเร็จ: ${error.message}`, 'error');
+      ui.showToast(error.message || 'บันทึกบิลไม่สำเร็จ กรุณาตรวจสอบสัญญาณเน็ตแล้วลองใหม่อีกครั้ง', 'error');
       // ย้อนกลับหากไม่สำเร็จ
       success.value = false;
       throw error;
