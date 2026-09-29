@@ -424,12 +424,14 @@ const getLinkageWarningText = (item) => {
     }
   }
 
-  const targetName = item.name.includes('แร็ปไก่') ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
+  const isWrap = item.name.includes('แร็ปไก่');
+  const targetName = isWrap ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
   if (!targetName) return '';
 
+  const ratioText = isWrap ? ' 1.5 ชิ้น' : '';
   return isDeduct 
-    ? `⚠️ หัก "${targetName}" อัตโนมัติ (ไม่ต้องลดซ้ำ)`
-    : `ℹ️ คืน "${targetName}" อัตโนมัติ`;
+    ? `⚠️ หัก "${targetName}"${ratioText} อัตโนมัติ (ไม่ต้องลดซ้ำ)`
+    : `ℹ️ คืน "${targetName}"${ratioText} อัตโนมัติ`;
 };
 
 const getProductMethodLabel = (name) => {

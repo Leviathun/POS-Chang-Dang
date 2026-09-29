@@ -192,12 +192,12 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
         note || `เติมสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} +${quantity}`
       );
 
-      // Auto-deduct ไก่ไร้กระดูก when restocking แร็ปไก่
+      // Auto-deduct ไก่ไร้กระดูก when restocking แร็ปไก่ (1 แร็ปไก่ = ไก่ไร้กระดูก 1.5 ชิ้น)
       if (!isRaw && item.name.includes('แร็ปไก่') && quantity > 0) {
         const chickenItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(branchId, 'ไก่ไร้กระดูก');
         if (chickenItem && chickenItem.quantity !== null && chickenItem.quantity !== undefined) {
           const prevChickenStock = chickenItem.quantity;
-          const deductChicken = quantity;
+          const deductChicken = Math.round(quantity * 1.5 * 100) / 100;
           const newChickenStock = Math.round((prevChickenStock - deductChicken) * 100) / 100;
 
           if (newChickenStock < 0) {
@@ -220,7 +220,7 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
             prevChickenStock,
             newChickenStock,
             req.user.id,
-            `หักอัตโนมัติจากการเติมสต็อก ${item.name} +${quantity} ชิ้น`
+            `หักอัตโนมัติจากการเติมสต็อก ${item.name} +${quantity} ชิ้น (ใช้ไก่ไร้กระดูก ${deductChicken} ชิ้น)`
           );
         }
       }
@@ -375,12 +375,12 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         note || `ปรับสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`
       );
 
-      // Auto-adjust ไก่ไร้กระดูก when adjusting แร็ปไก่ stock
+      // Auto-adjust ไก่ไร้กระดูก when adjusting แร็ปไก่ stock (1 แร็ปไก่ = ไก่ไร้กระดูก 1.5 ชิ้น)
       if (!isRaw && item.name.includes('แร็ปไก่') && quantity !== 0) {
         const chickenItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(branchId, 'ไก่ไร้กระดูก');
         if (chickenItem && chickenItem.quantity !== null && chickenItem.quantity !== undefined) {
           const prevChickenStock = chickenItem.quantity;
-          const deductChicken = quantity;
+          const deductChicken = Math.round(quantity * 1.5 * 100) / 100;
           const newChickenStock = Math.round((prevChickenStock - deductChicken) * 100) / 100;
 
           if (newChickenStock < 0) {
@@ -404,8 +404,8 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
             newChickenStock,
             req.user.id,
             deductChicken > 0 
-              ? `หักอัตโนมัติจากการปรับปรุงสต็อก ${item.name} +${deductChicken} ชิ้น`
-              : `คืนอัตโนมัติจากการปรับปรุงสต็อก ${item.name} ${deductChicken} ชิ้น`
+              ? `หักอัตโนมัติจากการปรับปรุงสต็อก ${item.name} +${quantity} ชิ้น (ใช้ไก่ไร้กระดูก ${deductChicken} ชิ้น)`
+              : `คืนอัตโนมัติจากการปรับปรุงสต็อก ${item.name} ${quantity} ชิ้น (คืนไก่ไร้กระดูก ${Math.abs(deductChicken)} ชิ้น)`
           );
         }
       }
@@ -854,12 +854,12 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             `ปรับปรุงสต็อก${getCookMethodLabel(menuItem.name)} ${menuItem.name} ${deltaCooked >= 0 ? '+' : ''}${deltaCooked} ชิ้น (ก่อนปรับ: ${currentCooked}, หลังปรับ: ${newCooked})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
           );
 
-          // Auto-adjust ไก่ไร้กระดูก when adjusting แร็ปไก่ stock in bulk adjust
+          // Auto-adjust ไก่ไร้กระดูก when adjusting แร็ปไก่ stock in bulk adjust (1 แร็ปไก่ = ไก่ไร้กระดูก 1.5 ชิ้น)
           if (menuItem.name.includes('แร็ปไก่') && deltaCooked !== 0) {
             const chickenItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(branchId, 'ไก่ไร้กระดูก');
             if (chickenItem && chickenItem.quantity !== null && chickenItem.quantity !== undefined) {
               const prevChickenStock = chickenItem.quantity;
-              const deductChicken = deltaCooked;
+              const deductChicken = Math.round(deltaCooked * 1.5 * 100) / 100;
               const newChickenStock = Math.round((prevChickenStock - deductChicken) * 100) / 100;
 
               if (newChickenStock < 0) {
@@ -883,8 +883,8 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
                 newChickenStock,
                 req.user.id,
                 deductChicken > 0
-                  ? `หักอัตโนมัติจากการเพิ่มสต็อก ${menuItem.name} +${deductChicken} ชิ้น`
-                  : `คืนอัตโนมัติจากการลดสต็อก ${menuItem.name} ${deductChicken} ชิ้น`
+                  ? `หักอัตโนมัติจากการเพิ่มสต็อก ${menuItem.name} +${deltaCooked} ชิ้น (ใช้ไก่ไร้กระดูก ${deductChicken} ชิ้น)`
+                  : `คืนอัตโนมัติจากการลดสต็อก ${menuItem.name} ${deltaCooked} ชิ้น (คืนไก่ไร้กระดูก ${Math.abs(deductChicken)} ชิ้น)`
               );
             }
           }

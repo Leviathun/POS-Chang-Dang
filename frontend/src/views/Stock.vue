@@ -629,12 +629,14 @@ const getLinkageWarningText = (item) => {
     }
   }
 
-  const targetName = item.name.includes('แร็ปไก่') ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
+  const isWrap = item.name.includes('แร็ปไก่');
+  const targetName = isWrap ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
   if (!targetName) return '';
 
+  const ratioText = isWrap ? ' 1.5 ชิ้น/ชิ้น' : '';
   return isDeduct 
-    ? `ระบบจะหักสต็อก "${targetName}" ให้อัตโนมัติ (ไม่ต้องไปกดลดสต็อก "${targetName}" ซ้ำด้วยตนเอง)`
-    : `ระบบจะคืนสต็อก "${targetName}" ให้อัตโนมัติ`;
+    ? `ระบบจะหักสต็อก "${targetName}"${ratioText} ให้อัตโนมัติ (ไม่ต้องไปกดลดสต็อก "${targetName}" ซ้ำด้วยตนเอง)`
+    : `ระบบจะคืนสต็อก "${targetName}"${ratioText} ให้อัตโนมัติ`;
 };
 
 const getCookActionLabel = (name) => {
