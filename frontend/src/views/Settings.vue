@@ -579,7 +579,7 @@
           ส่งออกรายงาน & สำรองข้อมูล (Export & Backup)
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          ดาวน์โหลดข้อมูลสรุปครบทั้ง 7 หมวดหมู่ใน 1 ไฟล์ CSV (ยอดขาย, สินค้าขายดี, ประวัติออเดอร์, ค่าใช้จ่าย, สต็อก, กิจกรรม, รอบลิ้นชัก) รองรับเปิดใน Excel ได้ภาษาไทยไม่เพี้ยน และสามารถเลือกฟังก์ชันล้างข้อมูลเก่าบน Cloud เพื่อลดอัตรา Reads ได้
+          ดาวน์โหลดข้อมูลสรุปครบทั้ง 7 หมวดหมู่แยกเป็น 7 แถบหน้าย่อย (Worksheets) ในไฟล์ Excel (.xlsx) ได้แก่ ยอดขาย, สินค้าขายดี, ประวัติออเดอร์, ค่าใช้จ่าย, สต็อก, กิจกรรม, รอบลิ้นชัก พร้อมระบบคำนวณและปรับขนาดคอลัมน์ให้อัตโนมัติ (Auto-fit) อ่านง่าย ชัดเจน ไม่ต้องลากขยายเอง
         </p>
 
         <!-- Filters Row: Period & Branch Selector -->
@@ -647,30 +647,30 @@
         <!-- Action Cards Grid -->
         <div class="grid-2-cols gap-md mb-xl" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-md);">
           
-          <!-- Action 1: Standard 1 CSV Download -->
+          <!-- Action 1: Standard Multi-Sheet Excel Download -->
           <div 
             class="card p-md flex flex-col justify-between" 
             style="border: 1px solid rgba(42, 157, 143, 0.4); background: rgba(42, 157, 143, 0.03); border-radius: var(--radius-lg);"
           >
             <div>
               <div class="flex align-center gap-sm mb-xs">
-                <i class="fa-solid fa-file-csv text-lg" style="color: var(--success, #2a9d8f);"></i>
-                <strong class="text-base font-bold" style="color: var(--text-primary);">1. ดาวน์โหลดรายงานสรุป (1 CSV)</strong>
+                <i class="fa-solid fa-file-excel text-lg" style="color: var(--success, #2a9d8f);"></i>
+                <strong class="text-base font-bold" style="color: var(--text-primary);">1. ดาวน์โหลดรายงานสรุป Excel (7 แถบย่อย)</strong>
               </div>
               <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
-                ส่งออกข้อมูลสรุปครบ 7 ตารางลงเครื่อง (ยอดขาย, ออเดอร์, ค่าใช้จ่าย, สินค้าขายดี, สต็อก, กิจกรรม, รอบลิ้นชัก) โดยข้อมูลบน Cloud ยังอยู่ครบ
+                ส่งออกรายงาน 7 หมวดหมู่แยกเป็น 7 แถบหน้าย่อย (Worksheets) จัดขนาดคอลัมน์กว้างพอดีกับข้อความ ไม่ถูกตัดทอน
               </p>
             </div>
             <button 
               class="btn btn-secondary w-full" 
-              @click="downloadCSVSummary"
+              @click="downloadExcelSummary"
               style="border-color: var(--success, #2a9d8f); color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
             >
-              <i class="fa-solid fa-file-arrow-down"></i> ดาวน์โหลดรายงาน 1 CSV
+              <i class="fa-solid fa-file-excel"></i> ดาวน์โหลดรายงาน Excel (7 แถบย่อย)
             </button>
           </div>
 
-          <!-- Action 2: Download CSV + Purge Cloud -->
+          <!-- Action 2: Download Excel + Purge Cloud -->
           <div 
             class="card p-md flex flex-col justify-between" 
             style="border: 1px solid rgba(192, 57, 43, 0.4); background: rgba(192, 57, 43, 0.03); border-radius: var(--radius-lg);"
@@ -678,10 +678,10 @@
             <div>
               <div class="flex align-center gap-sm mb-xs">
                 <i class="fa-solid fa-cloud-arrow-down text-lg" style="color: var(--danger, #c0392b);"></i>
-                <strong class="text-base font-bold" style="color: var(--danger, #c0392b);">2. ดาวน์โหลด CSV และล้างข้อมูลบน Cloud</strong>
+                <strong class="text-base font-bold" style="color: var(--danger, #c0392b);">2. ดาวน์โหลด Excel และล้างข้อมูลบน Cloud</strong>
               </div>
               <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
-                ดาวน์โหลด CSV สำรองลงเครื่องก่อนเสมอ จากนั้นจะล้างประวัติธุรกรรมเก่าออกจาก Turso Cloud เพื่อคืนโควตา Reads
+                ดาวน์โหลดไฟล์สำรองลงเครื่องก่อนเสมอ จากนั้นจะล้างประวัติธุรกรรมเก่าออกจาก Turso Cloud เพื่อคืนโควตา Reads
               </p>
             </div>
             <button 
@@ -1637,8 +1637,8 @@ const handleImportJSON = (event) => {
   reader.readAsText(file);
 };
 
-// Download 1 CSV summary report
-const downloadCSVSummary = async () => {
+// Download 7-sheet Excel summary report (.xlsx)
+const downloadExcelSummary = async () => {
   ui.showLoading();
   try {
     const user = sessionStorage.getItem('pos_user');
@@ -1656,22 +1656,22 @@ const downloadCSVSummary = async () => {
     const response = await fetch(`${window.location.origin}/api/settings/backup/csv-summary?${query}`, { headers });
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || 'ดาวน์โหลดรายงาน CSV ล้มเหลว');
+      throw new Error(err.error || 'ดาวน์โหลดรายงาน Excel ล้มเหลว');
     }
 
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `pos_summary_report_${backupPeriod.value}m_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `pos_summary_report_${backupPeriod.value}m_${new Date().toISOString().split('T')[0]}.xlsx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-    ui.showToast('ดาวน์โหลดรายงานสรุป 1 CSV สำเร็จเรียบร้อย 🎉', 'success');
+    ui.showToast('ดาวน์โหลดรายงาน Excel (7 แถบย่อย) สำเร็จเรียบร้อย 🎉', 'success');
   } catch (error) {
     console.error(error);
-    ui.showToast('ไม่สามารถดาวน์โหลด CSV ได้: ' + error.message, 'error');
+    ui.showToast('ไม่สามารถดาวน์โหลด Excel ได้: ' + error.message, 'error');
   } finally {
     ui.hideLoading();
   }
@@ -1691,8 +1691,8 @@ const handleExecutePurgeCloud = async () => {
   isPurging.value = true;
   ui.showLoading();
   try {
-    // 1. Download CSV backup first automatically as a safety guarantee
-    await downloadCSVSummary();
+    // 1. Download Excel backup first automatically as a safety guarantee
+    await downloadExcelSummary();
 
     // 2. Call backend purge endpoint
     const res = await api.settings.purgeCloudData(

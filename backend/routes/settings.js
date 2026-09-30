@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const ExcelJS = require('exceljs');
 const { getDb } = require('../config/database');
 const { attachUser, requireAdmin } = require('../middleware/auth');
 
@@ -486,143 +487,429 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       ORDER BY session_date DESC, id DESC
     `).all(...paramsSessions);
 
-    // ── 3. สร้างเนื้อหา 1 CSV Multi-Section ──
-    const lines = [];
+    // [9] สรุปยอดขายและค่าใช้จ่ายแยกรายเดือน (Monthly Breakdown)
+    const monthlySales = await db.prepare(`
+      SELECT 
+        substr(created_at, 1, 7) as month_key,
+        COUNT(*) as order_count,
+        COALESCE(SUM(subtotal), 0) as month_subtotal,
+        COALESCE(SUM(discount), 0) as month_discount,
+        COALESCE(SUM(total), 0) as month_sales
+      FROM orders
+      ${whereOrders ? whereOrders + " AND status = 'completed'" : "WHERE status = 'completed'"}
+      GROUP BY month_key
+      ORDER BY month_key ASC
+    `).all(...paramsOrders);
 
-    // Header ของเอกสาร
-    lines.push(escapeCsv('================================================================================'));
-    lines.push(escapeCsv(`รายงานสรุปข้อมูลร้าน (POS CHANG DANG) - ช่วงเวลา: ${periodLabel}`));
-    lines.push(escapeCsv(`สาขา: ${branchLabel} | วันที่ส่งออกข้อมูล: ${new Date().toLocaleString('th-TH')}`));
-    lines.push(escapeCsv('================================================================================'));
-    lines.push('');
+    const monthlyExpenses = await db.prepare(`
+      SELECT 
+        substr(expense_date, 1, 7) as month_key,
+        COALESCE(SUM(amount), 0) as month_expenses
+      FROM expenses
+      ${whereExpenses}
+      GROUP BY month_key
+      ORDER BY month_key ASC
+    `).all(...paramsExpenses);
 
-    // --- Section 1: สรุปภาพรวมยอดขาย ---
-    lines.push(escapeCsv('=== [1] สรุปภาพรวมยอดขาย (SALES OVERVIEW) ==='));
-    lines.push([escapeCsv('หัวข้อสรุป'), escapeCsv('จำนวน / มูลค่า (บาท)')].join(','));
-    lines.push([escapeCsv('ยอดขายรวมทั้งหมด (Total Sales)'), escapeCsv(totalSales.toFixed(2))].join(','));
-    lines.push([escapeCsv('ส่วนลดรวม (Total Discounts)'), escapeCsv(Number(ordersOverview?.total_discount || 0).toFixed(2))].join(','));
-    lines.push([escapeCsv('ค่าใช้จ่ายรวมทั้งหมด (Total Expenses)'), escapeCsv(totalExpenses.toFixed(2))].join(','));
-    lines.push([escapeCsv('กำไรเบื้องต้น (Net Profit)'), escapeCsv(netProfit.toFixed(2))].join(','));
-    lines.push([escapeCsv('จำนวนบิลที่สำเร็จ (Total Orders)'), escapeCsv(totalOrders)].join(','));
-    lines.push([escapeCsv('ยอดขายเฉลี่ยต่อบิล (Avg per Order)'), escapeCsv(avgOrder)].join(','));
-    lines.push([escapeCsv('• ยอดชำระด้วยเงินสด (Cash)'), escapeCsv(Number(ordersOverview?.cash_sales || 0).toFixed(2))].join(','));
-    lines.push([escapeCsv('• ยอดชำระด้วย QR Code (PromptPay)'), escapeCsv(Number(ordersOverview?.qr_sales || 0).toFixed(2))].join(','));
-    lines.push([escapeCsv('• ยอดชำระผ่าน Delivery'), escapeCsv(Number(ordersOverview?.delivery_sales || 0).toFixed(2))].join(','));
-    lines.push([escapeCsv('• ยอดชำระผ่าน คนละครึ่ง/สวัสดิการรัฐ'), escapeCsv(Number(ordersOverview?.gov_sales || 0).toFixed(2))].join(','));
-    lines.push('');
+    const monthlyExpMap = {};
+    monthlyExpenses.forEach(me => { monthlyExpMap[me.month_key] = Number(me.month_expenses || 0); });
 
-    // --- Section 2: อันดับสินค้าขายดี ---
-    lines.push(escapeCsv('=== [2] อันดับสินค้าขายดี (TOP SELLING ITEMS) ==='));
-    lines.push([
-      escapeCsv('อันดับ'),
-      escapeCsv('ชื่อสินค้า'),
-      escapeCsv('หมวดหมู่'),
-      escapeCsv('จำนวนที่ขายได้ (ชิ้น)'),
-      escapeCsv('ยอดขายรวม (บาท)')
-    ].join(','));
+    // ── 3. สร้างไฟล์ Excel Workbook 7 แถบย่อย (7 Sheets) พร้อม Auto-Fit คอลัมน์ & Excel Formulas ──
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'POS Chang Dang';
+    workbook.created = new Date();
 
-    if (topItems.length === 0) {
-      lines.push(escapeCsv('ไม่มีข้อมูลสินค้าขายดีในช่วงเวลานี้'));
-    } else {
-      topItems.forEach((item, idx) => {
-        lines.push([
-          escapeCsv(idx + 1),
-          escapeCsv(item.item_name),
-          escapeCsv(item.category_name),
-          escapeCsv(item.total_qty),
-          escapeCsv(Number(item.total_revenue || 0).toFixed(2))
-        ].join(','));
+    const BRAND_COLOR = '8B0313'; // ช้างแดง
+    const HEADER_DARK = '2C3E50';
+
+    const styleSheetHeader = (row, bgColor = BRAND_COLOR) => {
+      row.height = 28;
+      row.eachCell(cell => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF' + bgColor }
+        };
+        cell.font = {
+          name: 'Segoe UI',
+          size: 11,
+          bold: true,
+          color: { argb: 'FFFFFFFF' }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+          left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+          bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+          right: { style: 'thin', color: { argb: 'FFD3D3D3' } }
+        };
       });
-    }
-    lines.push('');
+    };
 
-    // --- Section 3: ประวัติออเดอร์ย้อนหลัง ---
-    lines.push(escapeCsv('=== [3] ประวัติออเดอร์ย้อนหลัง (ORDERS HISTORY) ==='));
-    lines.push([
-      escapeCsv('เลขที่บิล'),
-      escapeCsv('วัน-เวลา'),
-      escapeCsv('สาขา'),
-      escapeCsv('พนักงานผู้ขาย'),
-      escapeCsv('รายการอาหารที่สั่ง'),
-      escapeCsv('ยอดรวมก่อนลด (บาท)'),
-      escapeCsv('ส่วนลด (บาท)'),
-      escapeCsv('ยอดสุทธิ (บาท)'),
-      escapeCsv('ช่องทางชำระเงิน'),
-      escapeCsv('สถานะบิล'),
-      escapeCsv('หมายเหตุ')
-    ].join(','));
+    const styleDataRows = (sheet, startRow = 2, endRow = null) => {
+      sheet.eachRow((row, rowNumber) => {
+        if (rowNumber >= startRow && (!endRow || rowNumber <= endRow)) {
+          row.height = 22;
+          const isEven = rowNumber % 2 === 0;
+          row.eachCell({ includeEmpty: true }, cell => {
+            cell.font = { name: 'Segoe UI', size: 10 };
+            cell.alignment = { vertical: 'middle' };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFEAEAEA' } },
+              left: { style: 'thin', color: { argb: 'FFEAEAEA' } },
+              bottom: { style: 'thin', color: { argb: 'FFEAEAEA' } },
+              right: { style: 'thin', color: { argb: 'FFEAEAEA' } }
+            };
+            if (isEven && (!cell.fill || !cell.fill.fgColor)) {
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF9FAFB' }
+              };
+            }
+          });
+        }
+      });
+    };
+
+    const styleTotalRow = (row, bgArgb = 'FFF2F4F7') => {
+      row.height = 24;
+      row.eachCell({ includeEmpty: true }, cell => {
+        cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF8B0313' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: bgArgb }
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF8B0313' } },
+          bottom: { style: 'double', color: { argb: 'FF8B0313' } },
+          left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+          right: { style: 'thin', color: { argb: 'FFD3D3D3' } }
+        };
+      });
+    };
+
+    const autoFitCols = (sheet, minWidth = 14) => {
+      sheet.columns.forEach(column => {
+        let maxLen = 0;
+        column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+          if (cell.value !== null && cell.value !== undefined) {
+            let text = '';
+            if (typeof cell.value === 'object' && cell.value.formula) {
+              text = String(cell.value.result || '');
+            } else {
+              text = String(cell.value);
+            }
+            let len = 0;
+            for (let i = 0; i < text.length; i++) {
+              len += text.charCodeAt(i) > 255 ? 1.5 : 1.05;
+            }
+            if (len > maxLen) maxLen = len;
+          }
+        });
+        column.width = Math.max(Math.ceil(maxLen) + 5, minWidth);
+      });
+    };
+
+    // ── Sheet 1: สรุปภาพรวม & ตารางสมการรายเดือน (Overview & Monthly Performance) ──
+    const ws1 = workbook.addWorksheet('1. สรุปภาพรวม');
+    ws1.columns = [
+      { header: 'หัวข้อสรุป (Overview Topic)', key: 'topic', width: 38 },
+      { header: 'จำนวน / มูลค่า (บาท)', key: 'value', width: 25 },
+      { header: '', key: 'c3', width: 4 },
+      { header: 'เดือน (Month)', key: 'm_month', width: 16 },
+      { header: 'ยอดขายรวม (Sales)', key: 'm_sales', width: 22 },
+      { header: 'ส่วนลด (Discount)', key: 'm_disc', width: 16 },
+      { header: 'ค่าใช้จ่าย (Expenses)', key: 'm_exp', width: 20 },
+      { header: 'กำไรสุทธิ (Net Profit)', key: 'm_profit', width: 22 },
+      { header: 'จำนวนบิล (Orders)', key: 'm_orders', width: 18 },
+      { header: 'เฉลี่ยต่อบิล (Avg/Order)', key: 'm_avg', width: 20 }
+    ];
+
+    // Header styling
+    styleSheetHeader(ws1.getRow(1), BRAND_COLOR);
+
+    // Left Table: KPI Card rows with formula
+    const leftRows = [
+      { topic: 'ช่วงเวลาที่เลือก (Period)', value: periodLabel },
+      { topic: 'สาขา (Branch)', value: branchLabel },
+      { topic: 'วันที่ส่งออกข้อมูล (Export Date)', value: new Date().toLocaleString('th-TH') },
+      { topic: 'ยอดขายรวมทั้งหมด (Total Sales)', value: totalSales },
+      { topic: 'ส่วนลดรวม (Total Discounts)', value: Number(ordersOverview?.total_discount || 0) },
+      { topic: 'ค่าใช้จ่ายรวมทั้งหมด (Total Expenses)', value: totalExpenses },
+      { topic: 'กำไรเบื้องต้น (Net Profit)', value: { formula: 'B5-B7', result: netProfit } },
+      { topic: 'จำนวนบิลที่สำเร็จ (Total Orders)', value: totalOrders },
+      { topic: 'ยอดขายเฉลี่ยต่อบิล (Avg per Order)', value: { formula: 'IF(B9>0, B5/B9, 0)', result: Number(avgOrder) } },
+      { topic: '• ยอดชำระด้วยเงินสด (Cash Sales)', value: Number(ordersOverview?.cash_sales || 0) },
+      { topic: '• ยอดชำระด้วย QR Code (PromptPay)', value: Number(ordersOverview?.qr_sales || 0) },
+      { topic: '• ยอดชำระผ่าน Delivery', value: Number(ordersOverview?.delivery_sales || 0) },
+      { topic: '• ยอดชำระผ่าน คนละครึ่ง/สวัสดิการรัฐ', value: Number(ordersOverview?.gov_sales || 0) }
+    ];
+
+    // Populate Monthly Breakdown Table on the right side
+    const maxRows = Math.max(leftRows.length, monthlySales.length);
+    for (let i = 0; i < maxRows; i++) {
+      const rowNum = i + 2;
+      const left = leftRows[i];
+      const m = monthlySales[i];
+      
+      const rowData = {
+        topic: left ? left.topic : '',
+        value: left ? left.value : null
+      };
+
+      if (m) {
+        const mExp = monthlyExpMap[m.month_key] || 0;
+        const mSales = Number(m.month_sales || 0);
+        const mOrders = Number(m.order_count || 0);
+        rowData.m_month = m.month_key;
+        rowData.m_sales = mSales;
+        rowData.m_disc = Number(m.month_discount || 0);
+        rowData.m_exp = mExp;
+        rowData.m_profit = { formula: `E${rowNum}-G${rowNum}`, result: mSales - mExp };
+        rowData.m_orders = mOrders;
+        rowData.m_avg = { formula: `IF(I${rowNum}>0, E${rowNum}/I${rowNum}, 0)`, result: mOrders > 0 ? mSales / mOrders : 0 };
+      }
+
+      ws1.addRow(rowData);
+    }
+
+    // Add Monthly Grand Total row if months > 0
+    if (monthlySales.length > 0) {
+      const startMRow = 2;
+      const endMRow = monthlySales.length + 1;
+      const totalRowIndex = ws1.rowCount + 1;
+      
+      const totalRow = ws1.addRow({
+        topic: '',
+        value: null,
+        c3: '',
+        m_month: 'รวมทุกเดือน (Grand Total)',
+        m_sales: { formula: `SUM(E${startMRow}:E${endMRow})`, result: totalSales },
+        m_disc: { formula: `SUM(F${startMRow}:F${endMRow})`, result: Number(ordersOverview?.total_discount || 0) },
+        m_exp: { formula: `SUM(G${startMRow}:G${endMRow})`, result: totalExpenses },
+        m_profit: { formula: `SUM(H${startMRow}:H${endMRow})`, result: netProfit },
+        m_orders: { formula: `SUM(I${startMRow}:I${endMRow})`, result: totalOrders },
+        m_avg: { formula: `IF(I${totalRowIndex}>0, E${totalRowIndex}/I${totalRowIndex}, 0)`, result: Number(avgOrder) }
+      });
+      styleTotalRow(totalRow);
+    }
+
+    styleDataRows(ws1, 2, ws1.rowCount - (monthlySales.length > 0 ? 1 : 0));
+    // Number formatting for ws1
+    for (let r = 2; r <= ws1.rowCount; r++) {
+      const bCell = ws1.getCell(`B${r}`);
+      if (bCell.value !== null && typeof bCell.value !== 'string') {
+        if (r === 9) {
+          bCell.numFmt = '#,##0';
+        } else {
+          bCell.numFmt = '#,##0.00';
+        }
+        bCell.alignment = { vertical: 'middle', horizontal: 'right' };
+      }
+      const eCell = ws1.getCell(`E${r}`);
+      if (eCell.value) { eCell.numFmt = '#,##0.00'; eCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
+      const fCell = ws1.getCell(`F${r}`);
+      if (fCell.value) { fCell.numFmt = '#,##0.00'; fCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
+      const gCell = ws1.getCell(`G${r}`);
+      if (gCell.value) { gCell.numFmt = '#,##0.00'; gCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
+      const hCell = ws1.getCell(`H${r}`);
+      if (hCell.value) { hCell.numFmt = '#,##0.00'; hCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
+      const iCell = ws1.getCell(`I${r}`);
+      if (iCell.value) { iCell.numFmt = '#,##0'; iCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
+      const jCell = ws1.getCell(`J${r}`);
+      if (jCell.value) { jCell.numFmt = '#,##0.00'; jCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
+    }
+    autoFitCols(ws1, 16);
+
+    // ── Sheet 2: อันดับสินค้าขายดี (Top Selling) ──
+    const ws2 = workbook.addWorksheet('2. สินค้าขายดี');
+    ws2.columns = [
+      { header: 'อันดับ', key: 'rank', width: 10 },
+      { header: 'ชื่อสินค้า', key: 'item_name', width: 30 },
+      { header: 'หมวดหมู่', key: 'category_name', width: 20 },
+      { header: 'จำนวนที่ขายได้ (ชิ้น)', key: 'total_qty', width: 22 },
+      { header: 'ยอดขายรวม (บาท)', key: 'total_revenue', width: 22 }
+    ];
+    styleSheetHeader(ws2.getRow(1), HEADER_DARK);
+
+    topItems.forEach((item, idx) => {
+      ws2.addRow({
+        rank: idx + 1,
+        item_name: item.item_name,
+        category_name: item.category_name,
+        total_qty: Number(item.total_qty || 0),
+        total_revenue: Number(item.total_revenue || 0)
+      });
+    });
+
+    if (topItems.length > 0) {
+      const topStart = 2;
+      const topEnd = topItems.length + 1;
+      const topSumRow = ws2.addRow({
+        rank: 'รวมทั้งหมด',
+        item_name: `(${topItems.length} อันดับแรก)`,
+        category_name: '-',
+        total_qty: { formula: `SUM(D${topStart}:D${topEnd})` },
+        total_revenue: { formula: `SUM(E${topStart}:E${topEnd})` }
+      });
+      styleTotalRow(topSumRow);
+      topSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    }
+
+    styleDataRows(ws2, 2, topItems.length > 0 ? ws2.rowCount - 1 : ws2.rowCount);
+    ws2.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) {
+        if (rowNumber <= topItems.length + 1) row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell(4).numFmt = '#,##0';
+        row.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+        row.getCell(5).numFmt = '#,##0.00';
+        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+      }
+    });
+    autoFitCols(ws2, 16);
+
+    // ── Sheet 3: ประวัติออเดอร์ (Orders History) ──
+    const ws3 = workbook.addWorksheet('3. ประวัติออเดอร์');
+    ws3.columns = [
+      { header: 'เลขที่บิล', key: 'order_number', width: 20 },
+      { header: 'วัน-เวลา', key: 'created_at', width: 22 },
+      { header: 'สาขา', key: 'branch', width: 22 },
+      { header: 'พนักงานผู้ขาย', key: 'staff', width: 20 },
+      { header: 'รายการอาหารที่สั่ง', key: 'items', width: 45 },
+      { header: 'ยอดรวมก่อนลด (บาท)', key: 'subtotal', width: 20 },
+      { header: 'ส่วนลด (บาท)', key: 'discount', width: 16 },
+      { header: 'ยอดสุทธิ (บาท)', key: 'total', width: 18 },
+      { header: 'ช่องทางชำระเงิน', key: 'payment_method', width: 18 },
+      { header: 'สถานะบิล', key: 'status', width: 14 },
+      { header: 'หมายเหตุ', key: 'note', width: 22 }
+    ];
+    styleSheetHeader(ws3.getRow(1), BRAND_COLOR);
 
     const paymentLabelMap = { cash: 'เงินสด', qr: 'QR Code', gov: 'คนละครึ่ง/รัฐ', delivery: 'เดลิเวอรี่' };
     const statusLabelMap = { completed: 'สำเร็จ', cancelled: 'ยกเลิก' };
 
-    if (ordersList.length === 0) {
-      lines.push(escapeCsv('ไม่มีข้อมูลออเดอร์ในช่วงเวลานี้'));
-    } else {
-      ordersList.forEach(o => {
-        const branchName = branchMap[o.branch_id] || `สาขา #${o.branch_id}`;
-        const staffName = userMap[o.staff_id] || `พนักงาน #${o.staff_id}`;
-        const itemsText = (orderItemsMap[o.id] || []).join(' | ');
-        lines.push([
-          escapeCsv(o.order_number),
-          escapeCsv(o.created_at),
-          escapeCsv(branchName),
-          escapeCsv(staffName),
-          escapeCsv(itemsText),
-          escapeCsv(Number(o.subtotal || 0).toFixed(2)),
-          escapeCsv(Number(o.discount || 0).toFixed(2)),
-          escapeCsv(Number(o.total || 0).toFixed(2)),
-          escapeCsv(paymentLabelMap[o.payment_method] || o.payment_method),
-          escapeCsv(statusLabelMap[o.status] || o.status),
-          escapeCsv(o.note || '')
-        ].join(','));
+    ordersList.forEach(o => {
+      const branchName = branchMap[o.branch_id] || `สาขา #${o.branch_id}`;
+      const staffName = userMap[o.staff_id] || `พนักงาน #${o.staff_id}`;
+      const itemsText = (orderItemsMap[o.id] || []).join(' | ');
+
+      ws3.addRow({
+        order_number: o.order_number,
+        created_at: o.created_at,
+        branch: branchName,
+        staff: staffName,
+        items: itemsText,
+        subtotal: Number(o.subtotal || 0),
+        discount: Number(o.discount || 0),
+        total: Number(o.total || 0),
+        payment_method: paymentLabelMap[o.payment_method] || o.payment_method,
+        status: statusLabelMap[o.status] || o.status,
+        note: o.note || '-'
       });
-    }
-    lines.push('');
+    });
 
-    // --- Section 4: บันทึกค่าใช้จ่ายประจำวัน ---
-    lines.push(escapeCsv('=== [4] บันทึกค่าใช้จ่ายประจำวัน (DAILY EXPENSES) ==='));
-    lines.push([
-      escapeCsv('วันที่'),
-      escapeCsv('สาขา'),
-      escapeCsv('หมวดหมู่ค่าใช้จ่าย'),
-      escapeCsv('รายละเอียด/หมายเหตุ'),
-      escapeCsv('ผู้บันทึก'),
-      escapeCsv('ช่องทางจ่ายเงิน'),
-      escapeCsv('จำนวนเงิน (บาท)')
-    ].join(','));
-
-    if (expensesList.length === 0) {
-      lines.push(escapeCsv('ไม่มีข้อมูลค่าใช้จ่ายในช่วงเวลานี้'));
-    } else {
-      expensesList.forEach(e => {
-        const branchName = branchMap[e.branch_id] || `สาขา #${e.branch_id}`;
-        const staffName = userMap[e.staff_id] || `พนักงาน #${e.staff_id}`;
-        lines.push([
-          escapeCsv(e.expense_date || e.created_at),
-          escapeCsv(branchName),
-          escapeCsv(e.category),
-          escapeCsv(e.note || '-'),
-          escapeCsv(staffName),
-          escapeCsv(e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด'),
-          escapeCsv(Number(e.amount || 0).toFixed(2))
-        ].join(','));
+    if (ordersList.length > 0) {
+      const oStart = 2;
+      const oEnd = ordersList.length + 1;
+      const oSumRow = ws3.addRow({
+        order_number: 'รวมทั้งสิ้น',
+        created_at: `(${ordersList.length} บิล)`,
+        branch: '-',
+        staff: '-',
+        items: '-',
+        subtotal: { formula: `SUM(F${oStart}:F${oEnd})` },
+        discount: { formula: `SUM(G${oStart}:G${oEnd})` },
+        total: { formula: `SUM(H${oStart}:H${oEnd})` },
+        payment_method: '-',
+        status: '-',
+        note: '-'
       });
+      styleTotalRow(oSumRow);
+      oSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
     }
-    lines.push('');
 
-    // --- Section 5: ประวัติการตัด/ปรับสต็อก ---
-    lines.push(escapeCsv('=== [5] ประวัติการตัด/ปรับสต็อก (STOCK LOGS) ==='));
-    lines.push([
-      escapeCsv('วัน-เวลา'),
-      escapeCsv('สาขา'),
-      escapeCsv('รายการวัตถุดิบ/สินค้า'),
-      escapeCsv('จำนวนที่เปลี่ยน'),
-      escapeCsv('สต็อกเดิม'),
-      escapeCsv('คงเหลือใหม่'),
-      escapeCsv('เหตุผล'),
-      escapeCsv('ผู้ทำรายการ'),
-      escapeCsv('หมายเหตุ')
-    ].join(','));
+    styleDataRows(ws3, 2, ordersList.length > 0 ? ws3.rowCount - 1 : ws3.rowCount);
+    ws3.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) {
+        row.getCell(6).numFmt = '#,##0.00';
+        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+        row.getCell(7).numFmt = '#,##0.00';
+        row.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+        row.getCell(8).numFmt = '#,##0.00';
+        row.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
+        if (rowNumber <= ordersList.length + 1) row.getCell(10).alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+    });
+    autoFitCols(ws3, 16);
+
+    // ── Sheet 4: บันทึกค่าใช้จ่าย (Daily Expenses) ──
+    const ws4 = workbook.addWorksheet('4. บันทึกค่าใช้จ่าย');
+    ws4.columns = [
+      { header: 'วันที่', key: 'expense_date', width: 16 },
+      { header: 'สาขา', key: 'branch', width: 22 },
+      { header: 'หมวดหมู่ค่าใช้จ่าย', key: 'category', width: 22 },
+      { header: 'รายละเอียด/หมายเหตุ', key: 'note', width: 35 },
+      { header: 'ผู้บันทึก', key: 'staff', width: 20 },
+      { header: 'ช่องทางจ่ายเงิน', key: 'payment_method', width: 18 },
+      { header: 'จำนวนเงิน (บาท)', key: 'amount', width: 20 }
+    ];
+    styleSheetHeader(ws4.getRow(1), HEADER_DARK);
+
+    expensesList.forEach(e => {
+      const branchName = branchMap[e.branch_id] || `สาขา #${e.branch_id}`;
+      const staffName = userMap[e.staff_id] || `พนักงาน #${e.staff_id}`;
+      ws4.addRow({
+        expense_date: e.expense_date || e.created_at,
+        branch: branchName,
+        category: e.category,
+        note: e.note || '-',
+        staff: staffName,
+        payment_method: e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด',
+        amount: Number(e.amount || 0)
+      });
+    });
+
+    if (expensesList.length > 0) {
+      const expStart = 2;
+      const expEnd = expensesList.length + 1;
+      const expSumRow = ws4.addRow({
+        expense_date: 'รวมค่าใช้จ่ายทั้งหมด',
+        branch: `(${expensesList.length} รายการ)`,
+        category: '-',
+        note: '-',
+        staff: '-',
+        payment_method: '-',
+        amount: { formula: `SUM(G${expStart}:G${expEnd})` }
+      });
+      styleTotalRow(expSumRow);
+      expSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    }
+
+    styleDataRows(ws4, 2, expensesList.length > 0 ? ws4.rowCount - 1 : ws4.rowCount);
+    ws4.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) {
+        row.getCell(7).numFmt = '#,##0.00';
+        row.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+      }
+    });
+    autoFitCols(ws4, 16);
+
+    // ── Sheet 5: ยอดคลังและสต็อก (Stock Logs) ──
+    const ws5 = workbook.addWorksheet('5. ยอดคลังและสต็อก');
+    ws5.columns = [
+      { header: 'วัน-เวลา', key: 'created_at', width: 22 },
+      { header: 'สาขา', key: 'branch', width: 22 },
+      { header: 'รายการวัตถุดิบ/สินค้า', key: 'item_name', width: 28 },
+      { header: 'จำนวนที่เปลี่ยน', key: 'change_qty', width: 18 },
+      { header: 'สต็อกเดิม', key: 'previous_stock', width: 16 },
+      { header: 'คงเหลือใหม่', key: 'new_stock', width: 16 },
+      { header: 'เหตุผล', key: 'reason', width: 22 },
+      { header: 'ผู้ทำรายการ', key: 'staff', width: 20 },
+      { header: 'หมายเหตุ', key: 'note', width: 28 }
+    ];
+    styleSheetHeader(ws5.getRow(1), HEADER_DARK);
 
     const reasonLabelMap = {
       sale: 'ขายสินค้า',
@@ -633,92 +920,148 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       staff_benefit: 'สวัสดิการพนักงาน'
     };
 
-    if (stockLogs.length === 0) {
-      lines.push(escapeCsv('ไม่มีข้อมูลบันทึกสต็อกในช่วงเวลานี้'));
-    } else {
-      stockLogs.forEach(s => {
-        const branchName = branchMap[s.branch_id] || `สาขา #${s.branch_id}`;
-        const staffName = userMap[s.staff_id] || `พนักงาน #${s.staff_id}`;
-        lines.push([
-          escapeCsv(s.created_at),
-          escapeCsv(branchName),
-          escapeCsv(s.item_name || '-'),
-          escapeCsv(s.change_qty),
-          escapeCsv(s.previous_stock !== null ? s.previous_stock : '-'),
-          escapeCsv(s.new_stock !== null ? s.new_stock : '-'),
-          escapeCsv(reasonLabelMap[s.reason] || s.reason),
-          escapeCsv(staffName),
-          escapeCsv(s.note || '-')
-        ].join(','));
+    stockLogs.forEach(s => {
+      const branchName = branchMap[s.branch_id] || `สาขา #${s.branch_id}`;
+      const staffName = userMap[s.staff_id] || `พนักงาน #${s.staff_id}`;
+      ws5.addRow({
+        created_at: s.created_at,
+        branch: branchName,
+        item_name: s.item_name || '-',
+        change_qty: s.change_qty,
+        previous_stock: s.previous_stock !== null ? s.previous_stock : '-',
+        new_stock: s.new_stock !== null ? s.new_stock : '-',
+        reason: reasonLabelMap[s.reason] || s.reason,
+        staff: staffName,
+        note: s.note || '-'
       });
-    }
-    lines.push('');
+    });
 
-    // --- Section 6: ประวัติกิจกรรมพนักงาน ---
-    lines.push(escapeCsv('=== [6] ประวัติกิจกรรมพนักงาน (STAFF ACTIVITY LOGS) ==='));
-    lines.push([
-      escapeCsv('วัน-เวลา'),
-      escapeCsv('สาขา'),
-      escapeCsv('พนักงาน/ผู้ใช้งาน'),
-      escapeCsv('กิจกรรม (Action)'),
-      escapeCsv('รายละเอียด')
-    ].join(','));
-
-    if (activityLogs.length === 0) {
-      lines.push(escapeCsv('ไม่มีข้อมูลกิจกรรมในช่วงเวลานี้'));
-    } else {
-      activityLogs.forEach(a => {
-        const branchName = branchMap[a.branch_id] || `สาขา #${a.branch_id}`;
-        const staffName = userMap[a.user_id] || `ผู้ใช้ #${a.user_id}`;
-        lines.push([
-          escapeCsv(a.created_at),
-          escapeCsv(branchName),
-          escapeCsv(staffName),
-          escapeCsv(a.action),
-          escapeCsv(a.details || '-')
-        ].join(','));
+    if (stockLogs.length > 0) {
+      const stkStart = 2;
+      const stkEnd = stockLogs.length + 1;
+      const stkSumRow = ws5.addRow({
+        created_at: 'รวมจำนวนการปรับเปลี่ยนสต็อก',
+        branch: `(${stockLogs.length} รายการ)`,
+        item_name: '-',
+        change_qty: { formula: `SUM(D${stkStart}:D${stkEnd})` },
+        previous_stock: '-',
+        new_stock: '-',
+        reason: '-',
+        staff: '-',
+        note: '-'
       });
-    }
-    lines.push('');
-
-    // --- Section 7: ตรวจสอบรอบเปิด-ปิดลิ้นชักเก็บเงิน ---
-    lines.push(escapeCsv('=== [7] ตรวจสอบรอบเปิด-ปิดลิ้นชัก (CASH DRAWER SESSIONS) ==='));
-    lines.push([
-      escapeCsv('วันที่'),
-      escapeCsv('สาขา'),
-      escapeCsv('เงินทอนเริ่มต้น (บาท)'),
-      escapeCsv('ยอดเงินสดที่ควรมี (บาท)'),
-      escapeCsv('ยอดนับจริง (บาท)'),
-      escapeCsv('ผลต่าง ขาด/เกิน (บาท)'),
-      escapeCsv('สถานะรอบ'),
-      escapeCsv('หมายเหตุ')
-    ].join(','));
-
-    if (cashSessions.length === 0) {
-      lines.push(escapeCsv('ไม่มีข้อมูลรอบลิ้นชักในช่วงเวลานี้'));
-    } else {
-      cashSessions.forEach(c => {
-        const branchName = branchMap[c.branch_id] || `สาขา #${c.branch_id}`;
-        lines.push([
-          escapeCsv(c.session_date),
-          escapeCsv(branchName),
-          escapeCsv(Number(c.opening_cash || 0).toFixed(2)),
-          escapeCsv(c.expected_cash !== null ? Number(c.expected_cash).toFixed(2) : '-'),
-          escapeCsv(c.actual_cash !== null ? Number(c.actual_cash).toFixed(2) : '-'),
-          escapeCsv(c.difference !== null ? Number(c.difference).toFixed(2) : '-'),
-          escapeCsv(c.status === 'open' ? 'กำลังเปิดรอบ' : 'ปิดรอบเรียบร้อย'),
-          escapeCsv(c.note || '-')
-        ].join(','));
-      });
+      styleTotalRow(stkSumRow);
+      stkSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
     }
 
-    // รวมไฟล์ด้วย UTF-8 BOM สำหรับ Excel
-    const csvContent = '\uFEFF' + lines.join('\r\n');
-    const filename = `pos_summary_report_${monthsParam || 'all'}m_${new Date().toISOString().split('T')[0]}.csv`;
+    styleDataRows(ws5, 2, stockLogs.length > 0 ? ws5.rowCount - 1 : ws5.rowCount);
+    ws5.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) {
+        row.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+      }
+    });
+    autoFitCols(ws5, 16);
 
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    // ── Sheet 6: บันทึกกิจกรรม (Staff Activity Logs) ──
+    const ws6 = workbook.addWorksheet('6. บันทึกกิจกรรม');
+    ws6.columns = [
+      { header: 'วัน-เวลา', key: 'created_at', width: 22 },
+      { header: 'สาขา', key: 'branch', width: 22 },
+      { header: 'พนักงาน/ผู้ใช้งาน', key: 'staff', width: 20 },
+      { header: 'กิจกรรม (Action)', key: 'action', width: 25 },
+      { header: 'รายละเอียด', key: 'details', width: 45 }
+    ];
+    styleSheetHeader(ws6.getRow(1), HEADER_DARK);
+
+    activityLogs.forEach(a => {
+      const branchName = branchMap[a.branch_id] || `สาขา #${a.branch_id}`;
+      const staffName = userMap[a.user_id] || `ผู้ใช้ #${a.user_id}`;
+      ws6.addRow({
+        created_at: a.created_at,
+        branch: branchName,
+        staff: staffName,
+        action: a.action,
+        details: a.details || '-'
+      });
+    });
+    styleDataRows(ws6, 2);
+    autoFitCols(ws6, 16);
+
+    // ── Sheet 7: รอบลิ้นชักเก็บเงิน (Cash Drawer Sessions) ──
+    const ws7 = workbook.addWorksheet('7. รอบลิ้นชักเก็บเงิน');
+    ws7.columns = [
+      { header: 'วันที่', key: 'session_date', width: 16 },
+      { header: 'สาขา', key: 'branch', width: 22 },
+      { header: 'เงินทอนเริ่มต้น (บาท)', key: 'opening_cash', width: 22 },
+      { header: 'ยอดเงินสดที่ควรมี (บาท)', key: 'expected_cash', width: 24 },
+      { header: 'ยอดนับจริง (บาท)', key: 'actual_cash', width: 20 },
+      { header: 'ผลต่าง ขาด/เกิน (บาท)', key: 'difference', width: 22 },
+      { header: 'สถานะรอบ', key: 'status', width: 18 },
+      { header: 'หมายเหตุ', key: 'note', width: 25 }
+    ];
+    styleSheetHeader(ws7.getRow(1), BRAND_COLOR);
+
+    cashSessions.forEach(c => {
+      const branchName = branchMap[c.branch_id] || `สาขา #${c.branch_id}`;
+      ws7.addRow({
+        session_date: c.session_date,
+        branch: branchName,
+        opening_cash: Number(c.opening_cash || 0),
+        expected_cash: c.expected_cash !== null ? Number(c.expected_cash) : '-',
+        actual_cash: c.actual_cash !== null ? Number(c.actual_cash) : '-',
+        difference: c.difference !== null ? Number(c.difference) : '-',
+        status: c.status === 'open' ? 'กำลังเปิดรอบ' : 'ปิดรอบเรียบร้อย',
+        note: c.note || '-'
+      });
+    });
+
+    if (cashSessions.length > 0) {
+      const cdStart = 2;
+      const cdEnd = cashSessions.length + 1;
+      const cdSumRow = ws7.addRow({
+        session_date: 'รวมยอดเงินรอบลิ้นชัก',
+        branch: `(${cashSessions.length} รอบกะ)`,
+        opening_cash: { formula: `SUM(C${cdStart}:C${cdEnd})` },
+        expected_cash: { formula: `SUM(D${cdStart}:D${cdEnd})` },
+        actual_cash: { formula: `SUM(E${cdStart}:E${cdEnd})` },
+        difference: { formula: `SUM(F${cdStart}:F${cdEnd})` },
+        status: '-',
+        note: '-'
+      });
+      styleTotalRow(cdSumRow);
+      cdSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    }
+
+    styleDataRows(ws7, 2, cashSessions.length > 0 ? ws7.rowCount - 1 : ws7.rowCount);
+    ws7.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) {
+        row.getCell(3).numFmt = '#,##0.00';
+        row.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
+        if (typeof row.getCell(4).value === 'number' || (row.getCell(4).value && row.getCell(4).value.formula)) {
+          row.getCell(4).numFmt = '#,##0.00';
+          row.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+        }
+        if (typeof row.getCell(5).value === 'number' || (row.getCell(5).value && row.getCell(5).value.formula)) {
+          row.getCell(5).numFmt = '#,##0.00';
+          row.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+        }
+        if (typeof row.getCell(6).value === 'number' || (row.getCell(6).value && row.getCell(6).value.formula)) {
+          row.getCell(6).numFmt = '#,##0.00';
+          row.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+        }
+        if (rowNumber <= cashSessions.length + 1) row.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+    });
+    autoFitCols(ws7, 16);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const filename = `pos_summary_report_${monthsParam || 'all'}m_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    return res.status(200).send(csvContent);
+    return res.status(200).send(Buffer.from(buffer));
 
   } catch (error) {
     console.error('❌ Export CSV Summary error:', error.message);
