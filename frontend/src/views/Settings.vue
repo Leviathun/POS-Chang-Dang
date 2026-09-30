@@ -570,73 +570,167 @@
       </div>
     </div>
 
-    <!-- Tab 5: Backup, Restore & Archive -->
+    <!-- Tab 5: Backup, Restore & Cloud Purge -->
     <div v-if="activeTab === 'backup'" class="flex flex-col gap-lg w-full">
-      <!-- Card 1: Data Backup & Restore -->
+      <!-- Card 1: Data Export & Cloud Purge -->
       <div class="card">
-        <div class="card-title mb-md text-base"><i class="fa-solid fa-database" style="margin-right: 6px;"></i> สำรองและกู้คืนข้อมูล (Backup & Restore)</div>
+        <div class="card-title mb-sm text-base">
+          <i class="fa-solid fa-cloud-arrow-down" style="margin-right: 6px; color: var(--primary);"></i> 
+          ส่งออกรายงาน & สำรองข้อมูล (Export & Backup)
+        </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          คุณสามารถดาวน์โหลดข้อมูลระบบทั้งหมดเป็นไฟล์ JSON เพื่อเก็บสำรองไว้ หรืออัปโหลดไฟล์ที่ดาวน์โหลดไปเพื่อกู้คืนข้อมูลระบบได้
+          ดาวน์โหลดข้อมูลสรุปครบทั้ง 7 หมวดหมู่ใน 1 ไฟล์ CSV (ยอดขาย, สินค้าขายดี, ประวัติออเดอร์, ค่าใช้จ่าย, สต็อก, กิจกรรม, รอบลิ้นชัก) รองรับเปิดใน Excel ได้ภาษาไทยไม่เพี้ยน และสามารถเลือกฟังก์ชันล้างข้อมูลเก่าบน Cloud เพื่อลดอัตรา Reads ได้
         </p>
 
-        <div class="flex gap-md backup-btns-container">
-          <button class="btn-modal btn-modal-secondary flex-1" @click="downloadJSONBackup">
-            <i class="fa-solid fa-file-arrow-down"></i> ดาวน์โหลดสำรองข้อมูล (JSON)
-          </button>
-          <button class="btn-modal btn-modal-secondary flex-1" @click="downloadSQLiteDB">
-            <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูลดิบ (SQLite)
-          </button>
+        <!-- Filters Row: Period & Branch Selector -->
+        <div class="flex gap-md mb-lg flex-wrap" style="align-items: flex-end;">
+          <!-- Period Selector -->
+          <div class="form-group flex-1 min-w-200 mb-0">
+            <label class="form-label font-bold text-xs"><i class="fa-solid fa-calendar-days mr-xs"></i> เลือกช่วงเวลาย้อนหลัง: *</label>
+            <div class="custom-select-wrapper" @click.stop style="position: relative; z-index: 6;">
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isBackupPeriodDropdownOpen }" 
+                @click="isBackupPeriodDropdownOpen = !isBackupPeriodDropdownOpen"
+                style="padding: 10px 14px; min-height: 42px;"
+              >
+                <span class="custom-select-text font-semibold">{{ selectedBackupPeriodName }}</span>
+              </div>
+              <div v-if="isBackupPeriodDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  v-for="opt in backupPeriodOptions" 
+                  :key="opt.value" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': backupPeriod === opt.value }" 
+                  @click="selectBackupPeriod(opt.value)"
+                >
+                  {{ opt.label }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Branch Selector -->
+          <div class="form-group flex-1 min-w-200 mb-0">
+            <label class="form-label font-bold text-xs"><i class="fa-solid fa-store mr-xs"></i> เลือกสาขา: *</label>
+            <div class="custom-select-wrapper" @click.stop style="position: relative; z-index: 5;">
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isBackupBranchDropdownOpen }" 
+                @click="isBackupBranchDropdownOpen = !isBackupBranchDropdownOpen"
+                style="padding: 10px 14px; min-height: 42px;"
+              >
+                <span class="custom-select-text font-semibold">{{ selectedBackupBranchName }}</span>
+              </div>
+              <div v-if="isBackupBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  class="custom-select-option" 
+                  :class="{ 'selected': backupBranchId === 'all' }" 
+                  @click="selectBackupBranch('all')"
+                >
+                  ทุกสาขา (รวมข้อมูลทุกสาขา)
+                </div>
+                <div 
+                  v-for="b in branches" 
+                  :key="b.id" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': backupBranchId === b.id }" 
+                  @click="selectBackupBranch(b.id)"
+                >
+                  {{ b.name }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="divider mb-lg" style="height:1px; background:var(--border-color);"></div>
+        <!-- Action Cards Grid -->
+        <div class="grid-2-cols gap-md mb-xl" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-md);">
+          
+          <!-- Action 1: Standard 1 CSV Download -->
+          <div 
+            class="card p-md flex flex-col justify-between" 
+            style="border: 1px solid rgba(42, 157, 143, 0.4); background: rgba(42, 157, 143, 0.03); border-radius: var(--radius-lg);"
+          >
+            <div>
+              <div class="flex align-center gap-sm mb-xs">
+                <i class="fa-solid fa-file-csv text-lg" style="color: var(--success, #2a9d8f);"></i>
+                <strong class="text-base font-bold" style="color: var(--text-primary);">1. ดาวน์โหลดรายงานสรุป (1 CSV)</strong>
+              </div>
+              <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
+                ส่งออกข้อมูลสรุปครบ 7 ตารางลงเครื่อง (ยอดขาย, ออเดอร์, ค่าใช้จ่าย, สินค้าขายดี, สต็อก, กิจกรรม, รอบลิ้นชัก) โดยข้อมูลบน Cloud ยังอยู่ครบ
+              </p>
+            </div>
+            <button 
+              class="btn btn-secondary w-full" 
+              @click="downloadCSVSummary"
+              style="border-color: var(--success, #2a9d8f); color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
+            >
+              <i class="fa-solid fa-file-arrow-down"></i> ดาวน์โหลดรายงาน 1 CSV
+            </button>
+          </div>
 
-        <div class="form-group">
-          <label class="form-label font-bold"><i class="fa-solid fa-file-arrow-up" style="margin-right: 4px;"></i> เลือกไฟล์ JSON เพื่อกู้คืนข้อมูลระบบ</label>
+          <!-- Action 2: Download CSV + Purge Cloud -->
+          <div 
+            class="card p-md flex flex-col justify-between" 
+            style="border: 1px solid rgba(192, 57, 43, 0.4); background: rgba(192, 57, 43, 0.03); border-radius: var(--radius-lg);"
+          >
+            <div>
+              <div class="flex align-center gap-sm mb-xs">
+                <i class="fa-solid fa-cloud-arrow-down text-lg" style="color: var(--danger, #c0392b);"></i>
+                <strong class="text-base font-bold" style="color: var(--danger, #c0392b);">2. ดาวน์โหลด CSV และล้างข้อมูลบน Cloud</strong>
+              </div>
+              <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
+                ดาวน์โหลด CSV สำรองลงเครื่องก่อนเสมอ จากนั้นจะล้างประวัติธุรกรรมเก่าออกจาก Turso Cloud เพื่อคืนโควตา Reads
+              </p>
+            </div>
+            <button 
+              class="btn btn-primary w-full" 
+              @click="openPurgeModal"
+              style="background: var(--danger, #c0392b); border-color: var(--danger, #c0392b); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
+            >
+              <i class="fa-solid fa-trash-can-arrow-up"></i> ดาวน์โหลด & ล้างข้อมูลบน Cloud
+            </button>
+          </div>
+
+        </div>
+
+        <div class="divider mb-lg" style="height: 1px; background: var(--border-color);"></div>
+
+        <!-- Full JSON Backup & SQLite Download -->
+        <div>
+          <div class="text-xs font-bold text-secondary mb-sm uppercase tracking-wider">ตัวเลือกการสำรองทั้งระบบเพิ่มเติม:</div>
+          <div class="flex gap-md backup-btns-container">
+            <button class="btn btn-secondary flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fa-solid fa-database"></i> ดาวน์โหลด Full Backup (.json)
+            </button>
+            <button class="btn btn-secondary flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูลดิบ (.db)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Data Restore -->
+      <div class="card">
+        <div class="card-title mb-sm text-base">
+          <i class="fa-solid fa-file-import" style="margin-right: 6px; color: var(--primary);"></i> 
+          นำเข้าและกู้คืนข้อมูลระบบ (Import & Restore)
+        </div>
+        <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
+          นำเข้าข้อมูลสำรองจากไฟล์ <code style="background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;">.json</code> ที่เคยดาวน์โหลดไว้ เพื่อกู้คืนฐานข้อมูลกลับเข้าสู่ระบบ
+        </p>
+
+        <div class="form-group mb-0">
+          <label class="form-label font-bold text-sm"><i class="fa-solid fa-file-arrow-up mr-xs"></i> เลือกไฟล์ JSON สำรองข้อมูลเพื่อกู้คืน:</label>
           <input 
             type="file" 
             class="form-input" 
             accept=".json"
             @change="handleImportJSON"
             ref="fileInput"
+            style="padding: 10px;"
           />
-        </div>
-      </div>
-
-      <!-- Card 2: Old Orders Archiving -->
-      <div class="card">
-        <div class="card-title mb-md text-base"><i class="fa-solid fa-box-archive" style="margin-right: 6px;"></i> ย้ายและบีบอัดข้อมูลเก่า (Order Archive)</div>
-        <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          เพื่อช่วยให้ฐานข้อมูลทำงานได้รวดเร็วและป้องกันไม่ให้ฐานข้อมูลบวม คุณสามารถย้ายออเดอร์และประวัติการขายที่เก่ากว่าช่วงเวลาที่กำหนด ไปไว้ที่ตารางเก็บประวัติถาวร (Archived Orders) ได้
-        </p>
-
-        <div class="form-group">
-          <label class="form-label">ย้ายออเดอร์ที่เก่ากว่า: *</label>
-          <div class="flex gap-sm archive-inputs-container">
-            <div class="custom-select-wrapper flex-1" @click.stop style="position: relative; z-index: 5;">
-              <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isArchiveDropdownOpen }" 
-                @click="isArchiveDropdownOpen = !isArchiveDropdownOpen"
-                style="padding: 10px 36px 10px var(--space-md); border-radius: var(--radius-md); width: 100%; min-height: 44px; display: flex; align-items: center;"
-              >
-                <span class="custom-select-text">{{ selectedArchiveMonthsName }}</span>
-              </div>
-              <div v-if="isArchiveDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                <div 
-                  v-for="opt in archiveMonthsOptions" 
-                  :key="opt.value" 
-                  class="custom-select-option" 
-                  :class="{ 'selected': archiveMonths === opt.value }" 
-                  @click="selectArchiveMonths(opt.value)"
-                >
-                  {{ opt.label }}
-                </div>
-              </div>
-            </div>
-            <button class="btn btn-primary" @click="handleArchiveOrders">
-              <i class="fa-solid fa-box-archive"></i> เริ่มจัดเก็บออเดอร์เก่า
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -800,6 +894,79 @@
               @click="handleSavePreset"
             >
               <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Purge Cloud Data Confirmation Dialog Modal -->
+    <div v-if="showPurgeModal" class="modal-container active flex align-center justify-center">
+      <div class="modal-overlay" @click="!isPurging && (showPurgeModal = false)"></div>
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2;">
+        <div class="modal-header" style="background: rgba(192, 57, 43, 0.08); border-bottom: 1px solid rgba(192, 57, 43, 0.2);">
+          <h3 style="color: var(--danger, #c0392b);">
+            <i class="fa-solid fa-triangle-exclamation mr-xs"></i> ยืนยันดาวน์โหลด & ล้างข้อมูลบน Cloud
+          </h3>
+          <button class="modal-close" :disabled="isPurging" @click="showPurgeModal = false">✕</button>
+        </div>
+        
+        <div class="modal-body">
+          <!-- Info Details Box -->
+          <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
+            <div class="flex flex-between align-center mb-xs text-sm">
+              <span class="text-secondary">ช่วงเวลาที่จะล้าง:</span>
+              <strong class="text-primary">{{ selectedBackupPeriodName }}</strong>
+            </div>
+            <div class="flex flex-between align-center mb-xs text-sm">
+              <span class="text-secondary">สาขา:</span>
+              <strong class="text-primary">{{ selectedBackupBranchName }}</strong>
+            </div>
+          </div>
+
+          <!-- Process Explanation & Safeguards -->
+          <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 16px;">
+            <div class="flex align-center gap-xs mb-xs" style="color: var(--success, #2a9d8f); font-weight: bold;">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>ระบบจะดาวน์โหลดไฟล์ CSV สำรองข้อมูลลงเครื่องให้โดยอัตโนมัติก่อนเริ่มลบเสมอ</span>
+            </div>
+            <div class="flex align-center gap-xs mb-xs" style="color: var(--danger, #c0392b); font-weight: bold;">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span>ข้อมูลธุรกรรมเก่า (ออเดอร์, สต็อก, ค่าใช้จ่าย, กิจกรรม, ลิ้นชัก) จะถูกล้างออกจาก Turso Cloud</span>
+            </div>
+            <div class="text-xs text-muted mt-xs">
+              *ข้อมูลหลักของร้าน (เมนู, หมวดหมู่, สาขา, พนักงาน, ตั้งค่าระบบ) จะยังคงอยู่ปลอดภัยครบ 100%
+            </div>
+          </div>
+
+          <!-- Typing Confirmation -->
+          <div class="form-group mb-md">
+            <label class="form-label font-bold text-xs" style="color: var(--danger, #c0392b);">
+              พิมพ์คำว่า <span style="background: rgba(192, 57, 43, 0.15); padding: 2px 6px; border-radius: 4px; user-select: all;">ยืนยันลบข้อมูล</span> เพื่อปลดล็อกปุ่มยืนยัน:
+            </label>
+            <input 
+              type="text" 
+              class="form-input" 
+              v-model="purgeConfirmInput" 
+              placeholder="พิมพ์ ยืนยันลบข้อมูล" 
+              style="border-color: rgba(192, 57, 43, 0.4); text-align: center; font-weight: bold;"
+            />
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex gap-md mt-lg">
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isPurging" @click="showPurgeModal = false">
+              ยกเลิก
+            </button>
+            <button 
+              class="btn-modal btn-modal-primary flex-1" 
+              :disabled="isPurging || (purgeConfirmInput !== 'ยืนยันลบข้อมูล' && purgeConfirmInput !== 'CONFIRM')"
+              @click="handleExecutePurgeCloud"
+              style="background: var(--danger, #c0392b); border-color: var(--danger, #c0392b);"
+            >
+              <i v-if="isPurging" class="fa-solid fa-spinner fa-spin mr-xs"></i>
+              <i v-else class="fa-solid fa-trash-can-arrow-up mr-xs"></i>
+              {{ isPurging ? 'กำลังดำเนินการ...' : 'ยืนยันดาวน์โหลด & ลบข้อมูล' }}
             </button>
           </div>
         </div>
@@ -984,7 +1151,8 @@ const closeSettingsDropdowns = () => {
   isRoleDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
   isSettingsBranchDropdownOpen.value = false;
-  isArchiveDropdownOpen.value = false;
+  isBackupPeriodDropdownOpen.value = false;
+  isBackupBranchDropdownOpen.value = false;
 };
 
 // States
@@ -1238,22 +1406,42 @@ const presetForm = ref({
 });
 const availableModifiers = computed(() => store.modifiers || []);
 
-// Backup & Archive States
-const isArchiveDropdownOpen = ref(false);
-const archiveMonths = ref(3);
-const archiveMonthsOptions = [
+// Backup & Export States
+const isBackupPeriodDropdownOpen = ref(false);
+const isBackupBranchDropdownOpen = ref(false);
+const backupPeriod = ref(3);
+const backupPeriodOptions = [
   { value: 1, label: '1 เดือนที่ผ่านมา' },
   { value: 3, label: '3 เดือนที่ผ่านมา' },
   { value: 6, label: '6 เดือนที่ผ่านมา' },
-  { value: 12, label: '1 ปีที่ผ่านมา' }
+  { value: 12, label: '1 ปีที่ผ่านมา' },
+  { value: 'all', label: 'ข้อมูลทั้งหมด (All Time)' }
 ];
-const selectedArchiveMonthsName = computed(() => {
-  const opt = archiveMonthsOptions.find(o => o.value === archiveMonths.value);
+const backupBranchId = ref('all');
+
+const showPurgeModal = ref(false);
+const purgeConfirmInput = ref('');
+const isPurging = ref(false);
+
+const selectedBackupPeriodName = computed(() => {
+  const opt = backupPeriodOptions.find(o => o.value === backupPeriod.value);
   return opt ? opt.label : 'เลือกช่วงเวลา...';
 });
-const selectArchiveMonths = (val) => {
-  archiveMonths.value = val;
-  isArchiveDropdownOpen.value = false;
+
+const selectedBackupBranchName = computed(() => {
+  if (backupBranchId.value === 'all') return 'ทุกสาขา (รวมข้อมูลทุกสาขา)';
+  const b = branches.value.find(x => x.id === backupBranchId.value);
+  return b ? b.name : `สาขา #${backupBranchId.value}`;
+});
+
+const selectBackupPeriod = (val) => {
+  backupPeriod.value = val;
+  isBackupPeriodDropdownOpen.value = false;
+};
+
+const selectBackupBranch = (val) => {
+  backupBranchId.value = val;
+  isBackupBranchDropdownOpen.value = false;
 };
 const fileInput = ref(null);
 
@@ -1449,26 +1637,83 @@ const handleImportJSON = (event) => {
   reader.readAsText(file);
 };
 
-const handleArchiveOrders = async () => {
-  const confirm = await ui.showConfirm(
-    'ยืนยันการจัดเก็บออเดอร์เก่า', 
-    `คุณต้องการย้ายออเดอร์ที่เก่ากว่า ${archiveMonths.value} เดือน ไปไว้ที่ตารางจัดเก็บประวัติถาวรเพื่อลดขนาดฐานข้อมูลหลักใช่หรือไม่?`
-  );
-  if (confirm) {
-    ui.showLoading();
-    try {
-      const res = await api.settings.archiveOrders(archiveMonths.value);
-      if (res.success) {
-        ui.showToast(`จัดเก็บออเดอร์เก่าสำเร็จ! ย้ายทั้งหมด ${res.archived_count || res.count || 0} รายการ`, 'success');
-      } else {
-        throw new Error(res.error || 'เกิดข้อผิดพลาด');
-      }
-    } catch (error) {
-      console.error(error);
-      ui.showToast('การจัดเก็บข้อมูลล้มเหลว: ' + error.message, 'error');
-    } finally {
-      ui.hideLoading();
+// Download 1 CSV summary report
+const downloadCSVSummary = async () => {
+  ui.showLoading();
+  try {
+    const user = sessionStorage.getItem('pos_user');
+    const headers = {};
+    if (user) {
+      const parsed = JSON.parse(user);
+      if (parsed.id) headers['x-user-id'] = String(parsed.id);
     }
+
+    const query = new URLSearchParams({
+      months: backupPeriod.value,
+      branch_id: backupBranchId.value
+    }).toString();
+
+    const response = await fetch(`${window.location.origin}/api/settings/backup/csv-summary?${query}`, { headers });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'ดาวน์โหลดรายงาน CSV ล้มเหลว');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pos_summary_report_${backupPeriod.value}m_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    ui.showToast('ดาวน์โหลดรายงานสรุป 1 CSV สำเร็จเรียบร้อย 🎉', 'success');
+  } catch (error) {
+    console.error(error);
+    ui.showToast('ไม่สามารถดาวน์โหลด CSV ได้: ' + error.message, 'error');
+  } finally {
+    ui.hideLoading();
+  }
+};
+
+const openPurgeModal = () => {
+  purgeConfirmInput.value = '';
+  showPurgeModal.value = true;
+};
+
+const handleExecutePurgeCloud = async () => {
+  if (purgeConfirmInput.value !== 'ยืนยันลบข้อมูล' && purgeConfirmInput.value !== 'CONFIRM') {
+    ui.showToast('กรุณาพิมพ์คำยืนยันให้ถูกต้อง', 'error');
+    return;
+  }
+
+  isPurging.value = true;
+  ui.showLoading();
+  try {
+    // 1. Download CSV backup first automatically as a safety guarantee
+    await downloadCSVSummary();
+
+    // 2. Call backend purge endpoint
+    const res = await api.settings.purgeCloudData(
+      backupPeriod.value,
+      backupBranchId.value,
+      purgeConfirmInput.value
+    );
+
+    if (res.success) {
+      showPurgeModal.value = false;
+      purgeConfirmInput.value = '';
+      ui.showToast(`ล้างข้อมูลเก่าบน Cloud สำเร็จ! เคลียร์ทั้งหมด ${res.data?.purged_count || 0} รายการ 🎉`, 'success');
+    } else {
+      throw new Error(res.error || 'เกิดข้อผิดพลาดในการล้างข้อมูล');
+    }
+  } catch (error) {
+    console.error(error);
+    ui.showToast('การล้างข้อมูลล้มเหลว: ' + error.message, 'error');
+  } finally {
+    isPurging.value = false;
+    ui.hideLoading();
   }
 };
 

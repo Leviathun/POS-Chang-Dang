@@ -223,6 +223,13 @@ const settings = {
   async archiveOrders(months) {
     return request('POST', '/api/settings/archive', { months });
   },
+  async purgeCloudData(months, branchId, confirmText) {
+    return request('POST', '/api/settings/backup/purge-cloud', {
+      months,
+      branch_id: branchId,
+      confirm_text: confirmText
+    });
+  },
 };
 
 const freeModifiers = {
