@@ -68,14 +68,24 @@ async function getOrCreateSession(db, branchId) {
 router.use(attachUser);
 router.use(requireAuth);
 
+// Helper to parse branch_id safely
+function parseBranchId(val) {
+  if (val === undefined || val === null || val === 'null' || val === 'undefined' || val === 'all' || val === '') {
+    return null;
+  }
+  const n = Number(val);
+  return isNaN(n) ? null : n;
+}
+
 // ─── POST /opening-cash — Set/Edit Opening Cash (Manager/Admin) ───────
 router.post('/opening-cash', requireManagerOrAdmin, async (req, res) => {
   try {
     const { session_id, session_date, opening_cash, branch_id } = req.body;
     const db = getDb();
-    let branchId = req.user.branch_id;
-    if (req.user.role === 'admin' && branch_id) {
-      branchId = Number(branch_id);
+    let targetBranchId = req.user.branch_id;
+    const parsedBodyBranchId = parseBranchId(branch_id);
+    if (req.user.role === 'admin' && parsedBodyBranchId !== null) {
+      targetBranchId = parsedBodyBranchId;
     }
 
     if (opening_cash === undefined || opening_cash === null || isNaN(Number(opening_cash)) || Number(opening_cash) < 0) {
@@ -90,23 +100,29 @@ router.post('/opening-cash', requireManagerOrAdmin, async (req, res) => {
       session = await db.prepare(`
         SELECT * FROM cash_drawer_sessions WHERE id = ?
       `).get(Number(session_id));
-    } else if (session_date) {
+      if (session) {
+        targetBranchId = session.branch_id;
+      }
+    }
+    
+    if (!session && session_date) {
       session = await db.prepare(`
         SELECT * FROM cash_drawer_sessions WHERE branch_id = ? AND session_date = ?
-      `).get(branchId, session_date);
+      `).get(targetBranchId, session_date);
     }
+
+    const targetDate = (session && session.session_date) || session_date || getThailandDateString();
 
     if (!session) {
       // Create dynamically if not found
-      const targetDate = session_date || getThailandDateString();
       const result = await db.prepare(`
         INSERT INTO cash_drawer_sessions (branch_id, session_date, opening_cash, status, created_at, updated_at)
         VALUES (?, ?, ?, 'open', datetime('now', '+7 hours'), datetime('now', '+7 hours'))
-      `).run(branchId, targetDate, Number(opening_cash));
+      `).run(targetBranchId, targetDate, Number(opening_cash));
 
       session = {
         id: result.lastInsertRowid,
-        branch_id: branchId,
+        branch_id: targetBranchId,
         session_date: targetDate,
         opening_cash: Number(opening_cash),
         status: 'open'
@@ -123,12 +139,25 @@ router.post('/opening-cash', requireManagerOrAdmin, async (req, res) => {
       session.opening_cash = Number(opening_cash);
     }
 
+    // Auto-link unlinked orders and expenses for this branch & date
+    await db.prepare(`
+      UPDATE orders SET session_id = ? 
+      WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND session_id IS NULL
+    `).run(session.id, targetBranchId, targetDate);
+
+    await db.prepare(`
+      UPDATE expenses SET session_id = ? 
+      WHERE branch_id = ? AND expense_date = ? AND session_id IS NULL
+    `).run(session.id, targetBranchId, targetDate);
+
+    // Invalidate session cache
+    sessionCache.delete(`${targetBranchId}-${targetDate}`);
+
     // Log Activity
-    const logBranchId = session ? session.branch_id : branchId;
     await db.prepare(`
       INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
       VALUES (?, ?, 'cash_opening_set', ?, datetime('now', '+7 hours'))
-    `).run(logBranchId, req.user.id, `เจ้าของร้านบันทึกเงินทอนตั้งต้นวันที่ ${session.session_date} เป็นเงิน ${opening_cash} บาท`);
+    `).run(targetBranchId, req.user.id, `เจ้าของร้านบันทึกเงินทอนตั้งต้นวันที่ ${session.session_date} เป็นเงิน ${opening_cash} บาท`);
 
     res.json({
       success: true,
@@ -148,9 +177,10 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
   try {
     const { session_id, session_date, actual_cash, note, branch_id } = req.body;
     const db = getDb();
-    let branchId = req.user.branch_id;
-    if (req.user.role === 'admin' && branch_id) {
-      branchId = Number(branch_id);
+    let targetBranchId = req.user.branch_id;
+    const parsedBodyBranchId = parseBranchId(branch_id);
+    if (req.user.role === 'admin' && parsedBodyBranchId !== null) {
+      targetBranchId = parsedBodyBranchId;
     }
 
     if (actual_cash === undefined || actual_cash === null || isNaN(Number(actual_cash)) || Number(actual_cash) < 0) {
@@ -165,23 +195,29 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
       session = await db.prepare(`
         SELECT * FROM cash_drawer_sessions WHERE id = ?
       `).get(Number(session_id));
-    } else if (session_date) {
+      if (session) {
+        targetBranchId = session.branch_id;
+      }
+    }
+    
+    if (!session && session_date) {
       session = await db.prepare(`
         SELECT * FROM cash_drawer_sessions WHERE branch_id = ? AND session_date = ?
-      `).get(branchId, session_date);
+      `).get(targetBranchId, session_date);
     }
+
+    const targetDate = (session && session.session_date) || session_date || getThailandDateString();
 
     if (!session) {
       // Create dynamically if not found (default opening cash is 0.0)
-      const targetDate = session_date || getThailandDateString();
       const result = await db.prepare(`
         INSERT INTO cash_drawer_sessions (branch_id, session_date, opening_cash, status, created_at, updated_at)
         VALUES (?, ?, ?, 'open', datetime('now', '+7 hours'), datetime('now', '+7 hours'))
-      `).run(branchId, targetDate, 0.0);
+      `).run(targetBranchId, targetDate, 0.0);
 
       session = {
         id: result.lastInsertRowid,
-        branch_id: branchId,
+        branch_id: targetBranchId,
         session_date: targetDate,
         opening_cash: 0.0,
         status: 'open'
@@ -190,26 +226,39 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
 
     const sessionId = session.id;
 
+    // Auto-link unlinked orders and expenses for this branch & date
+    await db.prepare(`
+      UPDATE orders SET session_id = ? 
+      WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND session_id IS NULL
+    `).run(sessionId, targetBranchId, targetDate);
+
+    await db.prepare(`
+      UPDATE expenses SET session_id = ? 
+      WHERE branch_id = ? AND expense_date = ? AND session_id IS NULL
+    `).run(sessionId, targetBranchId, targetDate);
+
     // 1. Calculate cash sales
     const ordersResult = await db.prepare(`
       SELECT SUM(total) as cash_sales
       FROM orders
-      WHERE session_id = ? AND payment_method = 'cash' AND status = 'completed'
-    `).get(sessionId);
-    const cashSales = ordersResult.cash_sales || 0;
+      WHERE (session_id = ? OR (branch_id = ? AND date(created_at, '+7 hours') = ?))
+        AND payment_method = 'cash' AND status = 'completed'
+    `).get(sessionId, targetBranchId, targetDate);
+    const cashSales = ordersResult ? (ordersResult.cash_sales || 0) : 0;
 
     // 2. Calculate cash expenses
     const expensesResult = await db.prepare(`
       SELECT SUM(amount) as cash_expenses
       FROM expenses
-      WHERE session_id = ? AND (payment_method = 'cash' OR payment_method IS NULL)
-    `).get(sessionId);
-    const cashExpenses = expensesResult.cash_expenses || 0;
+      WHERE (session_id = ? OR (branch_id = ? AND expense_date = ?))
+        AND (payment_method = 'cash' OR payment_method IS NULL)
+    `).get(sessionId, targetBranchId, targetDate);
+    const cashExpenses = expensesResult ? (expensesResult.cash_expenses || 0) : 0;
 
     // 3. Reconcile
-    const expectedCash = session.opening_cash + cashSales - cashExpenses;
-    const actualCash = Number(actual_cash);
-    const difference = actualCash - expectedCash;
+    const expectedCash = (session.opening_cash || 0) + cashSales - cashExpenses;
+    const actualCashNum = Number(actual_cash);
+    const difference = actualCashNum - expectedCash;
 
     // Update session to closed
     await db.prepare(`
@@ -221,24 +270,27 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
           note = ?,
           updated_at = datetime('now', '+7 hours')
       WHERE id = ?
-    `).run(expectedCash, actualCash, difference, note || null, sessionId);
+    `).run(expectedCash, actualCashNum, difference, note || null, sessionId);
+
+    // Invalidate session cache
+    sessionCache.delete(`${targetBranchId}-${targetDate}`);
 
     // Log Activity
-    const logBranchId = session ? session.branch_id : branchId;
     const actorRole = req.user.role === 'admin' ? 'เจ้าของร้าน' : 'ผู้จัดการ';
     await db.prepare(`
       INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
       VALUES (?, ?, 'cash_audit', ?, datetime('now', '+7 hours'))
-    `).run(logBranchId, req.user.id, `${actorRole}ตรวจสอบเงินสดวันที่ ${session.session_date} (นับจริง: ${actualCash} บาท, คาดการณ์: ${expectedCash} บาท, ผลต่าง: ${difference} บาท)`);
+    `).run(targetBranchId, req.user.id, `${actorRole}ตรวจสอบเงินสดวันที่ ${session.session_date} (นับจริง: ${actualCashNum} บาท, คาดการณ์: ${expectedCash} บาท, ผลต่าง: ${difference} บาท)`);
 
     res.json({
       success: true,
       data: {
         id: sessionId,
+        branch_id: targetBranchId,
         session_date: session.session_date,
         opening_cash: session.opening_cash,
         expected_cash: expectedCash,
-        actual_cash: actualCash,
+        actual_cash: actualCashNum,
         difference: difference,
         status: 'closed',
         note,
@@ -259,9 +311,11 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
 router.get('/summary', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
-    let branchId = req.user.branch_id;
-    if (req.user.role === 'admin' && req.query.branch_id) {
-      branchId = Number(req.query.branch_id);
+    let filterBranchId = null;
+    if (req.user.role === 'admin') {
+      filterBranchId = parseBranchId(req.query.branch_id);
+    } else {
+      filterBranchId = req.user.branch_id;
     }
 
     const { start_date, end_date } = req.query;
@@ -270,39 +324,50 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
       SELECT s.*, b.name as branch_name
       FROM cash_drawer_sessions s
       JOIN branches b ON b.id = s.branch_id
-      WHERE s.branch_id = ?
     `;
-    const params = [branchId];
+    const params = [];
+
+    const whereConditions = [];
+    if (filterBranchId !== null) {
+      whereConditions.push(`s.branch_id = ?`);
+      params.push(filterBranchId);
+    }
 
     if (start_date && end_date) {
-      query += ` AND s.session_date BETWEEN ? AND ? `;
+      whereConditions.push(`s.session_date BETWEEN ? AND ?`);
       params.push(start_date, end_date);
     }
 
-    query += ` ORDER BY s.session_date DESC LIMIT 90`;
+    if (whereConditions.length > 0) {
+      query += ` WHERE ` + whereConditions.join(' AND ');
+    }
+
+    query += ` ORDER BY s.session_date DESC, s.branch_id ASC LIMIT 180`;
 
     const sessions = await db.prepare(query).all(...params);
 
     const enrichedSessions = [];
     for (const session of sessions) {
-      // Get cash sales
+      // Get cash sales comprehensively
       const salesRes = await db.prepare(`
         SELECT SUM(total) as cash_sales
         FROM orders
-        WHERE session_id = ? AND payment_method = 'cash' AND status = 'completed'
-      `).get(session.id);
-      const cashSales = salesRes.cash_sales || 0;
+        WHERE (session_id = ? OR (session_id IS NULL AND branch_id = ? AND date(created_at, '+7 hours') = ?))
+          AND payment_method = 'cash' AND status = 'completed'
+      `).get(session.id, session.branch_id, session.session_date);
+      const cashSales = salesRes ? (salesRes.cash_sales || 0) : 0;
 
-      // Get cash expenses
+      // Get cash expenses comprehensively
       const expRes = await db.prepare(`
         SELECT SUM(amount) as cash_expenses
         FROM expenses
-        WHERE session_id = ? AND (payment_method = 'cash' OR payment_method IS NULL)
-      `).get(session.id);
-      const cashExpenses = expRes.cash_expenses || 0;
+        WHERE (session_id = ? OR (session_id IS NULL AND branch_id = ? AND expense_date = ?))
+          AND (payment_method = 'cash' OR payment_method IS NULL)
+      `).get(session.id, session.branch_id, session.session_date);
+      const cashExpenses = expRes ? (expRes.cash_expenses || 0) : 0;
 
       // For open session, calculate expected cash on the fly
-      const expectedCash = session.opening_cash + cashSales - cashExpenses;
+      const expectedCash = (session.opening_cash || 0) + cashSales - cashExpenses;
       
       enrichedSessions.push({
         ...session,
@@ -312,59 +377,101 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
       });
     }
 
+    // Determine branches that need virtual sessions for today & yesterday if not yet created
+    let targetBranches = [];
+    if (filterBranchId !== null) {
+      const b = await db.prepare('SELECT id, name FROM branches WHERE id = ?').get(filterBranchId);
+      if (b) targetBranches.push(b);
+    } else {
+      targetBranches = await db.prepare('SELECT id, name FROM branches ORDER BY id ASC').all();
+    }
+
     const todayStr = getThailandDateString();
     const todayDate = new Date(Date.now() + 7 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000);
     const yesterdayDate = new Date(todayDate.getTime() - 24 * 60 * 60 * 1000);
     const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
 
-    const hasToday = enrichedSessions.some(s => s.session_date === todayStr);
-    const hasYesterday = enrichedSessions.some(s => s.session_date === yesterdayStr);
-    const branch = await db.prepare('SELECT name FROM branches WHERE id = ?').get(branchId);
-    const branchName = branch ? branch.name : '';
+    for (const targetBranch of targetBranches) {
+      const hasToday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === todayStr);
+      const hasYesterday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === yesterdayStr);
 
-    // If yesterday is missing, insert it dynamically in the sorted array (DESC order)
-    if (!hasYesterday && (!start_date || (yesterdayStr >= start_date && yesterdayStr <= end_date))) {
-      const insertIndex = enrichedSessions.findIndex(s => s.session_date < yesterdayStr);
-      const virtualYesterday = {
-        id: null,
-        branch_id: branchId,
-        branch_name: branchName,
-        session_date: yesterdayStr,
-        opening_cash: 0.0,
-        expected_cash: 0.0,
-        actual_cash: null,
-        difference: null,
-        status: 'open',
-        note: null,
-        cash_sales: 0.0,
-        cash_expenses: 0.0,
-        calculated_expected_cash: 0.0
-      };
-      if (insertIndex === -1) {
-        enrichedSessions.push(virtualYesterday);
-      } else {
-        enrichedSessions.splice(insertIndex, 0, virtualYesterday);
+      if (!hasYesterday && (!start_date || (yesterdayStr >= start_date && yesterdayStr <= end_date))) {
+        // Query actual cash sales/expenses for yesterday
+        const ySales = await db.prepare(`
+          SELECT SUM(total) as cash_sales FROM orders 
+          WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
+        `).get(targetBranch.id, yesterdayStr);
+        const yExpenses = await db.prepare(`
+          SELECT SUM(amount) as cash_expenses FROM expenses 
+          WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+        `).get(targetBranch.id, yesterdayStr);
+        
+        const yCashSales = ySales ? (ySales.cash_sales || 0) : 0;
+        const yCashExpenses = yExpenses ? (yExpenses.cash_expenses || 0) : 0;
+
+        const virtualYesterday = {
+          id: null,
+          branch_id: targetBranch.id,
+          branch_name: targetBranch.name,
+          session_date: yesterdayStr,
+          opening_cash: 0.0,
+          expected_cash: yCashSales - yCashExpenses,
+          actual_cash: null,
+          difference: null,
+          status: 'open',
+          note: null,
+          cash_sales: yCashSales,
+          cash_expenses: yCashExpenses,
+          calculated_expected_cash: yCashSales - yCashExpenses
+        };
+        const insertIndex = enrichedSessions.findIndex(s => s.session_date < yesterdayStr);
+        if (insertIndex === -1) {
+          enrichedSessions.push(virtualYesterday);
+        } else {
+          enrichedSessions.splice(insertIndex, 0, virtualYesterday);
+        }
+      }
+
+      if (!hasToday && (!start_date || (todayStr >= start_date && todayStr <= end_date))) {
+        // Query actual cash sales/expenses for today
+        const tSales = await db.prepare(`
+          SELECT SUM(total) as cash_sales FROM orders 
+          WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
+        `).get(targetBranch.id, todayStr);
+        const tExpenses = await db.prepare(`
+          SELECT SUM(amount) as cash_expenses FROM expenses 
+          WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+        `).get(targetBranch.id, todayStr);
+        
+        const tCashSales = tSales ? (tSales.cash_sales || 0) : 0;
+        const tCashExpenses = tExpenses ? (tExpenses.cash_expenses || 0) : 0;
+
+        const virtualToday = {
+          id: null,
+          branch_id: targetBranch.id,
+          branch_name: targetBranch.name,
+          session_date: todayStr,
+          opening_cash: 0.0,
+          expected_cash: tCashSales - tCashExpenses,
+          actual_cash: null,
+          difference: null,
+          status: 'open',
+          note: null,
+          cash_sales: tCashSales,
+          cash_expenses: tCashExpenses,
+          calculated_expected_cash: tCashSales - tCashExpenses
+        };
+        enrichedSessions.unshift(virtualToday);
       }
     }
 
-    // If today is missing, insert it at the very beginning
-    if (!hasToday && (!start_date || (todayStr >= start_date && todayStr <= end_date))) {
-      enrichedSessions.unshift({
-        id: null,
-        branch_id: branchId,
-        branch_name: branchName,
-        session_date: todayStr,
-        opening_cash: 0.0,
-        expected_cash: 0.0,
-        actual_cash: null,
-        difference: null,
-        status: 'open',
-        note: null,
-        cash_sales: 0.0,
-        cash_expenses: 0.0,
-        calculated_expected_cash: 0.0
-      });
-    }
+    // Sort all sessions by session_date DESC, branch_id ASC
+    enrichedSessions.sort((a, b) => {
+      if (a.session_date !== b.session_date) {
+        return b.session_date.localeCompare(a.session_date);
+      }
+      return (a.branch_id || 0) - (b.branch_id || 0);
+    });
 
     res.json({
       success: true,
@@ -384,8 +491,9 @@ router.get('/settings', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
     let branchId = req.user.branch_id;
-    if (req.user.role === 'admin' && req.query.branch_id) {
-      branchId = Number(req.query.branch_id);
+    const parsed = parseBranchId(req.query.branch_id);
+    if (req.user.role === 'admin' && parsed !== null) {
+      branchId = parsed;
     }
 
     const setting = await db.prepare(`
@@ -412,11 +520,12 @@ router.get('/settings', requireManagerOrAdmin, async (req, res) => {
 // ─── POST /settings — Save Default Opening Cash (Manager/Admin) ─────────
 router.post('/settings', requireManagerOrAdmin, async (req, res) => {
   try {
-    const { default_opening_cash } = req.body;
+    const { default_opening_cash, branch_id } = req.body;
     const db = getDb();
     let branchId = req.user.branch_id;
-    if (req.user.role === 'admin' && req.body.branch_id) {
-      branchId = Number(req.body.branch_id);
+    const parsed = parseBranchId(branch_id);
+    if (req.user.role === 'admin' && parsed !== null) {
+      branchId = parsed;
     }
 
     if (default_opening_cash === undefined || default_opening_cash === null || isNaN(Number(default_opening_cash)) || Number(default_opening_cash) < 0) {

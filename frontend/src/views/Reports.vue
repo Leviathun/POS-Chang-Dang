@@ -1691,6 +1691,7 @@
         <table class="table" style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr>
+              <th v-if="selectedBranchId === null && isAdminUser" class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">สาขา</th>
               <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">วันที่</th>
               <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินทอนตั้งต้น</th>
               <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดขายเงินสด</th>
@@ -1703,7 +1704,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="session in cashDrawerSessions" :key="session.id" style="border-bottom: 1px solid var(--border-color);">
+            <tr v-for="session in cashDrawerSessions" :key="(session.id || 'virtual') + '-' + session.branch_id + '-' + session.session_date" style="border-bottom: 1px solid var(--border-color);">
+              <td v-if="selectedBranchId === null && isAdminUser" class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
+                <span class="badge" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: var(--font-xs); font-weight: 600;">
+                  <i class="fa-solid fa-store" style="margin-right: 4px;"></i>{{ session.branch_name || 'สาขา #' + session.branch_id }}
+                </span>
+              </td>
               <td class="text-center" style="padding: 12px; font-weight: 600; vertical-align: middle; white-space: nowrap;">{{ formatDate(session.session_date) }}</td>
               <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.opening_cash) }}</td>
               <td class="text-center" style="padding: 12px; color: #34c759; font-weight: 500; vertical-align: middle; white-space: nowrap;">
@@ -1767,12 +1773,17 @@
       <div class="show-mobile-only cash-audit-mobile-list" style="margin-bottom: var(--space-md);">
         <div 
           v-for="session in cashDrawerSessions" 
-          :key="session.id" 
+          :key="(session.id || 'virtual') + '-' + session.branch_id + '-' + session.session_date" 
           class="cash-audit-mobile-card"
         >
           <!-- Card Header: Date & Status -->
           <div class="cash-card-header">
-            <span class="session-date">{{ formatDate(session.session_date) }}</span>
+            <div class="flex flex-col gap-2xs">
+              <span class="session-date">{{ formatDate(session.session_date) }}</span>
+              <span v-if="selectedBranchId === null && isAdminUser" style="font-size: 11px; color: var(--primary); font-weight: 600;">
+                <i class="fa-solid fa-store" style="margin-right: 3px;"></i>{{ session.branch_name || 'สาขา #' + session.branch_id }}
+              </span>
+            </div>
             <span 
               class="session-status-badge"
               :class="session.status"
@@ -2005,9 +2016,15 @@ const formatMoney = (val) => formatCurrency(val).replace('฿', '').trim();
 const isAdminUser = computed(() => isAdmin());
 const isManagerOrAdminUser = computed(() => isManagerOrAdmin());
 
-const branches = ref([]);
+const localBranches = ref([]);
+const branches = computed(() => {
+  if (store.branches && Array.isArray(store.branches) && store.branches.length > 0) {
+    return store.branches;
+  }
+  return localBranches.value || [];
+});
 const currentUser = getUser();
-const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
+const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') !== null && sessionStorage.getItem('selected_branch_id') !== 'all' ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
 
 const activeTab = ref('sales');
 
@@ -2145,7 +2162,12 @@ const fetchCashDrawerSummary = async () => {
   if (!isManagerOrAdminUser.value) return;
   cashDrawerLoading.value = true;
   try {
-    const params = { branch_id: selectedBranchId.value };
+    const params = {};
+    if (selectedBranchId.value !== null) {
+      params.branch_id = selectedBranchId.value;
+    } else {
+      params.branch_id = 'all';
+    }
     if (periodMode.value === 'daily') {
       params.start_date = selectedDate.value;
       params.end_date = selectedDate.value;
@@ -2187,12 +2209,13 @@ const submitCashAudit = async () => {
   }
 
   try {
+    const targetBranch = activeAuditSession.value?.branch_id || selectedBranchId.value || (currentUser ? currentUser.branch_id : 1);
     const res = await api.cashDrawers.audit({
       session_id: activeAuditSession.value.id,
       session_date: activeAuditSession.value.session_date,
       actual_cash: Number(actualCashInput.value),
       note: auditNote.value,
-      branch_id: selectedBranchId.value
+      branch_id: targetBranch
     });
 
     if (res.success) {
@@ -2218,11 +2241,12 @@ const submitOpeningCash = async () => {
   }
 
   try {
+    const targetBranch = activeOpeningSession.value?.branch_id || selectedBranchId.value || (currentUser ? currentUser.branch_id : 1);
     const res = await api.cashDrawers.saveOpeningCash({
       session_id: activeOpeningSession.value.id,
       session_date: activeOpeningSession.value.session_date,
       opening_cash: Number(openingCashInput.value),
-      branch_id: selectedBranchId.value
+      branch_id: targetBranch
     });
 
     if (res.success) {
@@ -3160,6 +3184,11 @@ const adjustDatePickerMonth = (amount) => {
 const selectBranch = (branchId) => {
   selectedBranchId.value = branchId;
   isBranchDropdownOpen.value = false;
+  if (branchId !== null) {
+    sessionStorage.setItem('selected_branch_id', String(branchId));
+  } else {
+    sessionStorage.setItem('selected_branch_id', 'all');
+  }
   onBranchChange();
 };
 
@@ -3705,8 +3734,9 @@ onMounted(() => {
     // Non-blocking fetch of branches
     api.auth.getBranches()
       .then(res => {
-        if (res.success) {
-          branches.value = res.data || [];
+        if (res.success && Array.isArray(res.data)) {
+          localBranches.value = res.data;
+          store.branches = res.data;
         }
       })
       .catch(e => console.warn('Failed to load branches:', e));

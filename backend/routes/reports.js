@@ -13,9 +13,15 @@ router.use(attachUser);
 // Helper to get branch filter (isolating by user branch by default, only admin can switch branch)
 function getBranchFilter(req) {
   let branchId = req.user ? req.user.branch_id : null;
-  if (req.query.branch_id) {
+  if (req.query.branch_id !== undefined) {
     if (req.user && req.user.role === 'admin') {
-      branchId = Number(req.query.branch_id);
+      const qVal = req.query.branch_id;
+      if (qVal === 'all' || qVal === 'null' || qVal === 'undefined' || qVal === '') {
+        branchId = null;
+      } else {
+        const parsed = Number(qVal);
+        branchId = isNaN(parsed) ? null : parsed;
+      }
     }
   }
   return branchId;

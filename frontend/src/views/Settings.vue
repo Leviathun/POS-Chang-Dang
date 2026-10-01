@@ -1138,6 +1138,9 @@ const selectUserBranch = (branchId) => {
 const selectSettingsBranch = (branchId) => {
   selectedSettingsBranchId.value = branchId;
   isSettingsBranchDropdownOpen.value = false;
+  if (branchId !== null) {
+    sessionStorage.setItem('selected_branch_id', String(branchId));
+  }
   loadShopSettings();
 };
 
@@ -1381,7 +1384,7 @@ const handleDeleteUser = async (id) => {
 // Load branches for user management
 const loadBranches = async () => {
   try {
-    await store.fetchSettingsData(selectedSettingsBranchId.value);
+    await store.fetchSettingsData(selectedSettingsBranchId.value, true);
   } catch (e) {
     console.warn('⚠️ Could not load branches:', e.message);
   }
