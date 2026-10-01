@@ -372,26 +372,69 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
     const totalOrders = Number(ordersOverview?.total_orders || 0);
     const avgOrder = totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : '0.00';
 
-    // [3] อันดับสินค้าขายดี (Top Selling Items)
+    // [3] อันดับสินค้าขายดี (All Menu Items + Sales Summary)
     const topItemsTimeClause = timeParams.length > 0 ? `o.created_at >= datetime('now', 'localtime', '-' || ? || ' month')` : '';
     const topItemsBranchClause = branchParams.length > 0 ? `o.branch_id = ?` : '';
     const topItemsWhere = buildWhere(topItemsTimeClause, topItemsBranchClause);
     
     const topItems = await db.prepare(`
       SELECT 
-        oi.item_name,
+        mi.id,
+        mi.name as item_name,
         COALESCE(c.name, 'ทั่วไป') as category_name,
-        SUM(oi.quantity) as total_qty,
-        SUM(oi.subtotal) as total_revenue
-      FROM order_items oi
-      JOIN orders o ON oi.order_id = o.id
-      LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
+        COALESCE(SUM(oi_sales.quantity), 0) as total_qty,
+        COALESCE(SUM(oi_sales.subtotal), 0) as total_revenue
+      FROM menu_items mi
       LEFT JOIN categories c ON mi.category_id = c.id
-      ${topItemsWhere ? topItemsWhere + " AND o.status = 'completed'" : "WHERE o.status = 'completed'"}
-      GROUP BY oi.item_name, c.name
-      ORDER BY total_qty DESC
-      LIMIT 50
+      LEFT JOIN (
+        SELECT oi.menu_item_id, oi.quantity, oi.subtotal
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        ${topItemsWhere ? topItemsWhere + " AND o.status = 'completed'" : "WHERE o.status = 'completed'"}
+      ) oi_sales ON mi.id = oi_sales.menu_item_id
+      WHERE mi.active = 1
+      GROUP BY mi.id, mi.name, c.name
+      ORDER BY total_qty DESC, total_revenue DESC, mi.name ASC
     `).all(...paramsOrders);
+
+    // Helper format order item options
+    const formatOrderItemSummary = (itemName, optionsStr, quantity) => {
+      let details = '';
+      if (optionsStr) {
+        try {
+          const parsed = typeof optionsStr === 'string' ? JSON.parse(optionsStr) : optionsStr;
+          if (typeof parsed === 'object' && parsed !== null) {
+            const parts = [];
+            if (parsed.size && !itemName.includes(`ขนาด ${parsed.size}`) && !itemName.includes(`(${parsed.size})`)) {
+              parts.push(`ขนาด ${parsed.size}`);
+            }
+            if (Array.isArray(parsed.selected_items) && parsed.selected_items.length > 0) {
+              const subNames = parsed.selected_items.map(s => s.name || s.item_name).filter(Boolean);
+              if (subNames.length > 0) {
+                const subText = subNames.join(', ');
+                if (subText !== itemName) {
+                  parts.push(`ไส้: ${subText}`);
+                }
+              }
+            }
+            if (parsed.sweetness) parts.push(`หวาน ${parsed.sweetness}`);
+            if (parsed.spicy) parts.push(`เผ็ด ${parsed.spicy}`);
+            if (parsed.note) parts.push(`โน้ต: ${parsed.note}`);
+            
+            if (parts.length > 0) {
+              details = ` (${parts.join(' / ')})`;
+            }
+          } else if (typeof parsed === 'string' && parsed.trim()) {
+            details = ` (${parsed.trim()})`;
+          }
+        } catch (e) {
+          if (typeof optionsStr === 'string' && optionsStr.trim() && !optionsStr.startsWith('{')) {
+            details = ` (${optionsStr.trim()})`;
+          }
+        }
+      }
+      return `${itemName}${details} x${quantity}`;
+    };
 
     // [4] ประวัติออเดอร์ย้อนหลัง (Orders History)
     const ordersList = await db.prepare(`
@@ -416,7 +459,6 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
     const orderItemsMap = {};
     if (ordersList.length > 0) {
       const orderIds = ordersList.map(o => o.id);
-      // แบ่ง batch ละ 500 ID เพื่อความปลอดภัยของ query
       for (let i = 0; i < orderIds.length; i += 500) {
         const chunk = orderIds.slice(i, i + 500);
         const placeholders = chunk.map(() => '?').join(',');
@@ -428,8 +470,7 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
 
         items.forEach(it => {
           if (!orderItemsMap[it.order_id]) orderItemsMap[it.order_id] = [];
-          const optStr = it.options ? ` (${it.options})` : '';
-          orderItemsMap[it.order_id].push(`${it.item_name}${optStr} x${it.quantity}`);
+          orderItemsMap[it.order_id].push(formatOrderItemSummary(it.item_name, it.options, it.quantity));
         });
       }
     }
@@ -487,32 +528,73 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       ORDER BY session_date DESC, id DESC
     `).all(...paramsSessions);
 
-    // [9] สรุปยอดขายและค่าใช้จ่ายแยกรายเดือน (Monthly Breakdown)
-    const monthlySales = await db.prepare(`
+    // [9] สรุปยอดขายและค่าใช้จ่ายแยกรายเดือนและรายสาขา (Monthly & Branch Breakdown)
+    const monthlyBranchSales = await db.prepare(`
       SELECT 
-        substr(created_at, 1, 7) as month_key,
+        substr(o.created_at, 1, 7) as month_key,
+        o.branch_id,
         COUNT(*) as order_count,
-        COALESCE(SUM(subtotal), 0) as month_subtotal,
-        COALESCE(SUM(discount), 0) as month_discount,
-        COALESCE(SUM(total), 0) as month_sales
-      FROM orders
-      ${whereOrders ? whereOrders + " AND status = 'completed'" : "WHERE status = 'completed'"}
-      GROUP BY month_key
-      ORDER BY month_key ASC
+        COALESCE(SUM(o.subtotal), 0) as month_subtotal,
+        COALESCE(SUM(o.discount), 0) as month_discount,
+        COALESCE(SUM(o.total), 0) as month_sales
+      FROM orders o
+      ${whereOrders ? whereOrders + " AND o.status = 'completed'" : "WHERE o.status = 'completed'"}
+      GROUP BY month_key, o.branch_id
+      ORDER BY month_key ASC, o.branch_id ASC
     `).all(...paramsOrders);
 
-    const monthlyExpenses = await db.prepare(`
+    const monthlyBranchExpenses = await db.prepare(`
       SELECT 
         substr(expense_date, 1, 7) as month_key,
+        branch_id,
         COALESCE(SUM(amount), 0) as month_expenses
       FROM expenses
       ${whereExpenses}
-      GROUP BY month_key
-      ORDER BY month_key ASC
+      GROUP BY month_key, branch_id
+      ORDER BY month_key ASC, branch_id ASC
     `).all(...paramsExpenses);
 
-    const monthlyExpMap = {};
-    monthlyExpenses.forEach(me => { monthlyExpMap[me.month_key] = Number(me.month_expenses || 0); });
+    const mbMap = new Map();
+    monthlyBranchSales.forEach(item => {
+      const key = `${item.month_key}__${item.branch_id}`;
+      if (!mbMap.has(key)) {
+        mbMap.set(key, {
+          month_key: item.month_key,
+          branch_id: item.branch_id,
+          sales: Number(item.month_sales || 0),
+          discount: Number(item.month_discount || 0),
+          expenses: 0,
+          orders: Number(item.order_count || 0)
+        });
+      } else {
+        const existing = mbMap.get(key);
+        existing.sales += Number(item.month_sales || 0);
+        existing.discount += Number(item.month_discount || 0);
+        existing.orders += Number(item.order_count || 0);
+      }
+    });
+
+    monthlyBranchExpenses.forEach(item => {
+      const key = `${item.month_key}__${item.branch_id}`;
+      if (!mbMap.has(key)) {
+        mbMap.set(key, {
+          month_key: item.month_key,
+          branch_id: item.branch_id,
+          sales: 0,
+          discount: 0,
+          expenses: Number(item.month_expenses || 0),
+          orders: 0
+        });
+      } else {
+        const existing = mbMap.get(key);
+        existing.expenses += Number(item.month_expenses || 0);
+      }
+    });
+
+    const monthlyBranchRows = Array.from(mbMap.values()).sort((a, b) => {
+      if (a.month_key !== b.month_key) return a.month_key.localeCompare(b.month_key);
+      return (a.branch_id || 0) - (b.branch_id || 0);
+    });
 
     // ── 3. สร้างไฟล์ Excel Workbook 7 แถบย่อย (7 Sheets) พร้อม Auto-Fit คอลัมน์ & Excel Formulas ──
     const workbook = new ExcelJS.Workbook();
@@ -521,10 +603,11 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
 
     const BRAND_COLOR = '8B0313'; // ช้างแดง
     const HEADER_DARK = '2C3E50';
+    const exportDateStr = new Date().toLocaleString('th-TH');
 
     const styleSheetHeader = (row, bgColor = BRAND_COLOR) => {
       row.height = 28;
-      row.eachCell(cell => {
+      row.eachCell({ includeEmpty: true }, cell => {
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -546,7 +629,33 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       });
     };
 
-    const styleDataRows = (sheet, startRow = 2, endRow = null) => {
+    const addSheetBanner = (ws, title, lastColLetter) => {
+      ws.mergeCells(`A1:${lastColLetter}1`);
+      const bannerCell = ws.getCell('A1');
+      bannerCell.value = title;
+      bannerCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF' + BRAND_COLOR }
+      };
+      bannerCell.font = {
+        name: 'Segoe UI',
+        size: 12,
+        bold: true,
+        color: { argb: 'FFFFFFFF' }
+      };
+      bannerCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      bannerCell.border = {
+        top: { style: 'thin', color: { argb: 'FF8B0313' } },
+        bottom: { style: 'thin', color: { argb: 'FF8B0313' } },
+        left: { style: 'thin', color: { argb: 'FF8B0313' } },
+        right: { style: 'thin', color: { argb: 'FF8B0313' } }
+      };
+      ws.getRow(1).height = 32;
+      ws.getRow(2).height = 10;
+    };
+
+    const styleDataRows = (sheet, startRow = 4, endRow = null) => {
       sheet.eachRow((row, rowNumber) => {
         if (rowNumber >= startRow && (!endRow || rowNumber <= endRow)) {
           row.height = 22;
@@ -573,7 +682,7 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
     };
 
     const styleTotalRow = (row, bgArgb = 'FFF2F4F7') => {
-      row.height = 24;
+      row.height = 26;
       row.eachCell({ includeEmpty: true }, cell => {
         cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF8B0313' } };
         cell.fill = {
@@ -594,6 +703,9 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       sheet.columns.forEach(column => {
         let maxLen = 0;
         column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+          if (cell.isMerged && rowNumber <= 2) return;
+          if (sheet.name === '1. สรุปภาพรวม' && (rowNumber === 1 || rowNumber === 8 || rowNumber === 9)) return;
+
           if (cell.value !== null && cell.value !== undefined) {
             let text = '';
             if (typeof cell.value === 'object' && cell.value.formula) {
@@ -612,304 +724,389 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       });
     };
 
-    // ── Sheet 1: สรุปภาพรวม & ตารางสมการรายเดือน (Overview & Monthly Performance) ──
+    // ════════════════════════════════════════════════════════════════════════
+    // ── Sheet 1: สรุปภาพรวม (2-Tier: Top Information + Bottom Breakdown) ──
+    // ════════════════════════════════════════════════════════════════════════
     const ws1 = workbook.addWorksheet('1. สรุปภาพรวม');
     ws1.columns = [
-      { header: 'หัวข้อสรุป (Overview Topic)', key: 'topic', width: 38 },
-      { header: 'จำนวน / มูลค่า (บาท)', key: 'value', width: 25 },
-      { header: '', key: 'c3', width: 4 },
-      { header: 'เดือน (Month)', key: 'm_month', width: 16 },
-      { header: 'ยอดขายรวม (Sales)', key: 'm_sales', width: 22 },
-      { header: 'ส่วนลด (Discount)', key: 'm_disc', width: 16 },
-      { header: 'ค่าใช้จ่าย (Expenses)', key: 'm_exp', width: 20 },
-      { header: 'กำไรสุทธิ (Net Profit)', key: 'm_profit', width: 22 },
-      { header: 'จำนวนบิล (Orders)', key: 'm_orders', width: 18 },
-      { header: 'เฉลี่ยต่อบิล (Avg/Order)', key: 'm_avg', width: 20 }
+      { key: 'colA', width: 22 },
+      { key: 'colB', width: 26 },
+      { key: 'colC', width: 22 },
+      { key: 'colD', width: 20 },
+      { key: 'colE', width: 20 },
+      { key: 'colF', width: 22 },
+      { key: 'colG', width: 18 },
+      { key: 'colH', width: 20 }
     ];
 
-    // Header styling
-    styleSheetHeader(ws1.getRow(1), BRAND_COLOR);
+    // 1.1 แบนเนอร์หัวเรื่องด้านบนสุด
+    addSheetBanner(ws1, 'รายงานสรุปภาพรวมผลการดำเนินงาน (Performance Overview)', 'H');
 
-    // Left Table: KPI Card rows with formula
-    const leftRows = [
-      { topic: 'ช่วงเวลาที่เลือก (Period)', value: periodLabel },
-      { topic: 'สาขา (Branch)', value: branchLabel },
-      { topic: 'วันที่ส่งออกข้อมูล (Export Date)', value: new Date().toLocaleString('th-TH') },
-      { topic: 'ยอดขายรวมทั้งหมด (Total Sales)', value: totalSales },
-      { topic: 'ส่วนลดรวม (Total Discounts)', value: Number(ordersOverview?.total_discount || 0) },
-      { topic: 'ค่าใช้จ่ายรวมทั้งหมด (Total Expenses)', value: totalExpenses },
-      { topic: 'กำไรเบื้องต้น (Net Profit)', value: { formula: 'B5-B7', result: netProfit } },
-      { topic: 'จำนวนบิลที่สำเร็จ (Total Orders)', value: totalOrders },
-      { topic: 'ยอดขายเฉลี่ยต่อบิล (Avg per Order)', value: { formula: 'IF(B9>0, B5/B9, 0)', result: Number(avgOrder) } },
-      { topic: '• ยอดชำระด้วยเงินสด (Cash Sales)', value: Number(ordersOverview?.cash_sales || 0) },
-      { topic: '• ยอดชำระด้วย QR Code (PromptPay)', value: Number(ordersOverview?.qr_sales || 0) },
-      { topic: '• ยอดชำระผ่าน Delivery', value: Number(ordersOverview?.delivery_sales || 0) },
-      { topic: '• ยอดชำระผ่าน คนละครึ่ง/สวัสดิการรัฐ', value: Number(ordersOverview?.gov_sales || 0) }
+    // 1.2 กล่องด้านบน: ข้อมูลทั่วไป และ สรุปช่องทางชำระเงิน (Top Box Area)
+    const topCardData = [
+      { label1: 'ช่วงเวลาที่เลือก (Period)', val1: periodLabel, label2: '• ยอดชำระด้วยเงินสด (Cash)', val2: Number(ordersOverview?.cash_sales || 0) },
+      { label1: 'สาขาที่เลือก (Branch)', val1: branchLabel, label2: '• ยอดชำระด้วย QR Code (PromptPay)', val2: Number(ordersOverview?.qr_sales || 0) },
+      { label1: 'วันที่ส่งออกข้อมูล (Export Date)', val1: exportDateStr, label2: '• ยอดชำระผ่าน Delivery', val2: Number(ordersOverview?.delivery_sales || 0) },
+      { label1: 'สถานะบิล (Order Status)', val1: 'สำเร็จ (Completed Only)', label2: '• ยอดชำระ คนละครึ่ง/สวัสดิการรัฐ', val2: Number(ordersOverview?.gov_sales || 0) }
     ];
 
-    // Populate Monthly Breakdown Table on the right side
-    const maxRows = Math.max(leftRows.length, monthlySales.length);
-    for (let i = 0; i < maxRows; i++) {
-      const rowNum = i + 2;
-      const left = leftRows[i];
-      const m = monthlySales[i];
+    topCardData.forEach((row, idx) => {
+      const rNum = idx + 3;
+      const r = ws1.getRow(rNum);
+      r.height = 24;
       
-      const rowData = {
-        topic: left ? left.topic : '',
-        value: left ? left.value : null
-      };
+      // Col A & B (Info)
+      const cA = ws1.getCell(`A${rNum}`);
+      cA.value = row.label1;
+      cA.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF2C3E50' } };
+      cA.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F4F7' } };
+      cA.alignment = { vertical: 'middle', horizontal: 'left' };
+      cA.border = { top: { style: 'thin', color: { argb: 'FFD3D3D3' } }, bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } }, left: { style: 'thin', color: { argb: 'FFD3D3D3' } }, right: { style: 'thin', color: { argb: 'FFD3D3D3' } } };
 
-      if (m) {
-        const mExp = monthlyExpMap[m.month_key] || 0;
-        const mSales = Number(m.month_sales || 0);
-        const mOrders = Number(m.order_count || 0);
-        rowData.m_month = m.month_key;
-        rowData.m_sales = mSales;
-        rowData.m_disc = Number(m.month_discount || 0);
-        rowData.m_exp = mExp;
-        rowData.m_profit = { formula: `E${rowNum}-G${rowNum}`, result: mSales - mExp };
-        rowData.m_orders = mOrders;
-        rowData.m_avg = { formula: `IF(I${rowNum}>0, E${rowNum}/I${rowNum}, 0)`, result: mOrders > 0 ? mSales / mOrders : 0 };
-      }
+      const cB = ws1.getCell(`B${rNum}`);
+      cB.value = row.val1;
+      cB.font = { name: 'Segoe UI', size: 10 };
+      cB.alignment = { vertical: 'middle', horizontal: 'left' };
+      cB.border = { top: { style: 'thin', color: { argb: 'FFD3D3D3' } }, bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } }, left: { style: 'thin', color: { argb: 'FFD3D3D3' } }, right: { style: 'thin', color: { argb: 'FFD3D3D3' } } };
 
-      ws1.addRow(rowData);
-    }
+      // Col C & D (Payment breakdown)
+      const cC = ws1.getCell(`C${rNum}`);
+      cC.value = row.label2;
+      cC.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF2C3E50' } };
+      cC.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F4F7' } };
+      cC.alignment = { vertical: 'middle', horizontal: 'left' };
+      cC.border = { top: { style: 'thin', color: { argb: 'FFD3D3D3' } }, bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } }, left: { style: 'thin', color: { argb: 'FFD3D3D3' } }, right: { style: 'thin', color: { argb: 'FFD3D3D3' } } };
 
-    // Add Monthly Grand Total row if months > 0
-    if (monthlySales.length > 0) {
-      const startMRow = 2;
-      const endMRow = monthlySales.length + 1;
-      const totalRowIndex = ws1.rowCount + 1;
+      const cD = ws1.getCell(`D${rNum}`);
+      cD.value = row.val2;
+      cD.numFmt = '#,##0.00';
+      cD.font = { name: 'Segoe UI', size: 10 };
+      cD.alignment = { vertical: 'middle', horizontal: 'right' };
+      cD.border = { top: { style: 'thin', color: { argb: 'FFD3D3D3' } }, bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } }, left: { style: 'thin', color: { argb: 'FFD3D3D3' } }, right: { style: 'thin', color: { argb: 'FFD3D3D3' } } };
+    });
+
+    // 1.3 กล่องด้านล่าง: ตารางแจกแจงผลประกอบการแยกรายเดือนและสาขา (Bottom Table Breakdown)
+    ws1.getRow(7).height = 12; // spacer
+
+    ws1.mergeCells('A8:H8');
+    const secCell = ws1.getCell('A8');
+    secCell.value = 'ตารางสรุปผลประกอบการ แยกตามเดือนและสาขา (Performance Breakdown by Month & Branch)';
+    secCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + HEADER_DARK } };
+    secCell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    secCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    ws1.getRow(8).height = 26;
+
+    // Row 9: Table Column Headers
+    const tableHeaderRow = ws1.getRow(9);
+    tableHeaderRow.values = [
+      'เดือน (Month)',
+      'สาขา (Branch)',
+      'ยอดขายรวม (Sales)',
+      'ส่วนลด (Discount)',
+      'ค่าใช้จ่าย (Expenses)',
+      'กำไรสุทธิ (Net Profit)',
+      'จำนวนบิล (Orders)',
+      'เฉลี่ยต่อบิล (Avg/Order)'
+    ];
+    styleSheetHeader(tableHeaderRow, BRAND_COLOR);
+
+    // Row 10+: Monthly & Branch Data Rows
+    const dataStartRow = 10;
+    monthlyBranchRows.forEach((item, idx) => {
+      const rNum = dataStartRow + idx;
+      const bName = branchMap[item.branch_id] || `สาขา #${item.branch_id}`;
       
-      const totalRow = ws1.addRow({
-        topic: '',
-        value: null,
-        c3: '',
-        m_month: 'รวมทุกเดือน (Grand Total)',
-        m_sales: { formula: `SUM(E${startMRow}:E${endMRow})`, result: totalSales },
-        m_disc: { formula: `SUM(F${startMRow}:F${endMRow})`, result: Number(ordersOverview?.total_discount || 0) },
-        m_exp: { formula: `SUM(G${startMRow}:G${endMRow})`, result: totalExpenses },
-        m_profit: { formula: `SUM(H${startMRow}:H${endMRow})`, result: netProfit },
-        m_orders: { formula: `SUM(I${startMRow}:I${endMRow})`, result: totalOrders },
-        m_avg: { formula: `IF(I${totalRowIndex}>0, E${totalRowIndex}/I${totalRowIndex}, 0)`, result: Number(avgOrder) }
-      });
-      styleTotalRow(totalRow);
+      const r = ws1.getRow(rNum);
+      r.values = [
+        item.month_key,
+        bName,
+        item.sales,
+        item.discount,
+        item.expenses,
+        { formula: `C${rNum}-E${rNum}`, result: item.sales - item.expenses },
+        item.orders,
+        { formula: `IF(G${rNum}>0, C${rNum}/G${rNum}, 0)`, result: item.orders > 0 ? item.sales / item.orders : 0 }
+      ];
+
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      r.getCell(2).alignment = { vertical: 'middle', horizontal: 'left' };
+      r.getCell(3).numFmt = '#,##0.00';
+      r.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(4).numFmt = '#,##0.00';
+      r.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(5).numFmt = '#,##0.00';
+      r.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(6).numFmt = '#,##0.00';
+      r.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(7).numFmt = '#,##0';
+      r.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(8).numFmt = '#,##0.00';
+      r.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
+    });
+
+    // Grand Total Row with Excel Formulas
+    if (monthlyBranchRows.length > 0) {
+      const dataEndRow = dataStartRow + monthlyBranchRows.length - 1;
+      const totalRNum = dataEndRow + 1;
+      
+      const totRow = ws1.getRow(totalRNum);
+      totRow.values = [
+        'รวมทั้งหมด (Grand Total)',
+        '-',
+        { formula: `SUM(C${dataStartRow}:C${dataEndRow})`, result: totalSales },
+        { formula: `SUM(D${dataStartRow}:D${dataEndRow})`, result: Number(ordersOverview?.total_discount || 0) },
+        { formula: `SUM(E${dataStartRow}:E${dataEndRow})`, result: totalExpenses },
+        { formula: `SUM(F${dataStartRow}:F${dataEndRow})`, result: netProfit },
+        { formula: `SUM(G${dataStartRow}:G${dataEndRow})`, result: totalOrders },
+        { formula: `IF(G${totalRNum}>0, C${totalRNum}/G${totalRNum}, 0)`, result: Number(avgOrder) }
+      ];
+
+      styleTotalRow(totRow);
+      totRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      totRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+      totRow.getCell(3).numFmt = '#,##0.00';
+      totRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
+      totRow.getCell(4).numFmt = '#,##0.00';
+      totRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+      totRow.getCell(5).numFmt = '#,##0.00';
+      totRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+      totRow.getCell(6).numFmt = '#,##0.00';
+      totRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+      totRow.getCell(7).numFmt = '#,##0';
+      totRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+      totRow.getCell(8).numFmt = '#,##0.00';
+      totRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
     }
 
-    styleDataRows(ws1, 2, ws1.rowCount - (monthlySales.length > 0 ? 1 : 0));
-    // Number formatting for ws1
-    for (let r = 2; r <= ws1.rowCount; r++) {
-      const bCell = ws1.getCell(`B${r}`);
-      if (bCell.value !== null && typeof bCell.value !== 'string') {
-        if (r === 9) {
-          bCell.numFmt = '#,##0';
-        } else {
-          bCell.numFmt = '#,##0.00';
-        }
-        bCell.alignment = { vertical: 'middle', horizontal: 'right' };
-      }
-      const eCell = ws1.getCell(`E${r}`);
-      if (eCell.value) { eCell.numFmt = '#,##0.00'; eCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
-      const fCell = ws1.getCell(`F${r}`);
-      if (fCell.value) { fCell.numFmt = '#,##0.00'; fCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
-      const gCell = ws1.getCell(`G${r}`);
-      if (gCell.value) { gCell.numFmt = '#,##0.00'; gCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
-      const hCell = ws1.getCell(`H${r}`);
-      if (hCell.value) { hCell.numFmt = '#,##0.00'; hCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
-      const iCell = ws1.getCell(`I${r}`);
-      if (iCell.value) { iCell.numFmt = '#,##0'; iCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
-      const jCell = ws1.getCell(`J${r}`);
-      if (jCell.value) { jCell.numFmt = '#,##0.00'; jCell.alignment = { vertical: 'middle', horizontal: 'right' }; }
-    }
+    styleDataRows(ws1, dataStartRow, dataStartRow + monthlyBranchRows.length - 1);
     autoFitCols(ws1, 16);
 
-    // ── Sheet 2: อันดับสินค้าขายดี (Top Selling) ──
+    // ════════════════════════════════════════════════════════════════════════
+    // ── Sheet 2: อันดับสินค้าขายดี (Top Selling & All Menu Items) ──
+    // ════════════════════════════════════════════════════════════════════════
     const ws2 = workbook.addWorksheet('2. สินค้าขายดี');
     ws2.columns = [
-      { header: 'อันดับ', key: 'rank', width: 10 },
-      { header: 'ชื่อสินค้า', key: 'item_name', width: 30 },
-      { header: 'หมวดหมู่', key: 'category_name', width: 20 },
-      { header: 'จำนวนที่ขายได้ (ชิ้น)', key: 'total_qty', width: 22 },
-      { header: 'ยอดขายรวม (บาท)', key: 'total_revenue', width: 22 }
+      { key: 'rank', width: 12 },
+      { key: 'item_name', width: 34 },
+      { key: 'category_name', width: 22 },
+      { key: 'total_qty', width: 22 },
+      { key: 'total_revenue', width: 22 }
     ];
-    styleSheetHeader(ws2.getRow(1), HEADER_DARK);
 
+    addSheetBanner(ws2, `รายงานยอดขายสินค้าทุกรายการ (Product Sales Summary) | ${periodLabel} | ${branchLabel} | ส่งออก: ${exportDateStr}`, 'E');
+
+    const ws2Header = ws2.getRow(3);
+    ws2Header.values = ['อันดับ', 'ชื่อสินค้า', 'หมวดหมู่', 'จำนวนที่ขายได้ (ชิ้น)', 'ยอดขายรวม (บาท)'];
+    styleSheetHeader(ws2Header, HEADER_DARK);
+
+    const s2Start = 4;
     topItems.forEach((item, idx) => {
-      ws2.addRow({
-        rank: idx + 1,
-        item_name: item.item_name,
-        category_name: item.category_name,
-        total_qty: Number(item.total_qty || 0),
-        total_revenue: Number(item.total_revenue || 0)
-      });
+      const rNum = s2Start + idx;
+      const r = ws2.getRow(rNum);
+      r.values = [
+        idx + 1,
+        item.item_name,
+        item.category_name,
+        Number(item.total_qty || 0),
+        Number(item.total_revenue || 0)
+      ];
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      r.getCell(4).numFmt = '#,##0';
+      r.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(5).numFmt = '#,##0.00';
+      r.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
     });
 
     if (topItems.length > 0) {
-      const topStart = 2;
-      const topEnd = topItems.length + 1;
-      const topSumRow = ws2.addRow({
-        rank: 'รวมทั้งหมด',
-        item_name: `(${topItems.length} อันดับแรก)`,
-        category_name: '-',
-        total_qty: { formula: `SUM(D${topStart}:D${topEnd})` },
-        total_revenue: { formula: `SUM(E${topStart}:E${topEnd})` }
-      });
-      styleTotalRow(topSumRow);
-      topSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      const s2End = s2Start + topItems.length - 1;
+      const s2TotRow = ws2.getRow(s2End + 1);
+      s2TotRow.values = [
+        'รวมทั้งหมด',
+        `(${topItems.length} รายการ)`,
+        '-',
+        { formula: `SUM(D${s2Start}:D${s2End})` },
+        { formula: `SUM(E${s2Start}:E${s2End})` }
+      ];
+      styleTotalRow(s2TotRow);
+      s2TotRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      s2TotRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'left' };
+      s2TotRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'center' };
+      s2TotRow.getCell(4).numFmt = '#,##0';
+      s2TotRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+      s2TotRow.getCell(5).numFmt = '#,##0.00';
+      s2TotRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
     }
 
-    styleDataRows(ws2, 2, topItems.length > 0 ? ws2.rowCount - 1 : ws2.rowCount);
-    ws2.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
-        if (rowNumber <= topItems.length + 1) row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-        row.getCell(4).numFmt = '#,##0';
-        row.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
-        row.getCell(5).numFmt = '#,##0.00';
-        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
-      }
-    });
+    styleDataRows(ws2, s2Start, topItems.length > 0 ? s2Start + topItems.length - 1 : s2Start);
     autoFitCols(ws2, 16);
 
+    // ════════════════════════════════════════════════════════════════════════
     // ── Sheet 3: ประวัติออเดอร์ (Orders History) ──
+    // ════════════════════════════════════════════════════════════════════════
     const ws3 = workbook.addWorksheet('3. ประวัติออเดอร์');
     ws3.columns = [
-      { header: 'เลขที่บิล', key: 'order_number', width: 20 },
-      { header: 'วัน-เวลา', key: 'created_at', width: 22 },
-      { header: 'สาขา', key: 'branch', width: 22 },
-      { header: 'พนักงานผู้ขาย', key: 'staff', width: 20 },
-      { header: 'รายการอาหารที่สั่ง', key: 'items', width: 45 },
-      { header: 'ยอดรวมก่อนลด (บาท)', key: 'subtotal', width: 20 },
-      { header: 'ส่วนลด (บาท)', key: 'discount', width: 16 },
-      { header: 'ยอดสุทธิ (บาท)', key: 'total', width: 18 },
-      { header: 'ช่องทางชำระเงิน', key: 'payment_method', width: 18 },
-      { header: 'สถานะบิล', key: 'status', width: 14 },
-      { header: 'หมายเหตุ', key: 'note', width: 22 }
+      { key: 'order_number', width: 20 },
+      { key: 'created_at', width: 22 },
+      { key: 'branch', width: 22 },
+      { key: 'staff', width: 20 },
+      { key: 'items', width: 45 },
+      { key: 'subtotal', width: 20 },
+      { key: 'discount', width: 16 },
+      { key: 'total', width: 18 },
+      { key: 'payment_method', width: 18 },
+      { key: 'status', width: 14 },
+      { key: 'note', width: 22 }
     ];
-    styleSheetHeader(ws3.getRow(1), BRAND_COLOR);
+
+    addSheetBanner(ws3, `รายงานประวัติการสั่งซื้อ (Orders History) | ${periodLabel} | ${branchLabel} | ส่งออก: ${exportDateStr}`, 'K');
 
     const paymentLabelMap = { cash: 'เงินสด', qr: 'QR Code', gov: 'คนละครึ่ง/รัฐ', delivery: 'เดลิเวอรี่' };
     const statusLabelMap = { completed: 'สำเร็จ', cancelled: 'ยกเลิก' };
 
-    ordersList.forEach(o => {
+    const ws3Header = ws3.getRow(3);
+    ws3Header.values = [
+      'เลขที่บิล', 'วัน-เวลา', 'สาขา', 'พนักงานผู้ขาย', 'รายการอาหารที่สั่ง',
+      'ยอดรวมก่อนลด (บาท)', 'ส่วนลด (บาท)', 'ยอดสุทธิ (บาท)', 'ช่องทางชำระเงิน', 'สถานะบิล', 'หมายเหตุ'
+    ];
+    styleSheetHeader(ws3Header, BRAND_COLOR);
+
+    const s3Start = 4;
+    ordersList.forEach((o, idx) => {
+      const rNum = s3Start + idx;
       const branchName = branchMap[o.branch_id] || `สาขา #${o.branch_id}`;
       const staffName = userMap[o.staff_id] || `พนักงาน #${o.staff_id}`;
       const itemsText = (orderItemsMap[o.id] || []).join(' | ');
 
-      ws3.addRow({
-        order_number: o.order_number,
-        created_at: o.created_at,
-        branch: branchName,
-        staff: staffName,
-        items: itemsText,
-        subtotal: Number(o.subtotal || 0),
-        discount: Number(o.discount || 0),
-        total: Number(o.total || 0),
-        payment_method: paymentLabelMap[o.payment_method] || o.payment_method,
-        status: statusLabelMap[o.status] || o.status,
-        note: o.note || '-'
-      });
+      const r = ws3.getRow(rNum);
+      r.values = [
+        o.order_number,
+        o.created_at,
+        branchName,
+        staffName,
+        itemsText,
+        Number(o.subtotal || 0),
+        Number(o.discount || 0),
+        Number(o.total || 0),
+        paymentLabelMap[o.payment_method] || o.payment_method,
+        statusLabelMap[o.status] || o.status,
+        o.note || '-'
+      ];
+
+      r.getCell(6).numFmt = '#,##0.00';
+      r.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(7).numFmt = '#,##0.00';
+      r.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(8).numFmt = '#,##0.00';
+      r.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(10).alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
     if (ordersList.length > 0) {
-      const oStart = 2;
-      const oEnd = ordersList.length + 1;
-      const oSumRow = ws3.addRow({
-        order_number: 'รวมทั้งสิ้น',
-        created_at: `(${ordersList.length} บิล)`,
-        branch: '-',
-        staff: '-',
-        items: '-',
-        subtotal: { formula: `SUM(F${oStart}:F${oEnd})` },
-        discount: { formula: `SUM(G${oStart}:G${oEnd})` },
-        total: { formula: `SUM(H${oStart}:H${oEnd})` },
-        payment_method: '-',
-        status: '-',
-        note: '-'
-      });
-      styleTotalRow(oSumRow);
-      oSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      const s3End = s3Start + ordersList.length - 1;
+      const s3TotRow = ws3.getRow(s3End + 1);
+      s3TotRow.values = [
+        'รวมทั้งสิ้น',
+        `(${ordersList.length} บิล)`,
+        '-',
+        '-',
+        '-',
+        { formula: `SUM(F${s3Start}:F${s3End})` },
+        { formula: `SUM(G${s3Start}:G${s3End})` },
+        { formula: `SUM(H${s3Start}:H${s3End})` },
+        '-',
+        '-',
+        '-'
+      ];
+      styleTotalRow(s3TotRow);
+      s3TotRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      s3TotRow.getCell(6).numFmt = '#,##0.00';
+      s3TotRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+      s3TotRow.getCell(7).numFmt = '#,##0.00';
+      s3TotRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+      s3TotRow.getCell(8).numFmt = '#,##0.00';
+      s3TotRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
     }
 
-    styleDataRows(ws3, 2, ordersList.length > 0 ? ws3.rowCount - 1 : ws3.rowCount);
-    ws3.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
-        row.getCell(6).numFmt = '#,##0.00';
-        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
-        row.getCell(7).numFmt = '#,##0.00';
-        row.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
-        row.getCell(8).numFmt = '#,##0.00';
-        row.getCell(8).alignment = { vertical: 'middle', horizontal: 'right' };
-        if (rowNumber <= ordersList.length + 1) row.getCell(10).alignment = { vertical: 'middle', horizontal: 'center' };
-      }
-    });
+    styleDataRows(ws3, s3Start, ordersList.length > 0 ? s3Start + ordersList.length - 1 : s3Start);
     autoFitCols(ws3, 16);
 
+    // ════════════════════════════════════════════════════════════════════════
     // ── Sheet 4: บันทึกค่าใช้จ่าย (Daily Expenses) ──
+    // ════════════════════════════════════════════════════════════════════════
     const ws4 = workbook.addWorksheet('4. บันทึกค่าใช้จ่าย');
     ws4.columns = [
-      { header: 'วันที่', key: 'expense_date', width: 16 },
-      { header: 'สาขา', key: 'branch', width: 22 },
-      { header: 'หมวดหมู่ค่าใช้จ่าย', key: 'category', width: 22 },
-      { header: 'รายละเอียด/หมายเหตุ', key: 'note', width: 35 },
-      { header: 'ผู้บันทึก', key: 'staff', width: 20 },
-      { header: 'ช่องทางจ่ายเงิน', key: 'payment_method', width: 18 },
-      { header: 'จำนวนเงิน (บาท)', key: 'amount', width: 20 }
+      { key: 'expense_date', width: 16 },
+      { key: 'branch', width: 22 },
+      { key: 'category', width: 22 },
+      { key: 'note', width: 35 },
+      { key: 'staff', width: 20 },
+      { key: 'payment_method', width: 18 },
+      { key: 'amount', width: 20 }
     ];
-    styleSheetHeader(ws4.getRow(1), HEADER_DARK);
 
-    expensesList.forEach(e => {
+    addSheetBanner(ws4, `รายงานบันทึกค่าใช้จ่าย (Daily Expenses) | ${periodLabel} | ${branchLabel} | ส่งออก: ${exportDateStr}`, 'G');
+
+    const ws4Header = ws4.getRow(3);
+    ws4Header.values = ['วันที่', 'สาขา', 'หมวดหมู่ค่าใช้จ่าย', 'รายละเอียด/หมายเหตุ', 'ผู้บันทึก', 'ช่องทางจ่ายเงิน', 'จำนวนเงิน (บาท)'];
+    styleSheetHeader(ws4Header, HEADER_DARK);
+
+    const s4Start = 4;
+    expensesList.forEach((e, idx) => {
+      const rNum = s4Start + idx;
       const branchName = branchMap[e.branch_id] || `สาขา #${e.branch_id}`;
       const staffName = userMap[e.staff_id] || `พนักงาน #${e.staff_id}`;
-      ws4.addRow({
-        expense_date: e.expense_date || e.created_at,
-        branch: branchName,
-        category: e.category,
-        note: e.note || '-',
-        staff: staffName,
-        payment_method: e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด',
-        amount: Number(e.amount || 0)
-      });
+      const r = ws4.getRow(rNum);
+      r.values = [
+        e.expense_date || e.created_at,
+        branchName,
+        e.category,
+        e.note || '-',
+        staffName,
+        e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด',
+        Number(e.amount || 0)
+      ];
+      r.getCell(7).numFmt = '#,##0.00';
+      r.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
     });
 
     if (expensesList.length > 0) {
-      const expStart = 2;
-      const expEnd = expensesList.length + 1;
-      const expSumRow = ws4.addRow({
-        expense_date: 'รวมค่าใช้จ่ายทั้งหมด',
-        branch: `(${expensesList.length} รายการ)`,
-        category: '-',
-        note: '-',
-        staff: '-',
-        payment_method: '-',
-        amount: { formula: `SUM(G${expStart}:G${expEnd})` }
-      });
-      styleTotalRow(expSumRow);
-      expSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      const s4End = s4Start + expensesList.length - 1;
+      const s4TotRow = ws4.getRow(s4End + 1);
+      s4TotRow.values = [
+        'รวมค่าใช้จ่ายทั้งหมด',
+        `(${expensesList.length} รายการ)`,
+        '-',
+        '-',
+        '-',
+        '-',
+        { formula: `SUM(G${s4Start}:G${s4End})` }
+      ];
+      styleTotalRow(s4TotRow);
+      s4TotRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      s4TotRow.getCell(7).numFmt = '#,##0.00';
+      s4TotRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
     }
 
-    styleDataRows(ws4, 2, expensesList.length > 0 ? ws4.rowCount - 1 : ws4.rowCount);
-    ws4.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
-        row.getCell(7).numFmt = '#,##0.00';
-        row.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
-      }
-    });
+    styleDataRows(ws4, s4Start, expensesList.length > 0 ? s4Start + expensesList.length - 1 : s4Start);
     autoFitCols(ws4, 16);
 
-    // ── Sheet 5: ยอดคลังและสต็อก (Stock Logs) ──
+    // ════════════════════════════════════════════════════════════════════════
+    // ── Sheet 5: ยอดคลังและสต็อก (Stock Movement Logs) ──
+    // ════════════════════════════════════════════════════════════════════════
     const ws5 = workbook.addWorksheet('5. ยอดคลังและสต็อก');
     ws5.columns = [
-      { header: 'วัน-เวลา', key: 'created_at', width: 22 },
-      { header: 'สาขา', key: 'branch', width: 22 },
-      { header: 'รายการวัตถุดิบ/สินค้า', key: 'item_name', width: 28 },
-      { header: 'จำนวนที่เปลี่ยน', key: 'change_qty', width: 18 },
-      { header: 'สต็อกเดิม', key: 'previous_stock', width: 16 },
-      { header: 'คงเหลือใหม่', key: 'new_stock', width: 16 },
-      { header: 'เหตุผล', key: 'reason', width: 22 },
-      { header: 'ผู้ทำรายการ', key: 'staff', width: 20 },
-      { header: 'หมายเหตุ', key: 'note', width: 28 }
+      { key: 'created_at', width: 22 },
+      { key: 'branch', width: 22 },
+      { key: 'item_name', width: 28 },
+      { key: 'change_qty', width: 18 },
+      { key: 'previous_stock', width: 16 },
+      { key: 'new_stock', width: 16 },
+      { key: 'reason', width: 22 },
+      { key: 'staff', width: 20 },
+      { key: 'note', width: 28 }
     ];
-    styleSheetHeader(ws5.getRow(1), HEADER_DARK);
+
+    addSheetBanner(ws5, `รายงานความเคลื่อนไหวสต็อก (Stock Logs) | ${periodLabel} | ${branchLabel} | ส่งออก: ${exportDateStr}`, 'I');
 
     const reasonLabelMap = {
       sale: 'ขายสินค้า',
@@ -920,140 +1117,170 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       staff_benefit: 'สวัสดิการพนักงาน'
     };
 
-    stockLogs.forEach(s => {
+    const ws5Header = ws5.getRow(3);
+    ws5Header.values = ['วัน-เวลา', 'สาขา', 'รายการวัตถุดิบ/สินค้า', 'จำนวนที่เปลี่ยน', 'สต็อกเดิม', 'คงเหลือใหม่', 'เหตุผล', 'ผู้ทำรายการ', 'หมายเหตุ'];
+    styleSheetHeader(ws5Header, HEADER_DARK);
+
+    const s5Start = 4;
+    stockLogs.forEach((s, idx) => {
+      const rNum = s5Start + idx;
       const branchName = branchMap[s.branch_id] || `สาขา #${s.branch_id}`;
       const staffName = userMap[s.staff_id] || `พนักงาน #${s.staff_id}`;
-      ws5.addRow({
-        created_at: s.created_at,
-        branch: branchName,
-        item_name: s.item_name || '-',
-        change_qty: s.change_qty,
-        previous_stock: s.previous_stock !== null ? s.previous_stock : '-',
-        new_stock: s.new_stock !== null ? s.new_stock : '-',
-        reason: reasonLabelMap[s.reason] || s.reason,
-        staff: staffName,
-        note: s.note || '-'
-      });
+      const r = ws5.getRow(rNum);
+      r.values = [
+        s.created_at,
+        branchName,
+        s.item_name || '-',
+        s.change_qty,
+        s.previous_stock !== null ? s.previous_stock : '-',
+        s.new_stock !== null ? s.new_stock : '-',
+        reasonLabelMap[s.reason] || s.reason,
+        staffName,
+        s.note || '-'
+      ];
+      r.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+      r.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
     });
 
     if (stockLogs.length > 0) {
-      const stkStart = 2;
-      const stkEnd = stockLogs.length + 1;
-      const stkSumRow = ws5.addRow({
-        created_at: 'รวมจำนวนการปรับเปลี่ยนสต็อก',
-        branch: `(${stockLogs.length} รายการ)`,
-        item_name: '-',
-        change_qty: { formula: `SUM(D${stkStart}:D${stkEnd})` },
-        previous_stock: '-',
-        new_stock: '-',
-        reason: '-',
-        staff: '-',
-        note: '-'
-      });
-      styleTotalRow(stkSumRow);
-      stkSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      const s5End = s5Start + stockLogs.length - 1;
+      const s5TotRow = ws5.getRow(s5End + 1);
+      s5TotRow.values = [
+        'รวมจำนวนการปรับเปลี่ยนสต็อก',
+        `(${stockLogs.length} รายการ)`,
+        '-',
+        { formula: `SUM(D${s5Start}:D${s5End})` },
+        '-',
+        '-',
+        '-',
+        '-',
+        '-'
+      ];
+      styleTotalRow(s5TotRow);
+      s5TotRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      s5TotRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
     }
 
-    styleDataRows(ws5, 2, stockLogs.length > 0 ? ws5.rowCount - 1 : ws5.rowCount);
-    ws5.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
-        row.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
-        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
-        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
-      }
-    });
+    styleDataRows(ws5, s5Start, stockLogs.length > 0 ? s5Start + stockLogs.length - 1 : s5Start);
     autoFitCols(ws5, 16);
 
+    // ════════════════════════════════════════════════════════════════════════
     // ── Sheet 6: บันทึกกิจกรรม (Staff Activity Logs) ──
+    // ════════════════════════════════════════════════════════════════════════
     const ws6 = workbook.addWorksheet('6. บันทึกกิจกรรม');
     ws6.columns = [
-      { header: 'วัน-เวลา', key: 'created_at', width: 22 },
-      { header: 'สาขา', key: 'branch', width: 22 },
-      { header: 'พนักงาน/ผู้ใช้งาน', key: 'staff', width: 20 },
-      { header: 'กิจกรรม (Action)', key: 'action', width: 25 },
-      { header: 'รายละเอียด', key: 'details', width: 45 }
+      { key: 'created_at', width: 22 },
+      { key: 'branch', width: 22 },
+      { key: 'staff', width: 20 },
+      { key: 'action', width: 25 },
+      { key: 'details', width: 45 }
     ];
-    styleSheetHeader(ws6.getRow(1), HEADER_DARK);
 
-    activityLogs.forEach(a => {
+    addSheetBanner(ws6, `รายงานบันทึกกิจกรรมระบบ (Activity Logs) | ${periodLabel} | ${branchLabel} | ส่งออก: ${exportDateStr}`, 'E');
+
+    const ws6Header = ws6.getRow(3);
+    ws6Header.values = ['วัน-เวลา', 'สาขา', 'พนักงาน/ผู้ใช้งาน', 'กิจกรรม (Action)', 'รายละเอียด'];
+    styleSheetHeader(ws6Header, HEADER_DARK);
+
+    const s6Start = 4;
+    activityLogs.forEach((a, idx) => {
+      const rNum = s6Start + idx;
       const branchName = branchMap[a.branch_id] || `สาขา #${a.branch_id}`;
       const staffName = userMap[a.user_id] || `ผู้ใช้ #${a.user_id}`;
-      ws6.addRow({
-        created_at: a.created_at,
-        branch: branchName,
-        staff: staffName,
-        action: a.action,
-        details: a.details || '-'
-      });
+      const r = ws6.getRow(rNum);
+      r.values = [
+        a.created_at,
+        branchName,
+        staffName,
+        a.action,
+        a.details || '-'
+      ];
     });
-    styleDataRows(ws6, 2);
+
+    styleDataRows(ws6, s6Start);
     autoFitCols(ws6, 16);
 
+    // ════════════════════════════════════════════════════════════════════════
     // ── Sheet 7: รอบลิ้นชักเก็บเงิน (Cash Drawer Sessions) ──
+    // ════════════════════════════════════════════════════════════════════════
     const ws7 = workbook.addWorksheet('7. รอบลิ้นชักเก็บเงิน');
     ws7.columns = [
-      { header: 'วันที่', key: 'session_date', width: 16 },
-      { header: 'สาขา', key: 'branch', width: 22 },
-      { header: 'เงินทอนเริ่มต้น (บาท)', key: 'opening_cash', width: 22 },
-      { header: 'ยอดเงินสดที่ควรมี (บาท)', key: 'expected_cash', width: 24 },
-      { header: 'ยอดนับจริง (บาท)', key: 'actual_cash', width: 20 },
-      { header: 'ผลต่าง ขาด/เกิน (บาท)', key: 'difference', width: 22 },
-      { header: 'สถานะรอบ', key: 'status', width: 18 },
-      { header: 'หมายเหตุ', key: 'note', width: 25 }
+      { key: 'session_date', width: 16 },
+      { key: 'branch', width: 22 },
+      { key: 'opening_cash', width: 22 },
+      { key: 'expected_cash', width: 24 },
+      { key: 'actual_cash', width: 20 },
+      { key: 'difference', width: 22 },
+      { key: 'status', width: 18 },
+      { key: 'note', width: 25 }
     ];
-    styleSheetHeader(ws7.getRow(1), BRAND_COLOR);
 
-    cashSessions.forEach(c => {
+    addSheetBanner(ws7, `รายงานรอบลิ้นชักเก็บเงิน (Cash Drawer Sessions) | ${periodLabel} | ${branchLabel} | ส่งออก: ${exportDateStr}`, 'H');
+
+    const ws7Header = ws7.getRow(3);
+    ws7Header.values = ['วันที่', 'สาขา', 'เงินทอนเริ่มต้น (บาท)', 'ยอดเงินสดที่ควรมี (บาท)', 'ยอดนับจริง (บาท)', 'ผลต่าง ขาด/เกิน (บาท)', 'สถานะรอบ', 'หมายเหตุ'];
+    styleSheetHeader(ws7Header, BRAND_COLOR);
+
+    const s7Start = 4;
+    cashSessions.forEach((c, idx) => {
+      const rNum = s7Start + idx;
       const branchName = branchMap[c.branch_id] || `สาขา #${c.branch_id}`;
-      ws7.addRow({
-        session_date: c.session_date,
-        branch: branchName,
-        opening_cash: Number(c.opening_cash || 0),
-        expected_cash: c.expected_cash !== null ? Number(c.expected_cash) : '-',
-        actual_cash: c.actual_cash !== null ? Number(c.actual_cash) : '-',
-        difference: c.difference !== null ? Number(c.difference) : '-',
-        status: c.status === 'open' ? 'กำลังเปิดรอบ' : 'ปิดรอบเรียบร้อย',
-        note: c.note || '-'
-      });
+      const r = ws7.getRow(rNum);
+      r.values = [
+        c.session_date,
+        branchName,
+        Number(c.opening_cash || 0),
+        c.expected_cash !== null ? Number(c.expected_cash) : '-',
+        c.actual_cash !== null ? Number(c.actual_cash) : '-',
+        c.difference !== null ? Number(c.difference) : '-',
+        c.status === 'open' ? 'กำลังเปิดรอบ' : 'ปิดรอบเรียบร้อย',
+        c.note || '-'
+      ];
+
+      r.getCell(3).numFmt = '#,##0.00';
+      r.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
+      if (typeof c.expected_cash === 'number') {
+        r.getCell(4).numFmt = '#,##0.00';
+        r.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+      }
+      if (typeof c.actual_cash === 'number') {
+        r.getCell(5).numFmt = '#,##0.00';
+        r.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+      }
+      if (typeof c.difference === 'number') {
+        r.getCell(6).numFmt = '#,##0.00';
+        r.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+      }
+      r.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
     if (cashSessions.length > 0) {
-      const cdStart = 2;
-      const cdEnd = cashSessions.length + 1;
-      const cdSumRow = ws7.addRow({
-        session_date: 'รวมยอดเงินรอบลิ้นชัก',
-        branch: `(${cashSessions.length} รอบกะ)`,
-        opening_cash: { formula: `SUM(C${cdStart}:C${cdEnd})` },
-        expected_cash: { formula: `SUM(D${cdStart}:D${cdEnd})` },
-        actual_cash: { formula: `SUM(E${cdStart}:E${cdEnd})` },
-        difference: { formula: `SUM(F${cdStart}:F${cdEnd})` },
-        status: '-',
-        note: '-'
-      });
-      styleTotalRow(cdSumRow);
-      cdSumRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      const s7End = s7Start + cashSessions.length - 1;
+      const s7TotRow = ws7.getRow(s7End + 1);
+      s7TotRow.values = [
+        'รวมยอดเงินรอบลิ้นชัก',
+        `(${cashSessions.length} รอบกะ)`,
+        { formula: `SUM(C${s7Start}:C${s7End})` },
+        { formula: `SUM(D${s7Start}:D${s7End})` },
+        { formula: `SUM(E${s7Start}:E${s7End})` },
+        { formula: `SUM(F${s7Start}:F${s7End})` },
+        '-',
+        '-'
+      ];
+      styleTotalRow(s7TotRow);
+      s7TotRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      s7TotRow.getCell(3).numFmt = '#,##0.00';
+      s7TotRow.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
+      s7TotRow.getCell(4).numFmt = '#,##0.00';
+      s7TotRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+      s7TotRow.getCell(5).numFmt = '#,##0.00';
+      s7TotRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
+      s7TotRow.getCell(6).numFmt = '#,##0.00';
+      s7TotRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
     }
 
-    styleDataRows(ws7, 2, cashSessions.length > 0 ? ws7.rowCount - 1 : ws7.rowCount);
-    ws7.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
-        row.getCell(3).numFmt = '#,##0.00';
-        row.getCell(3).alignment = { vertical: 'middle', horizontal: 'right' };
-        if (typeof row.getCell(4).value === 'number' || (row.getCell(4).value && row.getCell(4).value.formula)) {
-          row.getCell(4).numFmt = '#,##0.00';
-          row.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
-        }
-        if (typeof row.getCell(5).value === 'number' || (row.getCell(5).value && row.getCell(5).value.formula)) {
-          row.getCell(5).numFmt = '#,##0.00';
-          row.getCell(5).alignment = { vertical: 'middle', horizontal: 'right' };
-        }
-        if (typeof row.getCell(6).value === 'number' || (row.getCell(6).value && row.getCell(6).value.formula)) {
-          row.getCell(6).numFmt = '#,##0.00';
-          row.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
-        }
-        if (rowNumber <= cashSessions.length + 1) row.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
-      }
-    });
+    styleDataRows(ws7, s7Start, cashSessions.length > 0 ? s7Start + cashSessions.length - 1 : s7Start);
     autoFitCols(ws7, 16);
 
     const buffer = await workbook.xlsx.writeBuffer();
