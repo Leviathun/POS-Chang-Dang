@@ -24,6 +24,18 @@ export const ui = {
       uiState.toasts = uiState.toasts.filter(t => t.id !== id);
     }, duration);
   },
+  success(message, duration = 3000) {
+    this.showToast(message, 'success', duration);
+  },
+  error(message, duration = 4000) {
+    this.showToast(message, 'error', duration);
+  },
+  info(message, duration = 3000) {
+    this.showToast(message, 'info', duration);
+  },
+  warning(message, duration = 3500) {
+    this.showToast(message, 'warning', duration);
+  },
   showConfirm(title, message) {
     return new Promise((resolve) => {
       uiState.confirm = {
