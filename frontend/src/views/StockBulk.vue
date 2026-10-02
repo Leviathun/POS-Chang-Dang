@@ -674,11 +674,10 @@ const handleSaveBulkAdjust = async () => {
           res.updatedItems.forEach(item => {
             store.updateStock(item.id, item.stock, item.raw_stock);
           });
-        } else {
-          store.clearMenuCache();
-          store.clearStockCache();
         }
-        ui.showToast('ระบบอัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
+        store.clearMenuCache();
+        store.clearStockCache();
+        ui.showToast(bulkTab.value === 'relative' ? 'เพิ่มสต็อกสินค้าเรียบร้อยแล้ว' : 'ปรับปรุงสต็อกสินค้าเรียบร้อยแล้ว', 'success');
         router.push('/stock');
       }
     } else {
@@ -744,10 +743,9 @@ const handleSaveBulkAdjust = async () => {
               store.modifiers[idx].total_servings = m.total_servings;
             }
           });
-        } else {
-          store.clearModifiersCache();
         }
-        ui.showToast('ระบบอัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
+        store.clearModifiersCache();
+        ui.showToast(bulkTab.value === 'relative' ? 'เพิ่มสต็อกเครื่องปรุงเรียบร้อยแล้ว' : 'ปรับปรุงสต็อกเครื่องปรุงเรียบร้อยแล้ว', 'success');
         router.push('/stock');
       }
     }
