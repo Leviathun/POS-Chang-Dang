@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireManagerOrAdmin } = require('../middleware/auth');
 
 // Apply auth middleware to all routes
 router.use(attachUser);
-router.use(requireAdmin);
+router.use(requireManagerOrAdmin);
 
 // ─── GET / — Get Activity Logs (by Date) ─────────────────────
 router.get('/', async (req, res) => {
@@ -13,10 +13,10 @@ router.get('/', async (req, res) => {
     const { date, month, year, user_id, limit, offset } = req.query;
     const db = getDb();
 
-    let branchId = req.user.branch_id;
-    if (req.query.branch_id) {
-      branchId = Number(req.query.branch_id);
-    } else if (!branchId) {
+    let branchId = (req.user && req.user.role === 'admin' && req.query.branch_id) 
+      ? Number(req.query.branch_id) 
+      : (req.user ? req.user.branch_id : null);
+    if (!branchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
       branchId = defaultBranch ? defaultBranch.id : null;
     }

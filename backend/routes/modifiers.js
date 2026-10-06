@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireAuth, requireManagerOrAdmin, requireAdmin } = require('../middleware/auth');
 
 // Apply attachUser globally to all modifier routes
 router.use(attachUser);
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── POST /restock — เติมของเข้าระบบเป็นหน่วย "ถุง" (หรือซอง) ────────────────
-router.post('/restock', requireAuth, async (req, res) => {
+router.post('/restock', requireManagerOrAdmin, async (req, res) => {
   try {
     const { modifier_id, bags, note } = req.body;
     const db = getDb();
@@ -58,7 +58,7 @@ router.post('/restock', requireAuth, async (req, res) => {
 
     const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ?').get(Number(modifier_id));
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -66,6 +66,7 @@ router.post('/restock', requireAuth, async (req, res) => {
       });
     }
 
+    const itemBranchId = modifier.branch_id || branchId;
     const servingsPerBag = modifier.servings_per_bag || 50;
     const addServings = Number(bags) * servingsPerBag;
 
@@ -87,7 +88,7 @@ router.post('/restock', requireAuth, async (req, res) => {
         INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
       `).run(
-        branchId,
+        itemBranchId,
         modifier.id,
         addServings,
         prevServings,
@@ -119,7 +120,7 @@ router.post('/restock', requireAuth, async (req, res) => {
 });
 
 // ─── POST /adjust — ปรับปรุงสต็อกแบบละเอียดเป็น "รอบเสิร์ฟ" ──────────────────
-router.post('/adjust', requireAuth, async (req, res) => {
+router.post('/adjust', requireManagerOrAdmin, async (req, res) => {
   try {
     const { modifier_id, quantity, reason, note } = req.body;
     const db = getDb();
@@ -134,13 +135,15 @@ router.post('/adjust', requireAuth, async (req, res) => {
     const changeQty = Number(quantity);
     const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
+    const modifier = await db.prepare('SELECT * FROM modifiers WHERE id = ?').get(Number(modifier_id));
     if (!modifier) {
       return res.status(404).json({
         success: false,
         error: 'ไม่พบรายการเครื่องปรุง'
       });
     }
+
+    const itemBranchId = modifier.branch_id || branchId;
 
     const adjustTx = db.transaction(async () => {
       const currentStock = await db.prepare(
@@ -160,7 +163,7 @@ router.post('/adjust', requireAuth, async (req, res) => {
         INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
         VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
       `).run(
-        branchId,
+        itemBranchId,
         modifier.id,
         changeQty,
         prevServings,
@@ -192,7 +195,7 @@ router.post('/adjust', requireAuth, async (req, res) => {
 });
 
 // ─── POST /toggle/:id — สลับเปิด/ปิดการใช้งานเครื่องปรุง ──────────────────
-router.post('/toggle/:id', requireAdmin, async (req, res) => {
+router.post('/toggle/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -253,7 +256,7 @@ router.get('/presets', async (req, res) => {
 });
 
 // ─── POST /presets — เพิ่มสูตรสำเร็จใหม่ ──────────────────────────────────
-router.post('/presets', requireAdmin, async (req, res) => {
+router.post('/presets', requireAuth, async (req, res) => {
   try {
     const { name, modifier_ids } = req.body;
     const db = getDb();
@@ -287,7 +290,7 @@ router.post('/presets', requireAdmin, async (req, res) => {
 });
 
 // ─── PUT /presets/:id — แก้ไขสูตรสำเร็จ ──────────────────────────────────
-router.put('/presets/:id', requireAdmin, async (req, res) => {
+router.put('/presets/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, modifier_ids, active } = req.body;
@@ -329,7 +332,7 @@ router.put('/presets/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /presets/:id — ลบสูตรสำเร็จ ──────────────────────────────────
-router.delete('/presets/:id', requireAdmin, async (req, res) => {
+router.delete('/presets/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -366,7 +369,7 @@ router.get('/:id/logs', async (req, res) => {
     const db = getDb();
     const branchId = await getBranchId(req, db);
 
-    const modifier = await db.prepare('SELECT id, name FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(id), branchId);
+    const modifier = await db.prepare('SELECT id, name, branch_id FROM modifiers WHERE id = ?').get(Number(id));
     if (!modifier) {
       return res.status(404).json({
         success: false,
@@ -374,23 +377,29 @@ router.get('/:id/logs', async (req, res) => {
       });
     }
 
+    const itemBranchId = modifier.branch_id || branchId;
+
     let query = `
       SELECT msl.*, u.name as staff_name
       FROM modifier_stock_logs msl
       LEFT JOIN users u ON u.id = msl.staff_id
-      WHERE msl.modifier_id = ? AND msl.branch_id = ?
+      WHERE msl.modifier_id = ?
     `;
-    const params = [Number(id), branchId];
+    const params = [Number(id)];
 
     if (req.query.date) {
-      query += ` AND date(msl.created_at) = ? `;
-      params.push(req.query.date);
+      query += ` AND msl.created_at >= ? AND msl.created_at <= ? `;
+      params.push(`${req.query.date} 00:00:00`, `${req.query.date} 23:59:59`);
     } else if (req.query.month) {
-      query += ` AND strftime('%Y-%m', msl.created_at) = ? `;
-      params.push(req.query.month);
+      const [yr, mo] = req.query.month.split('-');
+      let nextYr = Number(yr);
+      let nextMo = Number(mo) + 1;
+      if (nextMo > 12) { nextMo = 1; nextYr += 1; }
+      query += ` AND msl.created_at >= ? AND msl.created_at < ? `;
+      params.push(`${req.query.month}-01 00:00:00`, `${nextYr}-${String(nextMo).padStart(2, '0')}-01 00:00:00`);
     } else if (req.query.year) {
-      query += ` AND strftime('%Y', msl.created_at) = ? `;
-      params.push(req.query.year);
+      query += ` AND msl.created_at >= ? AND msl.created_at < ? `;
+      params.push(`${req.query.year}-01-01 00:00:00`, `${Number(req.query.year) + 1}-01-01 00:00:00`);
     }
 
     query += ` ORDER BY msl.created_at DESC `;
@@ -420,7 +429,7 @@ router.get('/:id/logs', async (req, res) => {
 });
 
 // ─── POST /bulk-adjust — จัดการสต็อกด่วนเครื่องปรุงแบบกลุ่ม ──────────────────
-router.post('/bulk-adjust', requireAuth, async (req, res) => {
+router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
   try {
     const { mode, items, reason_preset, note } = req.body;
     const db = getDb();
@@ -440,14 +449,18 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
     }
 
     const branchId = await getBranchId(req, db);
+    let targetBranchId = branchId;
 
     const bulkTransaction = db.transaction(async () => {
       for (const item of items) {
         const { modifier_id } = item;
         if (!modifier_id) continue;
 
-        const modifier = await db.prepare('SELECT name, total_servings, category, servings_per_bag FROM modifiers WHERE id = ? AND branch_id = ?').get(Number(modifier_id), branchId);
+        const modifier = await db.prepare('SELECT id, name, total_servings, category, servings_per_bag, branch_id FROM modifiers WHERE id = ?').get(Number(modifier_id));
         if (!modifier) continue;
+
+        const itemBranchId = modifier.branch_id || branchId;
+        if (itemBranchId) targetBranchId = itemBranchId;
 
         const currentServings = modifier.total_servings || 0;
         let deltaServings = 0;
@@ -480,7 +493,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
           `).run(
-            branchId,
+            itemBranchId,
             Number(modifier_id),
             deltaServings,
             currentServings,
@@ -494,7 +507,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
             INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
             VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))
           `).run(
-            branchId,
+            itemBranchId,
             req.user.id,
             deltaServings > 0 ? 'restock_modifier' : 'adjust_modifier',
             `ปรับปรุงสต็อกเครื่องปรุง ${modifier.name} ${deltaServings >= 0 ? '+' : ''}${deltaServings} รอบ (ก่อนปรับ: ${currentServings}, หลังปรับ: ${newServings})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
@@ -507,7 +520,7 @@ router.post('/bulk-adjust', requireAuth, async (req, res) => {
       await bulkTransaction();
       
       // Fetch all updated modifiers to return
-      const updatedModifiers = await db.prepare('SELECT id, total_servings FROM modifiers WHERE branch_id = ?').all(branchId);
+      const updatedModifiers = await db.prepare('SELECT id, total_servings FROM modifiers WHERE branch_id = ?').all(targetBranchId);
 
       res.json({
         success: true,

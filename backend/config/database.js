@@ -60,14 +60,7 @@ class DatabaseMock {
     const tx = transactionStorage.getStore();
     const activeClient = tx || this.client;
     const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
-    const res = await activeClient.execute({ sql: cleanSql, args });
-
-    // Sync replica in background after executing a write query outside a transaction
-    if (!tx && this.isWriteQuery(sql)) {
-      this.syncReplicaInBackground();
-    }
-
-    return res;
+    return await activeClient.execute({ sql: cleanSql, args });
   }
 
   async exec(sql) {
@@ -75,11 +68,6 @@ class DatabaseMock {
     const activeClient = tx || this.client;
     const cleanSql = sql.replace(/'localtime'/g, "'+7 hours'");
     await activeClient.execute(cleanSql);
-
-    // Sync replica in background after exec write outside a transaction
-    if (!tx && this.isWriteQuery(sql)) {
-      this.syncReplicaInBackground();
-    }
   }
 
   transaction(fn) {
@@ -90,10 +78,6 @@ class DatabaseMock {
           return await fn(...args);
         });
         await tx.commit();
-
-        // Sync replica in background after transaction commit
-        this.syncReplicaInBackground();
-
         return result;
       } catch (e) {
         await tx.rollback();
@@ -113,46 +97,7 @@ class DatabaseMock {
         };
       }
     });
-    const res = await this.client.batch(cleanStatements, mode);
-
-    // Sync replica in background after write batch execution
-    if (mode === "write") {
-      this.syncReplicaInBackground();
-    }
-
-    return res;
-  }
-
-  // Check if query is a write operation
-  isWriteQuery(sql) {
-    if (typeof sql !== 'string') return false;
-    const clean = sql.trim().toUpperCase();
-    return clean.startsWith('INSERT') || 
-           clean.startsWith('UPDATE') || 
-           clean.startsWith('DELETE') || 
-           clean.startsWith('REPLACE') || 
-           clean.startsWith('CREATE') || 
-           clean.startsWith('DROP') || 
-           clean.startsWith('ALTER');
-  }
-
-  // Trigger replica sync in the background safely without awaiting
-  syncReplicaInBackground() {
-    if (process.env.VERCEL || !process.env.TURSO_DATABASE_URL) {
-      return; // Direct cloud database or local SQLite file has no local replica sync
-    }
-    if (this.client && typeof this.client.sync === 'function') {
-      try {
-        const promise = this.client.sync();
-        if (promise && typeof promise.catch === 'function') {
-          promise.catch(err => {
-            console.warn('⚠️ Background replica sync failed:', err.message);
-          });
-        }
-      } catch (err) {
-        console.warn('⚠️ Background replica sync failed synchronously:', err.message);
-      }
-    }
+    return await this.client.batch(cleanStatements, mode);
   }
 }
 
@@ -168,39 +113,13 @@ function getDb() {
 
     let client;
     if (dbUrl) {
-      if (process.env.VERCEL) {
-        // Direct cloud connection for Serverless environments (which have no persistent disk)
-        console.log('  🗄️  Connecting directly to Turso Cloud DB (Serverless Mode):', dbUrl);
-        client = createClient({
-          url: dbUrl,
-          authToken: dbToken
-        });
-      } else {
-        // Embedded Replica for persistent servers / local development (instant read speed)
-        const isStaging = process.env.APP_ENV === 'staging' || process.env.NODE_ENV === 'staging';
-        const replicaFileName = isStaging ? 'pos_staging_replica.db' : 'pos_replica.db';
-        const dbPath = path.join(__dirname, '..', '..', 'data', replicaFileName);
-        const dir = path.dirname(dbPath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        console.log('  🗄️  Connecting to Turso Cloud DB via Embedded Replica (Persistent Mode):', `file:${dbPath}`);
-        client = createClient({
-          url: `file:${dbPath}`,
-          syncUrl: dbUrl,
-          authToken: dbToken,
-          syncInterval: 60000 // Automatically sync every 60 seconds
-        });
-
-        // Trigger initial sync on startup asynchronously to not block server boot
-        client.sync().then(() => {
-          console.log('  🔄 Initial Turso Cloud DB sync completed successfully');
-        }).catch(e => {
-          console.warn('  ⚠️ Initial Turso Cloud DB sync failed (operating offline?):', e.message);
-        });
-      }
+      console.log('  🗄️  Connecting directly to Turso Cloud DB:', dbUrl);
+      client = createClient({
+        url: dbUrl,
+        authToken: dbToken
+      });
     } else {
-      // Local fallback using a local SQLite file via @libsql/client
+      // Local development fallback using a local SQLite file when no TURSO_DATABASE_URL is defined
       const isStaging = process.env.APP_ENV === 'staging' || process.env.NODE_ENV === 'staging';
       const localFileName = isStaging ? 'pos-staging.db' : 'pos.db';
       const dbPath = path.join(__dirname, '..', '..', 'data', localFileName);
@@ -208,7 +127,7 @@ function getDb() {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      console.log('  🗄️  Connecting to Local SQLite DB:', `file:${dbPath}`);
+      console.log('  🗄️  Connecting to Local SQLite DB (Dev Fallback):', `file:${dbPath}`);
       client = createClient({
         url: `file:${dbPath}`
       });
@@ -251,7 +170,7 @@ async function initDatabase() {
       branch_id INTEGER REFERENCES branches(id),
       name TEXT NOT NULL,
       pin TEXT NOT NULL,
-      role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'staff')),
+      role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'staff')),
       active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
@@ -418,11 +337,152 @@ async function initDatabase() {
       quantity INTEGER NOT NULL,
       subtotal REAL NOT NULL,
       options TEXT
+    )`,
+    `CREATE TABLE IF NOT EXISTS employee_attendance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      work_date DATE NOT NULL,
+      status TEXT NOT NULL DEFAULT 'present' CHECK(status IN ('present', 'leave_paid', 'leave_unpaid', 'absent', 'holiday')),
+      daily_wage REAL,
+      skill_level TEXT,
+      leave_reason TEXT,
+      had_lunch_benefit INTEGER DEFAULT 1,
+      note TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(user_id, work_date)
+    )`,
+    `CREATE TABLE IF NOT EXISTS employee_event_ots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      event_name TEXT NOT NULL,
+      event_date DATE NOT NULL,
+      amount_per_person REAL NOT NULL,
+      created_by INTEGER REFERENCES users(id),
+      note TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS employee_event_ot_participants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_ot_id INTEGER NOT NULL REFERENCES employee_event_ots(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount REAL NOT NULL,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(event_ot_id, user_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS employee_advances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount REAL NOT NULL,
+      advance_date DATE NOT NULL,
+      payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer')),
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'deducted', 'cancelled')),
+      payroll_id INTEGER REFERENCES employee_payrolls(id),
+      note TEXT,
+      created_by INTEGER REFERENCES users(id),
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS employee_payrolls (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      period_month TEXT NOT NULL,
+      days_worked INTEGER DEFAULT 0,
+      daily_rate REAL DEFAULT 0,
+      base_salary_amount REAL NOT NULL,
+      event_ot_amount REAL DEFAULT 0,
+      holdback_deducted_amount REAL DEFAULT 0,
+      advance_deducted_amount REAL DEFAULT 0,
+      net_paid_amount REAL NOT NULL,
+      payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer')),
+      payment_date DATE NOT NULL,
+      expense_id INTEGER REFERENCES expenses(id),
+      paid_by INTEGER REFERENCES users(id),
+      note TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS employee_guarantees (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER REFERENCES branches(id),
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount REAL NOT NULL DEFAULT 1000,
+      deposit_date DATE NOT NULL,
+      deposit_payment_method TEXT DEFAULT 'cash' CHECK(deposit_payment_method IN ('cash', 'transfer')),
+      status TEXT NOT NULL DEFAULT 'held' CHECK(status IN ('held', 'refunded', 'forfeited')),
+      refund_date DATE,
+      refund_payment_method TEXT,
+      refund_expense_id INTEGER REFERENCES expenses(id),
+      note TEXT,
+      created_by INTEGER REFERENCES users(id),
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`
   ];
 
   for (const table of tables) {
     await db.exec(table);
+  }
+
+  // Migration: Add employee compensation fields to users table if not exists
+  try {
+    const userCols = await db.prepare("PRAGMA table_info(users)").all();
+    if (!userCols.some(c => c.name === 'wage_type')) {
+      await db.exec("ALTER TABLE users ADD COLUMN wage_type TEXT DEFAULT 'daily'");
+    }
+    if (!userCols.some(c => c.name === 'wage_rate')) {
+      await db.exec("ALTER TABLE users ADD COLUMN wage_rate REAL DEFAULT 0");
+    }
+    if (!userCols.some(c => c.name === 'skill_level')) {
+      await db.exec("ALTER TABLE users ADD COLUMN skill_level TEXT DEFAULT 'regular'");
+    }
+    if (!userCols.some(c => c.name === 'benefits')) {
+      await db.exec("ALTER TABLE users ADD COLUMN benefits TEXT DEFAULT 'ข้าวเที่ยงฟรี'");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration employee columns on users failed:', e.message);
+  }
+
+  // Migration: Add daily_wage, skill_level, is_paid, payroll_id to employee_attendance table if not exists
+  try {
+    const attCols = await db.prepare("PRAGMA table_info(employee_attendance)").all();
+    if (!attCols.some(c => c.name === 'daily_wage')) {
+      await db.exec("ALTER TABLE employee_attendance ADD COLUMN daily_wage REAL");
+    }
+    if (!attCols.some(c => c.name === 'skill_level')) {
+      await db.exec("ALTER TABLE employee_attendance ADD COLUMN skill_level TEXT");
+    }
+    if (!attCols.some(c => c.name === 'is_paid')) {
+      await db.exec("ALTER TABLE employee_attendance ADD COLUMN is_paid INTEGER DEFAULT 0");
+    }
+    if (!attCols.some(c => c.name === 'payroll_id')) {
+      await db.exec("ALTER TABLE employee_attendance ADD COLUMN payroll_id INTEGER");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration daily_wage/skill_level/is_paid columns on employee_attendance failed:', e.message);
+  }
+
+  // Migration: Add is_paid, payroll_id to employee_event_ot_participants table if not exists
+  try {
+    const otCols = await db.prepare("PRAGMA table_info(employee_event_ot_participants)").all();
+    if (!otCols.some(c => c.name === 'is_paid')) {
+      await db.exec("ALTER TABLE employee_event_ot_participants ADD COLUMN is_paid INTEGER DEFAULT 0");
+    }
+    if (!otCols.some(c => c.name === 'payroll_id')) {
+      await db.exec("ALTER TABLE employee_event_ot_participants ADD COLUMN payroll_id INTEGER");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration is_paid on employee_event_ot_participants failed:', e.message);
+  }
+
+  // Migration: Add expense_id to employee_advances table if not exists
+  try {
+    const advCols = await db.prepare("PRAGMA table_info(employee_advances)").all();
+    if (!advCols.some(c => c.name === 'expense_id')) {
+      await db.exec("ALTER TABLE employee_advances ADD COLUMN expense_id INTEGER REFERENCES expenses(id)");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration expense_id on employee_advances failed:', e.message);
   }
 
   // Migration: Add branch_id to categories and menu_items if not exists
@@ -485,7 +545,7 @@ async function initDatabase() {
   // Migration: Drop CHECK constraint on expenses.category to allow new expense categories
   try {
     const schema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='expenses'").get();
-    if (schema && schema.sql && schema.sql.includes('CHECK(')) {
+    if (schema && schema.sql && (schema.sql.includes('category TEXT NOT NULL CHECK') || schema.sql.includes('CHECK(category'))) {
       console.log('  🔧 Migration: Recreating expenses table to drop CHECK constraint...');
       
       const columnsInfo = await db.prepare("PRAGMA table_info(expenses)").all();
@@ -534,6 +594,40 @@ async function initDatabase() {
     console.warn('⚠️ Migration drop expenses CHECK constraint failed:', e.message);
   }
 
+  // Migration: Upgrade users table to support manager role and unique PIN
+  try {
+    const userSchema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
+    if (userSchema && userSchema.sql && !userSchema.sql.includes('manager')) {
+      console.log('  🔧 Migration: Upgrading users table to support manager role...');
+      await db.exec('PRAGMA foreign_keys = OFF;');
+      await db.exec('BEGIN TRANSACTION;');
+      await db.exec(`
+        CREATE TABLE users_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          branch_id INTEGER REFERENCES branches(id),
+          name TEXT NOT NULL,
+          pin TEXT NOT NULL,
+          role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'staff')),
+          active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        );
+      `);
+      await db.exec(`
+        INSERT INTO users_new (id, branch_id, name, pin, role, active, created_at)
+        SELECT id, branch_id, name, pin, role, active, created_at FROM users;
+      `);
+      await db.exec('DROP TABLE users;');
+      await db.exec('ALTER TABLE users_new RENAME TO users;');
+      await db.exec('COMMIT;');
+      await db.exec('PRAGMA foreign_keys = ON;');
+      console.log('  🔧 Migration: Successfully updated users table schema for manager role.');
+    }
+  } catch (e) {
+    try { await db.exec('ROLLBACK;'); } catch (_) {}
+    try { await db.exec('PRAGMA foreign_keys = ON;'); } catch (_) {}
+    console.warn('⚠️ Migration update users table failed:', e.message);
+  }
+
   // Migration: Fix users with NULL branch_id — assign to first branch
   try {
     const firstBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
@@ -562,7 +656,8 @@ async function initDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_stock_logs_menu_item ON stock_logs(menu_item_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_branch ON activity_logs(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`,
-    `CREATE INDEX IF NOT EXISTS idx_expenses_branch_date ON expenses(branch_id, expense_date)`
+    `CREATE INDEX IF NOT EXISTS idx_expenses_branch_date ON expenses(branch_id, expense_date)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_pin_unique ON users(pin) WHERE active = 1`
   ];
 
   for (const index of indexes) {

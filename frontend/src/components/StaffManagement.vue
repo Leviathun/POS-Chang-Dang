@@ -1,0 +1,3188 @@
+<template>
+  <div class="staff-management-wrapper card p-md" style="position:relative; background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+    
+    <!-- Sub-tab Navigation for Staff Management -->
+    <div class="category-tabs mb-lg flex gap-xs flex-wrap">
+      <button 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'employees' }"
+        @click="activeSubTab = 'employees'"
+      >
+        <i class="fa-solid fa-users"></i> รายชื่อ & ค่าจ้าง
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'calendar' }"
+        @click="activeSubTab = 'calendar'"
+      >
+        <i class="fa-solid fa-calendar-days"></i> ปฏิทินรายบุคคล
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'attendance' }"
+        @click="activeSubTab = 'attendance'"
+      >
+        <i class="fa-solid fa-calendar-check"></i> บันทึกเวลา & การลา
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'event_ot' }"
+        @click="activeSubTab = 'event_ot'"
+      >
+        <i class="fa-solid fa-tags"></i> OT งานพิเศษ
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'advances' }"
+        @click="activeSubTab = 'advances'"
+      >
+        <i class="fa-solid fa-hand-holding-dollar"></i> เบิกเงินล่วงหน้า
+      </button>
+      <button 
+        v-if="isAdminUser"
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'payroll' }"
+        @click="activeSubTab = 'payroll'"
+      >
+        <i class="fa-solid fa-file-invoice-dollar"></i> คำนวณ & จ่ายเงินเดือน
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 1: พนักงาน & อัตราค่าจ้าง (Staff & Compensation) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'employees'" class="flex flex-col gap-md">
+      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color);">
+        <div>
+          <h3 class="font-bold text-base flex align-center gap-xs" style="margin: 0; color: var(--text-primary);">
+            <i class="fa-solid fa-id-card text-primary"></i> ข้อมูลพนักงานและอัตราค่าแรง
+          </h3>
+          <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+            กำหนดอัตราค่าจ้างรายวัน, ระดับทักษะ (ฝึกงาน/ประจำ/เชี่ยวชาญ), สวัสดิการ และกฎหักเงินประกัน
+          </p>
+        </div>
+      </div>
+
+      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+        <div style="overflow-x: auto;">
+          <table class="table w-full" style="border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(139, 3, 19, 0.03); border-bottom: 1px solid var(--border-color);">
+                <th class="text-center p-md">ชื่อพนักงาน</th>
+                <th class="text-center p-md">บทบาทระบบ</th>
+                <th class="text-center p-md">ระดับทักษะ</th>
+                <th class="text-center p-md">อัตราค่าจ้าง</th>
+                <th class="text-center p-md">สวัสดิการ</th>
+                <th class="text-center p-md">เงินประกัน (หักสะสม)</th>
+                <th v-if="isAdminUser" class="text-center p-md">จัดการค่าแรง</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loadingEmployees">
+                <td colspan="7" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
+              </tr>
+              <tr v-else-if="employees.length === 0">
+                <td colspan="7" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
+                  <div class="flex flex-col align-center justify-center gap-xs">
+                    <i class="fa-solid fa-users-slash text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>
+                    <div class="font-bold text-sm">ไม่พบข้อมูลพนักงาน</div>
+                  </div>
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="emp in employees" 
+                :key="emp.id"
+                class="table-row-hover"
+                style="border-bottom: 1px solid var(--border-color);"
+              >
+                <td class="text-center p-md">
+                  <div class="font-bold text-base text-primary">{{ emp.name }}</div>
+                  <div class="text-xs text-secondary mt-2xs">
+                    <span class="font-bold text-primary">รหัส PIN: {{ emp.pin }}</span>
+                  </div>
+                </td>
+                <td class="text-center p-md">
+                  <span class="capsule-badge" :class="emp.role === 'admin' ? 'badge-primary' : emp.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
+                    {{ getRoleLabel(emp.role) }}
+                  </span>
+                </td>
+                <td class="text-center p-md">
+                  <span class="skill-badge" :class="emp.skill_level">
+                    <i :class="getSkillIcon(emp.skill_level)"></i> {{ getSkillLabel(emp.skill_level) }}
+                  </span>
+                </td>
+                <td class="text-center p-md font-bold text-base" style="color: var(--text-primary);">
+                  {{ formatCurrency(emp.wage_rate) }} <span class="text-xs text-secondary font-normal">/ {{ emp.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
+                </td>
+                <td class="text-center p-md">
+                  <span class="benefit-tag">
+                    <i class="fa-solid fa-bowl-rice text-warning"></i> {{ emp.benefits || 'ข้าวเที่ยงฟรี' }}
+                  </span>
+                </td>
+                <td class="text-center p-md">
+                  <span v-if="emp.is_holdback_enabled" class="text-xs text-secondary">
+                    หัก <strong class="text-danger">{{ formatCurrency(emp.holdback_amount || 1000) }}</strong> บ./งวด (คืนงวดถัดไป)
+                  </span>
+                  <span v-else class="text-xs text-muted">ไม่หัก</span>
+                </td>
+                <td v-if="isAdminUser" class="text-center p-md">
+                  <button class="btn-action btn-action-edit" @click="openEditCompensationModal(emp)">
+                    <i class="fa-solid fa-sliders"></i> ปรับค่าแรง
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 2: ปฏิทินงาน & ค่าแรงรายบุคคล (Individual Calendar) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'calendar'" class="flex flex-col gap-md">
+      <!-- Calendar Control Bar -->
+      <div class="card p-md flex flex-between align-center flex-wrap gap-md" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color); position: relative; z-index: 50;">
+        <div class="flex align-center gap-md flex-wrap">
+          <!-- Staff Selector Dropdown -->
+          <div class="flex align-center gap-xs">
+            <span class="font-bold text-sm text-secondary" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-user text-primary"></i> เลือกพนักงาน:
+            </span>
+            <div class="custom-select-wrapper" style="width: auto; min-width: 200px; position: relative;" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isCalendarStaffDropdownOpen }" 
+                @click="toggleCalendarStaffDropdown"
+                style="height: 42px; min-width: 200px; padding: 0 36px 0 var(--space-md); display: flex; align-items: center; cursor: pointer; border-radius: var(--radius-md); font-weight: bold;"
+              >
+                <span class="custom-select-text">
+                  {{ currentCalendarStaff ? `${currentCalendarStaff.name} (${getSkillLabel(currentCalendarStaff.skill_level)})` : 'เลือกพนักงาน' }}
+                </span>
+              </div>
+              <div v-if="isCalendarStaffDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); min-width: 200px; max-height: 220px; z-index: 1000;">
+                <div 
+                  v-for="emp in employees" 
+                  :key="emp.id" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': calendarSelectedStaffId === emp.id }" 
+                  @click="selectCalendarStaff(emp.id)"
+                >
+                  {{ emp.name }} ({{ getSkillLabel(emp.skill_level) }})
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Month Selector -->
+          <div class="flex align-center gap-xs">
+            <button type="button" class="picker-nav-btn" @click="adjustCalendarMonth(-1)" title="เดือนก่อนหน้า">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            
+            <!-- Custom Month Picker for Calendar -->
+            <div class="custom-select-wrapper" style="width: auto; position: relative;" @click.stop>
+              <div 
+                class="picker-trigger-btn" 
+                :class="{ 'active': isCalendarMonthDropdownOpen }" 
+                @click="toggleCalendarMonthDropdown"
+                style="min-width: 190px; padding: 0 var(--space-lg); justify-content: space-between; gap: var(--space-md);"
+              >
+                <span class="flex align-center gap-sm">
+                  <i class="fa-solid fa-calendar-days text-primary"></i>
+                  <span>{{ calendarMonthLabel }}</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
+              </div>
+
+              <!-- Month Dropdown Grid -->
+              <div v-if="isCalendarMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
+                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(-1)">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span class="font-bold">ปี พ.ศ. {{ calendarMonthPickerYear + 543 }}</span>
+                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(1)">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                  <button 
+                    v-for="(mName, idx) in thaiMonthsShort" 
+                    :key="idx" 
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    :class="{ 'btn-primary active': isCalendarMonthPickerSelected(idx + 1) }"
+                    @click="selectCalendarMonthPicker(idx + 1)"
+                  >
+                    {{ mName }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="picker-nav-btn" @click="adjustCalendarMonth(1)" title="เดือนถัดไป">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <button type="button" class="picker-current-btn ml-xs" @click="setCalendarCurrentMonth">
+              เดือนปัจจุบัน
+            </button>
+          </div>
+        </div>
+
+        <div class="text-xs text-secondary">
+          <i class="fa-solid fa-circle-info text-primary mr-2xs"></i> คลิกที่ช่องวันที่เพื่อดูสรุปรายละเอียดประจำวัน
+        </div>
+      </div>
+
+      <!-- Selected Staff Monthly Summary Cards -->
+      <div v-if="selectedStaffSummary" class="calendar-summary-grid">
+        <div class="card p-sm text-center" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2);">
+          <div class="text-xs text-secondary mb-2xs">วันทำงานจริง</div>
+          <div class="font-bold text-lg text-success">{{ selectedStaffSummary.daysWorked }} <span class="text-xs font-normal">วัน</span></div>
+        </div>
+        <div class="card p-sm text-center" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.2);">
+          <div class="text-xs text-secondary mb-2xs">ลา / ขาด</div>
+          <div class="font-bold text-lg text-warning">{{ selectedStaffSummary.leaveDays }} / {{ selectedStaffSummary.absentDays }} <span class="text-xs font-normal">วัน</span></div>
+        </div>
+        <div class="card p-sm text-center" style="background: rgba(139, 3, 19, 0.05); border: 1px solid rgba(139, 3, 19, 0.15);">
+          <div class="text-xs text-secondary mb-2xs">ค่าแรงสะสม</div>
+          <div class="font-bold text-lg text-primary">{{ formatCurrency(selectedStaffSummary.baseWage) }}</div>
+        </div>
+        <div class="card p-sm text-center" style="background: rgba(147, 51, 234, 0.06); border: 1px solid rgba(147, 51, 234, 0.2);">
+          <div class="text-xs text-secondary mb-2xs">OT อีเวนต์</div>
+          <div class="font-bold text-lg" style="color: #9333ea;">+{{ formatCurrency(selectedStaffSummary.totalOt) }}</div>
+        </div>
+        <div class="card p-sm text-center" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.2);">
+          <div class="text-xs text-secondary mb-2xs">เบิกล่วงหน้า</div>
+          <div class="font-bold text-lg text-danger">-{{ formatCurrency(selectedStaffSummary.totalAdvances) }}</div>
+        </div>
+        <div class="card p-sm text-center" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.2);">
+          <div class="text-xs text-secondary mb-2xs">ข้าวเที่ยงฟรี</div>
+          <div class="font-bold text-lg text-warning">{{ selectedStaffSummary.lunchCount }} <span class="text-xs font-normal">มื้อ</span></div>
+        </div>
+      </div>
+
+      <!-- Calendar Month Grid Card -->
+      <div class="card p-md overflow-hidden" style="border: 1px solid var(--border-color);">
+        <!-- Day of Week Headers -->
+        <div class="calendar-grid-header">
+          <div v-for="wd in ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']" :key="wd" class="calendar-weekday-cell">
+            {{ wd }}
+          </div>
+        </div>
+
+        <!-- Days Grid -->
+        <div class="calendar-grid-body">
+          <!-- Offset empty cells before 1st day of month -->
+          <div v-for="emptyIdx in calendarStartOffset" :key="'empty-'+emptyIdx" class="calendar-day-empty"></div>
+
+          <!-- Active Day Cells -->
+          <div 
+            v-for="day in calendarDays" 
+            :key="day.dateStr"
+            class="calendar-day-cell"
+            :class="{
+              'is-today': day.isToday,
+              'has-worked': day.status === 'present',
+              'has-leave': day.status === 'leave_unpaid',
+              'has-absent': day.status === 'absent'
+            }"
+            @click="openDayDetail(day)"
+          >
+            <!-- Day Cell Header: Day Number & Status Icon -->
+            <div class="flex flex-between align-center mb-xs">
+              <span class="day-number" :class="{ 'today-badge': day.isToday }">{{ day.dayNum }}</span>
+              <span v-if="day.status === 'present'" class="status-indicator present" title="มาทำงาน">
+                <i class="fa-solid fa-circle-check"></i>
+              </span>
+              <span v-else-if="day.status === 'leave_unpaid'" class="status-indicator leave" title="ลาหยุด">
+                <i class="fa-solid fa-calendar-xmark"></i>
+              </span>
+              <span v-else-if="day.status === 'absent'" class="status-indicator absent" title="ขาดงาน">
+                <i class="fa-solid fa-circle-xmark"></i>
+              </span>
+            </div>
+
+            <!-- Day Badges / Details inside Cell -->
+            <div class="day-events-list">
+              <!-- Attendance Badge -->
+              <div v-if="day.status === 'present'" class="day-badge badge-work">
+                <span>✓ ค่าแรง {{ formatCurrency(day.dailyWage) }}</span>
+                <span v-if="day.hadLunchBenefit" title="ได้รับข้าวเที่ยงฟรี">🍚</span>
+              </div>
+              <div v-else-if="day.status === 'leave_unpaid'" class="day-badge badge-leave">
+                <span>ลาหยุด (฿0)</span>
+              </div>
+              <div v-else-if="day.status === 'absent'" class="day-badge badge-absent">
+                <span>ขาดงาน (฿0)</span>
+              </div>
+
+              <!-- OT Events Badges -->
+              <div v-for="ot in day.ots" :key="'ot-'+ot.id" class="day-badge badge-ot" :title="'OT: ' + ot.event_name">
+                <i class="fa-solid fa-tags mr-2xs"></i> +{{ formatCurrency(ot.amount_per_person) }} ({{ ot.event_name }})
+              </div>
+
+              <!-- Advance Badges -->
+              <div v-for="adv in day.advances" :key="'adv-'+adv.id" class="day-badge badge-advance" :title="'เบิกล่วงหน้า: ' + formatCurrency(adv.amount)">
+                <i class="fa-solid fa-hand-holding-dollar mr-2xs"></i> -{{ formatCurrency(adv.amount) }}
+              </div>
+
+              <!-- Payout Badges (จ่ายค่าแรงในวันที่จ่าย) -->
+              <div 
+                v-for="pay in day.payouts" 
+                :key="'pay-'+pay.id" 
+                class="day-badge badge-payout" 
+                :title="'จ่ายค่าจ้าง: ' + formatCurrency(pay.net_paid_amount)"
+              >
+                <span><i class="fa-solid fa-receipt mr-2xs"></i> จ่ายค่าจ้าง</span>
+                <span class="font-bold">{{ formatCurrency(pay.net_paid_amount) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 3: บันทึกเวลา & การลา (Attendance & Leave) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'attendance'" class="flex flex-col gap-md">
+      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color); position: relative; z-index: 50;">
+        <div class="flex align-center gap-md flex-wrap">
+          <div class="flex align-center gap-xs font-bold text-base" style="white-space: nowrap;">
+            <i class="fa-solid fa-calendar-day text-primary"></i> วันที่ลงเวลา:
+          </div>
+
+          <!-- Custom Date Picker for Attendance -->
+          <div class="custom-select-wrapper" style="width: auto; position: relative;" @click.stop>
+            <div 
+              class="picker-trigger-btn" 
+              :class="{ 'active': isAttendanceDateDropdownOpen }" 
+              @click="toggleAttendanceDateDropdown"
+              style="min-width: 210px; padding: 0 var(--space-lg); justify-content: space-between; gap: var(--space-md);"
+            >
+              <span class="flex align-center gap-sm">
+                <i class="fa-solid fa-calendar-day text-primary"></i>
+                <span>{{ attendanceDateLabel }}</span>
+              </span>
+              <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
+            </div>
+
+            <!-- Date Picker Calendar Popover -->
+            <div v-if="isAttendanceDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 290px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+              <!-- Header: Month & Year Selector -->
+              <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
+                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAttendanceDatePickerMonth(-1)">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="font-bold" style="font-size: var(--font-sm);">{{ attendanceDatePickerMonthName }} {{ attendanceDatePickerYear + 543 }}</span>
+                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAttendanceDatePickerMonth(1)">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+              <!-- Weekday Labels -->
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
+              </div>
+              <!-- Days Grid -->
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                <div v-for="empty in attendanceDatePickerStartOffset" :key="'empty-'+empty"></div>
+                <button 
+                  v-for="dNum in attendanceDatePickerDaysCount" 
+                  :key="dNum"
+                  type="button"
+                  class="btn btn-sm calendar-day-btn"
+                  :class="isAttendanceDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
+                  style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                  @click="selectAttendanceDatePickerDay(dNum)"
+                >
+                  {{ dNum }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="picker-current-btn" @click="setTodayAttendance">
+            วันนี้
+          </button>
+        </div>
+
+        <button 
+          class="btn btn-primary" 
+          style="height: 42px;"
+          :disabled="savingAttendance || attendanceRecords.length === 0"
+          @click="handleSaveAttendance"
+        >
+          <i class="fa-solid fa-floppy-disk"></i> {{ savingAttendance ? 'กำลังบันทึก...' : 'บันทึกการลงเวลาวันนี้' }}
+        </button>
+      </div>
+
+      <!-- Rule Notice Banner -->
+      <div class="bulk-hint-box">
+        <span class="hint-icon"><i class="fa-solid fa-lightbulb" style="color: var(--accent);"></i></span>
+        <div class="hint-text" style="font-size: var(--font-sm); line-height: 1.6;">
+          <strong>กฎระเบียบร้านช้างแดง:</strong> คิดค่าแรงตามวันที่มาปฏิบัติงานจริงเท่านั้น (No Work No Pay) หากมีสถานะ <em>ลาหยุด</em> หรือ <em>ขาดงาน</em> จะไม่ได้รับค่าจ้างในวันนั้น ($0$ บาท) และสิทธิข้าวเที่ยงฟรีจะได้รับเฉพาะวันที่มาทำงานจริง
+        </div>
+      </div>
+
+      <!-- Attendance Sheet Table (4 Columns & Center Aligned) -->
+      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+        <div style="overflow-x: auto;">
+          <table class="table w-full" style="border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(139, 3, 19, 0.03); border-bottom: 1px solid var(--border-color);">
+                <th class="text-center p-md" style="width: 28%;">พนักงาน</th>
+                <th class="text-center p-md" style="width: 32%;">สถานะการทำงาน</th>
+                <th class="text-center p-md" style="width: 22%;">ค่าแรงวันนี้ (บาท)</th>
+                <th class="text-center p-md" style="width: 18%;">สวัสดิการข้าวเที่ยงฟรี</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loadingAttendance">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
+              </tr>
+              <tr v-else-if="attendanceRecords.length === 0">
+                <td colspan="4" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
+                  <div class="flex flex-col align-center justify-center gap-xs">
+                    <i class="fa-solid fa-users-slash text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>
+                    <div class="font-bold text-sm">ไม่พบรายชื่อพนักงาน</div>
+                  </div>
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="rec in attendanceRecords" 
+                :key="rec.user_id"
+                class="table-row-hover"
+                style="border-bottom: 1px solid var(--border-color);"
+              >
+                <td class="text-center p-md">
+                  <div class="font-bold text-base text-primary">{{ rec.name }}</div>
+                  <div class="text-xs text-secondary mt-2xs">
+                    <span class="skill-badge" :class="rec.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(rec.skill_level) }}</span>
+                    <span class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
+                  </div>
+                </td>
+                <td class="text-center p-md">
+                  <div class="flex justify-center gap-xs flex-wrap">
+                    <button 
+                      type="button"
+                      class="status-btn"
+                      :class="{ 'active-present': rec.status === 'present' }"
+                      @click="rec.status = 'present'; rec.had_lunch_benefit = 1; if (!rec.daily_wage) rec.daily_wage = (rec.default_wage_rate || rec.wage_rate || 300);"
+                    >
+                      <i class="fa-solid fa-circle-check"></i> มาทำงาน
+                    </button>
+                    <button 
+                      type="button"
+                      class="status-btn"
+                      :class="{ 'active-leave': rec.status === 'leave_unpaid' }"
+                      @click="rec.status = 'leave_unpaid'; rec.had_lunch_benefit = 0;"
+                    >
+                      <i class="fa-solid fa-calendar-xmark"></i> ลาหยุด
+                    </button>
+                    <button 
+                      type="button"
+                      class="status-btn"
+                      :class="{ 'active-absent': rec.status === 'absent' }"
+                      @click="rec.status = 'absent'; rec.had_lunch_benefit = 0;"
+                    >
+                      <i class="fa-solid fa-user-xmark"></i> ขาดงาน
+                    </button>
+                  </div>
+                </td>
+                <td class="text-center p-md">
+                  <div class="flex justify-center align-center gap-xs">
+                    <input 
+                      type="number" 
+                      v-model.number="rec.daily_wage" 
+                      class="form-input" 
+                      style="width: 105px; text-align: center; height: 38px; font-weight: bold; font-size: var(--font-base);" 
+                      :disabled="rec.status !== 'present'"
+                      min="0" 
+                      step="10"
+                      placeholder="0"
+                    />
+                    <span class="text-xs text-secondary font-bold">บ.</span>
+                  </div>
+                  <div v-if="rec.status !== 'present'" class="text-2xs text-muted mt-2xs">ไม่ได้รับค่าจ้าง</div>
+                  <div v-else-if="rec.default_wage_rate !== undefined && rec.daily_wage !== rec.default_wage_rate" class="text-2xs text-warning mt-2xs">
+                    (ปรับจากปกติ {{ rec.default_wage_rate }} บ.)
+                  </div>
+                </td>
+                <td class="text-center p-md">
+                  <label class="lunch-benefit-wrapper" :class="{ 'disabled': rec.status !== 'present' }">
+                    <input 
+                      type="checkbox" 
+                      v-model="rec.had_lunch_benefit" 
+                      :true-value="1" 
+                      :false-value="0"
+                      :disabled="rec.status !== 'present'"
+                      class="lunch-benefit-checkbox"
+                    />
+                    <span class="lunch-benefit-content">
+                      <span class="lunch-benefit-icon">🍚</span>
+                      <span class="lunch-benefit-text">ได้รับข้าวเที่ยง</span>
+                    </span>
+                  </label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 4: OT ตามอีเวนต์ (Event-based OT) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'event_ot'" class="flex flex-col gap-md">
+      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color);">
+        <div>
+          <h3 class="font-bold text-base flex align-center gap-xs" style="margin: 0; color: var(--text-primary);">
+            <i class="fa-solid fa-tags text-primary"></i> บันทึก OT พิเศษตามอีเวนต์
+          </h3>
+          <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+            เงินพิเศษเฉพาะงานที่แอดมินมอบหมาย (ไม่ใช่คำนวณชั่วโมง) เช่น ทำป้าย คนละ 100 บาท, ล้างร้าน 150 บาท
+          </p>
+        </div>
+        <button class="btn btn-primary" @click="showAddEventOtModal = true">
+          <i class="fa-solid fa-plus"></i> เพิ่ม OT อีเวนต์ใหม่
+        </button>
+      </div>
+
+      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+        <div style="overflow-x: auto;">
+          <table class="table w-full" style="border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(139, 3, 19, 0.03); border-bottom: 1px solid var(--border-color);">
+                <th class="text-center p-md">วันที่</th>
+                <th class="text-center p-md">ชื่องานพิเศษ / อีเวนต์</th>
+                <th class="text-center p-md">ยอดต่อคน</th>
+                <th class="text-center p-md">พนักงานที่ได้รับ</th>
+                <th class="text-center p-md">บันทึกโดย</th>
+                <th v-if="isAdminUser" class="text-center p-md">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loadingEventOts">
+                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
+              </tr>
+              <tr v-else-if="eventOts.length === 0">
+                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
+                  <div class="flex flex-col align-center justify-center gap-xs">
+                    <i class="fa-solid fa-tags text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>
+                    <div class="font-bold text-sm">{{ emptyEventOtsMessage }}</div>
+                  </div>
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="ev in eventOts" 
+                :key="ev.id"
+                class="table-row-hover"
+                style="border-bottom: 1px solid var(--border-color);"
+              >
+                <td class="text-center p-md font-bold text-sm">{{ formatDate(ev.event_date) }}</td>
+                <td class="text-center p-md">
+                  <div class="font-bold text-base text-primary">{{ ev.event_name }}</div>
+                  <div v-if="ev.note" class="text-xs text-secondary">{{ ev.note }}</div>
+                </td>
+                <td class="text-center p-md font-bold text-success text-base">
+                  +{{ formatCurrency(ev.amount_per_person) }}
+                </td>
+                <td class="text-center p-md">
+                  <div class="flex justify-center gap-xs flex-wrap">
+                    <span 
+                      v-for="p in ev.participants" 
+                      :key="p.user_id" 
+                      class="capsule-badge badge-neutral text-xs"
+                    >
+                      <i class="fa-solid fa-user mr-xs"></i> {{ p.name }}
+                    </span>
+                  </div>
+                </td>
+                <td class="text-center p-md text-xs text-secondary">{{ ev.creator_name || 'แอดมิน' }}</td>
+                <td v-if="isAdminUser" class="text-center p-md">
+                  <button class="btn-action btn-action-delete" :disabled="deletingEventOtId === ev.id" @click="handleDeleteEventOt(ev.id)">
+                    <i v-if="deletingEventOtId === ev.id" class="fa-solid fa-spinner fa-spin"></i>
+                    <i v-else class="fa-solid fa-trash-can"></i>
+                    <span>{{ deletingEventOtId === ev.id ? ' กำลังลบ...' : ' ลบ' }}</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 5: เบิกเงินล่วงหน้า (Salary Advances) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'advances'" class="flex flex-col gap-md">
+      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color);">
+        <div>
+          <h3 class="font-bold text-base flex align-center gap-xs" style="margin: 0; color: var(--text-primary);">
+            <i class="fa-solid fa-hand-holding-dollar text-primary"></i> รายการเบิกเงินเดือนล่วงหน้า
+          </h3>
+          <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+            บันทึกการเบิกเงินสดหรือเงินโอนระหว่างงวด ยอดนี้จะถูกนำไปหักลบอัตโนมัติเมื่อสั่งจ่ายเงินเดือน
+          </p>
+        </div>
+        <button class="btn btn-primary" @click="showAddAdvanceModal = true">
+          <i class="fa-solid fa-plus"></i> บันทึกเบิกเงินล่วงหน้า
+        </button>
+      </div>
+
+      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+        <div style="overflow-x: auto;">
+          <table class="table w-full" style="border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(139, 3, 19, 0.03); border-bottom: 1px solid var(--border-color);">
+                <th class="text-center p-md">วันที่เบิก</th>
+                <th class="text-center p-md">พนักงาน</th>
+                <th class="text-center p-md">จำนวนเงินที่เบิก</th>
+                <th class="text-center p-md">ช่องทางจ่าย</th>
+                <th class="text-center p-md">สถานะการหัก</th>
+                <th v-if="isAdminUser" class="text-center p-md">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loadingAdvances">
+                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
+              </tr>
+              <tr v-else-if="advances.length === 0">
+                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
+                  <div class="flex flex-col align-center justify-center gap-xs">
+                    <i class="fa-solid fa-hand-holding-dollar text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>
+                    <div class="font-bold text-sm">{{ emptyAdvancesMessage }}</div>
+                  </div>
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="adv in advances" 
+                :key="adv.id"
+                class="table-row-hover"
+                style="border-bottom: 1px solid var(--border-color);"
+              >
+                <td class="text-center p-md font-bold text-sm">{{ formatDate(adv.advance_date) }}</td>
+                <td class="text-center p-md">
+                  <div class="font-bold text-base text-primary">{{ adv.name }}</div>
+                  <div class="text-xs text-secondary mt-2xs">
+                    <span class="skill-badge" :class="adv.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(adv.skill_level) }}</span>
+                  </div>
+                </td>
+                <td class="text-center p-md font-bold text-danger text-base">
+                  -{{ formatCurrency(adv.amount) }}
+                </td>
+                <td class="text-center p-md">
+                  <span class="capsule-badge" :class="adv.payment_method === 'transfer' ? 'badge-primary' : 'badge-warning'">
+                    <i :class="adv.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
+                    {{ adv.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด' }}
+                  </span>
+                </td>
+                <td class="text-center p-md">
+                  <span class="capsule-badge" :class="adv.status === 'deducted' ? 'badge-success' : 'badge-warning'">
+                    <i :class="adv.status === 'deducted' ? 'fa-solid fa-check' : 'fa-solid fa-clock'"></i>
+                    {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : 'รอดำเนินการหัก' }}
+                  </span>
+                </td>
+                <td v-if="isAdminUser" class="text-center p-md">
+                  <button 
+                    v-if="adv.status === 'pending'"
+                    class="btn-action btn-action-delete" 
+                    :disabled="deletingAdvanceId === adv.id"
+                    @click="handleDeleteAdvance(adv.id)"
+                    title="ยกเลิกรายการเบิก"
+                  >
+                    <i v-if="deletingAdvanceId === adv.id" class="fa-solid fa-spinner fa-spin"></i>
+                    <i v-else class="fa-solid fa-trash-can"></i>
+                    <span>{{ deletingAdvanceId === adv.id ? ' กำลังลบ...' : ' ลบ' }}</span>
+                  </button>
+                  <span v-else class="text-xs text-muted">หักแล้ว</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 6: คำนวณ & จ่ายเงินเดือน (Payroll & Salary Payout) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'payroll' && isAdminUser" class="flex flex-col gap-md">
+      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color); position: relative; z-index: 50;">
+        <div class="flex align-center gap-md flex-wrap">
+          <div class="flex align-center gap-xs font-bold text-base" style="white-space: nowrap;">
+            <i class="fa-solid fa-calendar text-primary"></i> รอบเดือนที่คำนวณ:
+          </div>
+
+          <!-- Custom Month Picker for Payroll -->
+          <div class="flex align-center gap-xs">
+            <button type="button" class="picker-nav-btn" @click="adjustPayrollMonth(-1)" title="เดือนก่อนหน้า">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <div class="custom-select-wrapper" style="width: auto; position: relative;" @click.stop>
+              <div 
+                class="picker-trigger-btn" 
+                :class="{ 'active': isPayrollMonthDropdownOpen }" 
+                @click="togglePayrollMonthDropdown"
+                style="min-width: 190px; padding: 0 var(--space-lg); justify-content: space-between; gap: var(--space-md);"
+              >
+                <span class="flex align-center gap-sm">
+                  <i class="fa-solid fa-calendar-days text-primary"></i>
+                  <span>{{ payrollMonthLabel }}</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
+              </div>
+
+              <!-- Month Dropdown Grid -->
+              <div v-if="isPayrollMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
+                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(-1)">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span class="font-bold">ปี พ.ศ. {{ payrollMonthPickerYear + 543 }}</span>
+                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(1)">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                  <button 
+                    v-for="(mName, idx) in thaiMonthsShort" 
+                    :key="idx" 
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    :class="{ 'btn-primary active': isPayrollMonthPickerSelected(idx + 1) }"
+                    @click="selectPayrollMonthPicker(idx + 1)"
+                  >
+                    {{ mName }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="picker-nav-btn" @click="adjustPayrollMonth(1)" title="เดือนถัดไป">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <button type="button" class="picker-current-btn ml-xs" @click="setPayrollCurrentMonth">
+              เดือนปัจจุบัน
+            </button>
+          </div>
+        </div>
+
+        <div class="text-xs text-secondary font-bold">
+          <i class="fa-solid fa-circle-check text-success"></i> เมื่อกดยืนยันจ่าย ระบบจะตัดเข้าบัญชีรายจ่ายสาขาอัตโนมัติ
+        </div>
+      </div>
+
+      <!-- Payroll Summary Grid / Table -->
+      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+        <div style="overflow-x: auto;">
+          <table class="table w-full" style="border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(139, 3, 19, 0.03); border-bottom: 1px solid var(--border-color);">
+                <th class="text-center p-md">พนักงาน</th>
+                <th class="text-center p-md">วันทำงานรอจ่ายรอบนี้</th>
+                <th class="text-center p-md">ฐานค่าแรงรอบนี้</th>
+                <th class="text-center p-md">OT อีเวนต์</th>
+                <th class="text-center p-md">หักเบิกล่วงหน้า</th>
+                <th class="text-center p-md">ยอดจ่ายสุทธิรอบนี้</th>
+                <th class="text-center p-md">เงินประกัน (1,000 บ.)</th>
+                <th class="text-center p-md">ประวัติจ่ายในเดือนนี้</th>
+                <th class="text-center p-md">ดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loadingPayroll">
+                <td colspan="9" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
+              </tr>
+              <tr v-else-if="payrollList.length === 0">
+                <td colspan="9" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
+                  <div class="flex flex-col align-center justify-center gap-xs">
+                    <i class="fa-solid fa-file-invoice-dollar text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>
+                    <div class="font-bold text-sm">ไม่พบรายการคำนวณเงินเดือนในงวดนี้</div>
+                  </div>
+                </td>
+              </tr>
+              <tr 
+                v-else 
+                v-for="item in payrollList" 
+                :key="item.user_id"
+                class="table-row-hover"
+                style="border-bottom: 1px solid var(--border-color);"
+              >
+                <td class="text-center p-md">
+                  <div class="font-bold text-base text-primary">{{ item.name }}</div>
+                  <div class="text-xs text-secondary mt-2xs">
+                    <span class="skill-badge" :class="item.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(item.skill_level) }}</span> • {{ formatCurrency(item.wage_rate) }}/วัน
+                  </div>
+                </td>
+                <td class="text-center p-md">
+                  <span class="font-bold text-base text-primary">{{ item.unpaid_days_worked }}</span> <span class="text-xs text-secondary">วัน</span>
+                  <div class="text-xs text-secondary">ข้าวเที่ยง {{ item.unpaid_lunch_count }} มื้อ</div>
+                </td>
+                <td class="text-center p-md font-bold">{{ formatCurrency(item.unpaid_base_salary) }}</td>
+                <td class="text-center p-md font-bold text-success">
+                  <span v-if="item.event_ot_amount > 0">+{{ formatCurrency(item.event_ot_amount) }}</span>
+                  <span v-else class="text-muted">0</span>
+                </td>
+                <td class="text-center p-md font-bold text-danger">
+                  <span v-if="item.advance_deducted_amount > 0">-{{ formatCurrency(item.advance_deducted_amount) }}</span>
+                  <span v-else class="text-muted">0</span>
+                </td>
+                <td class="text-center p-md font-bold text-lg text-primary" style="font-size: 1.15rem;">
+                  {{ formatCurrency(item.net_payable_round) }}
+                </td>
+                <!-- Guarantee Deposit Column -->
+                <td class="text-center p-md">
+                  <div v-if="!item.guarantee || item.guarantee.status === 'forfeited'" class="flex justify-center">
+                    <button class="btn btn-sm btn-secondary text-xs guarantee-capsule-btn" @click="openDepositGuaranteeModal(item)">
+                      <i class="fa-solid fa-shield-halved text-warning mr-xs"></i> รับค่าประกัน
+                    </button>
+                  </div>
+                  <div v-else-if="item.guarantee.status === 'held'" class="flex flex-col align-center gap-xs">
+                    <span class="capsule-badge badge-success text-xs guarantee-capsule-badge">
+                      <i class="fa-solid fa-shield-halved"></i> วางประกันแล้ว
+                    </span>
+                    <button class="btn btn-sm btn-secondary text-xs guarantee-capsule-btn" @click="openRefundGuaranteeModal(item.guarantee, item)">
+                      <i class="fa-solid fa-arrow-rotate-left mr-2xs text-primary"></i> คืนค่าประกัน
+                    </button>
+                  </div>
+                  <div v-else-if="item.guarantee.status === 'refunded'" class="flex flex-col align-center gap-xs">
+                    <span class="capsule-badge badge-neutral text-xs guarantee-capsule-badge" style="opacity: 0.85;">
+                      <i class="fa-solid fa-check"></i> คืนเงินประกันแล้ว
+                    </span>
+                    <button class="btn btn-sm btn-secondary text-xs guarantee-capsule-btn" @click="openDepositGuaranteeModal(item)">
+                      <i class="fa-solid fa-plus text-warning mr-2xs"></i> รับค่าประกันใหม่
+                    </button>
+                  </div>
+                </td>
+                <!-- Month Payout History Column -->
+                <td class="text-center p-md">
+                  <div v-if="item.history_payouts && item.history_payouts.length > 0" class="flex flex-col align-center gap-xs">
+                    <span class="capsule-badge badge-primary text-xs cursor-pointer history-capsule-badge" @click="openHistoryPayoutsModal(item)" title="คลิกเพื่อดูสลิปแต่ละรอบ">
+                      <i class="fa-solid fa-receipt mr-xs"></i> จ่ายแล้ว {{ item.payout_count_month }} รอบ ({{ formatCurrency(item.total_paid_amount_month) }})
+                    </span>
+                  </div>
+                  <div v-else>
+                    <span class="text-xs text-muted">ยังไม่เคยจ่ายในเดือนนี้</span>
+                  </div>
+                </td>
+                <!-- Action Column -->
+                <td class="text-center p-md">
+                  <button 
+                    v-if="item.has_pending_payout" 
+                    class="btn-action btn-action-primary"
+                    @click="openPayModal(item)"
+                  >
+                    <i class="fa-solid fa-money-bill-wave"></i> จ่ายเงินรอบนี้
+                  </button>
+                  <span v-else class="text-xs text-muted font-bold">
+                    <i class="fa-solid fa-circle-check text-success"></i> จ่ายครบแล้ว
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TELEPORTED MODALS (Full Screen Backdrop & Perfect Centering) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    <!-- MODAL 1: ปรับแต่งค่าแรง & กฎเงินประกัน (Edit Compensation) -->
+    <Teleport to="body">
+      <div v-if="showCompModal" class="modal-container active">
+        <div class="modal-overlay" @click="showCompModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-sliders" style="margin-right: 6px;"></i> ปรับค่าแรง: {{ selectedEmp?.name }}</h3>
+            <button class="modal-close" @click="showCompModal = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label font-bold">ประเภทค่าจ้าง</label>
+              <select class="form-select" v-model="compForm.wage_type">
+                <option value="daily">รายวัน (Daily Wage)</option>
+                <option value="monthly">รายเดือน (Monthly Salary)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">อัตราค่าจ้าง (บาท) *</label>
+              <input type="number" class="form-input" v-model.number="compForm.wage_rate" placeholder="เช่น 450 หรือ 300" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">ระดับทักษะ (Skill Tier)</label>
+              <select class="form-select" v-model="compForm.skill_level">
+                <option value="trainee">🌱 ฝึกงาน (Trainee)</option>
+                <option value="regular">⭐ ประจำ (Regular)</option>
+                <option value="expert">🏆 เชี่ยวชาญ (Expert)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">สวัสดิการพนักงาน</label>
+              <input type="text" class="form-input" v-model="compForm.benefits" placeholder="เช่น ข้าวเที่ยงฟรี" />
+            </div>
+
+            <div class="flex gap-md mt-lg">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showCompModal = false">ยกเลิก</button>
+              <button 
+                class="btn-modal btn-modal-primary flex-1" 
+                :disabled="savingComp"
+                @click="handleSaveCompensation"
+              >
+                <i v-if="savingComp" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-floppy-disk"></i>
+                <span>{{ savingComp ? ' กำลังบันทึก...' : ' บันทึกข้อมูล' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- MODAL 2: สร้าง OT อีเวนต์ใหม่ (Create Event OT) -->
+    <Teleport to="body">
+      <div v-if="showAddEventOtModal" class="modal-container active">
+        <div class="modal-overlay" @click="showAddEventOtModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-tags" style="margin-right: 6px;"></i> เพิ่ม OT พิเศษตามอีเวนต์</h3>
+            <button class="modal-close" @click="showAddEventOtModal = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label font-bold">ชื่องานพิเศษ / กิจกรรม *</label>
+              <input type="text" class="form-input" v-model="eventOtForm.event_name" placeholder="เช่น ทำป้ายหน้าร้าน, ล้างร้านใหญ่" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">วันที่ปฏิบัติงาน *</label>
+              <input type="date" class="form-input" v-model="eventOtForm.event_date" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">จำนวนเงินต่อคน (บาท) *</label>
+              <input type="number" class="form-input" v-model.number="eventOtForm.amount_per_person" placeholder="เช่น 100" min="1" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold"><i class="fa-solid fa-users" style="margin-right: 4px;"></i> เลือกพนักงานที่ได้รับเงินพิเศษ *</label>
+              <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-xs);">
+                <label 
+                  v-for="emp in employees" 
+                  :key="emp.id" 
+                  class="flex flex-between align-center cursor-pointer"
+                  style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); transition: var(--transition-base);"
+                >
+                  <div class="flex align-center gap-sm">
+                    <input type="checkbox" :value="emp.id" v-model="eventOtForm.user_ids" style="width: 18px; height: 18px; accent-color: var(--primary);" />
+                    <span class="font-semibold text-sm">{{ emp.name }}</span>
+                  </div>
+                  <span class="skill-badge" :class="emp.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(emp.skill_level) }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">หมายเหตุเพิ่มเติม</label>
+              <input type="text" class="form-input" v-model="eventOtForm.note" placeholder="เช่น ช่วยงาน 2 ชม." />
+            </div>
+
+            <div class="flex gap-md mt-lg">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showAddEventOtModal = false">ยกเลิก</button>
+              <button 
+                class="btn-modal btn-modal-primary flex-1" 
+                :disabled="savingEventOt || !eventOtForm.event_name || !eventOtForm.amount_per_person || eventOtForm.user_ids.length === 0"
+                @click="handleSaveEventOt"
+              >
+                <i v-if="savingEventOt" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-tags"></i>
+                <span>{{ savingEventOt ? ' กำลังบันทึก...' : ' บันทึก OT อีเวนต์' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- MODAL 3: บันทึกการเบิกเงินล่วงหน้า (Salary Advance Modal) -->
+    <Teleport to="body">
+      <div v-if="showAddAdvanceModal" class="modal-container active">
+        <div class="modal-overlay" @click="showAddAdvanceModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; max-height: 90vh; display: flex; flex-direction: column;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 6px;"></i> บันทึกการเบิกเงินล่วงหน้า</h3>
+            <button class="modal-close" @click="showAddAdvanceModal = false">✕</button>
+          </div>
+          <div class="modal-body" style="overflow-y: auto;">
+            <!-- Staff Selector -->
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">เลือกพนักงานที่เบิกเงิน *</label>
+              <select class="form-select form-select-sm" v-model="advanceForm.user_id">
+                <option :value="null" disabled>-- กรุณาเลือกพนักงาน --</option>
+                <option v-for="emp in employees" :key="emp.id" :value="emp.id">
+                  {{ emp.name }} ({{ getSkillLabel(emp.skill_level) }})
+                </option>
+              </select>
+            </div>
+
+            <!-- Accumulated Wage Info Box -->
+            <div 
+              v-if="advanceForm.user_id && selectedStaffAvailableWage" 
+              class="form-group mb-sm"
+              style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm);"
+            >
+              <div class="flex flex-between align-center mb-2xs">
+                <span class="text-xs text-secondary font-bold">
+                  <i class="fa-solid fa-coins text-warning mr-xs"></i> ยอดค่าแรงสะสมที่เบิกได้สูงสุดในปัจจุบัน:
+                </span>
+                <span class="text-sm font-bold text-primary">
+                  {{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }}
+                </span>
+              </div>
+              <div class="text-2xs text-secondary flex flex-between" style="font-size: 11px;">
+                <span>วันทำงานรอจ่าย: {{ selectedStaffAvailableWage.unpaidDays }} วัน ({{ formatCurrency(selectedStaffAvailableWage.unpaidBase) }})</span>
+                <span v-if="selectedStaffAvailableWage.existingAdvances > 0" class="text-danger">
+                  (เคยเบิกค้างอยู่ {{ formatCurrency(selectedStaffAvailableWage.existingAdvances) }})
+                </span>
+              </div>
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">จำนวนเงินที่ขอเบิก (บาท) *</label>
+              <input 
+                type="number" 
+                class="form-input form-input-sm font-bold" 
+                v-model.number="advanceForm.amount" 
+                placeholder="เช่น 500" 
+                min="1" 
+              />
+            </div>
+
+            <!-- Orange Warning Box when advance exceeds available wage -->
+            <div 
+              v-if="advanceForm.user_id && selectedStaffAvailableWage && advanceForm.amount > selectedStaffAvailableWage.maxAvailable"
+              class="form-group mb-sm"
+              style="background: rgba(255, 149, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-sm);"
+            >
+              <div class="flex align-start gap-xs text-xs font-semibold text-warning" style="line-height: 1.4;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; margin-top: 2px;"></i>
+                <div>
+                  <strong>คำเตือน:</strong> จำนวนเงินที่ขอเบิก ({{ formatCurrency(advanceForm.amount) }}) <strong>เกินกว่ายอดค่าแรงสะสม</strong> ที่ทำได้ในปัจจุบัน ({{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }})
+                  <div class="text-2xs text-secondary font-normal mt-2xs">
+                    * นายจ้างยังสามารถยืนยันให้เบิกล่วงหน้าได้ โดยยอดส่วนเกินจะรอหักจากวันทำงานถัดไป
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">วันที่เบิกเงิน *</label>
+              <input type="date" class="form-input form-input-sm" v-model="advanceForm.advance_date" />
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">ช่องทางการจ่ายเงิน *</label>
+              <select class="form-select form-select-sm" v-model="advanceForm.payment_method">
+                <option value="cash">💵 เงินสด (จ่ายจากลิ้นชัก)</option>
+                <option value="transfer">📱 เงินโอนผ่านบัญชี</option>
+              </select>
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">เหตุผล / บันทึกช่วยจำ</label>
+              <input type="text" class="form-input form-input-sm" v-model="advanceForm.note" placeholder="เช่น ค่าใช้จ่ายฉุกเฉิน" />
+            </div>
+
+            <div class="flex gap-md mt-md">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showAddAdvanceModal = false">ยกเลิก</button>
+              <button 
+                class="btn-modal btn-modal-primary flex-1" 
+                :disabled="savingAdvance || !advanceForm.user_id || !advanceForm.amount || advanceForm.amount <= 0"
+                @click="handleSaveAdvance"
+              >
+                <i v-if="savingAdvance" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-hand-holding-dollar"></i>
+                <span>{{ savingAdvance ? ' กำลังบันทึก...' : ' ยืนยันการเบิกเงิน' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- MODAL 4: จ่ายเงินเดือน & สรุปยอด (Payout Modal) -->
+    <Teleport to="body">
+      <div v-if="showPayModal" class="modal-container active">
+        <div class="modal-overlay" @click="showPayModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; max-height: 90vh; display: flex; flex-direction: column;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-money-check-dollar" style="margin-right: 6px;"></i> จ่ายเงินรอบนี้</h3>
+            <button class="modal-close" @click="showPayModal = false">✕</button>
+          </div>
+          <div class="modal-body" style="overflow-y: auto;">
+            <!-- Staff Header -->
+            <div class="form-group" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-sm);">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="text-sm font-bold text-primary">{{ payingItem?.name }}</span>
+                <span class="capsule-badge badge-neutral text-xs">งวด {{ payrollMonth }}</span>
+              </div>
+              <div class="text-xs text-secondary flex flex-between">
+                <span>อัตราค่าจ้าง: {{ formatCurrency(payingItem?.wage_rate) }}/{{ payingItem?.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
+                <span class="skill-badge" :class="payingItem?.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(payingItem?.skill_level) }}</span>
+              </div>
+            </div>
+
+            <!-- Itemized Checklist -->
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs text-secondary mb-xs">
+                <i class="fa-solid fa-list-check mr-xs text-primary"></i> เลือกรายการที่ต้องการจ่าย/หักในรอบนี้:
+              </label>
+              
+              <div class="flex flex-col gap-xs">
+                <!-- 1. Base Salary with partial days selector -->
+                <div 
+                  class="flex flex-between align-center"
+                  :style="{
+                    background: payForm.pay_base_salary ? 'rgba(52, 199, 89, 0.08)' : 'var(--bg-secondary)',
+                    border: '1px solid ' + (payForm.pay_base_salary ? 'var(--success)' : 'var(--border-color)'),
+                    borderRadius: 'var(--radius-md)',
+                    padding: 'var(--space-xs) var(--space-sm)',
+                    opacity: (payingItem?.unpaid_days_worked > 0 || payingItem?.unpaid_base_salary > 0) ? 1 : 0.5
+                  }"
+                >
+                  <label class="flex align-center gap-xs cursor-pointer" style="margin: 0;">
+                    <input 
+                      type="checkbox" 
+                      v-model="payForm.pay_base_salary" 
+                      :disabled="!payingItem?.unpaid_days_worked && !payingItem?.unpaid_base_salary"
+                      @change="handlePayoutCheckboxChange"
+                      style="width: 16px; height: 16px; accent-color: var(--primary);" 
+                    />
+                    <span class="text-xs font-semibold">จ่ายฐานค่าแรง</span>
+                  </label>
+
+                  <div class="flex align-center gap-xs">
+                    <!-- Day count stepper when multiple days are unpaid -->
+                    <div 
+                      v-if="payForm.pay_base_salary && (payingItem?.unpaid_days_worked > 1)" 
+                      class="flex align-center gap-2xs" 
+                      style="background: var(--bg-primary); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"
+                    >
+                      <button 
+                        type="button" 
+                        class="btn btn-xs btn-secondary" 
+                        style="padding: 0 6px; height: 22px; font-weight: bold;" 
+                        :disabled="payForm.days_to_pay <= 1"
+                        @click.stop="adjustDaysToPay(-1)"
+                      >-</button>
+                      <span class="text-xs font-bold px-xs" style="min-width: 44px; text-align: center;">
+                        {{ payForm.days_to_pay }} / {{ payingItem?.unpaid_days_worked }} วัน
+                      </span>
+                      <button 
+                        type="button" 
+                        class="btn btn-xs btn-secondary" 
+                        style="padding: 0 6px; height: 22px; font-weight: bold;" 
+                        :disabled="payForm.days_to_pay >= payingItem?.unpaid_days_worked"
+                        @click.stop="adjustDaysToPay(1)"
+                      >+</button>
+                    </div>
+                    <span v-else-if="payingItem?.unpaid_days_worked" class="text-2xs text-secondary font-medium">
+                      ({{ payingItem?.unpaid_days_worked }} วัน)
+                    </span>
+
+                    <span class="font-bold text-xs text-primary ml-2xs">
+                      {{ formatCurrency(computedBaseSalaryToPay) }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- 2. Event OT -->
+                <label 
+                  v-if="payingItem?.event_ot_amount > 0"
+                  class="flex flex-between align-center cursor-pointer"
+                  :style="{
+                    background: payForm.pay_event_ot ? 'rgba(52, 199, 89, 0.08)' : 'var(--bg-secondary)',
+                    border: '1px solid ' + (payForm.pay_event_ot ? 'var(--success)' : 'var(--border-color)'),
+                    borderRadius: 'var(--radius-md)',
+                    padding: 'var(--space-xs) var(--space-sm)'
+                  }"
+                >
+                  <div class="flex align-center gap-xs">
+                    <input 
+                      type="checkbox" 
+                      v-model="payForm.pay_event_ot" 
+                      @change="handlePayoutCheckboxChange"
+                      style="width: 16px; height: 16px; accent-color: var(--primary);" 
+                    />
+                    <span class="text-xs font-semibold">จ่าย OT งานพิเศษ</span>
+                  </div>
+                  <span class="font-bold text-xs text-success">+{{ formatCurrency(payingItem?.event_ot_amount) }}</span>
+                </label>
+
+                <!-- 3. Salary Advance Deduction -->
+                <label 
+                  v-if="payingItem?.advance_deducted_amount > 0"
+                  class="flex flex-between align-center cursor-pointer"
+                  :style="{
+                    background: payForm.deduct_advance ? 'rgba(255, 59, 48, 0.08)' : 'var(--bg-secondary)',
+                    border: '1px solid ' + (payForm.deduct_advance ? 'var(--danger)' : 'var(--border-color)'),
+                    borderRadius: 'var(--radius-md)',
+                    padding: 'var(--space-xs) var(--space-sm)'
+                  }"
+                >
+                  <div class="flex align-center gap-xs">
+                    <input 
+                      type="checkbox" 
+                      v-model="payForm.deduct_advance" 
+                      @change="handlePayoutCheckboxChange"
+                      style="width: 16px; height: 16px; accent-color: var(--danger);" 
+                    />
+                    <span class="text-xs font-semibold">หักเงินเบิกล่วงหน้า</span>
+                  </div>
+                  <span class="font-bold text-xs text-danger">-{{ formatCurrency(payingItem?.advance_deducted_amount) }}</span>
+                </label>
+
+                <!-- 4. Guarantee Deposit Deduction (แสดงเฉพาะเมื่อสถานะไม่ใช่ 'วางประกันแล้ว') -->
+                <div v-if="!payingItem?.guarantee || payingItem?.guarantee?.status !== 'held'">
+                  <label 
+                    class="flex flex-between align-center cursor-pointer"
+                    :style="{
+                      background: payForm.deduct_guarantee ? 'rgba(255, 149, 0, 0.08)' : 'var(--bg-secondary)',
+                      border: '1px solid ' + (payForm.deduct_guarantee ? 'var(--warning)' : 'var(--border-color)'),
+                      borderRadius: 'var(--radius-md)',
+                      padding: 'var(--space-xs) var(--space-sm)'
+                    }"
+                  >
+                    <div class="flex align-center gap-xs">
+                      <input 
+                        type="checkbox" 
+                        v-model="payForm.deduct_guarantee" 
+                        @change="handlePayoutCheckboxChange"
+                        style="width: 16px; height: 16px; accent-color: var(--warning);" 
+                      />
+                      <span class="text-xs font-semibold">
+                        หักเงินประกันพนักงาน ({{ formatCurrency(payForm.holdback_deducted_amount || 1000) }})
+                        <span class="text-2xs text-secondary font-normal">(ยังไม่เคยวางประกัน / วางรอบใหม่)</span>
+                      </span>
+                    </div>
+                    <span class="font-bold text-xs text-warning">-{{ formatCurrency(payForm.holdback_deducted_amount || 1000) }}</span>
+                  </label>
+                  <div 
+                    v-if="payForm.deduct_guarantee && earningsBeforeGuarantee < (payForm.holdback_deducted_amount || 1000)" 
+                    class="text-2xs text-warning mt-2xs px-xs font-semibold"
+                  >
+                    <i class="fa-solid fa-triangle-exclamation mr-2xs"></i> ยอดค่าแรงในรอบนี้ ({{ formatCurrency(earningsBeforeGuarantee) }}) น้อยกว่าเงินประกัน ฿1,000
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom Payout Amount Input -->
+            <div class="form-group mb-sm" style="background: rgba(139, 3, 19, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm);">
+              <div class="flex flex-between align-center mb-xs">
+                <label class="form-label font-bold text-xs text-primary" style="margin:0;">
+                  <i class="fa-solid fa-coins mr-xs"></i> กำหนดยอดจ่ายจริงรอบนี้ (บาท) *
+                </label>
+              </div>
+              <input 
+                type="number" 
+                class="form-input font-bold" 
+                style="font-size: 1.15rem; color: var(--primary);" 
+                v-model.number="payForm.custom_net_paid" 
+                placeholder="ระบุจำนวนเงินที่จ่ายจริง" 
+                min="0" 
+              />
+              <div class="text-2xs text-secondary mt-2xs">
+                ยอดเงินนี้จะถูกบันทึกเป็นรายจ่ายสาขา
+              </div>
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">ช่องทางการจ่ายเงิน *</label>
+              <select class="form-select form-select-sm" v-model="payForm.payment_method">
+                <option value="cash">💵 จ่ายเงินสด (ตัดยอดจากลิ้นชัก)</option>
+                <option value="transfer">📱 จ่ายเงินโอน</option>
+              </select>
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">วันที่จ่ายเงิน *</label>
+              <input type="date" class="form-input form-input-sm" v-model="payForm.payment_date" />
+            </div>
+
+
+
+            <div class="flex gap-md mt-md">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showPayModal = false">ยกเลิก</button>
+              <button 
+                class="btn-modal btn-modal-primary flex-1" 
+                :disabled="processingPayout || payForm.custom_net_paid === null || payForm.custom_net_paid === undefined || payForm.custom_net_paid < 0"
+                @click="handleConfirmPayout"
+              >
+                <i v-if="processingPayout" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-money-bill-wave"></i>
+                <span>{{ processingPayout ? ' กำลังบันทึก...' : ' ยืนยันจ่ายเงิน' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- MODAL 5: ประวัติการจ่ายเงินเดือนในงวด (Payout History Modal) -->
+    <Teleport to="body">
+      <div v-if="showHistoryModal" class="modal-container active">
+        <div class="modal-overlay" @click="showHistoryModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 85vh; display: flex; flex-direction: column;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-receipt" style="margin-right: 6px;"></i> ประวัติการจ่ายเงิน: {{ selectedHistoryStaff?.name }}</h3>
+            <button class="modal-close" @click="showHistoryModal = false">✕</button>
+          </div>
+          <div class="modal-body" style="overflow-y: auto;">
+            <div class="text-center mb-sm">
+              <h4 class="font-bold text-base text-primary">ประวัติการจ่ายเงินเดือนประจำงวด {{ payrollMonth }}</h4>
+              <p class="text-xs text-secondary">
+                จ่ายแล้วทั้งหมด {{ selectedHistoryStaff?.payout_count_month }} รอบ รวม 
+                <span :class="Number(selectedHistoryStaff?.total_paid_amount_month || 0) === 0 ? 'text-danger font-bold' : 'text-primary font-bold'">
+                  {{ formatCurrency(selectedHistoryStaff?.total_paid_amount_month) }}
+                </span>
+              </p>
+            </div>
+
+            <div v-if="!selectedHistoryStaff?.history_payouts || selectedHistoryStaff?.history_payouts.length === 0" class="text-center p-lg text-secondary">
+              ยังไม่มีประวัติการจ่ายเงินในเดือนนี้
+            </div>
+
+            <div v-else class="flex flex-col gap-sm">
+              <div 
+                v-for="(slip, idx) in selectedHistoryStaff.history_payouts" 
+                :key="slip.id"
+                class="form-group"
+                style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.04);"
+              >
+                <div class="flex flex-between align-center mb-xs">
+                  <span class="font-bold text-sm text-primary">
+                    <i class="fa-solid fa-file-invoice-dollar text-primary mr-xs"></i> สลิปรอบที่ {{ selectedHistoryStaff.history_payouts.length - idx }}
+                  </span>
+                  <span class="capsule-badge badge-success text-xs">
+                    {{ slip.payment_method === 'transfer' ? '📱 เงินโอน' : '💵 เงินสด' }} • {{ formatDate(slip.payment_date) }}
+                  </span>
+                </div>
+                <div class="flex flex-between text-xs text-secondary mb-2xs">
+                  <span>รอบการทำงาน:</span>
+                  <span><strong>{{ slip.days_worked }}</strong> วัน</span>
+                </div>
+                <div class="flex flex-between text-xs text-secondary mb-2xs">
+                  <span>ฐานค่าแรง:</span>
+                  <span>{{ formatCurrency(slip.base_salary_amount) }}</span>
+                </div>
+                <div v-if="slip.event_ot_amount > 0" class="flex flex-between text-xs text-success mb-2xs">
+                  <span>OT งานพิเศษ:</span>
+                  <span>+{{ formatCurrency(slip.event_ot_amount) }}</span>
+                </div>
+                <div v-if="slip.advance_deducted_amount > 0" class="flex flex-between text-xs text-danger mb-2xs">
+                  <span>หักเบิกล่วงหน้า:</span>
+                  <span>-{{ formatCurrency(slip.advance_deducted_amount) }}</span>
+                </div>
+                <div v-if="slip.holdback_deducted_amount > 0" class="flex flex-between text-xs text-warning mb-2xs">
+                  <span>หักเงินประกันพนักงาน:</span>
+                  <span>-{{ formatCurrency(slip.holdback_deducted_amount) }}</span>
+                </div>
+                <div v-if="slip.note" class="text-xs text-secondary mb-2xs" style="font-style: italic;">
+                  หมายเหตุ: {{ slip.note }}
+                </div>
+                <div class="divider my-xs" style="height:1px; background:var(--border-color);"></div>
+                <div class="flex flex-between align-center font-bold text-sm text-primary">
+                  <span>ยอดจ่ายสุทธิ:</span>
+                  <span class="text-base font-bold" :class="Number(slip.net_paid_amount || 0) === 0 ? 'text-danger' : 'text-primary'">
+                    {{ formatCurrency(slip.net_paid_amount) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-md mt-lg">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showHistoryModal = false">ปิด</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- MODAL 7: รับเงินประกันพนักงาน (Deposit Guarantee Modal) -->
+    <Teleport to="body">
+      <div v-if="showDepositModal" class="modal-container active">
+        <div class="modal-overlay" @click="showDepositModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-shield-halved text-warning" style="margin-right: 6px;"></i> รับเงินประกันพนักงาน</h3>
+            <button class="modal-close" @click="showDepositModal = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group mb-sm" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="text-sm font-bold text-primary">{{ depositForm.targetStaff?.name }}</span>
+                <span class="skill-badge" :class="depositForm.targetStaff?.skill_level" style="font-size: 10px; padding: 1px 6px;">
+                  {{ getSkillLabel(depositForm.targetStaff?.skill_level) }}
+                </span>
+              </div>
+              <div class="flex flex-between align-center text-xs text-secondary">
+                <span>ยอดค่าแรงสะสมรอจ่ายปัจจุบัน:</span>
+                <span class="font-bold text-primary text-sm">{{ formatCurrency(depositFormTargetAvailableWage) }}</span>
+              </div>
+            </div>
+
+            <!-- Warning Alert if available wage < deposit amount -->
+            <div 
+              v-if="depositFormTargetAvailableWage < (depositForm.amount || 1000)"
+              class="form-group mb-sm" 
+              style="background: rgba(255, 149, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-sm);"
+            >
+              <div class="flex align-start gap-xs text-xs font-semibold text-warning" style="line-height: 1.4;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; margin-top: 2px;"></i>
+                <div>
+                  <strong>แจ้งเตือน:</strong> ยอดค่าแรงสะสมปัจจุบัน ({{ formatCurrency(depositFormTargetAvailableWage) }}) <strong>น้อยกว่ายอดเงินประกัน ({{ formatCurrency(depositForm.amount || 1000) }})</strong>
+                  <div class="text-2xs text-secondary font-normal mt-2xs">
+                    * เงื่อนไข: ยอดจ่ายสุทธิ/ค่าแรงสะสมรอบนี้ควรมีค่า ฿1,000 หรือมากกว่า ก่อนรับเงินประกัน
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">จำนวนเงินประกัน (บาท) *</label>
+              <input type="number" class="form-input form-input-sm" v-model.number="depositForm.amount" placeholder="1000" min="1" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">วันที่รับเงินประกัน *</label>
+              <input type="date" class="form-input" v-model="depositForm.deposit_date" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">ช่องทางการรับเงิน *</label>
+              <select class="form-select" v-model="depositForm.deposit_payment_method">
+                <option value="cash">💵 เงินสด (เก็บเข้าลิ้นชัก)</option>
+                <option value="transfer">📱 โอนผ่านบัญชีร้าน</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">บันทึกช่วยจำ</label>
+              <input type="text" class="form-input" v-model="depositForm.note" placeholder="เช่น วางเงินประกันวันแรกของการทำงาน" />
+            </div>
+
+            <div class="flex gap-md mt-lg">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showDepositModal = false">ยกเลิก</button>
+              <button 
+                class="btn-modal btn-modal-primary flex-1" 
+                :disabled="savingDeposit || !depositForm.amount || depositForm.amount <= 0"
+                @click="handleConfirmDepositGuarantee"
+              >
+                <i v-if="savingDeposit" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-shield-halved"></i>
+                <span>{{ savingDeposit ? ' กำลังบันทึก...' : ' ยืนยันรับเงินประกัน' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- MODAL 8: คืนเงินประกันพนักงาน (Refund Guarantee Modal) -->
+    <Teleport to="body">
+      <div v-if="showRefundModal" class="modal-container active">
+        <div class="modal-overlay" @click="showRefundModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-arrow-rotate-left text-primary" style="margin-right: 6px;"></i> คืนเงินประกันพนักงาน</h3>
+            <button class="modal-close" @click="showRefundModal = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="text-sm font-bold text-primary">{{ refundForm.targetStaff?.name }}</span>
+                <span class="capsule-badge badge-warning text-xs">
+                  วางประกันไว้: {{ formatDate(refundForm.guarantee?.deposit_date) }}
+                </span>
+              </div>
+              <div class="flex flex-between text-xs text-secondary">
+                <span>ยอดเงินประกันที่ต้องคืน:</span>
+                <span class="font-bold text-primary text-sm">{{ formatCurrency(refundForm.guarantee?.amount || 1000) }}</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">วันที่คืนเงินประกัน *</label>
+              <input type="date" class="form-input" v-model="refundForm.refund_date" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">ช่องทางการคืนเงิน *</label>
+              <select class="form-select" v-model="refundForm.refund_payment_method">
+                <option value="cash">💵 คืนเงินสด (จ่ายออกจากลิ้นชัก)</option>
+                <option value="transfer">📱 คืนด้วยการโอนเงิน</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label font-bold">บันทึกช่วยจำ</label>
+              <input type="text" class="form-input" v-model="refundForm.note" placeholder="เช่น คืนเงินประกันครบกำหนดวันที่ 10" />
+            </div>
+
+            <div class="bulk-hint-box" style="padding: var(--space-xs); margin-bottom: var(--space-md);">
+              <div class="text-xs text-secondary">
+                <i class="fa-solid fa-circle-exclamation text-warning mr-xs"></i> เมื่อกดยืนยัน ยอดเงิน <strong>{{ formatCurrency(refundForm.guarantee?.amount || 1000) }}</strong> จะถูกตัดเป็นรายจ่ายในหมวด <em>ค่าแรงพนักงาน/เงินเดือน</em> ของสาขาโดยอัตโนมัติ
+              </div>
+            </div>
+
+            <div class="flex gap-md mt-lg">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showRefundModal = false">ยกเลิก</button>
+              <button 
+                class="btn-modal btn-modal-primary flex-1" 
+                :disabled="savingRefund"
+                @click="handleConfirmRefundGuarantee"
+              >
+                <i v-if="savingRefund" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-arrow-rotate-left"></i>
+                <span>{{ savingRefund ? ' กำลังบันทึก...' : ' ยืนยันคืนเงินประกัน' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- MODAL 6: สรุปรายละเอียดรายวัน (Calendar Day Detail Modal) -->
+    <Teleport to="body">
+      <div v-if="showDayDetailModal" class="modal-container active">
+        <div class="modal-overlay" @click="showDayDetailModal = false"></div>
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-calendar-day" style="margin-right: 6px;"></i> รายละเอียดวันที่ {{ selectedDayDetail?.formattedDate }}</h3>
+            <button class="modal-close" @click="showDayDetailModal = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="font-bold text-sm text-primary">{{ currentCalendarStaff?.name }}</span>
+                <span class="skill-badge" :class="currentCalendarStaff?.skill_level" style="font-size: 10px; padding: 1px 6px;">
+                  {{ getSkillLabel(currentCalendarStaff?.skill_level) }}
+                </span>
+              </div>
+              <div class="text-xs text-secondary mb-xs">
+                อัตราค่าจ้าง: <strong>{{ formatCurrency(currentCalendarStaff?.wage_rate) }}</strong> / {{ currentCalendarStaff?.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}
+              </div>
+              
+              <div class="divider my-xs" style="height:1px; background:var(--border-color);"></div>
+
+              <!-- Attendance Detail -->
+              <div class="flex flex-between align-center mb-xs">
+                <span class="text-xs text-secondary">สถานะการทำงาน:</span>
+                <span v-if="selectedDayDetail?.status === 'present'" class="capsule-badge badge-success text-xs">
+                  <i class="fa-solid fa-circle-check"></i> มาทำงาน (ได้ค่าแรง)
+                </span>
+                <span v-else-if="selectedDayDetail?.status === 'leave_unpaid'" class="capsule-badge badge-warning text-xs">
+                  <i class="fa-solid fa-calendar-xmark"></i> ลาหยุด (ไม่ได้รับค่าจ้าง)
+                </span>
+                <span v-else-if="selectedDayDetail?.status === 'absent'" class="capsule-badge" style="background: rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.3); font-size: 11px;">
+                  <i class="fa-solid fa-circle-xmark"></i> ขาดงาน (ไม่ได้รับค่าจ้าง)
+                </span>
+                <span v-else class="text-xs text-muted">ไม่มีการบันทึกเวลา</span>
+              </div>
+
+              <div class="flex flex-between text-xs mb-xs">
+                <span class="text-secondary">ค่าจ้างประจำวัน:</span>
+                <span class="font-bold" :class="selectedDayDetail?.dailyWage > 0 ? 'text-primary' : 'text-muted'">
+                  {{ formatCurrency(selectedDayDetail?.dailyWage || 0) }}
+                </span>
+              </div>
+
+              <div class="flex flex-between text-xs mb-xs">
+                <span class="text-secondary">สวัสดิการข้าวเที่ยงฟรี:</span>
+                <span v-if="selectedDayDetail?.hadLunchBenefit" class="font-bold text-warning">🍚 ได้รับ</span>
+                <span v-else class="text-muted">-</span>
+              </div>
+
+              <!-- Event OT Details -->
+              <div v-if="selectedDayDetail?.ots && selectedDayDetail.ots.length > 0" class="mt-xs">
+                <div class="text-xs font-bold text-success mb-2xs"><i class="fa-solid fa-tags"></i> OT งานพิเศษในวันนี้:</div>
+                <div v-for="ot in selectedDayDetail.ots" :key="ot.id" class="flex flex-between text-xs p-xs mb-2xs" style="background: rgba(16,185,129,0.08); border-radius: 4px;">
+                  <span>{{ ot.event_name }}</span>
+                  <strong class="text-success">+{{ formatCurrency(ot.amount_per_person) }}</strong>
+                </div>
+              </div>
+
+              <!-- Advances Details -->
+              <div v-if="selectedDayDetail?.advances && selectedDayDetail.advances.length > 0" class="mt-xs">
+                <div class="text-xs font-bold text-danger mb-2xs"><i class="fa-solid fa-hand-holding-dollar"></i> เบิกเงินล่วงหน้าในวันนี้:</div>
+                <div v-for="adv in selectedDayDetail.advances" :key="adv.id" class="flex flex-between text-xs p-xs mb-2xs" style="background: rgba(239,68,68,0.08); border-radius: 4px;">
+                  <span>{{ adv.payment_method === 'transfer' ? 'โอน' : 'เงินสด' }} ({{ adv.note || 'ไม่มีหมายเหตุ' }})</span>
+                  <strong class="text-danger">-{{ formatCurrency(adv.amount) }}</strong>
+                </div>
+              </div>
+
+              <!-- Payout Details -->
+              <div v-if="selectedDayDetail?.payouts && selectedDayDetail.payouts.length > 0" class="mt-xs">
+                <div class="text-xs font-bold text-primary mb-2xs"><i class="fa-solid fa-receipt"></i> จ่ายค่าจ้างในวันนี้:</div>
+                <div v-for="pay in selectedDayDetail.payouts" :key="pay.id" class="flex flex-between text-xs p-xs mb-2xs" style="background: rgba(139,3,19,0.08); border-radius: 4px;">
+                  <span>{{ pay.payment_method === 'transfer' ? 'โอน' : 'เงินสด' }} (รอบทำงาน {{ pay.days_worked }} วัน)</span>
+                  <strong class="text-primary font-bold">{{ formatCurrency(pay.net_paid_amount) }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-md mt-lg">
+              <button class="btn-modal btn-modal-secondary flex-1" @click="showDayDetailModal = false">ปิด</button>
+              <button class="btn-modal btn-modal-primary flex-1" @click="jumpToAttendanceEdit(selectedDayDetail?.dateStr)">
+                <i class="fa-solid fa-pen-to-square"></i> แก้ไขการลงเวลา
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import api from '../api';
+import { ui, formatCurrency, formatDate, getUser } from '../helpers';
+
+const props = defineProps({
+  branchId: {
+    type: Number,
+    default: null
+  },
+  selectedDate: {
+    type: String,
+    default: null
+  },
+  selectedMonth: {
+    type: String,
+    default: null
+  },
+  selectedYear: {
+    type: String,
+    default: null
+  },
+  periodMode: {
+    type: String,
+    default: 'daily'
+  }
+});
+
+const emit = defineEmits(['update:selected-month', 'update:selected-date', 'update:selected-year', 'update:period-mode']);
+
+const currentUser = computed(() => getUser());
+const isAdminUser = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'manager');
+
+const activeSubTab = ref('employees');
+
+// Helper to get today's date in Thailand timezone (YYYY-MM-DD)
+const getTodayStr = () => {
+  const d = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return d.toISOString().split('T')[0];
+};
+
+const getCurrentMonthStr = () => {
+  return getTodayStr().substring(0, 7);
+};
+
+const thaiMonthsNames = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+];
+
+const thaiMonthsShort = [
+  'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+];
+
+// ─── Subtab 1: Employees State ────────────────────────────────
+const employees = ref([]);
+const loadingEmployees = ref(false);
+const showCompModal = ref(false);
+const selectedEmp = ref(null);
+const savingComp = ref(false);
+const compForm = ref({
+  wage_type: 'daily',
+  wage_rate: 0,
+  skill_level: 'regular',
+  benefits: 'ข้าวเที่ยงฟรี'
+});
+
+const fetchEmployees = async () => {
+  loadingEmployees.value = true;
+  try {
+    const res = await api.employees.getAll({ branch_id: props.branchId || '' });
+    if (res.success) {
+      employees.value = res.data || [];
+      if (!calendarSelectedStaffId.value && employees.value.length > 0) {
+        calendarSelectedStaffId.value = employees.value[0].id;
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching employees:', err);
+  } finally {
+    loadingEmployees.value = false;
+  }
+};
+
+const openEditCompensationModal = (emp) => {
+  selectedEmp.value = emp;
+  compForm.value = {
+    wage_type: emp.wage_type || 'daily',
+    wage_rate: emp.wage_rate !== undefined ? emp.wage_rate : 300,
+    skill_level: emp.skill_level || 'regular',
+    benefits: emp.benefits || 'ข้าวเที่ยงฟรี'
+  };
+  showCompModal.value = true;
+};
+
+const handleSaveCompensation = async () => {
+  if (!selectedEmp.value) return;
+  savingComp.value = true;
+  try {
+    const res = await api.employees.updateCompensation(selectedEmp.value.id, compForm.value);
+    if (res.success) {
+      ui.showToast('บันทึกข้อมูลค่าแรงเรียบร้อยแล้ว', 'success');
+      showCompModal.value = false;
+      await fetchEmployees();
+      await fetchMonthlyAttendance();
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'บันทึกข้อมูลไม่สำเร็จ', 'error');
+  } finally {
+    savingComp.value = false;
+  }
+};
+
+// ─── Subtab: Individual Calendar State ────────────────────────
+const calendarSelectedStaffId = ref(null);
+const calendarMonth = ref(getCurrentMonthStr());
+const monthlyAttendanceList = ref([]);
+const calendarEventOts = ref([]);
+const calendarAdvances = ref([]);
+const loadingMonthlyAttendance = ref(false);
+const showDayDetailModal = ref(false);
+const selectedDayDetail = ref(null);
+
+const isCalendarStaffDropdownOpen = ref(false);
+const isCalendarMonthDropdownOpen = ref(false);
+const calendarMonthPickerYear = ref(new Date().getFullYear());
+
+const toggleCalendarStaffDropdown = () => {
+  const cur = isCalendarStaffDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isCalendarStaffDropdownOpen.value = !cur;
+};
+
+const selectCalendarStaff = (id) => {
+  calendarSelectedStaffId.value = id;
+  isCalendarStaffDropdownOpen.value = false;
+};
+
+const currentCalendarStaff = computed(() => {
+  return employees.value.find(e => e.id === calendarSelectedStaffId.value) || null;
+});
+
+const calendarMonthLabel = computed(() => {
+  if (!calendarMonth.value) return '';
+  const [y, m] = calendarMonth.value.split('-');
+  const monthIdx = parseInt(m, 10) - 1;
+  const beYear = parseInt(y, 10) + 543;
+  return `${thaiMonthsNames[monthIdx] || ''} ${beYear}`;
+});
+
+const toggleCalendarMonthDropdown = () => {
+  const cur = isCalendarMonthDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isCalendarMonthDropdownOpen.value = !cur;
+  if (isCalendarMonthDropdownOpen.value) {
+    if (calendarMonth.value) {
+      calendarMonthPickerYear.value = Number(calendarMonth.value.split('-')[0]);
+    } else {
+      calendarMonthPickerYear.value = new Date().getFullYear();
+    }
+  }
+};
+
+const isCalendarMonthPickerSelected = (m) => {
+  if (!calendarMonth.value) return false;
+  const [y, mm] = calendarMonth.value.split('-');
+  return calendarMonthPickerYear.value === Number(y) && m === Number(mm);
+};
+
+const selectCalendarMonthPicker = (m) => {
+  calendarMonth.value = `${calendarMonthPickerYear.value}-${String(m).padStart(2, '0')}`;
+  payrollMonth.value = calendarMonth.value;
+  isCalendarMonthDropdownOpen.value = false;
+  emit('update:selected-month', calendarMonth.value);
+  emit('update:period-mode', 'monthly');
+  fetchMonthlyAttendance();
+  fetchEventOts();
+  fetchAdvances();
+};
+
+const adjustCalendarMonthPickerYear = (delta) => {
+  calendarMonthPickerYear.value += delta;
+};
+
+const adjustCalendarMonth = (diff) => {
+  if (!calendarMonth.value) return;
+  const [y, m] = calendarMonth.value.split('-').map(Number);
+  const d = new Date(y, m - 1 + diff, 1);
+  const nextY = d.getFullYear();
+  const nextM = String(d.getMonth() + 1).padStart(2, '0');
+  calendarMonth.value = `${nextY}-${nextM}`;
+  payrollMonth.value = calendarMonth.value;
+  emit('update:selected-month', calendarMonth.value);
+  emit('update:period-mode', 'monthly');
+  fetchMonthlyAttendance();
+  fetchEventOts();
+  fetchAdvances();
+};
+
+const setCalendarCurrentMonth = () => {
+  calendarMonth.value = getCurrentMonthStr();
+  payrollMonth.value = calendarMonth.value;
+  emit('update:selected-month', calendarMonth.value);
+  emit('update:period-mode', 'monthly');
+  fetchMonthlyAttendance();
+  fetchEventOts();
+  fetchAdvances();
+};
+
+const fetchMonthlyAttendance = async () => {
+  loadingMonthlyAttendance.value = true;
+  try {
+    const [attRes, otRes, advRes] = await Promise.all([
+      api.employees.getAttendance({
+        month: calendarMonth.value,
+        branch_id: props.branchId || ''
+      }),
+      api.employees.getEventOts({
+        month: calendarMonth.value,
+        branch_id: props.branchId || ''
+      }),
+      api.employees.getAdvances({
+        month: calendarMonth.value,
+        branch_id: props.branchId || ''
+      })
+    ]);
+    if (attRes.success) {
+      monthlyAttendanceList.value = attRes.data || [];
+    }
+    if (otRes.success) {
+      calendarEventOts.value = otRes.data || [];
+    }
+    if (advRes.success) {
+      calendarAdvances.value = advRes.data || [];
+    }
+    if (isAdminUser.value) {
+      await fetchPayrollCalculations();
+    }
+  } catch (err) {
+    console.error('Error fetching monthly attendance:', err);
+  } finally {
+    loadingMonthlyAttendance.value = false;
+  }
+};
+
+const calendarStartOffset = computed(() => {
+  if (!calendarMonth.value) return 0;
+  const [y, m] = calendarMonth.value.split('-').map(Number);
+  return new Date(y, m - 1, 1).getDay(); // 0 = Sun
+});
+
+const calendarDays = computed(() => {
+  if (!calendarMonth.value) return [];
+  const [y, m] = calendarMonth.value.split('-').map(Number);
+  const totalDays = new Date(y, m, 0).getDate();
+  const todayStr = getTodayStr();
+  const staffId = calendarSelectedStaffId.value;
+  const staff = currentCalendarStaff.value;
+  const wageRate = staff?.wage_rate || 0;
+
+  // History payouts for this staff
+  const staffHistoryPayouts = (payrollList.value.find(p => p.user_id === staffId)?.history_payouts || []);
+
+  const result = [];
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const att = monthlyAttendanceList.value.find(a => a.user_id === staffId && a.work_date === dateStr);
+    
+    // OT events for this staff on this day
+    const ots = calendarEventOts.value.filter(ev => 
+      ev.event_date === dateStr && 
+      (ev.participants || []).some(p => p.user_id === staffId)
+    );
+
+    // Advances for this staff on this day
+    const advs = calendarAdvances.value.filter(adv => 
+      adv.user_id === staffId && 
+      adv.advance_date === dateStr
+    );
+
+    // Payouts for this staff on this day
+    const payouts = staffHistoryPayouts.filter(pay => pay.payment_date === dateStr);
+
+    const status = att ? att.status : null;
+    const isPresent = status === 'present';
+    const hadLunch = isPresent && (att?.had_lunch_benefit === 1 || att?.had_lunch_benefit === true);
+    const dailyWage = isPresent ? (att?.daily_wage !== undefined && att?.daily_wage !== null ? Number(att.daily_wage) : wageRate) : 0;
+
+    result.push({
+      dayNum: d,
+      dateStr,
+      formattedDate: formatDate(dateStr),
+      isToday: dateStr === todayStr,
+      status,
+      hadLunchBenefit: hadLunch,
+      dailyWage,
+      ots,
+      advances: advs,
+      payouts
+    });
+  }
+  return result;
+});
+
+const selectedStaffSummary = computed(() => {
+  if (!currentCalendarStaff.value) return null;
+  const days = calendarDays.value;
+  let daysWorked = 0;
+  let leaveDays = 0;
+  let absentDays = 0;
+  let lunchCount = 0;
+  let baseWage = 0;
+  let totalOt = 0;
+  let totalAdvances = 0;
+  let totalPayouts = 0;
+
+  for (const day of days) {
+    if (day.status === 'present') {
+      daysWorked++;
+      baseWage += day.dailyWage;
+      if (day.hadLunchBenefit) lunchCount++;
+    } else if (day.status === 'leave_unpaid') {
+      leaveDays++;
+    } else if (day.status === 'absent') {
+      absentDays++;
+    }
+
+    for (const ot of day.ots) {
+      totalOt += Number(ot.amount_per_person || 0);
+    }
+    for (const adv of day.advances) {
+      totalAdvances += Number(adv.amount || 0);
+    }
+    for (const pay of day.payouts || []) {
+      totalPayouts += Number(pay.net_paid_amount || 0);
+    }
+  }
+
+  return {
+    daysWorked,
+    leaveDays,
+    absentDays,
+    lunchCount,
+    baseWage,
+    totalOt,
+    totalAdvances,
+    totalPayouts
+  };
+});
+
+const openDayDetail = (day) => {
+  selectedDayDetail.value = day;
+  showDayDetailModal.value = true;
+};
+
+const jumpToAttendanceEdit = (dateStr) => {
+  showDayDetailModal.value = false;
+  attendanceDate.value = dateStr;
+  activeSubTab.value = 'attendance';
+  emit('update:selected-date', attendanceDate.value);
+  emit('update:period-mode', 'daily');
+  fetchDailyAttendance();
+};
+
+// ─── Subtab 2: Attendance State ──────────────────────────────
+const attendanceDate = ref(getTodayStr());
+const attendanceRecords = ref([]);
+const loadingAttendance = ref(false);
+const savingAttendance = ref(false);
+
+const isAttendanceDateDropdownOpen = ref(false);
+const attendanceDatePickerYear = ref(new Date().getFullYear());
+const attendanceDatePickerMonth = ref(new Date().getMonth() + 1);
+
+const attendanceDateLabel = computed(() => {
+  if (!attendanceDate.value) return 'เลือกวัน';
+  return formatDate(attendanceDate.value);
+});
+
+const attendanceDatePickerMonthName = computed(() => {
+  return thaiMonthsNames[attendanceDatePickerMonth.value - 1] || '';
+});
+
+const attendanceDatePickerDaysCount = computed(() => {
+  return new Date(attendanceDatePickerYear.value, attendanceDatePickerMonth.value, 0).getDate();
+});
+
+const attendanceDatePickerStartOffset = computed(() => {
+  return new Date(attendanceDatePickerYear.value, attendanceDatePickerMonth.value - 1, 1).getDay();
+});
+
+const toggleAttendanceDateDropdown = () => {
+  const cur = isAttendanceDateDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isAttendanceDateDropdownOpen.value = !cur;
+  if (isAttendanceDateDropdownOpen.value) {
+    if (attendanceDate.value) {
+      const [y, m] = attendanceDate.value.split('-');
+      attendanceDatePickerYear.value = Number(y);
+      attendanceDatePickerMonth.value = Number(m);
+    } else {
+      const today = new Date();
+      attendanceDatePickerYear.value = today.getFullYear();
+      attendanceDatePickerMonth.value = today.getMonth() + 1;
+    }
+  }
+};
+
+const isAttendanceDatePickerSelected = (day) => {
+  if (!attendanceDate.value) return false;
+  const [y, m, d] = attendanceDate.value.split('-');
+  return attendanceDatePickerYear.value === Number(y) &&
+         attendanceDatePickerMonth.value === Number(m) &&
+         day === Number(d);
+};
+
+const selectAttendanceDatePickerDay = (day) => {
+  attendanceDate.value = `${attendanceDatePickerYear.value}-${String(attendanceDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  isAttendanceDateDropdownOpen.value = false;
+  emit('update:selected-date', attendanceDate.value);
+  emit('update:period-mode', 'daily');
+  fetchDailyAttendance();
+};
+
+const adjustAttendanceDatePickerMonth = (amount) => {
+  let m = attendanceDatePickerMonth.value + amount;
+  let y = attendanceDatePickerYear.value;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  } else if (m > 12) {
+    m = 1;
+    y += 1;
+  }
+  attendanceDatePickerMonth.value = m;
+  attendanceDatePickerYear.value = y;
+};
+
+const setTodayAttendance = () => {
+  attendanceDate.value = getTodayStr();
+  isAttendanceDateDropdownOpen.value = false;
+  emit('update:selected-date', attendanceDate.value);
+  emit('update:period-mode', 'daily');
+  fetchDailyAttendance();
+};
+
+const fetchDailyAttendance = async () => {
+  loadingAttendance.value = true;
+  try {
+    const res = await api.employees.getAttendance({
+      date: attendanceDate.value,
+      branch_id: props.branchId || ''
+    });
+    if (res.success) {
+      attendanceRecords.value = (res.data || []).map(r => ({
+        ...r,
+        daily_wage: (r.daily_wage !== undefined && r.daily_wage !== null) ? Number(r.daily_wage) : (r.wage_rate || 300),
+        status: r.status || 'present',
+        had_lunch_benefit: r.had_lunch_benefit !== undefined ? r.had_lunch_benefit : 1
+      }));
+    }
+  } catch (err) {
+    console.error('Error fetching attendance:', err);
+  } finally {
+    loadingAttendance.value = false;
+  }
+};
+
+const handleSaveAttendance = async () => {
+  savingAttendance.value = true;
+  try {
+    const res = await api.employees.saveAttendance({
+      work_date: attendanceDate.value,
+      records: attendanceRecords.value,
+      branch_id: props.branchId
+    });
+    if (res.success) {
+      ui.showToast('บันทึกการลงเวลาเรียบร้อยแล้ว', 'success');
+      await fetchDailyAttendance();
+      await fetchMonthlyAttendance();
+      if (isAdminUser.value) {
+        await fetchPayrollCalculations();
+      }
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'บันทึกการลงเวลาไม่สำเร็จ', 'error');
+  } finally {
+    savingAttendance.value = false;
+  }
+};
+
+// ─── Subtab 3: Event OTs State ───────────────────────────────
+const eventOts = ref([]);
+const loadingEventOts = ref(false);
+const showAddEventOtModal = ref(false);
+const savingEventOt = ref(false);
+const eventOtForm = ref({
+  event_name: '',
+  event_date: getTodayStr(),
+  amount_per_person: 100,
+  user_ids: [],
+  note: ''
+});
+
+const getPeriodQueryParams = () => {
+  const params = { branch_id: props.branchId || '' };
+  if (props.periodMode === 'daily') {
+    params.date = props.selectedDate || getTodayStr();
+  } else if (props.periodMode === 'yearly') {
+    params.year = props.selectedYear || (props.selectedMonth ? props.selectedMonth.split('-')[0] : String(new Date().getFullYear()));
+  } else {
+    // monthly (default)
+    params.month = props.selectedMonth || calendarMonth.value || payrollMonth.value || getCurrentMonthStr();
+  }
+  return params;
+};
+
+const emptyEventOtsMessage = computed(() => {
+  if (props.periodMode === 'daily') {
+    return `ยังไม่มีรายการ OT งานพิเศษในวันที่ ${formatDate(props.selectedDate || getTodayStr())}`;
+  } else if (props.periodMode === 'yearly') {
+    const y = props.selectedYear || (props.selectedMonth ? props.selectedMonth.split('-')[0] : String(new Date().getFullYear()));
+    return `ยังไม่มีรายการ OT งานพิเศษในปี พ.ศ. ${Number(y) + 543}`;
+  } else {
+    return 'ยังไม่มีรายการ OT งานพิเศษในเดือนนี้';
+  }
+});
+
+const emptyAdvancesMessage = computed(() => {
+  if (props.periodMode === 'daily') {
+    return `ยังไม่มีรายการเบิกเงินล่วงหน้าในวันที่ ${formatDate(props.selectedDate || getTodayStr())}`;
+  } else if (props.periodMode === 'yearly') {
+    const y = props.selectedYear || (props.selectedMonth ? props.selectedMonth.split('-')[0] : String(new Date().getFullYear()));
+    return `ยังไม่มีรายการเบิกเงินล่วงหน้าในปี พ.ศ. ${Number(y) + 543}`;
+  } else {
+    return 'ยังไม่มีรายการเบิกเงินล่วงหน้าในเดือนนี้';
+  }
+});
+
+const fetchEventOts = async () => {
+  loadingEventOts.value = true;
+  try {
+    const params = getPeriodQueryParams();
+    const res = await api.employees.getEventOts(params);
+    if (res.success) {
+      eventOts.value = res.data || [];
+    }
+  } catch (err) {
+    console.error('Error fetching event ots:', err);
+  } finally {
+    loadingEventOts.value = false;
+  }
+};
+
+watch(showAddEventOtModal, (isOpen) => {
+  if (isOpen) {
+    if (!eventOtForm.value.event_date) {
+      eventOtForm.value.event_date = props.selectedDate || getTodayStr();
+    }
+  }
+});
+
+const handleSaveEventOt = async () => {
+  if (savingEventOt.value) return;
+  if (!eventOtForm.value.event_name || !eventOtForm.value.amount_per_person || eventOtForm.value.user_ids.length === 0) return;
+  savingEventOt.value = true;
+  try {
+    const res = await api.employees.createEventOt({
+      ...eventOtForm.value,
+      branch_id: props.branchId
+    });
+    if (res.success) {
+      ui.showToast('บันทึก OT อีเวนต์สำเร็จ', 'success');
+      showAddEventOtModal.value = false;
+      eventOtForm.value = {
+        event_name: '',
+        event_date: getTodayStr(),
+        amount_per_person: 100,
+        user_ids: [],
+        note: ''
+      };
+      await fetchEventOts();
+      await fetchMonthlyAttendance();
+      if (isAdminUser.value) {
+        await fetchPayrollCalculations();
+      }
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'บันทึก OT อีเวนต์ไม่สำเร็จ', 'error');
+  } finally {
+    savingEventOt.value = false;
+  }
+};
+
+const deletingEventOtId = ref(null);
+
+const handleDeleteEventOt = async (id) => {
+  const confirmed = await ui.showConfirm('ยืนยันการลบ', 'คุณต้องการลบรายการ OT อีเวนต์นี้ใช่หรือไม่?');
+  if (!confirmed) return;
+  deletingEventOtId.value = id;
+  try {
+    const res = await api.employees.deleteEventOt(id);
+    if (res.success) {
+      ui.showToast('ลบรายการ OT อีเวนต์เรียบร้อยแล้ว', 'success');
+      await fetchEventOts();
+      await fetchMonthlyAttendance();
+      if (isAdminUser.value) {
+        await fetchPayrollCalculations();
+      }
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'ลบไม่สำเร็จ', 'error');
+  } finally {
+    deletingEventOtId.value = null;
+  }
+};
+
+// ─── Subtab 4: Advances State ────────────────────────────────
+const advances = ref([]);
+const loadingAdvances = ref(false);
+const showAddAdvanceModal = ref(false);
+const savingAdvance = ref(false);
+const deletingAdvanceId = ref(null);
+const advanceForm = ref({
+  user_id: null,
+  amount: 500,
+  advance_date: getTodayStr(),
+  payment_method: 'cash',
+  note: ''
+});
+
+const selectedStaffAvailableWage = computed(() => {
+  if (!advanceForm.value.user_id) return null;
+  const pItem = payrollList.value.find(p => p.user_id === advanceForm.value.user_id);
+  if (pItem) {
+    const grossUnpaid = (pItem.unpaid_base_salary || 0) + (pItem.event_ot_amount || 0) - (pItem.advance_deducted_amount || 0);
+    return {
+      unpaidDays: pItem.unpaid_days_worked || 0,
+      unpaidBase: pItem.unpaid_base_salary || 0,
+      eventOt: pItem.event_ot_amount || 0,
+      existingAdvances: pItem.advance_deducted_amount || 0,
+      maxAvailable: Math.max(0, grossUnpaid)
+    };
+  }
+
+  const emp = employees.value.find(e => e.id === advanceForm.value.user_id);
+  return {
+    unpaidDays: 0,
+    unpaidBase: 0,
+    eventOt: 0,
+    existingAdvances: 0,
+    maxAvailable: 0
+  };
+});
+
+watch(showAddAdvanceModal, (isOpen) => {
+  if (isOpen) {
+    fetchPayrollCalculations();
+  }
+});
+
+const fetchAdvances = async () => {
+  loadingAdvances.value = true;
+  try {
+    const params = getPeriodQueryParams();
+    const res = await api.employees.getAdvances(params);
+    if (res.success) {
+      advances.value = res.data || [];
+    }
+  } catch (err) {
+    console.error('Error fetching advances:', err);
+  } finally {
+    loadingAdvances.value = false;
+  }
+};
+
+const handleSaveAdvance = async () => {
+  if (savingAdvance.value) return;
+  if (!advanceForm.value.user_id || !advanceForm.value.amount || advanceForm.value.amount <= 0) return;
+  savingAdvance.value = true;
+  try {
+    const res = await api.employees.createAdvance({
+      ...advanceForm.value,
+      branch_id: props.branchId
+    });
+    if (res.success) {
+      ui.showToast('บันทึกการเบิกเงินและตัดเข้ารายจ่ายสาขาเรียบร้อยแล้ว', 'success');
+      showAddAdvanceModal.value = false;
+      advanceForm.value = {
+        user_id: null,
+        amount: 500,
+        advance_date: getTodayStr(),
+        payment_method: 'cash',
+        note: ''
+      };
+      await fetchAdvances();
+      await fetchMonthlyAttendance();
+      if (isAdminUser.value) {
+        await fetchPayrollCalculations();
+      }
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'บันทึกการเบิกเงินไม่สำเร็จ', 'error');
+  } finally {
+    savingAdvance.value = false;
+  }
+};
+
+const handleDeleteAdvance = async (id) => {
+  const confirmed = await ui.showConfirm('ยืนยันยกเลิก', 'คุณต้องการยกเลิกรายการเบิกเงินนี้ใช่หรือไม่? (ระบบจะลบออกจากรายจ่ายสาขาด้วย)');
+  if (!confirmed) return;
+  deletingAdvanceId.value = id;
+  try {
+    const res = await api.employees.deleteAdvance(id);
+    if (res.success) {
+      ui.showToast('ยกเลิกรายการเบิกเงินและลบออกจากรายจ่ายเรียบร้อยแล้ว', 'success');
+      await fetchAdvances();
+      await fetchMonthlyAttendance();
+      if (isAdminUser.value) {
+        await fetchPayrollCalculations();
+      }
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'ยกเลิกรายการไม่สำเร็จ', 'error');
+  } finally {
+    deletingAdvanceId.value = null;
+  }
+};
+
+// ─── Subtab 5: Payroll Calculation State ─────────────────────
+const payrollMonth = ref(getCurrentMonthStr());
+const payrollList = ref([]);
+const loadingPayroll = ref(false);
+const showPayModal = ref(false);
+const payingItem = ref(null);
+const processingPayout = ref(false);
+const payForm = ref({
+  payment_method: 'cash',
+  payment_date: getTodayStr(),
+  note: ''
+});
+
+const isPayrollMonthDropdownOpen = ref(false);
+const payrollMonthPickerYear = ref(new Date().getFullYear());
+
+const payrollMonthLabel = computed(() => {
+  if (!payrollMonth.value) return '';
+  const [y, m] = payrollMonth.value.split('-');
+  const monthIdx = parseInt(m, 10) - 1;
+  const beYear = parseInt(y, 10) + 543;
+  return `${thaiMonthsNames[monthIdx] || ''} ${beYear}`;
+});
+
+const togglePayrollMonthDropdown = () => {
+  const cur = isPayrollMonthDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isPayrollMonthDropdownOpen.value = !cur;
+  if (isPayrollMonthDropdownOpen.value) {
+    if (payrollMonth.value) {
+      payrollMonthPickerYear.value = Number(payrollMonth.value.split('-')[0]);
+    } else {
+      payrollMonthPickerYear.value = new Date().getFullYear();
+    }
+  }
+};
+
+const isPayrollMonthPickerSelected = (m) => {
+  if (!payrollMonth.value) return false;
+  const [y, mm] = payrollMonth.value.split('-');
+  return payrollMonthPickerYear.value === Number(y) && m === Number(mm);
+};
+
+const selectPayrollMonthPicker = (m) => {
+  payrollMonth.value = `${payrollMonthPickerYear.value}-${String(m).padStart(2, '0')}`;
+  calendarMonth.value = payrollMonth.value;
+  isPayrollMonthDropdownOpen.value = false;
+  emit('update:selected-month', payrollMonth.value);
+  emit('update:period-mode', 'monthly');
+  fetchPayrollCalculations();
+};
+
+const adjustPayrollMonthPickerYear = (delta) => {
+  payrollMonthPickerYear.value += delta;
+};
+
+const adjustPayrollMonth = (diff) => {
+  if (!payrollMonth.value) return;
+  const [y, m] = payrollMonth.value.split('-').map(Number);
+  const d = new Date(y, m - 1 + diff, 1);
+  const nextY = d.getFullYear();
+  const nextM = String(d.getMonth() + 1).padStart(2, '0');
+  payrollMonth.value = `${nextY}-${nextM}`;
+  calendarMonth.value = payrollMonth.value;
+  emit('update:selected-month', payrollMonth.value);
+  emit('update:period-mode', 'monthly');
+  fetchPayrollCalculations();
+};
+
+const setPayrollCurrentMonth = () => {
+  payrollMonth.value = getCurrentMonthStr();
+  calendarMonth.value = payrollMonth.value;
+  emit('update:selected-month', payrollMonth.value);
+  emit('update:period-mode', 'monthly');
+  fetchPayrollCalculations();
+};
+
+const showSlipModal = ref(false);
+const selectedSlipItem = ref(null);
+
+// ─── Subtab 6: Guarantee & Multi-Payout State & Handlers ─────
+const showDepositModal = ref(false);
+const savingDeposit = ref(false);
+const depositForm = ref({
+  targetStaff: null,
+  amount: 1000,
+  deposit_date: getTodayStr(),
+  deposit_payment_method: 'cash',
+  note: ''
+});
+
+const showRefundModal = ref(false);
+const savingRefund = ref(false);
+const refundForm = ref({
+  guarantee: null,
+  targetStaff: null,
+  refund_date: getTodayStr(),
+  refund_payment_method: 'cash',
+  note: ''
+});
+
+const showHistoryModal = ref(false);
+const selectedHistoryStaff = ref(null);
+
+const openDepositGuaranteeModal = (item) => {
+  depositForm.value = {
+    targetStaff: item,
+    amount: item?.guarantee?.amount || 1000,
+    deposit_date: getTodayStr(),
+    deposit_payment_method: 'cash',
+    note: ''
+  };
+  showDepositModal.value = true;
+};
+
+const depositFormTargetAvailableWage = computed(() => {
+  if (!depositForm.value.targetStaff) return 0;
+  const staff = depositForm.value.targetStaff;
+  const gross = (staff.unpaid_base_salary || 0) + (staff.event_ot_amount || 0) - (staff.advance_deducted_amount || 0);
+  return Math.max(0, gross);
+});
+
+const handleConfirmDepositGuarantee = async () => {
+  if (!depositForm.value.targetStaff) return;
+  const availWage = depositFormTargetAvailableWage.value;
+  const requiredAmount = Number(depositForm.value.amount || 1000);
+
+  if (availWage < requiredAmount) {
+    const confirmed = await ui.showConfirm(
+      'แจ้งเตือนยอดค่าแรงสะสม',
+      `พนักงานมียอดค่าแรงสะสมในรอบนี้เพียง ${formatCurrency(availWage)} (ยังไม่ถึงเกณฑ์ ฿${formatCurrency(requiredAmount)})\n\nคุณต้องการยืนยันบันทึกรับเงินประกันใช่หรือไม่?`
+    );
+    if (!confirmed) return;
+  }
+
+  savingDeposit.value = true;
+  try {
+    const res = await api.employees.depositGuarantee({
+      user_id: depositForm.value.targetStaff.user_id,
+      amount: depositForm.value.amount,
+      deposit_date: depositForm.value.deposit_date,
+      deposit_payment_method: depositForm.value.deposit_payment_method,
+      note: depositForm.value.note,
+      branch_id: props.branchId
+    });
+    if (res.success) {
+      ui.showToast('บันทึกรับเงินประกันเรียบร้อยแล้ว', 'success');
+      showDepositModal.value = false;
+      await fetchPayrollCalculations();
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'บันทึกรับเงินประกันไม่สำเร็จ', 'error');
+  } finally {
+    savingDeposit.value = false;
+  }
+};
+
+const openRefundGuaranteeModal = (guar, item) => {
+  refundForm.value = {
+    guarantee: guar,
+    targetStaff: item,
+    refund_date: getTodayStr(),
+    refund_payment_method: 'cash',
+    note: ''
+  };
+  showRefundModal.value = true;
+};
+
+const handleConfirmRefundGuarantee = async () => {
+  if (!refundForm.value.guarantee) return;
+  savingRefund.value = true;
+  try {
+    const res = await api.employees.refundGuarantee({
+      guarantee_id: refundForm.value.guarantee.id,
+      refund_date: refundForm.value.refund_date,
+      refund_payment_method: refundForm.value.refund_payment_method,
+      note: refundForm.value.note,
+      branch_id: props.branchId
+    });
+    if (res.success) {
+      ui.showToast('บันทึกคืนเงินประกันและตัดเข้ารายจ่ายสาขาเรียบร้อยแล้ว', 'success');
+      showRefundModal.value = false;
+      await fetchPayrollCalculations();
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'บันทึกคืนเงินประกันไม่สำเร็จ', 'error');
+  } finally {
+    savingRefund.value = false;
+  }
+};
+
+const openHistoryPayoutsModal = (item) => {
+  selectedHistoryStaff.value = item;
+  showHistoryModal.value = true;
+};
+
+const fetchPayrollCalculations = async () => {
+  loadingPayroll.value = true;
+  try {
+    const res = await api.employees.calculatePayroll({
+      month: payrollMonth.value,
+      branch_id: props.branchId || ''
+    });
+    if (res.success) {
+      payrollList.value = res.data?.employees || [];
+    }
+  } catch (err) {
+    console.error('Error fetching payroll calculations:', err);
+  } finally {
+    loadingPayroll.value = false;
+  }
+};
+
+const openPayModal = (item) => {
+  payingItem.value = item;
+  const hasBase = (item.unpaid_days_worked > 0 || item.unpaid_base_salary > 0);
+  const hasOt = (item.event_ot_amount > 0);
+  const hasAdv = (item.advance_deducted_amount > 0);
+
+  payForm.value = {
+    pay_base_salary: hasBase,
+    days_to_pay: item.unpaid_days_worked || 1,
+    pay_event_ot: hasOt,
+    deduct_advance: hasAdv,
+    deduct_guarantee: false,
+    holdback_deducted_amount: item.guarantee?.amount || 1000,
+    custom_net_paid: item.net_payable_round || 0,
+    payment_method: 'cash',
+    payment_date: getTodayStr(),
+    note: ''
+  };
+  showPayModal.value = true;
+};
+
+const adjustDaysToPay = (delta) => {
+  if (!payingItem.value) return;
+  const maxDays = payingItem.value.unpaid_days_worked || 1;
+  const currentDays = payForm.value.days_to_pay !== undefined ? payForm.value.days_to_pay : maxDays;
+  const nextDays = Math.max(1, Math.min(maxDays, currentDays + delta));
+  payForm.value.days_to_pay = nextDays;
+  handlePayoutCheckboxChange();
+};
+
+const computedBaseSalaryToPay = computed(() => {
+  if (!payingItem.value || !payForm.value.pay_base_salary) return 0;
+  if (payingItem.value.wage_type === 'monthly') {
+    return payingItem.value.unpaid_base_salary || 0;
+  }
+  const days = payForm.value.days_to_pay !== undefined ? payForm.value.days_to_pay : (payingItem.value.unpaid_days_worked || 0);
+  const rate = payingItem.value.wage_rate || 0;
+  return days * rate;
+});
+
+const earningsBeforeGuarantee = computed(() => {
+  if (!payingItem.value) return 0;
+  const base = computedBaseSalaryToPay.value;
+  const ot = (payForm.value.pay_event_ot && payingItem.value.event_ot_amount) ? payingItem.value.event_ot_amount : 0;
+  const adv = (payForm.value.deduct_advance && payingItem.value.advance_deducted_amount) ? payingItem.value.advance_deducted_amount : 0;
+  return Math.max(0, base + ot - adv);
+});
+
+const computedNetPayable = computed(() => {
+  if (!payingItem.value) return 0;
+  const base = computedBaseSalaryToPay.value;
+  const ot = (payForm.value.pay_event_ot && payingItem.value.event_ot_amount) ? payingItem.value.event_ot_amount : 0;
+  const adv = (payForm.value.deduct_advance && payingItem.value.advance_deducted_amount) ? payingItem.value.advance_deducted_amount : 0;
+  
+  let guar = 0;
+  if (payingItem.value.guarantee && payingItem.value.guarantee.status === 'held' && !payingItem.value.is_guarantee_settled) {
+    guar = Number(payingItem.value.guarantee.amount || 1000);
+  } else if (payForm.value.deduct_guarantee) {
+    guar = Number(payForm.value.holdback_deducted_amount || 1000);
+  }
+  return Math.max(0, base + ot - adv - guar);
+});
+
+const handlePayoutCheckboxChange = () => {
+  payForm.value.custom_net_paid = computedNetPayable.value;
+};
+
+const handleConfirmPayout = async () => {
+  if (!payingItem.value) return;
+  processingPayout.value = true;
+  try {
+    const daysToPay = payForm.value.pay_base_salary 
+      ? (payForm.value.days_to_pay !== undefined ? payForm.value.days_to_pay : (payingItem.value.unpaid_days_worked || 0))
+      : 0;
+    const baseSalaryToPay = computedBaseSalaryToPay.value;
+
+    const isAlreadyHeldPendingSettlement = Boolean(
+      payingItem.value.guarantee && 
+      payingItem.value.guarantee.status === 'held' && 
+      !payingItem.value.is_guarantee_settled
+    );
+    const shouldDeductGuarantee = isAlreadyHeldPendingSettlement || payForm.value.deduct_guarantee;
+    const holdbackAmt = shouldDeductGuarantee ? Number(payingItem.value.guarantee?.amount || payForm.value.holdback_deducted_amount || 1000) : 0;
+
+    const payload = {
+      user_id: payingItem.value.user_id,
+      period_month: payrollMonth.value,
+      days_worked: daysToPay,
+      daily_rate: payingItem.value.wage_rate,
+      base_salary_amount: baseSalaryToPay,
+      event_ot_amount: payingItem.value.event_ot_amount,
+      advance_deducted_amount: payingItem.value.advance_deducted_amount,
+      holdback_deducted_amount: holdbackAmt,
+      net_paid_amount: payForm.value.custom_net_paid !== undefined && payForm.value.custom_net_paid !== null ? payForm.value.custom_net_paid : computedNetPayable.value,
+      payment_method: payForm.value.payment_method,
+      payment_date: payForm.value.payment_date,
+      note: payForm.value.note,
+      branch_id: props.branchId,
+      pay_base_salary: payForm.value.pay_base_salary,
+      pay_event_ot: payForm.value.pay_event_ot,
+      deduct_advance: payForm.value.deduct_advance,
+      deduct_guarantee: shouldDeductGuarantee
+    };
+
+    const res = await api.employees.paySalary(payload);
+    if (res.success) {
+      ui.showToast('บันทึกการจ่ายเงินรอบนี้และตัดเข้ารายจ่ายสาขาสำเร็จ', 'success');
+      showPayModal.value = false;
+      await fetchPayrollCalculations();
+      await fetchAdvances();
+      await fetchEventOts();
+      await fetchMonthlyAttendance();
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'บันทึกการจ่ายเงินไม่สำเร็จ', 'error');
+  } finally {
+    processingPayout.value = false;
+  }
+};
+
+const openSlipModal = (item) => {
+  selectedSlipItem.value = item;
+  showSlipModal.value = true;
+};
+
+// ─── Helpers ─────────────────────────────────────────────────
+const getRoleLabel = (role) => {
+  if (role === 'admin') return 'เจ้าของร้าน/แอดมิน';
+  if (role === 'manager') return 'ผู้จัดการ';
+  return 'พนักงานหน้าร้าน';
+};
+
+const getSkillLabel = (skill) => {
+  if (skill === 'trainee') return 'ฝึกงาน';
+  if (skill === 'expert') return 'เชี่ยวชาญ';
+  return 'ประจำ';
+};
+
+const getSkillIcon = (skill) => {
+  if (skill === 'trainee') return 'fa-solid fa-seedling';
+  if (skill === 'expert') return 'fa-solid fa-trophy';
+  return 'fa-solid fa-star';
+};
+
+const reloadAllData = async () => {
+  if (props.selectedDate) {
+    attendanceDate.value = props.selectedDate;
+  }
+  if (props.selectedMonth) {
+    payrollMonth.value = props.selectedMonth;
+    calendarMonth.value = props.selectedMonth;
+  }
+  await fetchEmployees();
+  await fetchDailyAttendance();
+  await fetchMonthlyAttendance();
+  await fetchEventOts();
+  await fetchAdvances();
+  if (isAdminUser.value) {
+    await fetchPayrollCalculations();
+  }
+};
+
+watch(() => props.branchId, () => {
+  reloadAllData();
+});
+
+watch(() => props.selectedDate, (newDate) => {
+  if (newDate) {
+    attendanceDate.value = newDate;
+    fetchDailyAttendance();
+    if (props.periodMode === 'daily') {
+      fetchEventOts();
+      fetchAdvances();
+    }
+  }
+});
+
+watch(() => props.selectedMonth, (newMonth) => {
+  if (newMonth && (newMonth !== payrollMonth.value || newMonth !== calendarMonth.value)) {
+    payrollMonth.value = newMonth;
+    calendarMonth.value = newMonth;
+    fetchMonthlyAttendance();
+    if (props.periodMode === 'monthly') {
+      fetchEventOts();
+      fetchAdvances();
+    }
+    if (isAdminUser.value) {
+      fetchPayrollCalculations();
+    }
+  }
+});
+
+watch(() => props.selectedYear, () => {
+  if (props.periodMode === 'yearly') {
+    fetchEventOts();
+    fetchAdvances();
+  }
+});
+
+watch(() => props.periodMode, () => {
+  fetchEventOts();
+  fetchAdvances();
+});
+
+watch(activeSubTab, (newTab) => {
+  if (newTab === 'calendar') {
+    emit('update:period-mode', 'monthly');
+    emit('update:selected-month', calendarMonth.value);
+  } else if (newTab === 'payroll') {
+    emit('update:period-mode', 'monthly');
+    emit('update:selected-month', payrollMonth.value);
+  } else if (newTab === 'attendance') {
+    emit('update:period-mode', 'daily');
+    emit('update:selected-date', attendanceDate.value);
+  }
+});
+
+const closeAllPickerDropdowns = () => {
+  isCalendarStaffDropdownOpen.value = false;
+  isCalendarMonthDropdownOpen.value = false;
+  isAttendanceDateDropdownOpen.value = false;
+  isPayrollMonthDropdownOpen.value = false;
+};
+
+onMounted(() => {
+  window.addEventListener('click', closeAllPickerDropdowns);
+  reloadAllData();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeAllPickerDropdowns);
+});
+</script>
+
+<style scoped>
+.category-tabs .btn {
+  font-size: var(--font-sm);
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+}
+.category-tabs .btn.active {
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+}
+.capsule-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+}
+.capsule-badge.badge-primary {
+  background: rgba(139, 3, 19, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(139, 3, 19, 0.2);
+}
+.capsule-badge.badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.capsule-badge.badge-neutral {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+.capsule-badge.badge-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.skill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+}
+.skill-badge.trainee {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.skill-badge.regular {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.skill-badge.expert {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.benefit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: var(--font-xs);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  font-weight: 500;
+}
+.status-btn {
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-btn:hover {
+  background: rgba(139, 3, 19, 0.05);
+}
+.status-btn.active-present {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+  font-weight: bold;
+}
+.status-btn.active-leave {
+  background: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
+  font-weight: bold;
+}
+.status-btn.active-absent {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+  font-weight: bold;
+}
+.bulk-hint-box {
+  background: rgba(139, 3, 19, 0.04);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+/* ─── Lunch Benefit Checkbox Alignment ────────────────────── */
+.lunch-benefit-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  vertical-align: middle;
+}
+
+.lunch-benefit-wrapper:hover:not(.disabled) {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.lunch-benefit-wrapper.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.lunch-benefit-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0 !important;
+  padding: 0 !important;
+  accent-color: var(--primary);
+  cursor: pointer;
+  vertical-align: middle;
+  flex-shrink: 0;
+  display: block;
+}
+
+.lunch-benefit-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold);
+  color: #b45309;
+  line-height: 1;
+}
+
+.lunch-benefit-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lunch-benefit-text {
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* ─── Calendar Specific Styles ────────────────────────────── */
+.calendar-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-sm);
+}
+.calendar-grid-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.calendar-weekday-cell {
+  text-align: center;
+  font-weight: bold;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  padding: 6px 2px;
+  background: rgba(139, 3, 19, 0.03);
+  border-radius: var(--radius-sm);
+}
+.calendar-grid-body {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.calendar-day-empty {
+  min-height: 85px;
+  background: rgba(0, 0, 0, 0.015);
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(0, 0, 0, 0.05);
+}
+.calendar-day-cell {
+  min-height: 85px;
+  padding: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+}
+.calendar-day-cell:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.12);
+}
+.calendar-day-cell.is-today {
+  border: 2px solid var(--primary);
+  background: rgba(139, 3, 19, 0.02);
+}
+.day-number {
+  font-weight: bold;
+  font-size: var(--font-xs);
+  color: var(--text-primary);
+}
+.today-badge {
+  background: var(--primary);
+  color: white;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 10px;
+}
+.status-indicator {
+  font-size: 11px;
+}
+.status-indicator.present {
+  color: #10b981;
+}
+.status-indicator.leave {
+  color: #f59e0b;
+}
+.status-indicator.absent {
+  color: #ef4444;
+}
+.day-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+.day-badge {
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.day-badge.badge-work {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  font-weight: bold;
+}
+.day-badge.badge-leave {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+.day-badge.badge-absent {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+.day-badge.badge-ot {
+  background: rgba(147, 51, 234, 0.12);
+  color: #9333ea;
+  font-weight: 500;
+}
+.day-badge.badge-advance {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-weight: 500;
+}
+.day-badge.badge-payout {
+  background: rgba(139, 3, 19, 0.12);
+  color: var(--primary);
+  font-weight: bold;
+  border: 1px solid rgba(139, 3, 19, 0.25);
+}
+
+.guarantee-capsule-badge,
+.guarantee-capsule-btn {
+  width: 140px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+  font-size: 11.5px !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+.history-capsule-badge {
+  min-width: 160px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+  font-size: 11.5px !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+@media (max-width: 768px) {
+  .calendar-weekday-cell {
+    font-size: 10px;
+  }
+  .calendar-day-cell {
+    min-height: 60px;
+    padding: 3px;
+  }
+  .day-badge {
+    font-size: 9px;
+    padding: 1px 2px;
+  }
+}
+</style>

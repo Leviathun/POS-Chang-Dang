@@ -31,10 +31,10 @@
         :class="{ 'active': activeTab === 'top_menus' }"
         @click="activeTab = 'top_menus'"
       >
-        <i class="fa-solid fa-fire"></i> 10 อันดับเมนูขายดี
+        <i class="fa-solid fa-fire"></i> อันดับสินค้าขายดี
       </button>
       <button 
-        v-if="isAdminUser"
+        v-if="isManagerOrAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'activity_logs' }"
         @click="activeTab = 'activity_logs'"
@@ -42,7 +42,7 @@
         <i class="fa-solid fa-user-shield"></i> ประวัติกิจกรรมพนักงาน
       </button>
       <button 
-        v-if="isAdminUser"
+        v-if="isManagerOrAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'stock_history' }"
         @click="activeTab = 'stock_history'"
@@ -50,7 +50,7 @@
         <i class="fa-solid fa-boxes-stacked"></i> ประวัติสต็อก
       </button>
       <button 
-        v-if="isAdminUser"
+        v-if="isManagerOrAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'cash_audit' }"
         @click="activeTab = 'cash_audit'"
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Date selector card (hidden on 'top_menus' tab only) -->
-    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 50;">
+    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 100;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
         <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
@@ -263,8 +263,8 @@
       <!-- Tab 1: Sales (ยอดขาย) -->
       <div v-if="activeTab === 'sales'" class="flex flex-col gap-lg">
         
-        <!-- Admin Only: Top summary widgets (moved inside Tab 1) -->
-        <div v-if="isAdminUser" class="grid grid-2 gap-md">
+        <!-- Top summary widgets (moved inside Tab 1) -->
+        <div class="grid grid-2 gap-md">
           <div class="card text-center p-md">
             <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดขายวันนี้</div>
             <div class="font-bold text-primary text-xl">{{ formatCurrency(summary.today_sales) }}</div>
@@ -277,8 +277,8 @@
           </div>
         </div>
 
-        <!-- Admin Only: Daily Summary Card -->
-        <div v-if="isAdminUser" class="card">
+        <!-- Daily Summary Card -->
+        <div class="card">
           <div class="card-title text-sm"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> {{ summaryCardTitle }}</div>
           
           <div class="flex flex-between mb-sm text-sm">
@@ -993,123 +993,197 @@
         </div>
       </div>
 
-      <!-- Tab 3: Top Selling Menus (10 อันดับเมนูขายดีที่สุด) -->
-      <div v-if="activeTab === 'top_menus' && isAdminUser" class="card" style="position:relative; overflow:hidden; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
-        <!-- Header -->
-        <div class="flex align-center gap-sm mb-md">
-          <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-glow); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 171, 43, 0.3);">
-            <i class="fa-solid fa-fire text-accent animate-pulse" style="font-size: 1.2rem; color: var(--accent);"></i>
-          </div>
-          <div>
-            <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">10 อันดับสินค้าขายดีที่สุด</span>
-            <span style="font-size: var(--font-xs); color: var(--text-secondary); font-weight: normal;">สถิติการใช้วัตถุดิบและเมนูจากการขายจริง</span>
-          </div>
-        </div>
-
-        <!-- Period Selector (Pills) -->
-        <div style="margin-bottom: var(--space-md);">
-          <div class="pills-container" style="display: inline-flex; gap: var(--space-xs); background: rgba(139, 3, 19, 0.05); padding: 4px; border-radius: var(--radius-full); border: 1px solid rgba(139, 3, 19, 0.12);">
-            <button 
-              v-for="d in [1, 7, 30]" 
-              :key="d"
-              @click="setTopItemsDays(d)"
-              :style="{
-                background: topItemsDays === d ? 'var(--primary)' : 'transparent',
-                color: topItemsDays === d ? 'white' : 'var(--text-secondary)',
-                boxShadow: topItemsDays === d ? 'var(--shadow-sm)' : 'none',
-                fontWeight: topItemsDays === d ? 'bold' : 'normal'
-              }"
-              style="padding: 6px 18px; border-radius: var(--radius-full); font-size: var(--font-xs); transition: all 0.2s ease; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 70px;"
-            >
-              {{ d === 1 ? 'วันนี้' : d + ' วัน' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Dashed Divider -->
-        <div style="border-bottom: 2px dashed var(--border-color-light); margin-bottom: var(--space-lg); width: 100%;"></div>
+      <!-- Tab: Ranked Menus (อันดับสินค้าขายดี) -->
+      <div v-if="activeTab === 'top_menus' && isAdminUser" class="flex flex-col gap-lg">
         
-        <div v-if="topItems.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: rgba(255, 255, 255, 0.3); border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+        <!-- Filter Card: Period Selector (Pills) & Branch Selector -->
+        <div class="card p-md">
+          <div class="flex flex-col gap-md">
+            <!-- Period Mode Tabs (Matching Daily/Monthly/Yearly design) -->
+            <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+              <button 
+                type="button"
+                class="btn btn-secondary btn-sm" 
+                :class="{ 'active': topItemsDays === 1 }"
+                @click="setTopItemsDays(1)"
+              >
+                <i class="fa-solid fa-calendar-day"></i> วันนี้
+              </button>
+              <button 
+                type="button"
+                class="btn btn-secondary btn-sm" 
+                :class="{ 'active': topItemsDays === 7 }"
+                @click="setTopItemsDays(7)"
+              >
+                <i class="fa-solid fa-calendar-week"></i> 7 วัน
+              </button>
+              <button 
+                type="button"
+                class="btn btn-secondary btn-sm" 
+                :class="{ 'active': topItemsDays === 30 }"
+                @click="setTopItemsDays(30)"
+              >
+                <i class="fa-solid fa-calendar-days"></i> 30 วัน
+              </button>
+            </div>
+
+            <!-- Title & Subtitle + Branch Selector if Admin -->
+            <div class="flex flex-between align-center flex-wrap gap-md">
+              <div>
+                <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">อันดับสินค้าขายดี</span>
+                <span style="font-size: var(--font-xs); color: var(--text-secondary); font-weight: normal;">สถิติยอดขายและจำนวนชิ้นจากการขายจริง (แสดงทั้งหมด {{ topItems.length }} รายการ)</span>
+              </div>
+
+              <!-- Branch Selector -->
+              <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
+                <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
+                <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
+                  <div 
+                    class="custom-select-trigger reports-filter-control" 
+                    :class="{ 'active': isBranchDropdownOpen }" 
+                    @click="toggleBranchDropdown"
+                    style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
+                  >
+                    <span class="custom-select-text">{{ selectedBranchName }}</span>
+                  </div>
+                  <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                    <div 
+                      class="custom-select-option" 
+                      :class="{ 'selected': selectedBranchId === null }" 
+                      @click="selectBranch(null)"
+                    >
+                      ทุกสาขา
+                    </div>
+                    <div 
+                      v-for="b in branches" 
+                      :key="b.id" 
+                      class="custom-select-option" 
+                      :class="{ 'selected': selectedBranchId === b.id }" 
+                      @click="selectBranch(b.id)"
+                    >
+                      {{ b.name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div v-if="topItems.length === 0 && !topItemsLoading" class="card" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: #ffffff !important;">
           <i class="fa-solid fa-folder-open mb-sm" style="font-size: 2.5rem; opacity: 0.25; display: block; color: var(--text-primary);"></i>
           ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
-        
-        <div v-else class="flex flex-col gap-xs">
-          <!-- Top 3 Items Cards -->
+
+        <!-- Loading spinner for top items -->
+        <div v-else-if="topItems.length === 0 && topItemsLoading" class="card text-center p-3xl" style="background: #ffffff !important;">
+          <div class="spinner mx-auto"></div>
+        </div>
+
+        <!-- Grid Cards of Ranked Items -->
+        <div v-else class="ranked-items-grid">
           <div 
-            v-for="(item, index) in topItems.slice(0, 3)" 
-            :key="item.menu_item_id"
-            class="top-item-card-redesign" 
-            :class="'rank-' + (index + 1) + '-card'"
+            v-for="(item, index) in topItems" 
+            :key="item.menu_item_id || item.item_name"
+            class="ranked-item-card"
+            :class="{ 'ranked-item-card-first': index === 0 }"
           >
-            <!-- Left Side: Circle badge/icon -->
-            <div class="rank-badge-circle" :class="'rank-' + (index + 1) + '-badge'">
-              <i v-if="index === 0" class="fa-solid fa-crown"></i>
-              <span v-else>{{ index + 1 }}</span>
+            <!-- Card Header: Rank Badge & Category/Type Tag -->
+            <div class="ranked-card-header">
+              <div class="ranked-badge" :class="index === 0 ? 'ranked-badge-1' : index === 1 ? 'ranked-badge-2' : index === 2 ? 'ranked-badge-3' : 'ranked-badge-other'">
+                <i v-if="index === 0" class="fa-solid fa-crown" style="margin-right: 4px; color: #d48806;"></i>
+                <i v-else-if="index === 1" class="fa-solid fa-medal" style="margin-right: 4px; color: #8c8c8c;"></i>
+                <i v-else-if="index === 2" class="fa-solid fa-medal" style="margin-right: 4px; color: #d46b08;"></i>
+                <span>อันดับ {{ index + 1 }}</span>
+              </div>
+              <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
+              <span v-else class="badge-type main">ทั่วไป</span>
             </div>
 
-            <!-- Middle Side: Name (top) and Type Badge (bottom) -->
-            <div class="card-info-middle">
-              <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
-              <div class="flex align-center">
-                <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
-                <span v-else class="badge-type main">ทั่วไป</span>
+            <!-- Rank 1 Special Layout (Image Left, Title + Stacked Boxes Right) -->
+            <div v-if="index === 0" class="ranked-card-first-body">
+              <!-- Left: Image Full Height -->
+              <div class="ranked-image-wrapper-first">
+                <img 
+                  v-if="item.image_url" 
+                  :src="item.image_url" 
+                  :alt="item.item_name" 
+                  class="ranked-img"
+                  @error="item.image_url = null"
+                />
+                <div v-else class="ranked-img-placeholder">
+                  <i class="fa-solid fa-utensils"></i>
+                </div>
+              </div>
+
+              <!-- Right: Details & 2 Stacked Full-Width Boxes -->
+              <div class="ranked-details-first">
+                <h3 class="ranked-item-title-first" :title="item.item_name">{{ item.item_name }}</h3>
+                
+                <div class="ranked-stats-first-stacked">
+                  <!-- Box 1: จำนวนขาย (บน) -->
+                  <div class="ranked-stat-box-first">
+                    <span class="stat-label">จำนวนขาย</span>
+                    <div class="stat-value-lg font-bold text-primary">
+                      {{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}
+                      <span class="stat-unit">{{ item.unit || 'ชิ้น' }}</span>
+                    </div>
+                  </div>
+                  <!-- Box 2: ยอดขายรวม (ล่าง) -->
+                  <div class="ranked-stat-box-first">
+                    <span class="stat-label">ยอดขายรวม</span>
+                    <div class="stat-value-lg font-bold text-accent">
+                      {{ formatCurrency(item.total_sales) }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Right Side: Qty & Sales -->
-            <div class="card-sales-right">
-              <div class="qty-column">
-                <span class="qty-num">{{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}</span>
-                <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
+            <!-- Rank 2..N Single Column Card Layout -->
+            <div v-else class="ranked-card-single-body">
+              <!-- Product Image -->
+              <div class="ranked-image-wrapper">
+                <img 
+                  v-if="item.image_url" 
+                  :src="item.image_url" 
+                  :alt="item.item_name" 
+                  class="ranked-img"
+                  @error="item.image_url = null"
+                />
+                <div v-else class="ranked-img-placeholder">
+                  <i class="fa-solid fa-utensils"></i>
+                </div>
               </div>
-              <div class="sales-pill">
-                {{ formatCurrency(item.total_sales) }}
-              </div>
-            </div>
-          </div>
 
-          <!-- Divider label for ranks 4-10 -->
-          <div v-if="topItems.length > 3" style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding-left: 6px; margin: var(--space-md) 0 var(--space-sm) 0; border-left: 3px solid var(--primary);">
-            อันดับที่ 4 - 10
-          </div>
-
-          <!-- Loop for Ranks 4-10 -->
-          <div 
-            v-for="(item, index) in topItems.slice(3)" 
-            :key="item.menu_item_id"
-            class="top-item-card-redesign rank-other-card"
-          >
-            <!-- Left Side: Circle badge with number -->
-            <div class="rank-badge-circle rank-other-badge">
-              <span>{{ index + 4 }}</span>
-            </div>
-
-            <!-- Middle Side: Name (top) and Type Badge (bottom) -->
-            <div class="card-info-middle">
-              <span class="item-name-text" :title="item.item_name">{{ item.item_name }}</span>
-              <div class="flex align-center">
-                <span v-if="item.unit === 'กรัม'" class="badge-type mixin">ผสม</span>
-                <span v-else class="badge-type main">ทั่วไป</span>
-              </div>
-            </div>
-
-            <!-- Right Side: Qty & Sales -->
-            <div class="card-sales-right">
-              <div class="qty-column">
-                <span class="qty-num">{{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}</span>
-                <span class="qty-unit">{{ item.unit || 'ชิ้น' }}</span>
-              </div>
-              <div class="sales-pill">
-                {{ formatCurrency(item.total_sales) }}
+              <!-- Product Details -->
+              <h4 class="ranked-item-title" :title="item.item_name">{{ item.item_name }}</h4>
+              
+              <!-- 2 Separate Boxes Side-by-Side (ซ้าย-ขวา) with Centered Text -->
+              <div class="ranked-stats-2boxes">
+                <div class="ranked-stat-box-half">
+                  <span class="stat-label">จำนวนขาย</span>
+                  <div class="stat-value font-bold text-primary">
+                    {{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}
+                    <span class="stat-unit">{{ item.unit || 'ชิ้น' }}</span>
+                  </div>
+                </div>
+                <div class="ranked-stat-box-half">
+                  <span class="stat-label">ยอดขายรวม</span>
+                  <div class="stat-value font-bold text-accent">
+                    {{ formatCurrency(item.total_sales) }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
       <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
-      <div v-if="activeTab === 'activity_logs' && isAdminUser" class="card">
+      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" class="card">
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
         
         <!-- Filter dropdowns in a 2-column grid -->
@@ -1270,7 +1344,7 @@
     </div>
 
     <!-- Tab 5: Stock History (ประวัติสต็อก) -->
-    <div v-if="activeTab === 'stock_history' && isAdminUser" class="flex flex-col gap-md">
+    <div v-if="activeTab === 'stock_history' && isManagerOrAdminUser" class="flex flex-col gap-md">
       
       <!-- Summary Stat Cards for Stock History (Waste, Credit, Restock) -->
       <div class="grid grid-3 gap-md">
@@ -1583,12 +1657,12 @@
       </div>
     </div>
 
-    <!-- Cash Drawer Audit Tab (Admin Only) -->
-    <div v-if="activeTab === 'cash_audit' && isAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
+    <!-- Cash Drawer Audit Tab -->
+    <div v-if="activeTab === 'cash_audit' && isManagerOrAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
         <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
           <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>
-          ตรวจสอบเงินสดในลิ้นชักประจำวัน (ลับเฉพาะเจ้าของร้าน)
+          ตรวจสอบเงินสดในลิ้นชักประจำวัน
         </h3>
       </div>
 
@@ -1617,6 +1691,7 @@
         <table class="table" style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr>
+              <th v-if="selectedBranchId === null && isAdminUser" class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">สาขา</th>
               <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">วันที่</th>
               <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">เงินทอนตั้งต้น</th>
               <th class="text-center" style="padding: 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">ยอดขายเงินสด</th>
@@ -1629,7 +1704,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="session in cashDrawerSessions" :key="session.id" style="border-bottom: 1px solid var(--border-color);">
+            <tr v-for="session in cashDrawerSessions" :key="(session.id || 'virtual') + '-' + session.branch_id + '-' + session.session_date" style="border-bottom: 1px solid var(--border-color);">
+              <td v-if="selectedBranchId === null && isAdminUser" class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">
+                <span class="badge" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: var(--font-xs); font-weight: 600;">
+                  <i class="fa-solid fa-store" style="margin-right: 4px;"></i>{{ session.branch_name || 'สาขา #' + session.branch_id }}
+                </span>
+              </td>
               <td class="text-center" style="padding: 12px; font-weight: 600; vertical-align: middle; white-space: nowrap;">{{ formatDate(session.session_date) }}</td>
               <td class="text-center" style="padding: 12px; vertical-align: middle; white-space: nowrap;">{{ formatCurrency(session.opening_cash) }}</td>
               <td class="text-center" style="padding: 12px; color: #34c759; font-weight: 500; vertical-align: middle; white-space: nowrap;">
@@ -1693,12 +1773,17 @@
       <div class="show-mobile-only cash-audit-mobile-list" style="margin-bottom: var(--space-md);">
         <div 
           v-for="session in cashDrawerSessions" 
-          :key="session.id" 
+          :key="(session.id || 'virtual') + '-' + session.branch_id + '-' + session.session_date" 
           class="cash-audit-mobile-card"
         >
           <!-- Card Header: Date & Status -->
           <div class="cash-card-header">
-            <span class="session-date">{{ formatDate(session.session_date) }}</span>
+            <div class="flex flex-col gap-2xs">
+              <span class="session-date">{{ formatDate(session.session_date) }}</span>
+              <span v-if="selectedBranchId === null && isAdminUser" style="font-size: 11px; color: var(--primary); font-weight: 600;">
+                <i class="fa-solid fa-store" style="margin-right: 3px;"></i>{{ session.branch_name || 'สาขา #' + session.branch_id }}
+              </span>
+            </div>
             <span 
               class="session-status-badge"
               :class="session.status"
@@ -1767,14 +1852,12 @@
     </div>
 
     <!-- Cash Audit Modal -->
-    <div v-if="showAuditModal" class="modal-container active flex align-center justify-center">
+    <div v-if="showAuditModal" class="modal-container active">
       <div class="modal-overlay" @click="showAuditModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 90vh; overflow-y: auto; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
-        <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-calculator"></i> ปิดยอดประจำวันที่ {{ formatDate(activeAuditSession.session_date) }}
-          </h3>
-          <button class="modal-close" @click="showAuditModal = false" style="color: var(--text-secondary) !important;">✕</button>
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-calculator" style="margin-right: 6px;"></i> ปิดยอดประจำวันที่ {{ formatDate(activeAuditSession.session_date) }}</h3>
+          <button class="modal-close" @click="showAuditModal = false">✕</button>
         </div>
         <div class="modal-body" style="padding: var(--space-lg) !important; text-align: left !important;">
           <!-- Session Summary details -->
@@ -1877,14 +1960,12 @@
     </div>
 
     <!-- Set Opening Cash Modal -->
-    <div v-if="showOpeningCashModal" class="modal-container active flex align-center justify-center">
+    <div v-if="showOpeningCashModal" class="modal-container active">
       <div class="modal-overlay" @click="showOpeningCashModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
-        <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอนตั้งต้นประจำวัน
-          </h3>
-          <button class="modal-close" @click="showOpeningCashModal = false" style="color: var(--text-secondary) !important;">✕</button>
+      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-coins" style="margin-right: 6px;"></i> กรอกยอดเงินทอนตั้งต้นประจำวัน</h3>
+          <button class="modal-close" @click="showOpeningCashModal = false">✕</button>
         </div>
         <div class="modal-body" style="padding: var(--space-lg) !important; text-align: left !important;">
           <p style="font-size: var(--font-sm) !important; color: var(--text-secondary) !important; margin-bottom: var(--space-md) !important; line-height: 1.5 !important;">
@@ -1922,17 +2003,24 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, getUser } from '../helpers';
+import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, isManagerOrAdmin, getUser } from '../helpers';
 import { store } from '../store';
 
 const formatMoney = (val) => formatCurrency(val).replace('฿', '').trim();
 
-// Role check
+// Role checks
 const isAdminUser = computed(() => isAdmin());
+const isManagerOrAdminUser = computed(() => isManagerOrAdmin());
 
-const branches = ref([]);
+const localBranches = ref([]);
+const branches = computed(() => {
+  if (store.branches && Array.isArray(store.branches) && store.branches.length > 0) {
+    return store.branches;
+  }
+  return localBranches.value || [];
+});
 const currentUser = getUser();
-const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
+const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') !== null && sessionStorage.getItem('selected_branch_id') !== 'all' ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
 
 const activeTab = ref('sales');
 
@@ -2067,10 +2155,15 @@ const useCalculatorSum = () => {
 };
 
 const fetchCashDrawerSummary = async () => {
-  if (!isAdminUser.value) return;
+  if (!isManagerOrAdminUser.value) return;
   cashDrawerLoading.value = true;
   try {
-    const params = { branch_id: selectedBranchId.value };
+    const params = {};
+    if (selectedBranchId.value !== null) {
+      params.branch_id = selectedBranchId.value;
+    } else {
+      params.branch_id = 'all';
+    }
     if (periodMode.value === 'daily') {
       params.start_date = selectedDate.value;
       params.end_date = selectedDate.value;
@@ -2112,12 +2205,13 @@ const submitCashAudit = async () => {
   }
 
   try {
+    const targetBranch = activeAuditSession.value?.branch_id || selectedBranchId.value || (currentUser ? currentUser.branch_id : 1);
     const res = await api.cashDrawers.audit({
       session_id: activeAuditSession.value.id,
       session_date: activeAuditSession.value.session_date,
       actual_cash: Number(actualCashInput.value),
       note: auditNote.value,
-      branch_id: selectedBranchId.value
+      branch_id: targetBranch
     });
 
     if (res.success) {
@@ -2143,11 +2237,12 @@ const submitOpeningCash = async () => {
   }
 
   try {
+    const targetBranch = activeOpeningSession.value?.branch_id || selectedBranchId.value || (currentUser ? currentUser.branch_id : 1);
     const res = await api.cashDrawers.saveOpeningCash({
       session_id: activeOpeningSession.value.id,
       session_date: activeOpeningSession.value.session_date,
       opening_cash: Number(openingCashInput.value),
-      branch_id: selectedBranchId.value
+      branch_id: targetBranch
     });
 
     if (res.success) {
@@ -2323,6 +2418,8 @@ watch(activeTab, (newVal) => {
     fetchCashDrawerSummary();
   } else if (newVal === 'stock_history') {
     loadStockHistoryLogs();
+  } else if (newVal === 'top_menus') {
+    loadTopItems();
   }
 });
 
@@ -2353,8 +2450,15 @@ const dailyReport = ref({
 });
 const topItems = ref([]);
 const topItemsDays = ref(7); // default 7 days
+const topItemsCache = ref({});
+const topItemsLoading = ref(false);
+
 const setTopItemsDays = (days) => {
   topItemsDays.value = days;
+  const cacheKey = `${selectedBranchId.value || 'all'}_${days}`;
+  if (topItemsCache.value[cacheKey]) {
+    topItems.value = topItemsCache.value[cacheKey];
+  }
   loadTopItems();
 };
 const expenses = ref([]);
@@ -3076,6 +3180,11 @@ const adjustDatePickerMonth = (amount) => {
 const selectBranch = (branchId) => {
   selectedBranchId.value = branchId;
   isBranchDropdownOpen.value = false;
+  if (branchId !== null) {
+    sessionStorage.setItem('selected_branch_id', String(branchId));
+  } else {
+    sessionStorage.setItem('selected_branch_id', 'all');
+  }
   onBranchChange();
 };
 
@@ -3324,7 +3433,7 @@ const loadReportData = async () => {
     applyDataFromStore();
     loading.value = false;
     
-    if (isAdmin() && activeTab.value === 'cash_audit') {
+    if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
       fetchCashDrawerSummary();
     }
     
@@ -3332,7 +3441,7 @@ const loadReportData = async () => {
     store.fetchReports(selectedBranchId.value, false).then(() => {
       if (isUsingDefaultFilters() && store.reportsBranchId === selectedBranchId.value) {
         applyDataFromStore();
-        if (isAdmin() && activeTab.value === 'cash_audit') {
+        if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
           fetchCashDrawerSummary();
         }
       }
@@ -3400,6 +3509,8 @@ const loadReportData = async () => {
         await loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
         loadMonthlyLedger().catch(e => console.warn('Background ledger load error:', e));
       })();
+    }
+    if (isManagerOrAdmin()) {
       loadActivityLogsForPeriod().catch(e => console.warn('Background activities load error:', e));
       if (activeTab.value === 'cash_audit') {
         fetchCashDrawerSummary().catch(e => console.warn('Background cash drawer load error:', e));
@@ -3417,20 +3528,36 @@ const loadReportData = async () => {
 };
 
 const loadTopItems = async () => {
-  if (topItemsDays.value === 7 && isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
-    applyDataFromStore();
+  const cacheKey = `${selectedBranchId.value || 'all'}_${topItemsDays.value}`;
+  
+  if (topItemsDays.value === 7 && isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value && store.reportTopItems) {
+    const mapped = store.reportTopItems.map(item => ({
+      ...item,
+      total_sales: item.total_revenue || 0
+    }));
+    topItems.value = mapped;
+    topItemsCache.value[cacheKey] = mapped;
     return;
   }
+
+  if (!topItemsCache.value[cacheKey]) {
+    topItemsLoading.value = true;
+  }
+  
   try {
     const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value);
     if (res.success && Array.isArray(res.data)) {
-      topItems.value = res.data.map(item => ({
+      const mapped = res.data.map(item => ({
         ...item,
         total_sales: item.total_revenue || 0
       }));
+      topItems.value = mapped;
+      topItemsCache.value[cacheKey] = mapped;
     }
   } catch (e) {
     console.warn(e);
+  } finally {
+    topItemsLoading.value = false;
   }
 };
 
@@ -3482,9 +3609,7 @@ const handleVoidOrder = async () => {
       // Reload reports silently in background
       store.clearReportsCache();
       loadReportData();
-      if (isAdmin()) {
-        loadReportSummary();
-      }
+      loadReportSummary();
       return; // Skip the finally block to prevent double hiding
     }
   } catch (e) {
@@ -3605,24 +3730,29 @@ onMounted(() => {
     // Non-blocking fetch of branches
     api.auth.getBranches()
       .then(res => {
-        if (res.success) {
-          branches.value = res.data || [];
+        if (res.success && Array.isArray(res.data)) {
+          localBranches.value = res.data;
+          store.branches = res.data;
         }
       })
       .catch(e => console.warn('Failed to load branches:', e));
 
+    // Load top items (non-blocking)
+    loadTopItems();
+  }
+
+  if (isManagerOrAdmin()) {
     // Load staff/users list for filters (non-blocking)
     store.fetchSettingsData(selectedBranchId.value)
       .catch(e => console.warn('Failed to load settings:', e));
-
-    // Load summary and top items (non-blocking)
-    loadReportSummary();
-    loadTopItems();
 
     // Fetch stock items for stock logs (non-blocking)
     store.fetchStock()
       .catch(e => console.warn('Failed to load stock:', e));
   }
+
+  // Load summary for ALL roles (Admin, Manager, Staff)
+  loadReportSummary();
 
   // Load report data (which handles ledger internally)
   loadReportData();
@@ -3979,106 +4109,281 @@ select.reports-filter-control,
   overflow: visible;
 }
 
-/* --- Top Selling Menus Premium Styles --- */
-.top-item-card-redesign {
-  display: flex;
-  align-items: center;
+/* --- Ranked Menu Sales Card Grid System --- */
+.ranked-items-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.45);
+}
+
+@media (max-width: 1024px) {
+  .ranked-items-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .ranked-items-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card: Pure White Background */
+.ranked-item-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   transition: all var(--transition-base);
-  margin-bottom: var(--space-xs);
+  position: relative;
+  overflow: hidden;
 }
 
-.top-item-card-redesign:hover {
-  background: rgba(255, 255, 255, 0.75);
-  transform: translateX(4px);
+.ranked-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(139, 3, 19, 0.08);
+  border-color: var(--primary-light);
 }
 
-.rank-1-card {
-  border: 1px solid #ffab2b;
-  box-shadow: 0 2px 10px rgba(255, 171, 43, 0.08);
-}
-.rank-1-card:hover {
-  border-color: #ffab2b !important;
-  box-shadow: 0 4px 16px rgba(255, 171, 43, 0.15);
-}
-
-.rank-2-card {
-  border: 1px solid #bc9e88;
-  box-shadow: 0 2px 8px rgba(188, 158, 136, 0.05);
-}
-.rank-2-card:hover {
-  border-color: #bc9e88 !important;
-  box-shadow: 0 4px 12px rgba(188, 158, 136, 0.1);
+/* Rank 1 Feature Card: Pure White + Golden Border */
+.ranked-item-card.ranked-item-card-first {
+  grid-column: span 2;
+  background: #ffffff !important;
+  border: 2px solid #ffab2b;
+  box-shadow: 0 4px 18px rgba(255, 171, 43, 0.18);
+  padding: 16px;
 }
 
-.rank-3-card {
-  border: 1px solid #e9c46a;
-  box-shadow: 0 2px 8px rgba(233, 196, 106, 0.05);
-}
-.rank-3-card:hover {
-  border-color: #e9c46a !important;
-  box-shadow: 0 4px 12px rgba(233, 196, 106, 0.1);
+@media (max-width: 640px) {
+  .ranked-item-card.ranked-item-card-first {
+    grid-column: span 1;
+  }
 }
 
-.rank-other-card {
+/* Card Header */
+.ranked-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ranked-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.ranked-badge-1 {
+  background: #fff1b8;
+  color: #873800;
+  border: 1px solid #ffd591;
+  font-size: var(--font-sm);
+  padding: 4px 12px;
+}
+
+.ranked-badge-2 {
+  background: #f0f0f0;
+  color: #434343;
+  border: 1px solid #d9d9d9;
+}
+
+.ranked-badge-3 {
+  background: #ffe7ba;
+  color: #873800;
+  border: 1px solid #ffd591;
+}
+
+.ranked-badge-other {
+  background: rgba(139, 3, 19, 0.05);
+  color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
-.rank-other-card:hover {
-  border-color: var(--primary-light) !important;
-  box-shadow: var(--shadow-sm);
+
+/* ─── Rank 1 Special Layout: Image Left (Full Height/Width), Title + Stacked Boxes Right ─── */
+.ranked-card-first-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+  flex: 1;
+  height: 100%;
 }
 
-/* Badge Circle Icon */
-.rank-badge-circle {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+@media (max-width: 640px) {
+  .ranked-card-first-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ranked-image-wrapper-first {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #fdfbf7;
+  border: 1px solid rgba(139, 3, 19, 0.08);
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: var(--font-sm);
-  flex-shrink: 0;
 }
 
-.rank-1-badge {
-  background: #ffe066;
-  color: #8b0313;
-}
-.rank-2-badge {
-  background: rgba(188, 158, 136, 0.2);
-  color: #6e4e37;
-}
-.rank-3-badge {
-  background: rgba(233, 196, 106, 0.2);
-  color: #6e4e37;
-}
-.rank-other-badge {
-  background: rgba(110, 78, 55, 0.08);
-  border: 1px solid rgba(110, 78, 55, 0.12);
-  color: var(--text-secondary);
+.ranked-image-wrapper-first .ranked-img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  object-fit: cover;
+  display: block;
 }
 
-/* Middle Layout */
-.card-info-middle {
+@media (max-width: 640px) {
+  .ranked-image-wrapper-first {
+    height: 140px;
+    min-height: 140px;
+  }
+}
+
+.ranked-details-first {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex: 1;
+  justify-content: center;
+  gap: 8px;
   min-width: 0;
-  text-align: left;
+  height: 100%;
 }
 
-.item-name-text {
+.ranked-item-title-first {
   font-size: var(--font-base);
   font-weight: 700;
   color: var(--text-primary);
-  text-overflow: ellipsis;
+  margin: 0;
+  line-height: 1.2;
   overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ranked-stats-first-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 0;
+}
+
+.ranked-stat-box-first {
+  background: #fdfbf7;
+  border: 1px solid rgba(255, 171, 43, 0.35);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+}
+
+/* ─── Rank 2..N Single Column Card Elements ─── */
+.ranked-card-single-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.ranked-image-wrapper {
+  width: 100%;
+  height: 125px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #fdfbf7;
+  border: 1px solid rgba(139, 3, 19, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ranked-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ranked-img-placeholder {
+  font-size: 2.5rem;
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.ranked-item-title {
+  font-size: var(--font-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* 2 Separate Boxes Side-by-Side (ซ้าย-ขวา) with Centered Text */
+.ranked-stats-2boxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+  width: 100%;
+}
+
+.ranked-stat-box-half {
+  background: #fdfbf7;
+  border: 1px solid rgba(139, 3, 19, 0.08);
+  border-radius: var(--radius-md);
+  padding: 6px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.stat-label {
+  font-size: var(--font-xxs, 0.72rem);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: var(--font-sm);
+  line-height: 1.2;
+}
+
+.stat-value-lg {
+  font-size: var(--font-base);
+  line-height: 1.2;
+}
+
+.stat-unit {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: normal;
+  margin-left: 2px;
 }
 
 .badge-type {
@@ -4101,47 +4406,6 @@ select.reports-filter-control,
   background: rgba(139, 3, 19, 0.05);
   color: var(--primary);
   border: 1px solid rgba(139, 3, 19, 0.1);
-}
-
-/* Right Layout */
-.card-sales-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  flex-shrink: 0;
-}
-
-.qty-column {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  min-width: 50px;
-}
-
-.qty-num {
-  font-size: var(--font-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.qty-unit {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.sales-pill {
-  background: rgba(139, 3, 19, 0.05);
-  border: 1px solid rgba(139, 3, 19, 0.12);
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-xs);
-  color: var(--primary);
-  font-weight: 700;
-  min-width: 80px;
-  text-align: center;
 }
 
 /* --- Cash Audit Mobile Card Redesign --- */
