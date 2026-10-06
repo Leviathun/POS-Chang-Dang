@@ -60,7 +60,7 @@
     </div>
 
     <!-- Date selector card (hidden on 'top_menus' tab only) -->
-    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 50;">
+    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 100;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
         <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
@@ -1852,14 +1852,12 @@
     </div>
 
     <!-- Cash Audit Modal -->
-    <div v-if="showAuditModal" class="modal-container active flex align-center justify-center">
+    <div v-if="showAuditModal" class="modal-container active">
       <div class="modal-overlay" @click="showAuditModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 90vh; overflow-y: auto; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
-        <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-calculator"></i> ปิดยอดประจำวันที่ {{ formatDate(activeAuditSession.session_date) }}
-          </h3>
-          <button class="modal-close" @click="showAuditModal = false" style="color: var(--text-secondary) !important;">✕</button>
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-calculator" style="margin-right: 6px;"></i> ปิดยอดประจำวันที่ {{ formatDate(activeAuditSession.session_date) }}</h3>
+          <button class="modal-close" @click="showAuditModal = false">✕</button>
         </div>
         <div class="modal-body" style="padding: var(--space-lg) !important; text-align: left !important;">
           <!-- Session Summary details -->
@@ -1962,14 +1960,12 @@
     </div>
 
     <!-- Set Opening Cash Modal -->
-    <div v-if="showOpeningCashModal" class="modal-container active flex align-center justify-center">
+    <div v-if="showOpeningCashModal" class="modal-container active">
       <div class="modal-overlay" @click="showOpeningCashModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 2px solid var(--primary) !important; box-shadow: var(--shadow-lg) !important;">
-        <div class="modal-header" style="border-bottom: 1px solid var(--border-color-light) !important; padding: var(--space-md) var(--space-lg) !important;">
-          <h3 style="color: var(--primary) !important; font-weight: 800 !important; font-size: var(--font-base) !important; margin: 0 !important; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอนตั้งต้นประจำวัน
-          </h3>
-          <button class="modal-close" @click="showOpeningCashModal = false" style="color: var(--text-secondary) !important;">✕</button>
+      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-coins" style="margin-right: 6px;"></i> กรอกยอดเงินทอนตั้งต้นประจำวัน</h3>
+          <button class="modal-close" @click="showOpeningCashModal = false">✕</button>
         </div>
         <div class="modal-body" style="padding: var(--space-lg) !important; text-align: left !important;">
           <p style="font-size: var(--font-sm) !important; color: var(--text-secondary) !important; margin-bottom: var(--space-md) !important; line-height: 1.5 !important;">

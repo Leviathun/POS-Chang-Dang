@@ -103,6 +103,10 @@
             <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
             <span class="sidebar-label">ขายหน้าร้าน (POS)</span>
           </router-link>
+          <router-link v-if="isManagerOrAdminUser" to="/management" class="sidebar-item" active-class="active">
+            <span class="sidebar-icon"><i class="fa-solid fa-briefcase"></i></span>
+            <span class="sidebar-label">บริหารจัดการร้าน</span>
+          </router-link>
           <router-link v-if="isManagerOrAdminUser" to="/menu" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-utensils"></i></span>
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
@@ -136,6 +140,7 @@
         <header id="app-header">
           <span class="header-title flex align-center gap-xs">
             <img v-if="route.path === '/pos'" src="@/assets/image/Logo POS.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
+            <i v-else-if="route.path.startsWith('/management')" class="fa-solid fa-briefcase"></i>
             <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
             <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
             <i v-else-if="route.path === '/reports'" class="fa-solid fa-chart-line"></i>
@@ -316,6 +321,7 @@ const isManagerOrAdminUser = computed(() => {
 const activeTitle = computed(() => {
   const titles = {
     '/pos': 'ร้านไก่ทอดช้างแดง',
+    '/management': 'บริหารจัดการร้าน',
     '/menu': 'จัดการเมนู',
     '/stock': 'คลังสินค้า',
     '/stock/bulk': 'คลังสินค้า',

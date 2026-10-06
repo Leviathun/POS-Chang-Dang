@@ -5,6 +5,7 @@ import Stock from '../views/Stock.vue'
 import StockBulk from '../views/StockBulk.vue'
 import Reports from '../views/Reports.vue'
 import Settings from '../views/Settings.vue'
+import Management from '../views/Management.vue'
 import { getUser, isManagerOrAdmin } from '../helpers'
 
 const routes = [
@@ -16,6 +17,18 @@ const routes = [
     path: '/pos',
     name: 'Pos',
     component: Pos
+  },
+  {
+    path: '/management',
+    name: 'Management',
+    component: Management,
+    beforeEnter: (to, from, next) => {
+      if (isManagerOrAdmin()) {
+        next()
+      } else {
+        next('/pos')
+      }
+    }
   },
   {
     path: '/menu',

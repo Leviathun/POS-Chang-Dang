@@ -439,6 +439,13 @@ ul, ol { list-style: none; }
   transform: scale(0.97);
 }
 
+.btn-modal:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none !important;
+}
+
 .btn-modal-primary {
   background: var(--gradient-primary);
   color: white !important;
@@ -714,7 +721,7 @@ ul, ol { list-style: none; }
 
 #modal-container.active, .modal-container.active {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
 }
 
@@ -881,9 +888,13 @@ ul, ol { list-style: none; }
 /* --- Table Typography Standardizations start --- */
 .table th {
   font-size: var(--font-base) !important;
+  padding: 16px var(--space-md) !important;
+  vertical-align: middle;
 }
 .table td {
   font-size: var(--font-base);
+  padding: 18px var(--space-md) !important;
+  vertical-align: middle;
 }
 .table td .text-muted,
 .bulk-stock-row .text-muted {
@@ -922,6 +933,87 @@ ul, ol { list-style: none; }
   font-size: var(--font-sm) !important;
   margin: 0 !important;
 }
+
+/* --- Control Bar Navigation & Picker Utilities start --- */
+.picker-nav-btn {
+  height: 42px !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--font-base) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-fast) !important;
+}
+
+.picker-nav-btn:hover {
+  background: var(--card-bg-hover) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.picker-nav-btn:active {
+  transform: scale(0.94);
+}
+
+.picker-trigger-btn {
+  height: 42px !important;
+  padding: 0 var(--space-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--space-sm) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--font-base) !important;
+  font-weight: var(--font-weight-bold) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-fast) !important;
+  white-space: nowrap !important;
+}
+
+.picker-trigger-btn:hover,
+.picker-trigger-btn.active {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px var(--primary-glow) !important;
+  color: var(--primary) !important;
+}
+
+.picker-current-btn {
+  height: 42px !important;
+  padding: 0 var(--space-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  font-size: var(--font-base) !important;
+  font-weight: var(--font-weight-medium) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-fast) !important;
+  white-space: nowrap !important;
+}
+
+.picker-current-btn:hover {
+  background: var(--card-bg-hover) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.picker-current-btn:active {
+  transform: scale(0.96);
+}
+/* --- Control Bar Navigation & Picker Utilities end --- */
 
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
@@ -1192,14 +1284,25 @@ input[type="date"] {
   text-align: left;
 }
 
+.custom-select-wrapper:has(.custom-select-dropdown),
+.custom-select-wrapper:has(.custom-select-trigger.active) {
+  z-index: 1050;
+}
+
 .custom-select-trigger {
   width: 100%;
-  padding: var(--space-md) 40px var(--space-md) var(--space-lg);
+  height: 42px;
+  min-height: 42px;
+  padding: 0 40px 0 var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  line-height: normal;
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: var(--font-base);
+  font-family: inherit;
   cursor: pointer;
   user-select: none;
   transition: all var(--transition-fast);
@@ -1208,13 +1311,13 @@ input[type="date"] {
   -moz-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236e4e37' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 16px center;
+  background-position: right 14px center;
 }
 
 .custom-select-trigger:focus,
 .custom-select-trigger.active {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  box-shadow: 0 0 0 2px var(--primary-glow);
   outline: none;
 }
 
@@ -1222,8 +1325,10 @@ input[type="date"] {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  max-width: calc(100% - 24px);
+  max-width: calc(100% - 16px);
   text-align: left;
+  line-height: normal;
+  display: inline-block;
 }
 
 .custom-select-dropdown {
@@ -1236,15 +1341,16 @@ input[type="date"] {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 1000;
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
   animation: fadeIn 0.15s ease;
 }
 
 .custom-select-option {
-  padding: var(--space-md) var(--space-lg);
+  padding: 10px var(--space-md);
   color: var(--text-primary);
   font-size: var(--font-base);
+  line-height: normal;
   cursor: pointer;
   transition: background-color var(--transition-fast);
   text-align: left;
@@ -1260,8 +1366,38 @@ input[type="date"] {
 .custom-select-option.selected {
   background-color: var(--primary);
   color: white;
+  font-weight: bold;
 }
 
+/* Global Native Select styling to prevent text clipping */
+.form-select,
+select.form-input {
+  height: 42px !important;
+  min-height: 42px !important;
+  line-height: normal !important;
+  font-family: inherit !important;
+  font-size: var(--font-base) !important;
+  padding: 0 36px 0 var(--space-md) !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236e4e37' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  cursor: pointer !important;
+  transition: all var(--transition-fast) !important;
+}
+
+.form-select:focus,
+select.form-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px var(--primary-glow) !important;
+  outline: none !important;
+}
 /* --- Premium Custom Dropdown (Custom Select) end --- */
 
 /* --- Responsive Utilities start --- */
@@ -1305,7 +1441,7 @@ input[type="date"] {
   scrollbar-width: none;
   -ms-overflow-style: none;
   position: relative;
-  z-index: 99;
+  z-index: 1;
 }
 .category-tabs .btn,
 .category-tabs .btn-secondary {
