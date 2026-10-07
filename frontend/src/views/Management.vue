@@ -210,6 +210,7 @@
     <!-- Main Navigation Tabs (Clean names without numbers) -->
     <div class="category-tabs mb-lg flex gap-xs flex-wrap">
       <button 
+        v-if="isAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': mainTab === 'staff' }"
         @click="mainTab = 'staff'"
@@ -232,9 +233,9 @@
       </button>
     </div>
 
-    <!-- Tab 1: Staff & Payroll Management Component -->
+    <!-- Tab 1: Staff & Payroll Management Component (Admin Only) -->
     <StaffManagement 
-      v-if="mainTab === 'staff'" 
+      v-if="mainTab === 'staff' && isAdminUser" 
       :branch-id="selectedBranchId"
       :selected-date="selectedDate"
       :selected-month="selectedMonth"
@@ -284,7 +285,7 @@ const route = useRoute();
 const currentUser = computed(() => getUser());
 const isAdminUser = computed(() => currentUser.value?.role === 'admin');
 
-const mainTab = ref('staff');
+const mainTab = ref(getUser()?.role === 'admin' ? 'staff' : 'expenses');
 const branches = ref([]);
 const selectedBranchId = ref(currentUser.value?.branch_id || 1);
 
@@ -475,7 +476,13 @@ const fetchBranches = async () => {
 onMounted(async () => {
   await fetchBranches();
   if (route.query.tab && ['staff', 'expenses', 'drawers'].includes(route.query.tab)) {
-    mainTab.value = route.query.tab;
+    if (route.query.tab === 'staff' && !isAdminUser.value) {
+      mainTab.value = 'expenses';
+    } else {
+      mainTab.value = route.query.tab;
+    }
+  } else if (!isAdminUser.value && mainTab.value === 'staff') {
+    mainTab.value = 'expenses';
   }
   window.addEventListener('click', closeAllDropdowns);
 });
