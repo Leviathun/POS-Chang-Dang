@@ -634,7 +634,7 @@ router.get('/logs/all', async (req, res) => {
     }
 
     let query = `
-      SELECT sl.*, u.name as staff_name, mi.name as item_name
+      SELECT sl.*, u.name as staff_name, mi.name as item_name, mi.price as item_price, mi.uom as item_uom
       FROM stock_logs sl
       LEFT JOIN users u ON u.id = sl.staff_id
       LEFT JOIN menu_items mi ON mi.id = sl.menu_item_id
@@ -711,9 +711,10 @@ router.get('/:id/logs', async (req, res) => {
     const itemBranchId = item.branch_id || branchId;
 
     let query = `
-      SELECT sl.*, u.name as staff_name
+      SELECT sl.*, u.name as staff_name, mi.name as item_name, mi.price as item_price, mi.uom as item_uom
       FROM stock_logs sl
       LEFT JOIN users u ON u.id = sl.staff_id
+      LEFT JOIN menu_items mi ON mi.id = sl.menu_item_id
       WHERE sl.menu_item_id = ?
     `;
     const params = [Number(id)];

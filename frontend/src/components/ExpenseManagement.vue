@@ -1,265 +1,654 @@
 <template>
-  <div class="expense-management-wrapper card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
-    <div class="card-title" style="font-size: var(--font-sm);">
-      <i class="fa-solid fa-wallet" style="margin-right: 6px;"></i> {{ expenseFormTitle }}
-    </div>
+  <div class="expense-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
-    <!-- Quick Add Expense Form -->
-    <div class="expense-form-grid">
-      <div class="form-group mb-xs">
-        <input type="number" class="form-input" v-model.number="expenseForm.amount" placeholder="จำนวนเงิน (บาท)" />
-      </div>
-      <div class="form-group mb-xs">
-        <div class="custom-select-wrapper" @click.stop>
-          <div 
-            class="custom-select-trigger" 
-            :class="{ 'active': isExpenseCategoryDropdownOpen }" 
-            @click="isExpenseCategoryDropdownOpen = !isExpenseCategoryDropdownOpen"
-          >
-            <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
-              <i :class="getExpenseCategoryIcon(expenseForm.category)"></i>
-              {{ selectedExpenseCategoryLabel }}
-            </span>
-          </div>
-          <div v-if="isExpenseCategoryDropdownOpen" class="custom-select-dropdown" style="max-height: 250px; overflow-y: auto;">
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'raw_chicken' }" @click="selectExpenseCategory('raw_chicken')"><i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> ไก่สด</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'sticky_rice' }" @click="selectExpenseCategory('sticky_rice')"><i class="fa-solid fa-bowl-rice" style="margin-right: 4px;"></i> ข้าวเหนียว</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'meatballs' }" @click="selectExpenseCategory('meatballs')"><i class="fa-solid fa-circle" style="margin-right: 4px;"></i> ลูกชิ้น</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salapao' }" @click="selectExpenseCategory('salapao')"><i class="fa-solid fa-cookie" style="margin-right: 4px;"></i> ซาลาเปา</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'fuel_oil' }" @click="selectExpenseCategory('fuel_oil')"><i class="fa-solid fa-gas-pump" style="margin-right: 4px;"></i> น้ำมัน</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'gas_lpg' }" @click="selectExpenseCategory('gas_lpg')"><i class="fa-solid fa-fire" style="margin-right: 4px;"></i> แก๊ส</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'salary' }" @click="selectExpenseCategory('salary')"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 4px;"></i> เงินเดือน</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'utility_bills' }" @click="selectExpenseCategory('utility_bills')"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> ค่าไฟ/น้ำ</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'packaging' }" @click="selectExpenseCategory('packaging')"><i class="fa-solid fa-box" style="margin-right: 4px;"></i> บรรจุภัณฑ์/ถุง</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'debt' }" @click="selectExpenseCategory('debt')"><i class="fa-solid fa-file-invoice-dollar" style="margin-right: 4px;"></i> หนี้</div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.category === 'other' }" @click="selectExpenseCategory('other')"><i class="fa-solid fa-paperclip" style="margin-right: 4px;"></i> อื่นๆ</div>
-          </div>
-        </div>
-      </div>
-      <div class="form-group mb-xs">
-        <div class="custom-select-wrapper" @click.stop>
-          <div 
-            class="custom-select-trigger" 
-            :class="{ 'active': isExpensePaymentMethodDropdownOpen }" 
-            @click="isExpensePaymentMethodDropdownOpen = !isExpensePaymentMethodDropdownOpen"
-          >
-            <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
-              <i :class="expenseForm.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
-              {{ expenseForm.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด' }}
-            </span>
-          </div>
-          <div v-if="isExpensePaymentMethodDropdownOpen" class="custom-select-dropdown" style="max-height: 250px; overflow-y: auto;">
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.payment_method === 'cash' }" @click="selectExpensePaymentMethod('cash')">
-              <i class="fa-solid fa-money-bill-wave" style="margin-right: 4px;"></i> เงินสด
-            </div>
-            <div class="custom-select-option" :class="{ 'selected': expenseForm.payment_method === 'transfer' }" @click="selectExpensePaymentMethod('transfer')">
-              <i class="fa-solid fa-mobile-screen-button" style="margin-right: 4px;"></i> เงินโอน
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-group mb-xs">
-        <input type="text" class="form-input" v-model="expenseForm.note" placeholder="บันทึกช่วยจำ..." />
-      </div>
-      <!-- Presets Row -->
-      <div class="expense-form-presets flex gap-sm align-center flex-wrap">
-        <span class="text-secondary font-bold text-sm"><i class="fa-solid fa-tags"></i> บันทึกด่วน:</span>
-        <button 
-          type="button" 
-          class="btn btn-secondary btn-sm preset-btn" 
-          :class="{ 'active': expenseForm.note === 'แม็คโคร' }"
-          @click="expenseForm.note = 'แม็คโคร'"
-        >
-          แม็คโคร
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-secondary btn-sm preset-btn" 
-          :class="{ 'active': expenseForm.note === 'ตลาดสด' }"
-          @click="expenseForm.note = 'ตลาดสด'"
-        >
-          ตลาดสด
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-secondary btn-sm preset-btn" 
-          :class="{ 'active': expenseForm.note === 'เลี้ยงลูกน้อง' }"
-          @click="expenseForm.note = 'เลี้ยงลูกน้อง'"
-        >
-          เลี้ยงลูกน้อง
-        </button>
-      </div>
-      <div class="form-group mb-xs expense-form-submit-group">
-        <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0 || saving">
-          <i v-if="saving" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-floppy-disk"></i>
-          <span>{{ saving ? ' กำลังบันทึก...' : ' บันทึก' }}</span>
-        </button>
+    <!-- Sub-tab Navigation (Consistent with StaffManagement.vue) -->
+    <div class="category-tabs mb-lg flex gap-xs flex-wrap">
+      <button 
+        type="button"
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'form' }"
+        @click="activeSubTab = 'form'"
+      >
+        <i class="fa-solid fa-pen-to-square"></i> บันทึกรายจ่าย
+      </button>
+      <button 
+        type="button"
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'list' }"
+        @click="activeSubTab = 'list'"
+      >
+        <i class="fa-solid fa-list-check"></i> หน้ารายการ ({{ allLedgerEntries.length }})
+      </button>
+      <button 
+        type="button"
+        class="btn btn-secondary" 
+        :class="{ 'active': activeSubTab === 'analytics' }"
+        @click="activeSubTab = 'analytics'"
+      >
+        <i class="fa-solid fa-chart-pie"></i> หน้ากราฟ & วิเคราะห์
+      </button>
+    </div>
+
+    <!-- Loading Overlay when fetching new data across period/branch changes -->
+    <div v-if="ledgerLoading" class="content-loading-overlay">
+      <div class="loading-box flex flex-col align-center justify-center">
+        <div class="spinner mb-sm"></div>
+        <span class="text-sm font-bold text-primary">กำลังโหลดข้อมูล...</span>
       </div>
     </div>
 
-    <!-- Monthly / Daily Ledger Section -->
-    <div class="divider" style="margin: var(--space-xl) 0; height:1px; background:var(--border-color);"></div>
-    
-    <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
-      <div class="card-title" style="font-size: var(--font-sm); margin: 0;">
-        <i class="fa-solid fa-book" style="margin-right: 6px;"></i> สมุดบัญชีรายรับ-รายจ่าย ({{ ledgerPeriodLabel }})
-      </div>
-      <div style="display:flex; align-items:center; gap:var(--space-sm);">
-        <button 
-          v-if="filteredLedgerTransactions.length > 0"
-          class="btn btn-sm btn-secondary csv-export-btn" 
-          style="display:inline-flex; align-items:center; gap:4px;"
-          @click="exportExpensesCSV"
-        >
-          <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกบัญชี (CSV)
-        </button>
-        <div v-if="ledgerLoading" class="spinner spinner-sm"></div>
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="ledger-summary-grid">
-      <div class="p-xs card" style="background:rgba(42, 157, 143, 0.05); border:none; text-align:center;">
-        <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายรับรวม</div>
-        <div class="font-bold text-success" style="font-size:var(--font-base);">
-          {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.income, 0)) }}
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 1: หน้าบันทึกรายจ่าย (FULL WIDTH VERTICAL FLOW)     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'form'" class="flex flex-col gap-md">
+      
+      <!-- Top Title Header Banner -->
+      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color);">
+        <div>
+          <h3 class="font-bold text-base flex align-center gap-xs" style="margin: 0; color: var(--text-primary);">
+            <i class="fa-solid fa-wallet text-primary"></i> {{ expenseFormTitle }}
+          </h3>
+          <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+            กรอกข้อมูลค่าใช้จ่ายตามลำดับจากบนลงล่าง และกดบันทึกเพื่อนำเข้าระบบบัญชีสาขา
+          </p>
         </div>
       </div>
-      <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
-        <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">รายจ่ายรวม</div>
-        <div class="font-bold text-danger" style="font-size:var(--font-base);">
-          {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.expense, 0)) }}
-        </div>
-      </div>
-      <div class="p-xs card" style="background:rgba(173, 40, 30, 0.05); border:none; text-align:center;">
-        <div style="color:var(--text-secondary); margin-bottom: 2px; font-size:var(--font-xs);">คงเหลือสุทธิ</div>
-        <div class="font-bold" style="font-size:var(--font-base); color: var(--text-primary);">
-          {{ formatCurrency(filteredLedgerTransactions.reduce((sum, t) => sum + t.income - t.expense, 0)) }}
-        </div>
-      </div>
-    </div>
 
-    <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-      <table class="table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
-        <thead>
-          <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-            <th class="text-center" style="width: 15%; padding: 16px var(--space-md); white-space:nowrap;">วัน-เวลา</th>
-            <th class="text-center" style="width: 30%; padding: 16px var(--space-md);">ชื่อรายการ</th>
-            <th class="text-center" style="width: 15%; padding: 16px var(--space-md); white-space:nowrap;">รายรับ</th>
-            <th class="text-center" style="width: 15%; padding: 16px var(--space-md); white-space:nowrap;">รายจ่าย</th>
-            <th class="text-center" style="width: 15%; padding: 16px var(--space-md); white-space:nowrap;">คงเหลือ</th>
-            <th class="text-center" style="width: 10%; padding: 16px var(--space-md); white-space:nowrap;">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
-            <td colspan="6" style="text-align: center; padding: var(--space-3xl) var(--space-md) !important;">
-              <div class="spinner mx-auto"></div>
-            </td>
-          </tr>
-          <tr v-else-if="filteredLedgerTransactions.length === 0">
-            <td colspan="6" style="text-align: center; padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
-              <div class="flex flex-col align-center justify-center gap-xs">
-                <i class="fa-solid fa-receipt text-secondary" style="font-size: 1.8rem; opacity: 0.35;"></i>
-                <div class="font-bold text-sm">ไม่มีรายการธุรกรรมในช่วงเวลานี้</div>
-              </div>
-            </td>
-          </tr>
-          <tr 
-            v-else 
-            v-for="item in paginatedLedgerTransactions" 
-            :key="item.type + '-' + item.id" 
-            style="border-bottom: 1px solid var(--border-color);"
-            class="table-row-hover"
-          >
-            <td class="text-center" style="width: 15%; padding: 18px var(--space-md); vertical-align: middle; white-space:nowrap; color:var(--text-secondary);">
-              {{ item.formattedDate }}<br/>{{ item.formattedTime }}
-            </td>
-            <td class="text-center" style="width: 30%; padding: 18px var(--space-md); vertical-align: middle; font-weight: 500; white-space: normal; word-break: break-word;">
-              {{ item.name }}
-            </td>
-            <td class="text-success text-center" style="width: 15%; padding: 18px var(--space-md); vertical-align: middle; font-weight:bold;">
-              {{ item.income > 0 ? formatCurrency(item.income) : '-' }}
-            </td>
-            <td class="text-danger text-center" style="width: 15%; padding: 18px var(--space-md); vertical-align: middle; font-weight:bold;">
-              {{ item.expense > 0 ? '-' + formatCurrency(item.expense) : '-' }}
-            </td>
-            <td class="text-center" style="width: 15%; padding: 18px var(--space-md); vertical-align: middle; font-weight:bold; color: var(--text-primary);">
-              {{ formatCurrency(item.runningBalance) }}
-            </td>
-            <td class="text-center" style="width: 10%; padding: 18px var(--space-md); vertical-align: middle;">
-              <button 
-                v-if="item.type === 'expense'" 
-                class="btn-action btn-action-delete"
-                :disabled="deletingExpenseId === item.id"
-                @click="handleDeleteExpense(item.id)"
-              >
-                <i v-if="deletingExpenseId === item.id" class="fa-solid fa-spinner fa-spin"></i>
-                <i v-else class="fa-solid fa-trash-can"></i>
-                <span>{{ deletingExpenseId === item.id ? ' กำลังลบ...' : ' ลบ' }}</span>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- Main Full-Width Form Card -->
+      <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
 
-    <!-- Mobile Ledger Cards -->
-    <div class="mobile-menu-list-container" style="display: none;">
-      <div v-if="filteredLedgerTransactions.length === 0" class="card text-center py-xl" style="color: var(--text-tertiary);">
-        ไม่มีรายการธุรกรรมในช่วงเวลานี้
-      </div>
-      <div v-else class="flex flex-col gap-sm">
-        <div 
-          v-for="item in paginatedLedgerTransactions" 
-          :key="'mobile-' + item.type + '-' + item.id"
-          class="ledger-mobile-card"
-          :class="item.income > 0 ? 'income' : 'expense'"
-        >
-          <div class="flex flex-between align-center mb-xs">
-            <span class="text-xs text-secondary">{{ item.formattedDate }} {{ item.formattedTime }}</span>
-            <span class="font-bold text-sm" :class="item.income > 0 ? 'text-success' : 'text-danger'">
-              {{ item.income > 0 ? '+' + formatCurrency(item.income) : '-' + formatCurrency(item.expense) }}
-            </span>
-          </div>
-          <div class="flex flex-between align-center">
-            <span class="text-sm font-semibold">{{ item.name }}</span>
+        <!-- ── แถวที่ 1: เลือกหมวดหมู่ค่าใช้จ่าย (12 ปุ่ม บน 6 ล่าง 6) ── -->
+        <div class="form-step-section mb-lg">
+          <label class="form-section-label mb-sm">
+            <span class="step-num">1</span> หมวดหมู่ค่าใช้จ่าย (เลือก 1 หมวด):
+          </label>
+          <div class="category-grid-12">
             <button 
-              v-if="item.type === 'expense'" 
-              class="btn-action btn-action-delete" 
-              style="padding: 2px 6px; font-size: 11px;"
-              :disabled="deletingExpenseId === item.id"
-              @click="handleDeleteExpense(item.id)"
+              v-for="cat in categoryList" 
+              :key="cat.id" 
+              type="button" 
+              class="category-card-btn"
+              :class="{ 'active': expenseForm.category === cat.id }"
+              @click="expenseForm.category = cat.id"
             >
-              <i v-if="deletingExpenseId === item.id" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-trash-can"></i>
-              <span>{{ deletingExpenseId === item.id ? ' ลบ...' : ' ลบ' }}</span>
+              <div class="cat-icon-wrap">
+                <i :class="cat.icon"></i>
+              </div>
+              <span class="cat-name">{{ cat.name }}</span>
             </button>
           </div>
         </div>
+
+        <!-- ── แถวที่ 2: ช่องทางจ่ายเงิน (แถวเดี่ยวเต็มความกว้าง) ── -->
+        <div class="form-step-section mb-lg">
+          <label class="form-section-label mb-sm">
+            <span class="step-num">2</span> ช่องทางจ่ายเงิน:
+          </label>
+          <div class="payment-toggle-fullwidth">
+            <button 
+              type="button" 
+              class="payment-toggle-btn"
+              :class="{ 'active': expenseForm.payment_method === 'cash' }"
+              @click="expenseForm.payment_method = 'cash'"
+            >
+              <i class="fa-solid fa-money-bill-wave"></i> เงินสด
+            </button>
+            <button 
+              type="button" 
+              class="payment-toggle-btn"
+              :class="{ 'active': expenseForm.payment_method === 'transfer' }"
+              @click="expenseForm.payment_method = 'transfer'"
+            >
+              <i class="fa-solid fa-mobile-screen-button"></i> เงินโอน
+            </button>
+          </div>
+        </div>
+
+        <!-- ── แถวที่ 3: ระบุจำนวนเงิน (แถวเดี่ยว) + ปุ่มบวกเงินด้านล่าง ── -->
+        <div class="form-step-section mb-lg">
+          <label class="form-section-label mb-sm">
+            <span class="step-num">3</span> จำนวนเงิน (บาท) *:
+          </label>
+          <div class="input-with-icon mb-xs">
+            <i class="fa-solid fa-baht-sign input-icon"></i>
+            <input 
+              type="number" 
+              class="form-input custom-input full-width-input" 
+              v-model.number="expenseForm.amount" 
+              placeholder="ระบุจำนวนเงิน เช่น 500" 
+              min="0"
+              step="any"
+            />
+          </div>
+          <!-- Quick Amount Buttons under input -->
+          <div class="quick-amount-buttons-full">
+            <button type="button" class="btn-quick-amount" @click="addAmount(50)">+50</button>
+            <button type="button" class="btn-quick-amount" @click="addAmount(100)">+100</button>
+            <button type="button" class="btn-quick-amount" @click="addAmount(200)">+200</button>
+            <button type="button" class="btn-quick-amount" @click="addAmount(500)">+500</button>
+            <button type="button" class="btn-quick-amount" @click="addAmount(1000)">+1,000</button>
+            <button type="button" class="btn-quick-amount reset-btn" @click="expenseForm.amount = null">ล้างยอด</button>
+          </div>
+        </div>
+
+        <!-- ── แถวที่ 4: บันทึกช่วยจำ / สถานที่ซื้อ + ปุ่มบันทึกด่วนด้านล่าง ── -->
+        <div class="form-step-section mb-xl">
+          <label class="form-section-label mb-sm">
+            <span class="step-num">4</span> บันทึกช่วยจำ / สถานที่ซื้อ:
+          </label>
+          <div class="input-with-icon mb-xs">
+            <i class="fa-solid fa-pen-to-square input-icon"></i>
+            <input 
+              type="text" 
+              class="form-input custom-input full-width-input" 
+              v-model="expenseForm.note" 
+              placeholder="เช่น ซื้อไก่สดแม็คโคร, ค่าน้ำมัน..." 
+            />
+          </div>
+          <!-- Quick Notes Grid under input -->
+          <div class="quick-notes-grid-6">
+            <button 
+              v-for="preset in quickNotePresets" 
+              :key="preset.name" 
+              type="button" 
+              class="quick-note-card-btn"
+              :class="{ 'active': expenseForm.note === preset.name }"
+              @click="setQuickNote(preset.name)"
+            >
+              <i :class="preset.icon" style="margin-right: 6px;"></i>
+              <span>{{ preset.name }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── ปุ่มบันทึกรายการ ── -->
+        <button 
+          class="btn btn-primary btn-block submit-expense-btn" 
+          @click="handleAddExpense" 
+          :disabled="!expenseForm.amount || expenseForm.amount <= 0 || saving"
+        >
+          <i v-if="saving" class="fa-solid fa-spinner fa-spin"></i>
+          <i v-else class="fa-solid fa-circle-check"></i>
+          <span>
+            {{ saving ? ' กำลังบันทึก...' : ` บันทึกรายจ่าย ${selectedCategoryName} (${formatCurrency(expenseForm.amount || 0)})` }}
+          </span>
+        </button>
+
       </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div v-if="totalLedgerPages > 1" class="flex flex-between align-center mt-md pt-md" style="border-top: 1px solid var(--border-color);">
-      <button 
-        class="btn btn-secondary btn-sm" 
-        :disabled="ledgerCurrentPage === 1" 
-        @click="ledgerCurrentPage--"
-      >
-        <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-      </button>
-      <span class="text-xs text-secondary">
-        หน้า {{ ledgerCurrentPage }} จาก {{ totalLedgerPages }}
-      </span>
-      <button 
-        class="btn btn-secondary btn-sm" 
-        :disabled="ledgerCurrentPage === totalLedgerPages" 
-        @click="ledgerCurrentPage++"
-      >
-        ถัดไป <i class="fa-solid fa-chevron-right"></i>
-      </button>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 2: หน้ารายการ (EXPENSE & WASTE COMBINED LIST)       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'list'" class="flex flex-col gap-md">
+      
+      <!-- Top 4 Summary Cards -->
+      <div class="financial-summary-grid">
+        <!-- Card 1: Revenue -->
+        <div class="summary-card revenue-card">
+          <div class="summary-card-header">
+            <span class="summary-icon"><i class="fa-solid fa-sack-dollar text-success"></i></span>
+            <span class="summary-title">ยอดขาย/รายรับรวม</span>
+          </div>
+          <div class="summary-value text-success">{{ formatCurrency(totalRevenue) }}</div>
+          <div class="summary-sub-badges">
+            <span class="sub-badge">สด: {{ formatCurrency(revenueBreakdown.cash) }}</span>
+            <span class="sub-badge">โอน: {{ formatCurrency(revenueBreakdown.qr) }}</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Expenses -->
+        <div class="summary-card expense-card">
+          <div class="summary-card-header">
+            <span class="summary-icon"><i class="fa-solid fa-wallet text-danger"></i></span>
+            <span class="summary-title">รายจ่ายรวม</span>
+          </div>
+          <div class="summary-value text-danger">{{ formatCurrency(totalExpenses) }}</div>
+          <div class="summary-sub-badges">
+            <span class="sub-badge">สด: {{ formatCurrency(expenseBreakdown.cash) }}</span>
+            <span class="sub-badge">โอน: {{ formatCurrency(expenseBreakdown.transfer) }}</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Waste & Staff Credit -->
+        <div class="summary-card waste-card">
+          <div class="summary-card-header">
+            <span class="summary-icon"><i class="fa-solid fa-trash-can text-warning"></i></span>
+            <span class="summary-title">ของเสีย & เครดิต</span>
+          </div>
+          <div class="summary-value text-warning">{{ formatCurrency(totalWasteAndCreditCost) }}</div>
+          <div class="summary-sub-badges">
+            <span class="sub-badge">ของเสีย: {{ formatCurrency(wasteCost) }}</span>
+            <span class="sub-badge">เครดิต: {{ formatCurrency(staffCreditCost) }}</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Net Balance -->
+        <div class="summary-card net-card" :class="netProfit >= 0 ? 'profit-positive' : 'profit-negative'">
+          <div class="summary-card-header">
+            <span class="summary-icon"><i class="fa-solid fa-scale-balanced"></i></span>
+            <span class="summary-title">คงเหลือสุทธิ (กำไรจริง)</span>
+          </div>
+          <div class="summary-value" :class="netProfit >= 0 ? 'text-primary' : 'text-danger'">
+            {{ formatCurrency(netProfit) }}
+          </div>
+          <div class="summary-formula-caption">รายรับ - รายจ่าย - ของเสีย/เครดิต</div>
+        </div>
+      </div>
+
+      <!-- Enhanced Filter & Search Bar Card -->
+      <div class="card p-md" style="background: #ffffff; border: 1px solid var(--border-color);">
+        
+        <!-- Filter Header & Buttons Grid -->
+        <div class="mb-md">
+          <div class="text-xs font-bold text-secondary mb-sm flex align-center gap-xs">
+            <i class="fa-solid fa-filter text-primary"></i> กรองตามหมวดหมู่ / รายการ:
+          </div>
+          <div class="filter-chips-wrapper">
+            <button 
+              type="button" 
+              class="enhanced-filter-chip"
+              :class="{ 'active': filterCategory === 'all' }"
+              @click="filterCategory = 'all'"
+            >
+              <i class="fa-solid fa-border-all"></i>
+              <span>ทั้งหมด</span>
+              <span class="filter-count-badge">{{ allLedgerEntries.length }}</span>
+            </button>
+            <button 
+              v-for="cat in listFilterCategories" 
+              :key="'filter-' + cat.id"
+              type="button" 
+              class="enhanced-filter-chip"
+              :class="{ 'active': filterCategory === cat.id }"
+              @click="filterCategory = cat.id"
+            >
+              <i :class="cat.icon"></i>
+              <span>{{ cat.name }}</span>
+              <span class="filter-count-badge">{{ getEntryCountByCategory(cat.id) }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Input & CSV Export Button Row -->
+        <div class="filter-search-row flex flex-between align-center gap-md flex-wrap">
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input 
+              type="text" 
+              class="form-input search-input" 
+              v-model="searchQuery" 
+              placeholder="ค้นหาชื่อรายการ, หมายเหตุ, หรือผู้บันทึก..." 
+            />
+          </div>
+          <button 
+            v-if="filteredLedgerEntries.length > 0"
+            class="btn btn-secondary csv-export-btn" 
+            style="display:inline-flex; align-items:center; gap:6px; height: 38px; padding: 0 16px; font-size: var(--font-sm); white-space: nowrap;"
+            @click="exportLedgerCSV"
+          >
+            <i class="fa-solid fa-file-csv text-primary"></i> ส่งออกบัญชี (CSV)
+          </button>
+        </div>
+
+        <!-- Filter Sub-summary Banner with Proper Margin/Padding -->
+        <div class="filter-summary-banner mt-md flex flex-between align-center flex-wrap gap-xs">
+          <div class="text-xs text-secondary font-medium">
+            <i class="fa-solid fa-circle-info text-primary" style="margin-right: 4px;"></i>
+            แสดงผล <strong>{{ filteredLedgerEntries.length }}</strong> รายการ
+            <span v-if="filterCategory !== 'all'" class="text-primary font-bold"> (หมวด: {{ getFilterCategoryLabel(filterCategory) }})</span>
+            <span v-if="searchQuery" class="text-primary font-bold"> (คำค้น: "{{ searchQuery }}")</span>
+          </div>
+          <div class="font-bold text-danger text-sm">
+            ยอดรวมที่แสดง: {{ formatCurrency(filteredLedgerTotal) }}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Combined Table Card (Expenses + Waste + Staff Credit) -->
+      <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <table class="table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+              <th class="text-center" style="width: 14%; padding: 14px var(--space-sm); white-space:nowrap;">วัน-เวลา</th>
+              <th class="text-center" style="width: 20%; padding: 14px var(--space-sm); white-space:nowrap;">ประเภท / หมวดหมู่</th>
+              <th class="text-left" style="width: 29%; padding: 14px var(--space-md);">ชื่อรายการ / รายละเอียด</th>
+              <th class="text-center" style="width: 14%; padding: 14px var(--space-sm); white-space:nowrap;">ช่องทาง</th>
+              <th class="text-center" style="width: 13%; padding: 14px var(--space-sm); white-space:nowrap;">จำนวนเงิน (บาท)</th>
+              <th class="text-center" style="width: 10%; padding: 14px var(--space-sm); white-space:nowrap;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="ledgerLoading && allLedgerEntries.length === 0">
+              <td colspan="6" style="text-align: center; padding: var(--space-3xl) var(--space-md) !important;">
+                <div class="spinner mx-auto"></div>
+              </td>
+            </tr>
+            <tr v-else-if="filteredLedgerEntries.length === 0">
+              <td colspan="6" style="text-align: center; padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
+                <div class="flex flex-col align-center justify-center gap-xs">
+                  <i class="fa-solid fa-receipt text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>
+                  <div class="font-bold text-sm">ไม่มีรายการในหมวดหมู่นี้</div>
+                </div>
+              </td>
+            </tr>
+            <tr 
+              v-else 
+              v-for="item in paginatedLedgerEntries" 
+              :key="item.entryKey" 
+              style="border-bottom: 1px solid var(--border-color);"
+              class="table-row-hover"
+            >
+              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle; white-space:nowrap; color:var(--text-secondary); font-size: var(--font-xs);">
+                {{ formatDate(item.date) }}<br/>
+                <span class="text-tertiary">{{ formatTime(item.created_at) }}</span>
+              </td>
+              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle;">
+                <span class="category-badge" :class="item.badgeClass">
+                  <i :class="item.icon"></i>
+                  <span>{{ item.categoryLabel }}</span>
+                </span>
+              </td>
+              <td class="text-left" style="padding: 14px var(--space-md); vertical-align: middle; font-weight: 500; word-break: break-word;">
+                <div>{{ item.name }}</div>
+                <div v-if="item.staffName" class="text-xs text-secondary mt-xxs">
+                  <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
+                </div>
+              </td>
+              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle;">
+                <span class="payment-method-badge" :class="item.paymentClass">
+                  <i v-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
+                  <i v-else-if="item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
+                  <i v-else class="fa-solid fa-box"></i>
+                  <span>{{ item.paymentLabel }}</span>
+                </span>
+              </td>
+              <td class="text-danger text-center" style="padding: 14px var(--space-sm); vertical-align: middle; font-weight:bold; font-size: var(--font-base);">
+                {{ formatCurrency(item.amount) }}
+              </td>
+              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle;">
+                <button 
+                  v-if="item.type === 'expense'"
+                  class="btn-action btn-action-delete"
+                  :disabled="deletingExpenseId === item.id"
+                  @click="handleDeleteExpense(item.id)"
+                >
+                  <i v-if="deletingExpenseId === item.id" class="fa-solid fa-spinner fa-spin"></i>
+                  <i v-else class="fa-solid fa-trash-can"></i>
+                  <span>{{ deletingExpenseId === item.id ? ' ลบ...' : ' ลบ' }}</span>
+                </button>
+                <span v-else class="text-tertiary text-xs">-</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile List Cards -->
+      <div class="mobile-menu-list-container" style="display: none;">
+        <div v-if="filteredLedgerEntries.length === 0" class="card text-center py-xl" style="color: var(--text-tertiary);">
+          ไม่มีรายการในหมวดหมู่นี้
+        </div>
+        <div v-else class="flex flex-col gap-sm">
+          <div 
+            v-for="item in paginatedLedgerEntries" 
+            :key="'mobile-' + item.entryKey"
+            class="expense-mobile-card"
+          >
+            <div class="flex flex-between align-center mb-xs">
+              <span class="category-badge" :class="item.badgeClass">
+                <i :class="item.icon"></i> {{ item.categoryLabel }}
+              </span>
+              <span class="font-bold text-danger text-base">
+                {{ formatCurrency(item.amount) }}
+              </span>
+            </div>
+            <div class="text-sm font-semibold mb-xs" style="word-break: break-word;">
+              {{ item.name }}
+            </div>
+            <div class="flex flex-between align-center text-xs text-secondary mt-xs pt-xs" style="border-top: 1px solid var(--border-color);">
+              <span>{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
+              <div class="flex align-center gap-xs">
+                <span class="payment-method-badge" :class="item.paymentClass">{{ item.paymentLabel }}</span>
+                <button 
+                  v-if="item.type === 'expense'"
+                  class="btn-action btn-action-delete" 
+                  style="padding: 2px 6px; font-size: 11px;"
+                  :disabled="deletingExpenseId === item.id"
+                  @click="handleDeleteExpense(item.id)"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalLedgerPages > 1" class="flex flex-between align-center mt-md pt-md" style="border-top: 1px solid var(--border-color);">
+        <button 
+          class="btn btn-secondary btn-sm" 
+          :disabled="ledgerCurrentPage === 1" 
+          @click="ledgerCurrentPage--"
+        >
+          <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+        </button>
+        <span class="text-xs text-secondary">
+          หน้า {{ ledgerCurrentPage }} จาก {{ totalLedgerPages }}
+        </span>
+        <button 
+          class="btn btn-secondary btn-sm" 
+          :disabled="ledgerCurrentPage === totalLedgerPages" 
+          @click="ledgerCurrentPage++"
+        >
+          ถัดไป <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SUBTAB 3: หน้ากราฟ & วิเคราะห์ (ANALYTICS & CHARTS)         -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div v-if="activeSubTab === 'analytics'" class="flex flex-col gap-lg">
+      <div class="analytics-grid">
+        
+        <!-- Chart 1: Category Breakdown (Including Waste & Credit) -->
+        <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+          <div class="card-title font-bold text-base mb-lg flex align-center gap-xs" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <i class="fa-solid fa-chart-pie text-primary"></i> 
+            <span>สัดส่วนค่าใช้จ่าย & ความสูญเสีย ({{ ledgerPeriodLabel }})</span>
+          </div>
+          
+          <div v-if="allCostBreakdownStats.length === 0" class="text-center py-xl text-secondary text-sm">
+            <i class="fa-solid fa-chart-pie text-tertiary" style="font-size: 2rem; opacity: 0.35; display: block; margin-bottom: 8px;"></i>
+            ไม่มีข้อมูลสำหรับสร้างกราฟ
+          </div>
+          <div v-else class="category-breakdown-list">
+            <div 
+              v-for="stat in allCostBreakdownStats" 
+              :key="stat.id" 
+              class="category-breakdown-row"
+            >
+              <div class="flex flex-between align-center mb-xs text-xs font-semibold">
+                <span class="flex align-center gap-xs" style="color: var(--text-primary);">
+                  <i :class="stat.icon" :style="{ color: stat.color }"></i>
+                  <span>{{ stat.name }}</span>
+                </span>
+                <span class="font-bold" style="color: var(--text-primary);">
+                  {{ formatCurrency(stat.total) }} <span class="text-secondary font-normal">({{ stat.percentage }}%)</span>
+                </span>
+              </div>
+              <div class="progress-bar-bg">
+                <div 
+                  class="progress-bar-fill" 
+                  :style="{ width: stat.percentage + '%', backgroundColor: stat.color }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 2: Revenue vs Expenses vs Waste Comparison -->
+        <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+          <div class="card-title font-bold text-base mb-lg flex align-center gap-xs" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <i class="fa-solid fa-chart-simple text-primary"></i> 
+            <span>เปรียบเทียบ รายรับ vs รายจ่าย vs ของเสีย/เครดิต</span>
+          </div>
+
+          <div class="financial-bars-container flex flex-col gap-lg">
+            
+            <!-- Revenue -->
+            <div class="financial-bar-item">
+              <div class="flex flex-between align-center text-xs mb-xs">
+                <span class="font-bold text-success flex align-center gap-xs">
+                  <i class="fa-solid fa-sack-dollar"></i> 
+                  <span>รายรับ/ยอดขายรวม</span>
+                </span>
+                <span class="font-bold text-success text-sm">{{ formatCurrency(totalRevenue) }}</span>
+              </div>
+              <div class="progress-bar-bg" style="height: 14px;">
+                <div class="progress-bar-fill" style="width: 100%; background-color: var(--success, #2a9d8f);"></div>
+              </div>
+            </div>
+
+            <!-- Expense -->
+            <div class="financial-bar-item">
+              <div class="flex flex-between align-center text-xs mb-xs">
+                <span class="font-bold text-danger flex align-center gap-xs">
+                  <i class="fa-solid fa-wallet"></i> 
+                  <span>รายจ่ายรวม</span>
+                </span>
+                <span class="font-bold text-danger text-sm">
+                  {{ formatCurrency(totalExpenses) }} 
+                  <span class="text-secondary font-normal text-xs">({{ totalRevenue > 0 ? ((totalExpenses / totalRevenue) * 100).toFixed(1) : 0 }}% ของยอดขาย)</span>
+                </span>
+              </div>
+              <div class="progress-bar-bg" style="height: 14px;">
+                <div 
+                  class="progress-bar-fill" 
+                  :style="{ 
+                    width: (totalRevenue > 0 ? Math.min((totalExpenses / totalRevenue) * 100, 100) : 0) + '%', 
+                    backgroundColor: 'var(--danger, #ad281e)' 
+                  }"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Waste & Credit -->
+            <div class="financial-bar-item">
+              <div class="flex flex-between align-center text-xs mb-xs">
+                <span class="font-bold text-warning flex align-center gap-xs">
+                  <i class="fa-solid fa-trash-can"></i> 
+                  <span>ต้นทุนของเสีย & เครดิต</span>
+                </span>
+                <span class="font-bold text-warning text-sm">
+                  {{ formatCurrency(totalWasteAndCreditCost) }}
+                  <span class="text-secondary font-normal text-xs">({{ totalRevenue > 0 ? ((totalWasteAndCreditCost / totalRevenue) * 100).toFixed(1) : 0 }}% ของยอดขาย)</span>
+                </span>
+              </div>
+              <div class="progress-bar-bg" style="height: 14px;">
+                <div 
+                  class="progress-bar-fill" 
+                  :style="{ 
+                    width: (totalRevenue > 0 ? Math.min((totalWasteAndCreditCost / totalRevenue) * 100, 100) : 0) + '%', 
+                    backgroundColor: 'var(--accent, #ffab2b)' 
+                  }"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Net Result Card -->
+            <div class="net-profit-card card p-md flex flex-between align-center" :class="netProfit >= 0 ? 'profit-box-positive' : 'profit-box-negative'">
+              <span class="font-bold text-sm flex align-center gap-xs" :class="netProfit >= 0 ? 'text-success' : 'text-danger'">
+                <i :class="netProfit >= 0 ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation'"></i>
+                <span>คงเหลือสุทธิ (กำไรจริง)</span>
+              </span>
+              <span class="font-bold text-lg" :class="netProfit >= 0 ? 'text-success' : 'text-danger'">
+                {{ formatCurrency(netProfit) }}
+              </span>
+            </div>
+
+            <!-- Profit Sharing Split Card (60% / 40%) -->
+            <div class="profit-sharing-section card p-md" style="background: rgba(139, 3, 19, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+              <div class="flex flex-between align-center mb-sm">
+                <span class="font-bold text-xs flex align-center" style="color: var(--text-primary); gap: 8px;">
+                  <i class="fa-solid fa-handshake-angle" style="color: var(--text-primary); font-size: 14px;"></i>
+                  <span>การจัดสรรส่วนแบ่งกำไร (60% / 40%)</span>
+                </span>
+                <span class="text-xxs text-tertiary">คำนวณจากกำไรจริง</span>
+              </div>
+              <div class="grid grid-2 gap-sm">
+                <!-- 60% Share (ร้าน / ฝ่ายบริหาร) -->
+                <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
+                  <div class="flex flex-between align-center text-xs text-secondary mb-xs">
+                    <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
+                      <i class="fa-solid fa-store text-primary" style="font-size: 14px;"></i> 
+                      <span>ร้าน / บริหาร</span>
+                    </span>
+                    <span class="badge font-bold" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: 11px;">60%</span>
+                  </div>
+                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2;" :class="profitShare60 >= 0 ? 'text-primary' : 'text-danger'">
+                    {{ formatCurrency(profitShare60) }}
+                  </div>
+                  <div class="text-xs text-tertiary mt-2xs font-medium">60% ของกำไรจริง</div>
+                </div>
+
+                <!-- 40% Share (ผู้ร่วมทุน / หุ้นส่วน) -->
+                <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
+                  <div class="flex flex-between align-center text-xs text-secondary mb-xs">
+                    <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
+                      <i class="fa-solid fa-user-tie" style="color: #cc8000; font-size: 14px;"></i> 
+                      <span>ผู้ร่วมทุน / หุ้นส่วน</span>
+                    </span>
+                    <span class="badge font-bold" style="background: rgba(255, 171, 43, 0.18); color: #b26a00; padding: 2px 8px; border-radius: 6px; font-size: 11px;">40%</span>
+                  </div>
+                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2; color: #cc8000;" :class="profitShare40 < 0 ? 'text-danger' : ''">
+                    {{ formatCurrency(profitShare40) }}
+                  </div>
+                  <div class="text-xs text-tertiary mt-2xs font-medium">ยอดจ่ายให้ผู้ร่วมทุน (40%)</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Top 5 Highest Expenses -->
+      <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div class="card-title font-bold text-base mb-md flex align-center gap-xs" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+          <i class="fa-solid fa-ranking-star text-primary" style="font-size: 1.1rem;"></i> 
+          <span>5 อันดับรายการจ่ายสูงสุด</span>
+        </div>
+        <div v-if="topExpenses.length === 0" class="text-secondary text-sm text-center py-xl">
+          <i class="fa-solid fa-receipt text-tertiary" style="font-size: 2rem; opacity: 0.35; display: block; margin-bottom: 8px;"></i>
+          ไม่มีข้อมูลรายการจ่าย
+        </div>
+        <div v-else class="top-expenses-list">
+          <div 
+            v-for="(top, idx) in topExpenses" 
+            :key="'top-' + top.id" 
+            class="top-expense-row flex flex-between align-center flex-wrap gap-sm"
+          >
+            <div class="flex align-center gap-md flex-wrap">
+              <span class="rank-indicator" :class="'rank-' + (idx + 1)">#{{ idx + 1 }}</span>
+              <span class="category-badge" :class="'badge-cat-' + top.category">
+                <i :class="getExpenseCategoryIcon(top.category)"></i>
+                <span>{{ getCategoryLabel(top.category) }}</span>
+              </span>
+              <span class="top-expense-note font-medium" style="color: var(--text-primary);">
+                {{ top.note || getCategoryLabel(top.category) }}
+              </span>
+            </div>
+            <span class="font-bold text-danger text-base">{{ formatCurrency(top.amount) }}</span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -306,15 +695,78 @@ const activeMonth = computed(() => props.selectedMonth || getToday().substring(0
 const activeYear = computed(() => props.selectedYear || getToday().substring(0, 4));
 const activePeriodMode = computed(() => props.periodMode || 'daily');
 
+// Sub-tabs: 'form' (บันทึกรายจ่าย), 'list' (หน้ารายการ), 'analytics' (หน้ากราฟ)
+const activeSubTab = ref('form');
+
+// 12 Categories arranged in 2 rows of 6
+const categoryList = [
+  // Row 1 (6 items)
+  { id: 'raw_chicken', name: 'ไก่สด', icon: 'fa-solid fa-drumstick-bite' },
+  { id: 'cooking_oil', name: 'น้ำมันพืช', icon: 'fa-solid fa-bottle-droplet' },
+  { id: 'fuel_transport', name: 'น้ำมันรถ', icon: 'fa-solid fa-gas-pump' },
+  { id: 'gas_lpg', name: 'แก๊ส LPG', icon: 'fa-solid fa-fire' },
+  { id: 'sticky_rice', name: 'ข้าวเหนียว', icon: 'fa-solid fa-bowl-rice' },
+  { id: 'meatballs', name: 'ลูกชิ้น', icon: 'fa-solid fa-circle' },
+  // Row 2 (6 items)
+  { id: 'salapao', name: 'ซาลาเปา', icon: 'fa-solid fa-cookie' },
+  { id: 'packaging', name: 'บรรจุภัณฑ์', icon: 'fa-solid fa-box' },
+  { id: 'salary', name: 'เงินเดือน/ค่าแรง', icon: 'fa-solid fa-hand-holding-dollar' },
+  { id: 'utility_bills', name: 'ค่าน้ำ/ไฟ/เน็ต', icon: 'fa-solid fa-bolt' },
+  { id: 'debt', name: 'หนี้/ยอดค้าง', icon: 'fa-solid fa-file-invoice-dollar' },
+  { id: 'other', name: 'อื่นๆ', icon: 'fa-solid fa-paperclip' }
+];
+
+// Quick Notes: 6 prominent cards
+const quickNotePresets = [
+  { name: 'แม็คโคร', icon: 'fa-solid fa-cart-shopping' },
+  { name: 'ตลาดสด', icon: 'fa-solid fa-carrot' },
+  { name: 'ปั๊มน้ำมัน', icon: 'fa-solid fa-gas-pump' },
+  { name: 'ซีเจ / เซเว่น', icon: 'fa-solid fa-store' },
+  { name: 'โลตัส / บิ๊กซี', icon: 'fa-solid fa-basket-shopping' },
+  { name: 'เลี้ยงลูกน้อง', icon: 'fa-solid fa-users' }
+];
+
+const listFilterCategories = [
+  ...categoryList,
+  { id: 'waste_loss', name: 'ของเสีย/ทิ้ง', icon: 'fa-solid fa-trash-can' },
+  { id: 'credit_loss', name: 'เครดิตพนักงาน', icon: 'fa-solid fa-user-check' }
+];
+
+// Expense form
+const expenseForm = ref({
+  amount: null,
+  category: 'raw_chicken',
+  note: '',
+  payment_method: 'transfer'
+});
+const saving = ref(false);
+
+const selectedCategoryName = computed(() => {
+  const c = categoryList.find(item => item.id === expenseForm.value.category);
+  return c ? c.name : 'ค่าใช้จ่าย';
+});
+
+const setQuickNote = (note) => {
+  if (expenseForm.value.note === note) {
+    expenseForm.value.note = '';
+  } else {
+    expenseForm.value.note = note;
+  }
+};
+
+const addAmount = (val) => {
+  expenseForm.value.amount = (Number(expenseForm.value.amount) || 0) + val;
+};
+
 const expenseFormTitle = computed(() => {
   if (activePeriodMode.value === 'daily') {
-    return `บันทึกค่าใช้จ่ายประจำวัน (${activeDate.value === getToday() ? 'วันนี้' : 'วันที่ ' + formatDate(activeDate.value)})`;
+    return `บันทึกค่าใช้จ่าย (${activeDate.value === getToday() ? 'วันนี้' : formatDate(activeDate.value)})`;
   } else if (activePeriodMode.value === 'monthly') {
     const [y, m] = activeMonth.value.split('-');
     const d = new Date(Number(y), Number(m) - 1, 1);
-    return `บันทึกค่าใช้จ่าย (ประจำเดือน ${d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })})`;
+    return `บันทึกค่าใช้จ่าย (${d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })})`;
   } else {
-    return `บันทึกค่าใช้จ่าย (ประจำปี ${Number(activeYear.value) + 543})`;
+    return `บันทึกค่าใช้จ่าย (${Number(activeYear.value) + 543})`;
   }
 });
 
@@ -330,211 +782,311 @@ const ledgerPeriodLabel = computed(() => {
   }
 });
 
-// Expense form
-const expenseForm = ref({
-  amount: null,
-  category: 'raw_chicken',
-  note: '',
-  payment_method: 'transfer'
-});
-const saving = ref(false);
-
-const isExpenseCategoryDropdownOpen = ref(false);
-const selectedExpenseCategoryLabel = computed(() => {
-  const categoryLabels = {
-    raw_chicken: 'ไก่สด',
-    sticky_rice: 'ข้าวเหนียว',
-    meatballs: 'ลูกชิ้น',
-    salapao: 'ซาลาเปา',
-    fuel_oil: 'น้ำมัน',
-    gas_lpg: 'แก๊ส',
-    salary: 'เงินเดือน',
-    utility_bills: 'ค่าไฟ/น้ำ',
-    packaging: 'บรรจุภัณฑ์/ถุง',
-    debt: 'หนี้',
-    other: 'อื่นๆ'
-  };
-  return categoryLabels[expenseForm.value.category] || 'เลือกหมวดหมู่...';
-});
-
-// Ledger
+// Data states
 const orders = ref([]);
 const expenses = ref([]);
 const guarantees = ref([]);
-const ledgerTransactions = ref([]);
+const menuItems = ref([]);
+const rawStockLogs = ref([]);
 const ledgerLoading = ref(false);
+
+// Filter & Pagination for List
+const filterCategory = ref('all');
+const searchQuery = ref('');
 const ledgerCurrentPage = ref(1);
 const ledgerPerPage = 15;
 
-const parseTimeDot = (timeStr) => {
-  if (!timeStr) return { hour: 0, minute: 0 };
-  const normalized = timeStr.replace(':', '.');
-  const parts = normalized.split('.');
-  const hour = Number(parts[0]) || 0;
-  const minute = Number(parts[1]) || 0;
-  return { hour, minute };
-};
-
-const getBangkokTimeComponents = (dateStr) => {
-  if (!dateStr) return { hour: 0, minute: 0 };
-  let d;
-  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
-    const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
-    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
-    d = new Date(isoStr);
-  } else {
-    d = new Date(dateStr);
-  }
-  const bkkString = d.toLocaleTimeString('en-US', {
-    timeZone: 'Asia/Bangkok',
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+// Combined Ledger Entries (Expenses + Waste + Staff Credit)
+const allLedgerEntries = computed(() => {
+  const list = [];
+  const menuMap = new Map();
+  const menuByNameMap = new Map();
+  menuItems.value.forEach(m => {
+    if (m && m.id !== undefined && m.id !== null) {
+      menuMap.set(Number(m.id), m);
+      menuMap.set(String(m.id), m);
+    }
+    if (m && m.name) {
+      menuByNameMap.set(m.name.trim().toLowerCase(), m);
+    }
   });
-  const [h, m] = bkkString.split(':').map(Number);
-  return { hour: h, minute: m };
-};
 
-const isTimeInRange = (dateStr, startStr, endStr) => {
-  const start = parseTimeDot(startStr || '00.00');
-  const end = parseTimeDot(endStr || '23.59');
-  const { hour, minute } = getBangkokTimeComponents(dateStr);
-  const timeVal = hour * 60 + minute;
-  const startVal = start.hour * 60 + start.minute;
-  const endVal = end.hour * 60 + end.minute;
-  if (startVal <= endVal) {
-    return timeVal >= startVal && timeVal <= endVal;
-  } else {
-    return timeVal >= startVal || timeVal <= endVal;
+  // 1. Regular Expenses
+  expenses.value.forEach(e => {
+    list.push({
+      entryKey: 'exp-' + e.id,
+      id: e.id,
+      type: 'expense',
+      category: e.category,
+      categoryLabel: getCategoryLabel(e.category),
+      icon: getExpenseCategoryIcon(e.category),
+      badgeClass: 'badge-cat-' + e.category,
+      name: e.note || getCategoryLabel(e.category),
+      amount: Number(e.amount) || 0,
+      paymentLabel: e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด',
+      paymentClass: e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash',
+      date: e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : ''),
+      created_at: e.created_at,
+      timestamp: new Date((e.created_at || '').replace(' ', 'T')).getTime(),
+      staffName: e.staff_name
+    });
+  });
+
+  // 2. Waste & Staff Credit from Stock Logs
+  rawStockLogs.value.forEach(log => {
+    if (!['waste', 'staff_benefit'].includes(log.reason)) return;
+    const item = (log.menu_item_id ? (menuMap.get(Number(log.menu_item_id)) || menuMap.get(String(log.menu_item_id))) : null) ||
+                 (log.item_name ? menuByNameMap.get(String(log.item_name).trim().toLowerCase()) : null);
+    const unitPrice = (item && Number(item.price) > 0)
+      ? Number(item.price)
+      : (Number(log.item_price) > 0 ? Number(log.item_price) : 0);
+    const uom = (item && item.uom) ? item.uom : (log.item_uom || 'ชิ้น');
+    const name = log.item_name || (item ? item.name : 'สินค้า');
+    const qty = Math.abs(Number(log.change_qty) || 0);
+    const lossCost = qty * unitPrice;
+    const isWaste = log.reason === 'waste';
+
+    list.push({
+      entryKey: 'stock-' + log.id,
+      id: log.id,
+      type: isWaste ? 'waste_loss' : 'credit_loss',
+      category: isWaste ? 'waste_loss' : 'credit_loss',
+      categoryLabel: isWaste ? 'ของเสีย/ทิ้ง' : 'เครดิตพนักงาน',
+      icon: isWaste ? 'fa-solid fa-trash-can' : 'fa-solid fa-user-check',
+      badgeClass: isWaste ? 'badge-cat-waste' : 'badge-cat-credit',
+      name: `${name} (${qty} ${uom}${log.note ? ' - ' + log.note : ''})`,
+      amount: lossCost,
+      paymentLabel: 'ตัดสต็อก',
+      paymentClass: 'badge-stock',
+      date: log.created_at ? log.created_at.substring(0, 10) : '',
+      created_at: log.created_at,
+      timestamp: new Date((log.created_at || '').replace(' ', 'T')).getTime(),
+      staffName: log.staff_name || log.note || '-'
+    });
+  });
+
+  // Sort descending by created_at / timestamp
+  return list.sort((a, b) => b.timestamp - a.timestamp);
+});
+
+const filteredLedgerEntries = computed(() => {
+  let list = allLedgerEntries.value;
+  if (filterCategory.value !== 'all') {
+    list = list.filter(item => {
+      if (filterCategory.value === 'cooking_oil') {
+        return item.category === 'cooking_oil' || item.category === 'fuel_oil';
+      }
+      return item.category === filterCategory.value;
+    });
   }
-};
-
-const filteredLedgerTransactions = computed(() => {
-  let list = ledgerTransactions.value;
-  const isTimeFilterActive = (props.startTime && props.startTime !== '00.00') || (props.endTime && props.endTime !== '23.59');
-  if (activePeriodMode.value === 'daily' && isTimeFilterActive) {
-    list = list.filter(item => isTimeInRange(item.created_at, props.startTime, props.endTime));
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.trim().toLowerCase();
+    list = list.filter(item => {
+      const n = (item.name || '').toLowerCase();
+      const s = (item.staffName || '').toLowerCase();
+      const c = (item.categoryLabel || '').toLowerCase();
+      return n.includes(q) || s.includes(q) || c.includes(q);
+    });
   }
   return list;
 });
 
+const filteredLedgerTotal = computed(() => {
+  return filteredLedgerEntries.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+});
+
 const totalLedgerPages = computed(() => {
-  return Math.ceil(filteredLedgerTransactions.value.length / ledgerPerPage) || 1;
+  return Math.ceil(filteredLedgerEntries.value.length / ledgerPerPage) || 1;
 });
 
-const paginatedLedgerTransactions = computed(() => {
+const paginatedLedgerEntries = computed(() => {
   const start = (ledgerCurrentPage.value - 1) * ledgerPerPage;
-  const end = start + ledgerPerPage;
-  return filteredLedgerTransactions.value.slice(start, end);
+  return filteredLedgerEntries.value.slice(start, start + ledgerPerPage);
 });
 
-const selectExpenseCategory = (cat) => {
-  expenseForm.value.category = cat;
-  isExpenseCategoryDropdownOpen.value = false;
+const getEntryCountByCategory = (catId) => {
+  return allLedgerEntries.value.filter(item => {
+    if (catId === 'cooking_oil') return item.category === 'cooking_oil' || item.category === 'fuel_oil';
+    return item.category === catId;
+  }).length;
 };
 
-const isExpensePaymentMethodDropdownOpen = ref(false);
-const selectExpensePaymentMethod = (method) => {
-  expenseForm.value.payment_method = method;
-  isExpensePaymentMethodDropdownOpen.value = false;
-};
+// Calculations for Financial Summary
+const totalRevenue = computed(() => {
+  const ordersRev = orders.value
+    .filter(o => o.status === 'completed')
+    .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const guaranteeRev = guarantees.value.reduce((sum, g) => sum + (Number(g.amount) || 0), 0);
+  return ordersRev + guaranteeRev;
+});
 
-const computeLedgerTransactions = () => {
-  const list = [];
-
+const revenueBreakdown = computed(() => {
+  let cash = 0;
+  let qr = 0;
   orders.value.forEach(o => {
     if (o.status !== 'completed') return;
-    list.push({
-      id: o.id,
-      created_at: o.created_at,
-      timestamp: new Date(o.created_at.replace(' ', 'T')).getTime(),
-      name: `ขายสินค้า (บิล #${o.order_number})`,
-      income: o.total || 0,
-      expense: 0,
-      type: 'order'
-    });
+    if (o.payment_method === 'cash') cash += Number(o.total) || 0;
+    else qr += Number(o.total) || 0;
   });
+  guarantees.value.forEach(g => {
+    if (g.deposit_payment_method === 'cash') cash += Number(g.amount) || 0;
+    else qr += Number(g.amount) || 0;
+  });
+  return { cash, qr };
+});
+
+const totalExpenses = computed(() => {
+  return expenses.value.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+});
+
+const expenseBreakdown = computed(() => {
+  let cash = 0;
+  let transfer = 0;
+  expenses.value.forEach(e => {
+    if (e.payment_method === 'cash') cash += Number(e.amount) || 0;
+    else transfer += Number(e.amount) || 0;
+  });
+  return { cash, transfer };
+});
+
+const wasteCost = computed(() => {
+  const menuMap = new Map();
+  const menuByNameMap = new Map();
+  menuItems.value.forEach(m => {
+    if (m && m.id !== undefined && m.id !== null) {
+      menuMap.set(Number(m.id), m);
+      menuMap.set(String(m.id), m);
+    }
+    if (m && m.name) {
+      menuByNameMap.set(m.name.trim().toLowerCase(), m);
+    }
+  });
+  return rawStockLogs.value
+    .filter(l => l.reason === 'waste')
+    .reduce((sum, l) => {
+      const item = (l.menu_item_id ? (menuMap.get(Number(l.menu_item_id)) || menuMap.get(String(l.menu_item_id))) : null) ||
+                   (l.item_name ? menuByNameMap.get(String(l.item_name).trim().toLowerCase()) : null);
+      const price = (item && Number(item.price) > 0)
+        ? Number(item.price)
+        : (Number(l.item_price) > 0 ? Number(l.item_price) : 0);
+      return sum + (Math.abs(Number(l.change_qty) || 0) * price);
+    }, 0);
+});
+
+const staffCreditCost = computed(() => {
+  const menuMap = new Map();
+  const menuByNameMap = new Map();
+  menuItems.value.forEach(m => {
+    if (m && m.id !== undefined && m.id !== null) {
+      menuMap.set(Number(m.id), m);
+      menuMap.set(String(m.id), m);
+    }
+    if (m && m.name) {
+      menuByNameMap.set(m.name.trim().toLowerCase(), m);
+    }
+  });
+  return rawStockLogs.value
+    .filter(l => l.reason === 'staff_benefit')
+    .reduce((sum, l) => {
+      const item = (l.menu_item_id ? (menuMap.get(Number(l.menu_item_id)) || menuMap.get(String(l.menu_item_id))) : null) ||
+                   (l.item_name ? menuByNameMap.get(String(l.item_name).trim().toLowerCase()) : null);
+      const price = (item && Number(item.price) > 0)
+        ? Number(item.price)
+        : (Number(l.item_price) > 0 ? Number(l.item_price) : 0);
+      return sum + (Math.abs(Number(l.change_qty) || 0) * price);
+    }, 0);
+});
+
+const totalWasteAndCreditCost = computed(() => {
+  return wasteCost.value + staffCreditCost.value;
+});
+
+// คงเหลือสุทธิ = รายรับรวม - รายจ่ายรวม - ของเสีย/เครดิต
+const netProfit = computed(() => {
+  return totalRevenue.value - totalExpenses.value - totalWasteAndCreditCost.value;
+});
+
+// การจัดสรรส่วนแบ่งกำไร (60% ร้าน/บริหาร, 40% ผู้ร่วมทุน)
+const profitShare60 = computed(() => {
+  return (netProfit.value || 0) * 0.6;
+});
+
+const profitShare40 = computed(() => {
+  return (netProfit.value || 0) * 0.4;
+});
+
+// Analytics Breakdown Stats (Expenses + Waste + Credit)
+const allCostBreakdownStats = computed(() => {
+  const totalCost = (totalExpenses.value + totalWasteAndCreditCost.value) || 1;
+  const map = {};
+
+  categoryList.forEach(c => {
+    map[c.id] = { ...c, total: 0, color: 'var(--primary-light, #ad281e)' };
+  });
+  map['raw_chicken'].color = '#ad281e';
+  map['cooking_oil'].color = 'var(--accent, #ffab2b)';
+  map['fuel_transport'].color = 'var(--accent-dark, #cc8000)';
+  map['gas_lpg'].color = 'var(--primary, #8b0313)';
+  map['salary'].color = 'var(--success, #2a9d8f)';
+  map['waste_loss'] = { id: 'waste_loss', name: 'ของเสีย/ทิ้ง', icon: 'fa-solid fa-trash-can', color: 'var(--danger, #ad281e)', total: wasteCost.value };
+  map['credit_loss'] = { id: 'credit_loss', name: 'เครดิตพนักงาน', icon: 'fa-solid fa-user-check', color: 'var(--accent, #ffab2b)', total: staffCreditCost.value };
 
   expenses.value.forEach(e => {
-    const pmLabel = e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
-    list.push({
-      id: e.id,
-      created_at: e.created_at,
-      timestamp: new Date(e.created_at.replace(' ', 'T')).getTime(),
-      name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})`,
-      income: 0,
-      expense: e.amount || 0,
-      type: 'expense'
-    });
+    const key = (e.category === 'fuel_oil') ? 'cooking_oil' : (map[e.category] ? e.category : 'other');
+    if (map[key]) {
+      map[key].total += Number(e.amount) || 0;
+    }
   });
 
-  guarantees.value.forEach(g => {
-    const depDate = g.deposit_date || (g.created_at ? g.created_at.substring(0, 10) : '');
-    let matches = false;
-    if (activePeriodMode.value === 'daily' && depDate === activeDate.value) matches = true;
-    else if (activePeriodMode.value === 'monthly' && depDate.startsWith(activeMonth.value)) matches = true;
-    else if (activePeriodMode.value === 'yearly' && depDate.startsWith(activeYear.value)) matches = true;
+  return Object.values(map)
+    .filter(c => c.total > 0)
+    .map(c => ({
+      ...c,
+      percentage: Math.round((c.total / totalCost) * 1000) / 10
+    }))
+    .sort((a, b) => b.total - a.total);
+});
 
-    if (!matches) return;
+const topExpenses = computed(() => {
+  return [...expenses.value].sort((a, b) => (b.amount || 0) - (a.amount || 0)).slice(0, 5);
+});
 
-    const pmLabel = g.deposit_payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
-    const createdAtStr = g.created_at || (depDate + ' 00:00:00');
-    list.push({
-      id: g.id,
-      created_at: createdAtStr,
-      timestamp: new Date(createdAtStr.replace(' ', 'T')).getTime(),
-      name: `รับเงินประกันพนักงาน: ${g.user_name || 'พนักงาน'} (${pmLabel})${g.note ? ' - ' + g.note : ''}`,
-      income: g.amount || 0,
-      expense: 0,
-      type: 'guarantee_deposit'
-    });
-  });
-
-  list.sort((a, b) => a.timestamp - b.timestamp);
-
-  let running = 0;
-  const computedList = list.map(item => {
-    running += item.income - item.expense;
-    return {
-      ...item,
-      runningBalance: running,
-      formattedDate: formatDate(item.created_at),
-      formattedTime: formatTime(item.created_at)
-    };
-  });
-
-  ledgerTransactions.value = computedList.reverse();
-};
-
-const loadLedgerData = async () => {
+// Data Loading
+const loadData = async () => {
   ledgerLoading.value = true;
   try {
     const params = { status: 'completed', branch_id: props.branchId || '' };
     const expenseParams = { branch_id: props.branchId || '' };
     const guaranteeParams = { branch_id: props.branchId || '' };
+    const stockLogParams = { branch_id: props.branchId || '', limit: 500 };
 
     if (activePeriodMode.value === 'daily') {
       params.date = activeDate.value;
       expenseParams.date = activeDate.value;
+      stockLogParams.date = activeDate.value;
     } else if (activePeriodMode.value === 'monthly') {
       params.month = activeMonth.value;
       expenseParams.month = activeMonth.value;
+      stockLogParams.month = activeMonth.value;
     } else {
       params.year = activeYear.value;
       expenseParams.year = activeYear.value;
+      stockLogParams.year = activeYear.value;
     }
 
-    const [ordersRes, expensesRes, guaranteesRes] = await Promise.all([
+    const [ordersRes, expensesRes, guaranteesRes, menuRes, stockLogsRes] = await Promise.all([
       api.orders.getAll(params),
       api.expenses.get(expenseParams),
-      api.employees.getGuarantees(guaranteeParams)
+      api.employees.getGuarantees(guaranteeParams),
+      api.menu.getAll({ all_branches: 'true', branch_id: props.branchId || '' }),
+      api.stock.getAllLogs(stockLogParams)
     ]);
 
     orders.value = (ordersRes && ordersRes.success) ? (ordersRes.data || []) : [];
     expenses.value = (expensesRes && expensesRes.success) ? (expensesRes.data || []) : [];
     guarantees.value = (guaranteesRes && guaranteesRes.success) ? (guaranteesRes.data || []) : [];
-    computeLedgerTransactions();
+    menuItems.value = (menuRes && menuRes.success) ? (menuRes.data || []) : [];
+    rawStockLogs.value = (stockLogsRes && stockLogsRes.success) ? (stockLogsRes.data || []) : [];
   } catch (err) {
     console.error('Failed to load ledger data:', err);
   } finally {
@@ -556,13 +1108,16 @@ const handleAddExpense = async () => {
     });
     if (res.success) {
       ui.showToast('บันทึกค่าใช้จ่ายสำเร็จ', 'success');
-      expenseForm.value = { amount: null, category: 'raw_chicken', note: '', payment_method: 'transfer' };
+      const curCat = expenseForm.value.category;
+      const curPm = expenseForm.value.payment_method;
+      expenseForm.value = { amount: null, category: curCat, note: '', payment_method: curPm };
       if (res.data) {
         expenses.value.unshift(res.data);
-        computeLedgerTransactions();
       } else {
-        await loadLedgerData();
+        await loadData();
       }
+      // Auto switch to list tab to see new entry
+      activeSubTab.value = 'list';
     }
   } catch (err) {
     ui.showToast('บันทึกไม่สำเร็จ: ' + err.message, 'error');
@@ -582,7 +1137,6 @@ const handleDeleteExpense = async (id) => {
     if (res.success) {
       ui.showToast('ลบค่าใช้จ่ายสำเร็จ', 'success');
       expenses.value = expenses.value.filter(e => e.id !== id);
-      computeLedgerTransactions();
     }
   } catch (err) {
     ui.showToast('ลบไม่สำเร็จ: ' + err.message, 'error');
@@ -591,21 +1145,22 @@ const handleDeleteExpense = async (id) => {
   }
 };
 
-const exportExpensesCSV = () => {
-  if (!filteredLedgerTransactions.value || filteredLedgerTransactions.value.length === 0) return;
-  let csvContent = '\uFEFFวัน-เวลา,ชื่อรายการ,รายรับ,รายจ่าย,คงเหลือ\n';
-  filteredLedgerTransactions.value.forEach(t => {
-    const time = `"${t.formattedDate} ${t.formattedTime}"`;
-    const name = `"${(t.name || '').replace(/"/g, '""')}"`;
-    const inc = t.income || 0;
-    const exp = t.expense || 0;
-    const bal = t.runningBalance || 0;
-    csvContent += `${time},${name},${inc},${exp},${bal}\n`;
+const exportLedgerCSV = () => {
+  if (!filteredLedgerEntries.value || filteredLedgerEntries.value.length === 0) return;
+  let csvContent = '\uFEFFวัน-เวลา,ประเภท,ชื่อรายการ,ช่องทาง,จำนวนเงิน(บาท),ผู้บันทึก\n';
+  filteredLedgerEntries.value.forEach(item => {
+    const time = `"${formatDate(item.date)} ${formatTime(item.created_at)}"`;
+    const cat = `"${item.categoryLabel}"`;
+    const note = `"${(item.name || '').replace(/"/g, '""')}"`;
+    const pm = `"${item.paymentLabel}"`;
+    const amt = item.amount || 0;
+    const staff = `"${(item.staffName || '').replace(/"/g, '""')}"`;
+    csvContent += `${time},${cat},${note},${pm},${amt},${staff}\n`;
   });
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.setAttribute('download', `ledger_${activeDate.value}.csv`);
+  link.setAttribute('download', `ledger_expenses_${activeDate.value}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -614,31 +1169,41 @@ const exportExpensesCSV = () => {
 const getCategoryLabel = (cat) => {
   const map = {
     'raw_chicken': 'ไก่สด',
+    'cooking_oil': 'น้ำมันพืช',
+    'fuel_transport': 'น้ำมันรถ',
+    'fuel_oil': 'น้ำมันพืช',
+    'gas_lpg': 'แก๊ส LPG',
     'sticky_rice': 'ข้าวเหนียว',
     'meatballs': 'ลูกชิ้น',
     'salapao': 'ซาลาเปา',
-    'fuel_oil': 'น้ำมัน',
-    'gas_lpg': 'แก๊ส',
-    'salary': 'เงินเดือน',
-    'utility_bills': 'ค่าไฟ/น้ำ',
     'packaging': 'บรรจุภัณฑ์',
-    'debt': 'หนี้',
+    'salary': 'เงินเดือน/ค่าแรง',
+    'utility_bills': 'ค่าน้ำ/ไฟ/เน็ต',
+    'debt': 'หนี้/ยอดค้าง',
     'other': 'อื่นๆ'
   };
   return map[cat] || cat;
 };
 
+const getFilterCategoryLabel = (cat) => {
+  if (cat === 'waste_loss') return 'ของเสีย/ทิ้ง';
+  if (cat === 'credit_loss') return 'เครดิตพนักงาน';
+  return getCategoryLabel(cat);
+};
+
 const getExpenseCategoryIcon = (cat) => {
   const map = {
     'raw_chicken': 'fa-solid fa-drumstick-bite',
+    'cooking_oil': 'fa-solid fa-bottle-droplet',
+    'fuel_transport': 'fa-solid fa-gas-pump',
+    'fuel_oil': 'fa-solid fa-bottle-droplet',
+    'gas_lpg': 'fa-solid fa-fire',
     'sticky_rice': 'fa-solid fa-bowl-rice',
     'meatballs': 'fa-solid fa-circle',
     'salapao': 'fa-solid fa-cookie',
-    'fuel_oil': 'fa-solid fa-gas-pump',
-    'gas_lpg': 'fa-solid fa-fire',
+    'packaging': 'fa-solid fa-box',
     'salary': 'fa-solid fa-hand-holding-dollar',
     'utility_bills': 'fa-solid fa-bolt',
-    'packaging': 'fa-solid fa-box',
     'debt': 'fa-solid fa-file-invoice-dollar',
     'other': 'fa-solid fa-paperclip'
   };
@@ -646,51 +1211,677 @@ const getExpenseCategoryIcon = (cat) => {
 };
 
 watch(() => [props.branchId, props.selectedDate, props.selectedMonth, props.selectedYear, props.periodMode], () => {
-  loadLedgerData();
+  loadData();
 });
 
 onMounted(() => {
-  loadLedgerData();
+  loadData();
 });
 </script>
 
 <style scoped>
-.expense-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-sm);
+/* 1. Sub-tab Navigation (Consistent with StaffManagement) */
+.category-tabs .btn {
+  font-size: var(--font-sm);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast, 0.15s ease);
 }
-.expense-form-presets {
-  grid-column: 1 / -1;
-}
-.expense-form-submit-group {
-  grid-column: 1 / -1;
-}
-.preset-btn {
-  font-size: var(--font-xs);
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-}
-.preset-btn.active {
+
+.category-tabs .btn.active {
   background: var(--primary);
-  color: white;
+  color: #ffffff;
+  font-weight: var(--font-weight-bold, 700);
+  box-shadow: 0 4px 12px var(--primary-glow, rgba(139, 3, 19, 0.25));
 }
-.ledger-summary-grid {
+
+/* 2. Step Section & Form Labels */
+.form-step-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-section-label {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--primary);
+  color: #ffffff;
+  font-size: var(--font-xxs, 11px);
+  font-weight: var(--font-weight-bold, 700);
+}
+
+/* 3. Category 12 Buttons Grid (6x2) */
+.category-grid-12 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-sm);
-  margin-bottom: var(--space-md);
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-sm, 8px);
 }
-.ledger-mobile-card {
-  background: var(--card-bg);
+
+.category-card-btn {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md, 12px);
+  padding: var(--space-md, 12px) var(--space-xs, 4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs, 4px);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  user-select: none;
+  min-height: 74px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.category-card-btn:hover {
+  border-color: var(--primary-light);
+  background: rgba(139, 3, 19, 0.02);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px var(--primary-glow, rgba(139, 3, 19, 0.12));
+}
+
+.category-card-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--primary-glow, rgba(139, 3, 19, 0.3));
+  transform: translateY(-2px);
+}
+
+.cat-icon-wrap {
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+
+.category-card-btn.active .cat-icon-wrap {
+  color: #ffffff;
+}
+
+.cat-name {
+  font-size: var(--font-xs, 0.8rem);
+  font-weight: var(--font-weight-bold, 700);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: var(--text-primary);
+}
+
+.category-card-btn.active .cat-name {
+  color: #ffffff;
+}
+
+/* 4. Payment Toggle */
+.payment-toggle-fullwidth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md, 12px);
+}
+
+.payment-toggle-btn {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md, 12px);
+  padding: var(--space-md, 12px) var(--space-lg, 16px);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm, 8px);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  min-height: 48px;
+}
+
+.payment-toggle-btn:hover {
+  border-color: var(--primary-light);
+}
+
+.payment-toggle-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 3px 10px var(--primary-glow, rgba(139, 3, 19, 0.25));
+}
+
+/* 5. Inputs & Quick Buttons Full Row */
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-tertiary);
+  font-size: 1rem;
+}
+
+.custom-input {
+  height: 46px;
+  font-size: var(--font-base);
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 12px);
+  color: var(--text-primary);
+}
+
+.custom-input:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.full-width-input {
+  width: 100%;
+  padding-left: 42px !important;
+}
+
+.quick-amount-buttons-full {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-sm, 8px);
+}
+
+.btn-quick-amount {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm, 8px);
+  padding: var(--space-sm, 8px) var(--space-xs, 4px);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  text-align: center;
+}
+
+.btn-quick-amount:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.btn-quick-amount.reset-btn {
+  color: var(--danger);
+  border-color: var(--danger-glow);
+  background: rgba(173, 40, 30, 0.04);
+}
+
+/* 6. Quick Notes 6 Grid */
+.quick-notes-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-sm, 8px);
+}
+
+.quick-note-card-btn {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm, 8px);
+  padding: var(--space-sm, 8px) var(--space-xs, 4px);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  user-select: none;
+}
+
+.quick-note-card-btn:hover {
+  border-color: var(--primary-light);
+  color: var(--primary);
+  background: rgba(139, 3, 19, 0.02);
+}
+
+.quick-note-card-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 3px 10px var(--primary-glow, rgba(139, 3, 19, 0.25));
+}
+
+.submit-expense-btn {
+  height: 48px;
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-bold, 700);
+  border-radius: var(--radius-md, 12px);
+  background: var(--primary);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.submit-expense-btn:hover:not(:disabled) {
+  background: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+/* 7. Summary Cards */
+.financial-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.summary-card {
+  background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
-.ledger-mobile-card.income {
-  border-left: 4px solid var(--success);
+
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
 }
-.ledger-mobile-card.expense {
-  border-left: 4px solid var(--danger);
+
+.summary-icon {
+  font-size: var(--font-sm);
+}
+
+.summary-title {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.summary-value {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold, 700);
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.summary-sub-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sub-badge {
+  font-size: 10px;
+  background: rgba(139, 3, 19, 0.04);
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+}
+
+.summary-formula-caption {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.profit-positive {
+  background: rgba(42, 157, 143, 0.04);
+  border-color: rgba(42, 157, 143, 0.3);
+}
+
+.profit-negative {
+  background: rgba(173, 40, 30, 0.04);
+  border-color: rgba(173, 40, 30, 0.3);
+}
+
+/* 8. Enhanced Filter Chips & Search Bar */
+.filter-chips-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.enhanced-filter-chip {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: var(--font-xs, 0.8rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  user-select: none;
+}
+
+.enhanced-filter-chip:hover {
+  border-color: var(--primary-light);
+  color: var(--primary);
+  background: rgba(139, 3, 19, 0.02);
+}
+
+.enhanced-filter-chip.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  font-weight: var(--font-weight-bold, 700);
+  box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+.filter-count-badge {
+  font-size: 10px;
+  background: rgba(0,0,0,0.06);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.enhanced-filter-chip.active .filter-count-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.filter-search-row {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-color);
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 340px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-tertiary);
+  font-size: var(--font-sm, 13px);
+}
+
+.search-input {
+  padding-left: 38px !important;
+  height: 40px;
+  font-size: var(--font-sm);
+  width: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.filter-summary-banner {
+  background: rgba(139, 3, 19, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 14px;
+}
+
+/* 9. Badges - Enlarged for clear visibility */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold, 700);
+  background: rgba(139, 3, 19, 0.06);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  white-space: nowrap;
+}
+
+.category-badge i {
+  font-size: 13px;
+}
+
+.badge-cat-raw_chicken { background: rgba(173, 40, 30, 0.12); color: #a81c1c; border: 1px solid rgba(173, 40, 30, 0.2); }
+.badge-cat-cooking_oil, .badge-cat-fuel_oil { background: rgba(255, 153, 0, 0.14); color: #b26a00; border: 1px solid rgba(255, 153, 0, 0.25); }
+.badge-cat-fuel_transport { background: rgba(255, 153, 0, 0.14); color: #b26a00; border: 1px solid rgba(255, 153, 0, 0.25); }
+.badge-cat-gas_lpg { background: rgba(139, 3, 19, 0.12); color: var(--primary); border: 1px solid rgba(139, 3, 19, 0.2); }
+.badge-cat-sticky_rice { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
+.badge-cat-meatballs { background: rgba(69, 123, 157, 0.14); color: #2a5d7e; border: 1px solid rgba(69, 123, 157, 0.25); }
+.badge-cat-salapao { background: rgba(131, 56, 236, 0.12); color: #6f25d2; border: 1px solid rgba(131, 56, 236, 0.2); }
+.badge-cat-packaging { background: rgba(108, 117, 125, 0.14); color: #495057; border: 1px solid rgba(108, 117, 125, 0.2); }
+.badge-cat-salary { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
+.badge-cat-utility_bills { background: rgba(13, 202, 240, 0.14); color: #087990; border: 1px solid rgba(13, 202, 240, 0.25); }
+.badge-cat-debt { background: rgba(173, 40, 30, 0.12); color: var(--danger); border: 1px solid rgba(173, 40, 30, 0.2); }
+.badge-cat-other { background: rgba(108, 117, 125, 0.14); color: #495057; border: 1px solid rgba(108, 117, 125, 0.2); }
+.badge-cat-waste, .badge-cat-waste_loss { background: rgba(173, 40, 30, 0.14); color: #a81c1c; border: 1px solid rgba(173, 40, 30, 0.25); }
+.badge-cat-credit, .badge-cat-credit_loss { background: rgba(255, 153, 0, 0.14); color: #b26a00; border: 1px solid rgba(255, 153, 0, 0.25); }
+
+.payment-method-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold, 700);
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.payment-method-badge i {
+  font-size: 12px;
+}
+
+.badge-cash { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
+.badge-transfer { background: rgba(139, 3, 19, 0.1); color: var(--primary); border: 1px solid rgba(139, 3, 19, 0.2); }
+.badge-stock { background: rgba(108, 117, 125, 0.12); color: #495057; border: 1px solid rgba(108, 117, 125, 0.2); }
+
+/* 10. Analytics & Charts */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.category-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-breakdown-row {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 10px;
+  background: rgba(139, 3, 19, 0.06);
+  border-radius: var(--radius-full, 9999px);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full, 9999px);
+  transition: width 0.4s ease;
+}
+
+.financial-bar-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.profit-box-positive {
+  background: rgba(42, 157, 143, 0.08) !important;
+  border: 1.5px solid rgba(42, 157, 143, 0.25) !important;
+  border-radius: var(--radius-md);
+}
+
+.profit-box-negative {
+  background: rgba(173, 40, 30, 0.08) !important;
+  border: 1.5px solid rgba(173, 40, 30, 0.25) !important;
+  border-radius: var(--radius-md);
+}
+
+/* 11. Top 5 Expenses List */
+.top-expenses-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.top-expense-row {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background var(--transition-fast, 0.15s ease);
+}
+
+.top-expense-row:last-child {
+  border-bottom: none;
+}
+
+.top-expense-row:hover {
+  background: rgba(139, 3, 19, 0.02);
+  border-radius: var(--radius-sm);
+}
+
+.rank-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-bold, 700);
+  background: rgba(139, 3, 19, 0.06);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.rank-indicator.rank-1 {
+  background: #ffab2b;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 171, 43, 0.35);
+}
+
+.rank-indicator.rank-2 {
+  background: #9c7b63;
+  color: #ffffff;
+}
+
+.rank-indicator.rank-3 {
+  background: #bc9e88;
+  color: #ffffff;
+}
+
+.top-expense-note {
+  font-size: var(--font-sm);
+}
+
+/* 12. Mobile cards */
+.expense-mobile-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+}
+
+/* Responsive Grids */
+@media (max-width: 1100px) {
+  .category-grid-12 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .quick-notes-grid-6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .financial-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  .category-grid-12 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .quick-notes-grid-6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .quick-amount-buttons-full {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .search-input-wrapper {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  .mobile-menu-list-container {
+    display: block !important;
+  }
+  .category-grid-12 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .quick-notes-grid-6 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .quick-amount-buttons-full {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 13. Loading Overlay */
+.content-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  border-radius: var(--radius-md);
+  min-height: 250px;
+}
+
+.loading-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(61, 27, 17, 0.12);
+  padding: 24px 36px;
 }
 </style>

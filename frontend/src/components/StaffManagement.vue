@@ -1,5 +1,5 @@
 <template>
-  <div class="staff-management-wrapper card p-md" style="position:relative; background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+  <div class="staff-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation for Staff Management -->
     <div class="category-tabs mb-lg flex gap-xs flex-wrap">
@@ -58,7 +58,7 @@
             <i class="fa-solid fa-id-card text-primary"></i> ข้อมูลพนักงานและอัตราค่าแรง
           </h3>
           <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
-            กำหนดอัตราค่าจ้างรายวัน, ระดับทักษะ, สวัสดิการ และกฎหักเงินประกัน
+            กำหนดอัตราค่าจ้างรายวัน, ระดับทักษะ (ฝึกงาน/ประจำ/เชี่ยวชาญ) และสวัสดิการพนักงาน
           </p>
         </div>
       </div>
@@ -73,16 +73,15 @@
                 <th class="text-center p-md">ระดับทักษะ</th>
                 <th class="text-center p-md">อัตราค่าจ้าง</th>
                 <th class="text-center p-md">สวัสดิการ</th>
-                <th class="text-center p-md">เงินประกัน (หักสะสม)</th>
                 <th v-if="isAdminUser" class="text-center p-md">จัดการค่าแรง</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loadingEmployees">
-                <td colspan="7" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
+                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
               </tr>
               <tr v-else-if="employees.length === 0">
-                <td colspan="7" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
+                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
                   <div class="flex flex-col align-center justify-center gap-xs">
                     <i class="fa-solid fa-users-slash text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>
                     <div class="font-bold text-sm">ไม่พบข้อมูลพนักงาน</div>
@@ -119,12 +118,6 @@
                   <span class="benefit-tag">
                     <i class="fa-solid fa-bowl-rice text-warning"></i> {{ emp.benefits || 'ข้าวเที่ยงฟรี' }}
                   </span>
-                </td>
-                <td class="text-center p-md">
-                  <span v-if="emp.is_holdback_enabled" class="text-xs text-secondary">
-                    หัก <strong class="text-danger">{{ formatCurrency(emp.holdback_amount || 1000) }}</strong> บ./งวด (คืนงวดถัดไป)
-                  </span>
-                  <span v-else class="text-xs text-muted">ไม่หัก</span>
                 </td>
                 <td v-if="isAdminUser" class="text-center p-md">
                   <button class="btn-action btn-action-edit" @click="openEditCompensationModal(emp)">
@@ -265,7 +258,11 @@
       </div>
 
       <!-- Calendar Month Grid Card -->
-      <div class="card p-md overflow-hidden" style="border: 1px solid var(--border-color);">
+      <div v-if="loadingMonthlyAttendance" class="card text-center p-3xl" style="border: 1px solid var(--border-color);">
+        <div class="spinner mx-auto mb-sm"></div>
+        <div class="text-sm font-bold text-primary">กำลังโหลดข้อมูลปฏิทิน...</div>
+      </div>
+      <div v-else class="card p-md overflow-hidden" style="border: 1px solid var(--border-color);">
         <!-- Day of Week Headers -->
         <div class="calendar-grid-header">
           <div v-for="wd in ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']" :key="wd" class="calendar-weekday-cell">

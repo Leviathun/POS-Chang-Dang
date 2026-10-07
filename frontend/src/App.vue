@@ -103,10 +103,6 @@
             <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
             <span class="sidebar-label">ขายหน้าร้าน (POS)</span>
           </router-link>
-          <router-link v-if="isManagerOrAdminUser" to="/management" class="sidebar-item" active-class="active">
-            <span class="sidebar-icon"><i class="fa-solid fa-briefcase"></i></span>
-            <span class="sidebar-label">บริหารจัดการร้าน</span>
-          </router-link>
           <router-link v-if="isManagerOrAdminUser" to="/menu" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-utensils"></i></span>
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
@@ -118,6 +114,10 @@
           <router-link to="/reports" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-chart-line"></i></span>
             <span class="sidebar-label">รายงานยอดขาย</span>
+          </router-link>
+          <router-link v-if="isManagerOrAdminUser" to="/management" class="sidebar-item" active-class="active">
+            <span class="sidebar-icon"><i class="fa-solid fa-briefcase"></i></span>
+            <span class="sidebar-label">บริหารจัดการร้าน</span>
           </router-link>
           <router-link to="/settings" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-gear"></i></span>

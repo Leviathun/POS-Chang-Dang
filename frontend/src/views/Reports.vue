@@ -20,14 +20,6 @@
       <button 
         v-if="isAdminUser"
         class="btn btn-secondary" 
-        :class="{ 'active': activeTab === 'expenses' }"
-        @click="activeTab = 'expenses'"
-      >
-        <i class="fa-solid fa-wallet"></i> บันทึกค่าใช้จ่ายประจำวัน
-      </button>
-      <button 
-        v-if="isAdminUser"
-        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'top_menus' }"
         @click="activeTab = 'top_menus'"
       >
@@ -48,14 +40,6 @@
         @click="activeTab = 'stock_history'"
       >
         <i class="fa-solid fa-boxes-stacked"></i> ประวัติสต็อก
-      </button>
-      <button 
-        v-if="isManagerOrAdminUser"
-        class="btn btn-secondary" 
-        :class="{ 'active': activeTab === 'cash_audit' }"
-        @click="activeTab = 'cash_audit'"
-      >
-        <i class="fa-solid fa-cash-register"></i> ตรวจสอบยอดลิ้นชัก
       </button>
     </div>
 
@@ -230,7 +214,7 @@
           </div>
 
           <!-- Time Filter (ช่วงเวลา) - Active only on daily mode for specific tabs -->
-          <div v-if="periodMode === 'daily' && ['order_history', 'expenses', 'activity_logs', 'stock_history'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
+          <div v-if="periodMode === 'daily' && ['order_history', 'activity_logs', 'stock_history'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
             <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">ช่วงเวลา:</div>
             <div class="flex align-center gap-xs">
               <input 
@@ -1660,8 +1644,8 @@
     <!-- Cash Drawer Audit Tab -->
     <div v-if="activeTab === 'cash_audit' && isManagerOrAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
-        <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
-          <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>
+        <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-cash-register" style="color: var(--text-primary);"></i>
           ตรวจสอบเงินสดในลิ้นชักประจำวัน
         </h3>
       </div>

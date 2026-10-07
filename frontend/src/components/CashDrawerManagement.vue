@@ -1,8 +1,8 @@
 <template>
-  <div class="cash-drawer-management-wrapper card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
+  <div class="cash-drawer-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     <div class="flex flex-between align-center mb-md" style="margin-bottom:var(--space-md); flex-wrap: wrap; gap: var(--space-sm);">
-      <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
-        <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>
+      <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-cash-register" style="color: var(--text-primary);"></i>
         ตรวจสอบเงินสดในลิ้นชักประจำวัน
       </h3>
     </div>
@@ -20,8 +20,12 @@
       </div>
     </div>
 
-    <div v-if="cashDrawerLoading" class="flex justify-center p-xl" style="display:flex; justify-content:center; padding:var(--space-xl);">
-      <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+    <!-- Loading Overlay -->
+    <div v-if="cashDrawerLoading" class="content-loading-overlay">
+      <div class="loading-box flex flex-col align-center justify-center">
+        <div class="spinner mb-sm"></div>
+        <span class="text-sm font-bold text-primary">กำลังโหลดข้อมูลรอบเงินสด...</span>
+      </div>
     </div>
 
     <div v-else-if="cashDrawerSessions.length === 0" class="flex flex-col justify-center align-center text-center gap-xs" style="padding: var(--space-3xl) var(--space-md); color: var(--text-secondary);">
@@ -652,5 +656,30 @@ onMounted(() => {
 .diff-badge.deficit {
   color: var(--danger);
   background: rgba(255,59,48,0.15);
+}
+
+/* Loading Overlay */
+.content-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  border-radius: var(--radius-md);
+  min-height: 250px;
+}
+
+.loading-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(61, 27, 17, 0.12);
+  padding: 24px 36px;
 }
 </style>

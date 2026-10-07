@@ -386,82 +386,129 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
       targetBranches = await db.prepare('SELECT id, name FROM branches ORDER BY id ASC').all();
     }
 
+    // Helper to generate list of YYYY-MM-DD dates in range
+    const getDatesInRange = (startStr, endStr) => {
+      const dates = [];
+      const [sy, sm, sd] = startStr.split('-').map(Number);
+      const [ey, em, ed] = endStr.split('-').map(Number);
+      const cur = new Date(sy, sm - 1, sd);
+      const end = new Date(ey, em - 1, ed);
+      while (cur <= end) {
+        const y = cur.getFullYear();
+        const m = String(cur.getMonth() + 1).padStart(2, '0');
+        const d = String(cur.getDate()).padStart(2, '0');
+        dates.push(`${y}-${m}-${d}`);
+        cur.setDate(cur.getDate() + 1);
+      }
+      return dates;
+    };
+
     const todayStr = getThailandDateString();
     const todayDate = new Date(Date.now() + 7 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000);
     const yesterdayDate = new Date(todayDate.getTime() - 24 * 60 * 60 * 1000);
     const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
 
     for (const targetBranch of targetBranches) {
-      const hasToday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === todayStr);
-      const hasYesterday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === yesterdayStr);
+      if (start_date && end_date) {
+        // Generate every day in the requested date range (e.g. days 1 to 31 of the month)
+        const dateRangeList = getDatesInRange(start_date, end_date);
+        for (const dStr of dateRangeList) {
+          const hasSession = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === dStr);
+          if (!hasSession) {
+            // Query actual cash sales/expenses for this date
+            const dSales = await db.prepare(`
+              SELECT SUM(total) as cash_sales FROM orders 
+              WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
+            `).get(targetBranch.id, dStr);
+            const dExpenses = await db.prepare(`
+              SELECT SUM(amount) as cash_expenses FROM expenses 
+              WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+            `).get(targetBranch.id, dStr);
 
-      if (!hasYesterday && (!start_date || (yesterdayStr >= start_date && yesterdayStr <= end_date))) {
-        // Query actual cash sales/expenses for yesterday
-        const ySales = await db.prepare(`
-          SELECT SUM(total) as cash_sales FROM orders 
-          WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
-        `).get(targetBranch.id, yesterdayStr);
-        const yExpenses = await db.prepare(`
-          SELECT SUM(amount) as cash_expenses FROM expenses 
-          WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
-        `).get(targetBranch.id, yesterdayStr);
-        
-        const yCashSales = ySales ? (ySales.cash_sales || 0) : 0;
-        const yCashExpenses = yExpenses ? (yExpenses.cash_expenses || 0) : 0;
+            const cashSales = dSales ? (dSales.cash_sales || 0) : 0;
+            const cashExpenses = dExpenses ? (dExpenses.cash_expenses || 0) : 0;
 
-        const virtualYesterday = {
-          id: null,
-          branch_id: targetBranch.id,
-          branch_name: targetBranch.name,
-          session_date: yesterdayStr,
-          opening_cash: 0.0,
-          expected_cash: yCashSales - yCashExpenses,
-          actual_cash: null,
-          difference: null,
-          status: 'open',
-          note: null,
-          cash_sales: yCashSales,
-          cash_expenses: yCashExpenses,
-          calculated_expected_cash: yCashSales - yCashExpenses
-        };
-        const insertIndex = enrichedSessions.findIndex(s => s.session_date < yesterdayStr);
-        if (insertIndex === -1) {
-          enrichedSessions.push(virtualYesterday);
-        } else {
-          enrichedSessions.splice(insertIndex, 0, virtualYesterday);
+            enrichedSessions.push({
+              id: null,
+              branch_id: targetBranch.id,
+              branch_name: targetBranch.name,
+              session_date: dStr,
+              opening_cash: 0.0,
+              expected_cash: cashSales - cashExpenses,
+              actual_cash: null,
+              difference: null,
+              status: 'open',
+              note: null,
+              cash_sales: cashSales,
+              cash_expenses: cashExpenses,
+              calculated_expected_cash: cashSales - cashExpenses
+            });
+          }
         }
-      }
+      } else {
+        // Default fallback if no range specified: ensure yesterday & today exist
+        const hasToday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === todayStr);
+        const hasYesterday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === yesterdayStr);
 
-      if (!hasToday && (!start_date || (todayStr >= start_date && todayStr <= end_date))) {
-        // Query actual cash sales/expenses for today
-        const tSales = await db.prepare(`
-          SELECT SUM(total) as cash_sales FROM orders 
-          WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
-        `).get(targetBranch.id, todayStr);
-        const tExpenses = await db.prepare(`
-          SELECT SUM(amount) as cash_expenses FROM expenses 
-          WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
-        `).get(targetBranch.id, todayStr);
-        
-        const tCashSales = tSales ? (tSales.cash_sales || 0) : 0;
-        const tCashExpenses = tExpenses ? (tExpenses.cash_expenses || 0) : 0;
+        if (!hasYesterday) {
+          const ySales = await db.prepare(`
+            SELECT SUM(total) as cash_sales FROM orders 
+            WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
+          `).get(targetBranch.id, yesterdayStr);
+          const yExpenses = await db.prepare(`
+            SELECT SUM(amount) as cash_expenses FROM expenses 
+            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+          `).get(targetBranch.id, yesterdayStr);
+          
+          const yCashSales = ySales ? (ySales.cash_sales || 0) : 0;
+          const yCashExpenses = yExpenses ? (yExpenses.cash_expenses || 0) : 0;
 
-        const virtualToday = {
-          id: null,
-          branch_id: targetBranch.id,
-          branch_name: targetBranch.name,
-          session_date: todayStr,
-          opening_cash: 0.0,
-          expected_cash: tCashSales - tCashExpenses,
-          actual_cash: null,
-          difference: null,
-          status: 'open',
-          note: null,
-          cash_sales: tCashSales,
-          cash_expenses: tCashExpenses,
-          calculated_expected_cash: tCashSales - tCashExpenses
-        };
-        enrichedSessions.unshift(virtualToday);
+          enrichedSessions.push({
+            id: null,
+            branch_id: targetBranch.id,
+            branch_name: targetBranch.name,
+            session_date: yesterdayStr,
+            opening_cash: 0.0,
+            expected_cash: yCashSales - yCashExpenses,
+            actual_cash: null,
+            difference: null,
+            status: 'open',
+            note: null,
+            cash_sales: yCashSales,
+            cash_expenses: yCashExpenses,
+            calculated_expected_cash: yCashSales - yCashExpenses
+          });
+        }
+
+        if (!hasToday) {
+          const tSales = await db.prepare(`
+            SELECT SUM(total) as cash_sales FROM orders 
+            WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
+          `).get(targetBranch.id, todayStr);
+          const tExpenses = await db.prepare(`
+            SELECT SUM(amount) as cash_expenses FROM expenses 
+            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+          `).get(targetBranch.id, todayStr);
+          
+          const tCashSales = tSales ? (tSales.cash_sales || 0) : 0;
+          const tCashExpenses = tExpenses ? (tExpenses.cash_expenses || 0) : 0;
+
+          enrichedSessions.push({
+            id: null,
+            branch_id: targetBranch.id,
+            branch_name: targetBranch.name,
+            session_date: todayStr,
+            opening_cash: 0.0,
+            expected_cash: tCashSales - tCashExpenses,
+            actual_cash: null,
+            difference: null,
+            status: 'open',
+            note: null,
+            cash_sales: tCashSales,
+            cash_expenses: tCashExpenses,
+            calculated_expected_cash: tCashSales - tCashExpenses
+          });
+        }
       }
     }
 

@@ -8,7 +8,7 @@ router.use(attachUser);
 
 // Helper function to get branch ID of logged-in user or first branch
 async function getBranchId(req, db) {
-  let branchId = req.user ? req.user.branch_id : null;
+  let branchId = req.query.branch_id ? Number(req.query.branch_id) : (req.headers['x-branch-id'] ? Number(req.headers['x-branch-id']) : (req.user ? req.user.branch_id : null));
   if (!branchId) {
     const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
     branchId = defaultBranch ? defaultBranch.id : null;
@@ -24,22 +24,41 @@ async function getBranchId(req, db) {
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
-    const branchId = await getBranchId(req, db);
+    const isAllBranches = req.query.all_branches === 'true' || req.query.all === 'true';
+    let branchId = null;
+    let items = [];
 
-    const items = await db.prepare(`
-      SELECT 
-        mi.id, mi.name, mi.price, mi.category_id, 
-        mi.image_url, mi.active, mi.sort_order, mi.uom,
-        mi.created_at, mi.updated_at,
-        c.name as category_name,
-        mi.multiple_prices,
-        mi.quantity as stock,
-        mi.raw_quantity as raw_stock
-      FROM menu_items mi
-      LEFT JOIN categories c ON c.id = mi.category_id AND c.branch_id = ?
-      WHERE mi.branch_id = ?
-      ORDER BY mi.sort_order ASC, mi.id ASC
-    `).all(branchId, branchId);
+    if (isAllBranches) {
+      items = await db.prepare(`
+        SELECT 
+          mi.id, mi.name, mi.price, mi.category_id, 
+          mi.image_url, mi.active, mi.sort_order, mi.uom,
+          mi.created_at, mi.updated_at, mi.branch_id,
+          c.name as category_name,
+          mi.multiple_prices,
+          mi.quantity as stock,
+          mi.raw_quantity as raw_stock
+        FROM menu_items mi
+        LEFT JOIN categories c ON c.id = mi.category_id
+        ORDER BY mi.sort_order ASC, mi.id ASC
+      `).all();
+    } else {
+      branchId = await getBranchId(req, db);
+      items = await db.prepare(`
+        SELECT 
+          mi.id, mi.name, mi.price, mi.category_id, 
+          mi.image_url, mi.active, mi.sort_order, mi.uom,
+          mi.created_at, mi.updated_at, mi.branch_id,
+          c.name as category_name,
+          mi.multiple_prices,
+          mi.quantity as stock,
+          mi.raw_quantity as raw_stock
+        FROM menu_items mi
+        LEFT JOIN categories c ON c.id = mi.category_id AND c.branch_id = ?
+        WHERE mi.branch_id = ?
+        ORDER BY mi.sort_order ASC, mi.id ASC
+      `).all(branchId, branchId);
+    }
 
     res.json({
       success: true,
