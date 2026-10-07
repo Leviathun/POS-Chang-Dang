@@ -14,9 +14,12 @@
       <div class="header-right">
         <button 
           class="btn btn-primary btn-bulk-header-save" 
+          :disabled="isSaving"
           @click="handleSaveBulkAdjust"
         >
-          <i class="fa-solid fa-floppy-disk"></i> บันทึก
+          <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+          <i v-else class="fa-solid fa-floppy-disk"></i>
+          {{ isSaving ? 'กำลังบันทึก...' : 'บันทึก' }}
         </button>
       </div>
     </div>
@@ -201,9 +204,12 @@
           </router-link>
           <button 
             class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
+            :disabled="isSaving"
             @click="handleSaveBulkAdjust"
           >
-            <i class="fa-solid fa-floppy-disk"></i> บันทึก
+            <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+            <i v-else class="fa-solid fa-floppy-disk"></i>
+            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : 'บันทึก' }}
           </button>
         </div>
       </div>
@@ -318,9 +324,12 @@
           </router-link>
           <button 
             class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
+            :disabled="isSaving"
             @click="handleSaveBulkAdjust"
           >
-            <i class="fa-solid fa-floppy-disk"></i> บันทึก
+            <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+            <i v-else class="fa-solid fa-floppy-disk"></i>
+            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : 'บันทึก' }}
           </button>
         </div>
       </div>
@@ -339,6 +348,7 @@ import { store } from '../store';
 const router = useRouter();
 const stockItems = computed(() => store.stockItems);
 const loading = ref(true);
+const isSaving = ref(false);
 const activeStockType = ref('menu_items'); // 'menu_items' or 'modifiers'
 const bulkTab = ref('relative'); // 'relative' or 'absolute'
 const bulkFormItems = ref([]);
@@ -414,12 +424,14 @@ const getLinkageWarningText = (item) => {
     }
   }
 
-  const targetName = item.name.includes('แร็ปไก่') ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
+  const isWrap = item.name.includes('แร็ปไก่');
+  const targetName = isWrap ? 'ไก่ไร้กระดูก' : getSteamedCounterpartName(item.name);
   if (!targetName) return '';
 
+  const ratioText = isWrap ? ' 1.5 ชิ้น' : '';
   return isDeduct 
-    ? `* การเพิ่มจะหัก "${targetName}" 1 ชิ้น อัตโนมัติ`
-    : `* การลบจะคืน "${targetName}" 1 ชิ้น อัตโนมัติ`;
+    ? `⚠️ หัก "${targetName}"${ratioText} อัตโนมัติ (ไม่ต้องลดซ้ำ)`
+    : `ℹ️ คืน "${targetName}"${ratioText} อัตโนมัติ`;
 };
 
 const getProductMethodLabel = (name) => {
@@ -600,6 +612,8 @@ const setBulkTab = (tab) => {
 };
 
 const handleSaveBulkAdjust = async () => {
+  if (isSaving.value) return;
+  isSaving.value = true;
   ui.showLoading();
   try {
     if (activeStockType.value === 'menu_items') {
@@ -643,6 +657,7 @@ const handleSaveBulkAdjust = async () => {
       if (itemsToSend.length === 0) {
         ui.showToast('ไม่มีรายการใดที่มีความเปลี่ยนแปลง', 'info');
         ui.hideLoading();
+        isSaving.value = false;
         return;
       }
       
@@ -654,16 +669,15 @@ const handleSaveBulkAdjust = async () => {
       };
       
       const res = await api.stock.bulkAdjust(payload);
-      if (res.success) {
+      if (res && res.success) {
         if (res.updatedItems && Array.isArray(res.updatedItems)) {
           res.updatedItems.forEach(item => {
             store.updateStock(item.id, item.stock, item.raw_stock);
           });
-        } else {
-          store.clearMenuCache();
-          store.clearStockCache();
         }
-        ui.showToast('ปรับปรุงสต็อกด่วนเรียบร้อย', 'success');
+        store.clearMenuCache();
+        store.clearStockCache();
+        ui.showToast(bulkTab.value === 'relative' ? 'เพิ่มสต็อกสินค้าเรียบร้อยแล้ว' : 'ปรับปรุงสต็อกสินค้าเรียบร้อยแล้ว', 'success');
         router.push('/stock');
       }
     } else {
@@ -709,6 +723,7 @@ const handleSaveBulkAdjust = async () => {
       if (itemsToSend.length === 0) {
         ui.showToast('ไม่มีรายการเครื่องปรุงใดที่มีความเปลี่ยนแปลง', 'info');
         ui.hideLoading();
+        isSaving.value = false;
         return;
       }
       
@@ -720,7 +735,7 @@ const handleSaveBulkAdjust = async () => {
       };
       
       const res = await api.modifiers.bulkAdjust(payload);
-      if (res.success) {
+      if (res && res.success) {
         if (res.updatedModifiers && Array.isArray(res.updatedModifiers)) {
           res.updatedModifiers.forEach(m => {
             const idx = store.modifiers.findIndex(x => x.id === m.id);
@@ -728,17 +743,18 @@ const handleSaveBulkAdjust = async () => {
               store.modifiers[idx].total_servings = m.total_servings;
             }
           });
-        } else {
-          store.clearModifiersCache();
         }
-        ui.showToast('ปรับปรุงสต็อกเครื่องปรุงด่วนเรียบร้อย', 'success');
+        store.clearModifiersCache();
+        ui.showToast(bulkTab.value === 'relative' ? 'เพิ่มสต็อกเครื่องปรุงเรียบร้อยแล้ว' : 'ปรับปรุงสต็อกเครื่องปรุงเรียบร้อยแล้ว', 'success');
         router.push('/stock');
       }
     }
   } catch (e) {
     console.error(e);
-    ui.showToast('ปรับปรุงสต็อกด่วนล้มเหลว: ' + e.message, 'error');
+    // On failure: Keep all table values intact for retry!
+    ui.showToast(e.message || 'ปรับปรุงสต็อกด่วนล้มเหลว กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง', 'error');
   } finally {
+    isSaving.value = false;
     ui.hideLoading();
   }
 };

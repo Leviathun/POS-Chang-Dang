@@ -53,34 +53,25 @@ router.post('/login', async (req, res) => {
 
     const selectedBranchId = branch_id ? Number(branch_id) : null;
 
-    // ถ้าไม่ใช่แอดมิน (เป็นพนักงานทั่วไป) ต้องตรวจสอบสิทธิ์สาขา
-    if (user.role !== 'admin') {
-      if (selectedBranchId && user.branch_id && selectedBranchId !== user.branch_id) {
-        return res.status(403).json({
-          success: false,
-          error: 'รหัส PIN นี้ไม่มีสิทธิ์เข้าใช้งานในสาขานี้'
-        });
-      }
-    }
-
-    // ใช้ branch_id ที่เลือกจากหน้า login (ถ้ามี) แทน branch_id ในฐานข้อมูล
+    // ใช้ branch_id ที่เลือกจากหน้า login (ถ้ามี) แทน branch_id ในฐานข้อมูล (Floating Staff: พนักงานปฏิบัติงานได้ทุกสาขา)
     let activeBranchId = selectedBranchId || user.branch_id;
     if (!activeBranchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
       activeBranchId = defaultBranch ? defaultBranch.id : null;
     }
 
-    // อัปเดต branch_id ของ user ให้ตรงกับที่เลือก (ถ้าเปลี่ยน)
+    // อัปเดต branch_id ของ user ให้ตรงกับสาขาที่ล็อกอินเข้าใช้งาน
     if (activeBranchId && activeBranchId !== user.branch_id) {
       await db.prepare('UPDATE users SET branch_id = ? WHERE id = ?').run(activeBranchId, user.id);
     }
 
     // Write to activity logs
     const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(activeBranchId);
+    const roleLabel = user.role === 'admin' ? 'เจ้าของร้าน' : user.role === 'manager' ? 'ผู้จัดการ' : 'พนักงานหน้าร้าน';
     await db.prepare(`
       INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
       VALUES (?, ?, 'login', ?, datetime('now', '+7 hours'))
-    `).run(activeBranchId, user.id, `พนักงาน ${user.name} เข้าสู่ระบบสำเร็จ (สาขา: ${branchInfo ? branchInfo.name : 'ไม่ระบุ'})`);
+    `).run(activeBranchId, user.id, `${roleLabel} ${user.name} เข้าสู่ระบบสำเร็จ (สาขา: ${branchInfo ? branchInfo.name : 'ไม่ระบุ'})`);
 
     // ส่ง user กลับพร้อม branch_id ที่ถูกต้อง
     res.json({
@@ -131,28 +122,28 @@ router.post('/users', requireAdmin, async (req, res) => {
     if (!name || !pin) {
       return res.status(400).json({
         success: false,
-        error: 'กรุณาระบุชื่อและ PIN'
+        error: 'กรุณาระบุชื่อและ PIN 4 หลัก'
       });
     }
 
-    if (role && !['admin', 'staff'].includes(role)) {
+    if (role && !['admin', 'manager', 'staff'].includes(role)) {
       return res.status(400).json({
         success: false,
-        error: 'role ต้องเป็น admin หรือ staff เท่านั้น'
+        error: 'role ต้องเป็น admin, manager หรือ staff เท่านั้น'
       });
     }
 
     const db = getDb();
 
-    // ตรวจสอบ PIN ซ้ำ
+    // ตรวจสอบ Global Unique PIN ไม่ให้ซ้ำกันทั่วทั้งระบบ
     const existing = await db.prepare(
-      'SELECT id FROM users WHERE pin = ? AND active = 1'
+      'SELECT id, name FROM users WHERE pin = ? AND active = 1'
     ).get(String(pin));
 
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: 'PIN นี้ถูกใช้งานแล้ว'
+        error: 'รหัส PIN นี้ถูกใช้งานแล้วในระบบ กรุณาใช้รหัสอื่น'
       });
     }
 
@@ -199,23 +190,23 @@ router.put('/users/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    if (role && !['admin', 'staff'].includes(role)) {
+    if (role && !['admin', 'manager', 'staff'].includes(role)) {
       return res.status(400).json({
         success: false,
-        error: 'role ต้องเป็น admin หรือ staff เท่านั้น'
+        error: 'role ต้องเป็น admin, manager หรือ staff เท่านั้น'
       });
     }
 
-    // ตรวจสอบ PIN ซ้ำ (ถ้าเปลี่ยน)
-    if (pin && pin !== user.pin) {
+    // ตรวจสอบ Global Unique PIN ซ้ำ (ถ้าเปลี่ยน)
+    if (pin && String(pin) !== String(user.pin)) {
       const existing = await db.prepare(
-        'SELECT id FROM users WHERE pin = ? AND active = 1 AND id != ?'
+        'SELECT id, name FROM users WHERE pin = ? AND active = 1 AND id != ?'
       ).get(String(pin), Number(id));
 
       if (existing) {
         return res.status(400).json({
           success: false,
-          error: 'PIN นี้ถูกใช้งานแล้ว'
+          error: 'รหัส PIN นี้ถูกใช้งานแล้วในระบบ กรุณาใช้รหัสอื่น'
         });
       }
     }

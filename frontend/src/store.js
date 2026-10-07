@@ -244,16 +244,23 @@ export const store = reactive({
   },
 
   updateStock(itemId, stock, rawStock) {
-    const idx = this.stockItems.findIndex(s => s.id === itemId);
+    const numId = Number(itemId);
+    const idx = this.stockItems.findIndex(s => Number(s.id) === numId);
     if (idx !== -1) {
       if (stock !== undefined) this.stockItems[idx].quantity = stock;
       if (rawStock !== undefined) this.stockItems[idx].raw_quantity = rawStock;
     }
     // Also update menuItems stock to keep POS in sync!
-    const mIdx = this.menuItems.findIndex(m => m.id === itemId);
+    const mIdx = this.menuItems.findIndex(m => Number(m.id) === numId);
     if (mIdx !== -1) {
-      if (stock !== undefined) this.menuItems[mIdx].stock = stock;
-      if (rawStock !== undefined) this.menuItems[mIdx].raw_stock = rawStock;
+      if (stock !== undefined) {
+        this.menuItems[mIdx].stock = stock;
+        this.menuItems[mIdx].quantity = stock;
+      }
+      if (rawStock !== undefined) {
+        this.menuItems[mIdx].raw_stock = rawStock;
+        this.menuItems[mIdx].raw_quantity = rawStock;
+      }
     }
   },
 
@@ -389,25 +396,25 @@ export const store = reactive({
     this.reportsPromise = (async () => {
       try {
         const [sum, top, daily, exp, act, hist, monthlyRes, expMonthRes, monthlyOrdersRes] = await Promise.all([
-          api.reports.summary(branchId),
-          api.reports.topItems(7, branchId),
-          api.reports.daily(today, branchId),
-          api.expenses.get({ date: today, branch_id: branchId }),
-          api.activities.get({ date: today, branch_id: branchId, limit: 1000 }),
-          api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }),
-          api.reports.monthly(currentMonth, branchId),
-          api.expenses.get({ month: currentMonth, branch_id: branchId }),
-          api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId })
+          api.reports.summary(branchId).catch(e => ({ success: false, data: null })),
+          api.reports.topItems(7, branchId).catch(e => ({ success: false, data: [] })),
+          api.reports.daily(today, branchId).catch(e => ({ success: false, data: null })),
+          api.expenses.get({ date: today, branch_id: branchId }).catch(e => ({ success: false, data: [] })),
+          api.activities.get({ date: today, branch_id: branchId, limit: 1000 }).catch(e => ({ success: false, data: [] })),
+          api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }).catch(e => ({ success: false, data: [] })),
+          api.reports.monthly(currentMonth, branchId).catch(e => ({ success: false, data: null })),
+          api.expenses.get({ month: currentMonth, branch_id: branchId }).catch(e => ({ success: false, data: [] })),
+          api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId }).catch(e => ({ success: false, data: [] }))
         ]);
-        this.reportSummary = sum.success ? sum.data : sum;
-        this.reportTopItems = top.success ? (top.data || []) : [];
-        this.reportDailyData = daily.success ? daily.data : daily;
-        this.reportsExpenses = exp.success ? (exp.data || []) : [];
-        this.reportsActivities = act.success ? (act.data || []) : [];
-        this.reportsHistory = hist.success ? (hist.data || hist || []) : [];
-        this.reportMonthly = monthlyRes.success ? monthlyRes.data : monthlyRes;
-        this.reportMonthlyExpenses = expMonthRes.success ? (expMonthRes.data || []) : [];
-        this.reportMonthlyOrders = monthlyOrdersRes.success ? (monthlyOrdersRes.data || []) : [];
+        this.reportSummary = sum && sum.success ? sum.data : (sum || null);
+        this.reportTopItems = top && top.success ? (top.data || []) : [];
+        this.reportDailyData = daily && daily.success ? daily.data : (daily || null);
+        this.reportsExpenses = exp && exp.success ? (exp.data || []) : [];
+        this.reportsActivities = act && act.success ? (act.data || []) : [];
+        this.reportsHistory = hist && hist.success ? (hist.data || hist || []) : [];
+        this.reportMonthly = monthlyRes && monthlyRes.success ? monthlyRes.data : (monthlyRes || null);
+        this.reportMonthlyExpenses = expMonthRes && expMonthRes.success ? (expMonthRes.data || []) : [];
+        this.reportMonthlyOrders = monthlyOrdersRes && monthlyOrdersRes.success ? (monthlyOrdersRes.data || []) : [];
         this.reportsBranchId = branchId;
         this.reportsLoaded = true;
       } catch (e) {

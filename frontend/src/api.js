@@ -33,7 +33,7 @@ async function request(method, path, body, options = {}) {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
 
   const config = {
     method,
@@ -60,10 +60,10 @@ async function request(method, path, body, options = {}) {
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      throw new Error('การเชื่อมต่อใช้เวลานานเกินไป (Timeout)');
+      throw new Error('การเชื่อมต่อใช้เวลานานเกินไป (Timeout) กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง');
     }
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง');
     }
     throw error;
   }
@@ -100,8 +100,9 @@ const auth = {
 };
 
 const menu = {
-  async getAll() {
-    return request('GET', '/api/menu');
+  async getAll(params = {}) {
+    const query = typeof params === 'object' && params !== null ? new URLSearchParams(params).toString() : '';
+    return request('GET', `/api/menu${query ? `?${query}` : ''}`);
   },
   async getCategories() {
     return request('GET', '/api/menu/categories');
@@ -223,6 +224,13 @@ const settings = {
   async archiveOrders(months) {
     return request('POST', '/api/settings/archive', { months });
   },
+  async purgeCloudData(months, branchId, confirmText) {
+    return request('POST', '/api/settings/backup/purge-cloud', {
+      months,
+      branch_id: branchId,
+      confirm_text: confirmText
+    });
+  },
 };
 
 const freeModifiers = {
@@ -303,6 +311,60 @@ const cashDrawers = {
   },
 };
 
+const employees = {
+  async getAll(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/employees?${query}`);
+  },
+  async updateCompensation(id, data) {
+    return request('PUT', `/api/employees/${id}/compensation`, data);
+  },
+  async getAttendance(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/employees/attendance?${query}`);
+  },
+  async saveAttendance(data) {
+    return request('POST', '/api/employees/attendance', data);
+  },
+  async getEventOts(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/employees/event-ots?${query}`);
+  },
+  async createEventOt(data) {
+    return request('POST', '/api/employees/event-ots', data);
+  },
+  async deleteEventOt(id) {
+    return request('DELETE', `/api/employees/event-ots/${id}`);
+  },
+  async getAdvances(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/employees/advances?${query}`);
+  },
+  async createAdvance(data) {
+    return request('POST', '/api/employees/advances', data);
+  },
+  async deleteAdvance(id) {
+    return request('DELETE', `/api/employees/advances/${id}`);
+  },
+  async calculatePayroll(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/employees/payroll/calculate?${query}`);
+  },
+  async paySalary(data) {
+    return request('POST', '/api/employees/payroll/pay', data);
+  },
+  async getGuarantees(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/employees/guarantees?${query}`);
+  },
+  async depositGuarantee(data) {
+    return request('POST', '/api/employees/guarantees/deposit', data);
+  },
+  async refundGuarantee(data) {
+    return request('POST', '/api/employees/guarantees/refund', data);
+  },
+};
+
 export default {
   auth,
   menu,
@@ -315,4 +377,6 @@ export default {
   freeModifiers,
   modifiers: freeModifiers,
   cashDrawers,
+  employees,
 };
+

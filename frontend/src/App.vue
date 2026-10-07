@@ -91,7 +91,7 @@
           </div>
           <div class="user-info">
             <div class="user-name">{{ user.name }}</div>
-            <div class="user-role-badge" :class="user.role">{{ user.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}</div>
+            <div class="user-role-badge" :class="user.role">{{ getRoleLabel(user.role) }}</div>
           </div>
         </div>
 
@@ -103,7 +103,7 @@
             <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
             <span class="sidebar-label">ขายหน้าร้าน (POS)</span>
           </router-link>
-          <router-link to="/menu" class="sidebar-item" active-class="active">
+          <router-link v-if="isManagerOrAdminUser" to="/menu" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-utensils"></i></span>
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
           </router-link>
@@ -115,7 +115,11 @@
             <span class="sidebar-icon"><i class="fa-solid fa-chart-line"></i></span>
             <span class="sidebar-label">รายงานยอดขาย</span>
           </router-link>
-          <router-link v-if="adminUser" to="/settings" class="sidebar-item" active-class="active">
+          <router-link v-if="isManagerOrAdminUser" to="/management" class="sidebar-item" active-class="active">
+            <span class="sidebar-icon"><i class="fa-solid fa-briefcase"></i></span>
+            <span class="sidebar-label">บริหารจัดการร้าน</span>
+          </router-link>
+          <router-link to="/settings" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-gear"></i></span>
             <span class="sidebar-label">ตั้งค่าระบบ</span>
           </router-link>
@@ -136,6 +140,7 @@
         <header id="app-header">
           <span class="header-title flex align-center gap-xs">
             <img v-if="route.path === '/pos'" src="@/assets/image/Logo POS.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
+            <i v-else-if="route.path.startsWith('/management')" class="fa-solid fa-briefcase"></i>
             <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
             <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
             <i v-else-if="route.path === '/reports'" class="fa-solid fa-chart-line"></i>
@@ -157,7 +162,7 @@
             <h2 class="desktop-page-title">{{ activeTitle }}</h2>
             <div class="desktop-user-profile" v-if="user">
               <span class="user-greeting">สวัสดี, <strong>{{ user.name }}</strong></span>
-              <span class="user-badge" :class="user.role">{{ user.role === 'admin' ? 'เจ้าของร้าน' : 'พนักงาน' }}</span>
+              <span class="user-badge" :class="user.role">{{ getRoleLabel(user.role) }}</span>
             </div>
           </div>
 
@@ -174,7 +179,7 @@
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-house"></i></span>
             <span class="nav-label">ขาย</span>
           </router-link>
-          <router-link to="/menu" class="nav-item" active-class="active" data-page="menu">
+          <router-link v-if="isManagerOrAdminUser" to="/menu" class="nav-item" active-class="active" data-page="menu">
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-utensils"></i></span>
             <span class="nav-label">เมนู</span>
           </router-link>
@@ -186,7 +191,7 @@
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
             <span class="nav-label">รายงาน</span>
           </router-link>
-          <router-link v-if="adminUser" to="/settings" class="nav-item" active-class="active" data-page="settings">
+          <router-link to="/settings" class="nav-item" active-class="active" data-page="settings">
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-label">ตั้งค่า</span>
           </router-link>
@@ -235,7 +240,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from './api';
-import { ui, uiState, getUser, isAdmin } from './helpers';
+import { ui, uiState, getUser, isAdmin, isManager, isManagerOrAdmin, isStaff, getRoleLabel } from './helpers';
 import { store } from './store';
 import { kickDrawerSync } from './utils/printer';
 
@@ -309,9 +314,14 @@ const adminUser = computed(() => {
   return user.value && user.value.role === 'admin';
 });
 
+const isManagerOrAdminUser = computed(() => {
+  return user.value && ['admin', 'manager'].includes(user.value.role);
+});
+
 const activeTitle = computed(() => {
   const titles = {
     '/pos': 'ร้านไก่ทอดช้างแดง',
+    '/management': 'บริหารจัดการร้าน',
     '/menu': 'จัดการเมนู',
     '/stock': 'คลังสินค้า',
     '/stock/bulk': 'คลังสินค้า',

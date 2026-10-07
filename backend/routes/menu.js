@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireManagerOrAdmin } = require('../middleware/auth');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
 
 // Helper function to get branch ID of logged-in user or first branch
 async function getBranchId(req, db) {
-  let branchId = req.user ? req.user.branch_id : null;
+  let branchId = req.query.branch_id ? Number(req.query.branch_id) : (req.headers['x-branch-id'] ? Number(req.headers['x-branch-id']) : (req.user ? req.user.branch_id : null));
   if (!branchId) {
     const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
     branchId = defaultBranch ? defaultBranch.id : null;
@@ -24,22 +24,41 @@ async function getBranchId(req, db) {
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
-    const branchId = await getBranchId(req, db);
+    const isAllBranches = req.query.all_branches === 'true' || req.query.all === 'true';
+    let branchId = null;
+    let items = [];
 
-    const items = await db.prepare(`
-      SELECT 
-        mi.id, mi.name, mi.price, mi.category_id, 
-        mi.image_url, mi.active, mi.sort_order, mi.uom,
-        mi.created_at, mi.updated_at,
-        c.name as category_name,
-        mi.multiple_prices,
-        mi.quantity as stock,
-        mi.raw_quantity as raw_stock
-      FROM menu_items mi
-      LEFT JOIN categories c ON c.id = mi.category_id AND c.branch_id = ?
-      WHERE mi.branch_id = ?
-      ORDER BY mi.sort_order ASC, mi.id ASC
-    `).all(branchId, branchId);
+    if (isAllBranches) {
+      items = await db.prepare(`
+        SELECT 
+          mi.id, mi.name, mi.price, mi.category_id, 
+          mi.image_url, mi.active, mi.sort_order, mi.uom,
+          mi.created_at, mi.updated_at, mi.branch_id,
+          c.name as category_name,
+          mi.multiple_prices,
+          mi.quantity as stock,
+          mi.raw_quantity as raw_stock
+        FROM menu_items mi
+        LEFT JOIN categories c ON c.id = mi.category_id
+        ORDER BY mi.sort_order ASC, mi.id ASC
+      `).all();
+    } else {
+      branchId = await getBranchId(req, db);
+      items = await db.prepare(`
+        SELECT 
+          mi.id, mi.name, mi.price, mi.category_id, 
+          mi.image_url, mi.active, mi.sort_order, mi.uom,
+          mi.created_at, mi.updated_at, mi.branch_id,
+          c.name as category_name,
+          mi.multiple_prices,
+          mi.quantity as stock,
+          mi.raw_quantity as raw_stock
+        FROM menu_items mi
+        LEFT JOIN categories c ON c.id = mi.category_id AND c.branch_id = ?
+        WHERE mi.branch_id = ?
+        ORDER BY mi.sort_order ASC, mi.id ASC
+      `).all(branchId, branchId);
+    }
 
     res.json({
       success: true,
@@ -81,7 +100,7 @@ router.get('/categories', async (req, res) => {
 });
 
 // ─── POST /categories — สร้างหมวดหมู่ใหม่ ──────────────
-router.post('/categories', requireAdmin, async (req, res) => {
+router.post('/categories', requireManagerOrAdmin, async (req, res) => {
   try {
     const { name, sort_order } = req.body;
 
@@ -123,7 +142,7 @@ router.post('/categories', requireAdmin, async (req, res) => {
 });
 
 // ─── PUT /categories/:id — แก้ไขหมวดหมู่ ────────────────
-router.put('/categories/:id', requireAdmin, async (req, res) => {
+router.put('/categories/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, sort_order } = req.body;
@@ -169,7 +188,7 @@ router.put('/categories/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /categories/:id — ลบหมวดหมู่ ────────────────
-router.delete('/categories/:id', requireAdmin, async (req, res) => {
+router.delete('/categories/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -215,7 +234,7 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
 // ═══════════════════════════════════════════════════════════
 
 // ─── POST / — สร้างเมนูใหม่ ─────────────────────────────
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requireManagerOrAdmin, async (req, res) => {
   try {
     const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, uom, multiple_prices } = req.body;
 
@@ -288,7 +307,7 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 // ─── PUT /:id — แก้ไขเมนู ────────────────────────────────
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active, uom, multiple_prices } = req.body;
@@ -374,7 +393,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /:id — ลบเมนูออกจากระบบ (hard delete) ───────
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -418,7 +437,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 });
 
 // ─── POST /:id/toggle — สลับสถานะเปิด/ปิดเมนู ─────────
-router.post('/:id/toggle', requireAdmin, async (req, res) => {
+router.post('/:id/toggle', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -458,7 +477,7 @@ router.post('/:id/toggle', requireAdmin, async (req, res) => {
 });
 
 // ─── POST /reorder — เปลี่ยนลำดับเมนูอาหาร ─────────
-router.post('/reorder', requireAdmin, async (req, res) => {
+router.post('/reorder', requireManagerOrAdmin, async (req, res) => {
   try {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {

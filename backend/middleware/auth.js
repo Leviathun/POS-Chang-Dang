@@ -67,6 +67,25 @@ function requireAuth(req, res, next) {
 }
 
 /**
+ * Middleware ต้องเป็นผู้จัดการหรือแอดมินเท่านั้น (Manager or Admin)
+ */
+function requireManagerOrAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'กรุณาเข้าสู่ระบบก่อนใช้งาน'
+    });
+  }
+  if (!['admin', 'manager'].includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      error: 'ต้องเป็นผู้จัดการหรือแอดมินเท่านั้นจึงจะใช้งานได้'
+    });
+  }
+  next();
+}
+
+/**
  * Middleware ต้องเป็นแอดมินเท่านั้น
  */
 function requireAdmin(req, res, next) {
@@ -85,4 +104,4 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { attachUser, requireAuth, requireAdmin };
+module.exports = { attachUser, requireAuth, requireAdmin, requireManagerOrAdmin };

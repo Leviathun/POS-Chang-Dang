@@ -24,6 +24,18 @@ export const ui = {
       uiState.toasts = uiState.toasts.filter(t => t.id !== id);
     }, duration);
   },
+  success(message, duration = 3000) {
+    this.showToast(message, 'success', duration);
+  },
+  error(message, duration = 4000) {
+    this.showToast(message, 'error', duration);
+  },
+  info(message, duration = 3000) {
+    this.showToast(message, 'info', duration);
+  },
+  warning(message, duration = 3500) {
+    this.showToast(message, 'warning', duration);
+  },
   showConfirm(title, message) {
     return new Promise((resolve) => {
       uiState.confirm = {
@@ -121,6 +133,28 @@ export function isAdmin() {
   return user && user.role === 'admin';
 }
 
+export function isManager() {
+  const user = getUser();
+  return user && user.role === 'manager';
+}
+
+export function isManagerOrAdmin() {
+  const user = getUser();
+  return user && ['admin', 'manager'].includes(user.role);
+}
+
+export function isStaff() {
+  const user = getUser();
+  return user && user.role === 'staff';
+}
+
+export function getRoleLabel(role) {
+  if (role === 'admin') return 'เจ้าของร้าน';
+  if (role === 'manager') return 'ผู้จัดการ';
+  if (role === 'staff') return 'พนักงานหน้าร้าน';
+  return role || '-';
+}
+
 // ─── Confetti (Uses Theme Colors) ───
 export function showConfetti() {
   const container = document.createElement('div');
@@ -200,6 +234,10 @@ export default {
   getCurrentMonth,
   getUser,
   isAdmin,
+  isManager,
+  isManagerOrAdmin,
+  isStaff,
+  getRoleLabel,
   showConfetti,
   roundUp,
   compressImage,

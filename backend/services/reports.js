@@ -343,11 +343,17 @@ async function getTopItems(days = 7, branchId = null) {
 
   const allOrderItems = await db.prepare(sql).all(params);
   
-  // Fetch UOM map from menu_items to dynamic assign correct unit of measure
-  const dbMenuItems = await db.prepare('SELECT id, uom FROM menu_items').all();
+  // Fetch UOM and image_url map from menu_items
+  const dbMenuItems = await db.prepare('SELECT id, name, uom, image_url FROM menu_items').all();
   const uomMap = {};
+  const imageMap = {};
+  const imageByNameMap = {};
   dbMenuItems.forEach(item => {
     uomMap[item.id] = item.uom;
+    if (item.image_url) {
+      imageMap[item.id] = item.image_url;
+      imageByNameMap[item.name] = item.image_url;
+    }
   });
 
   const aggregation = {};
@@ -375,7 +381,8 @@ async function getTopItems(days = 7, branchId = null) {
             total_qty: 0,
             portion_count: 0,
             total_revenue: 0,
-            unit: uomMap[id] || 'กรัม'
+            unit: uomMap[id] || 'กรัม',
+            image_url: imageMap[id] || imageByNameMap[name] || null
           };
         }
         aggregation[id].total_qty += totalWeight;
@@ -397,7 +404,8 @@ async function getTopItems(days = 7, branchId = null) {
           total_qty: 0,
           portion_count: 0,
           total_revenue: 0,
-          unit: uomMap[id] || 'ชิ้น'
+          unit: uomMap[id] || 'ชิ้น',
+          image_url: imageMap[id] || imageByNameMap[name] || null
         };
       }
       aggregation[aggKey].total_qty += qty;
@@ -408,19 +416,20 @@ async function getTopItems(days = 7, branchId = null) {
 
   const aggregatedList = Object.values(aggregation);
   
-  // Sort by portion_count descending to represent popularity fairly
-  aggregatedList.sort((a, b) => b.portion_count - a.portion_count);
+  // Sort by portion_count descending (and secondary total_revenue descending)
+  aggregatedList.sort((a, b) => (b.portion_count - a.portion_count) || (b.total_revenue - a.total_revenue));
 
-  // Take top 10 and map to original property contract
-  const top10 = aggregatedList.slice(0, 10).map(item => ({
+  // Map to property contract returning all ranked items
+  const allRankedItems = aggregatedList.map(item => ({
     menu_item_id: item.menu_item_id,
     item_name: item.item_name,
     total_qty: item.total_qty,
     total_revenue: Math.round(item.total_revenue * 100) / 100,
-    unit: item.unit
+    unit: item.unit,
+    image_url: item.image_url || null
   }));
 
-  return top10;
+  return allRankedItems;
 }
 
 /**
