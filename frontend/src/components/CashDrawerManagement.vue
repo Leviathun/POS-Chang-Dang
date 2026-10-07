@@ -1,5 +1,5 @@
 <template>
-  <div class="cash-drawer-management-wrapper card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
+  <div class="cash-drawer-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     <div class="flex flex-between align-center mb-md" style="margin-bottom:var(--space-md); flex-wrap: wrap; gap: var(--space-sm);">
       <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
         <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>

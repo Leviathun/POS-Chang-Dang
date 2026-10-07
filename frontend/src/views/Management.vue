@@ -2,7 +2,7 @@
   <div id="management-page" class="page-enter">
     
     <!-- Top Header Card -->
-    <div class="card p-md mb-md flex flex-between align-center flex-wrap gap-md" style="background: var(--card-bg);">
+    <div class="card p-md mb-md flex flex-between align-center flex-wrap gap-md" style="background: #ffffff;">
       <div class="flex align-center gap-md">
         <div class="header-icon-circle">
           <i class="fa-solid fa-briefcase text-primary" style="font-size: 1.3rem;"></i>
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Date & Period Filter Card (Exact match with Reports.vue & Image 3) -->
-    <div class="card mb-lg p-md" style="position: relative; z-index: 100; background: var(--card-bg);">
+    <div class="card mb-lg p-md" style="position: relative; z-index: 100; background: #ffffff;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
         <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">

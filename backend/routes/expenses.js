@@ -13,7 +13,9 @@ const getCategoryLabel = (cat) => {
     'sticky_rice': 'ของสด: ข้าวเหนียว',
     'meatballs': 'ของสด: ลูกชิ้น',
     'salapao': 'ของสด: ซาลาเปา',
-    'fuel_oil': 'น้ำมันทอด',
+    'cooking_oil': 'น้ำมันพืช/น้ำมันทอด',
+    'fuel_transport': 'น้ำมันรถ/การเดินทาง',
+    'fuel_oil': 'น้ำมันพืช/ทอด',
     'gas_lpg': 'แก๊ส LPG',
     'salary': 'ค่าแรงพนักงาน/เงินเดือน',
     'utility_bills': 'ค่าน้ำ/ค่าไฟ/ค่าเน็ต',
@@ -40,7 +42,13 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (!category || !['raw_materials', 'gas_fuel', 'packaging', 'other', 'raw_chicken', 'sticky_rice', 'meatballs', 'salapao', 'fuel_oil', 'gas_lpg', 'salary', 'utility_bills', 'debt'].includes(category)) {
+    const validCategories = [
+      'raw_materials', 'gas_fuel', 'packaging', 'other', 'raw_chicken', 
+      'sticky_rice', 'meatballs', 'salapao', 'cooking_oil', 'fuel_transport', 
+      'fuel_oil', 'gas_lpg', 'salary', 'utility_bills', 'debt'
+    ];
+
+    if (!category || !validCategories.includes(category)) {
       return res.status(400).json({
         success: false,
         error: 'กรุณาระบุหมวดหมู่ที่ถูกต้อง'
@@ -114,7 +122,7 @@ router.post('/', async (req, res) => {
 // ─── GET / — List Expenses (by Date or Month) ───────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { date, month, year } = req.query;
+    const { date, month, year, category } = req.query;
     const db = getDb();
 
     let branchId = req.user.branch_id;
@@ -125,15 +133,22 @@ router.get('/', async (req, res) => {
       branchId = defaultBranch ? defaultBranch.id : null;
     }
 
+    let categoryFilter = '';
+    const categoryParams = [];
+    if (category && category !== 'all') {
+      categoryFilter = ' AND e.category = ?';
+      categoryParams.push(category);
+    }
+
     let expenses;
     if (year) {
       expenses = await db.prepare(`
         SELECT e.*, u.name as staff_name 
         FROM expenses e
         LEFT JOIN users u ON u.id = e.staff_id
-        WHERE e.branch_id = ? AND e.expense_date >= ? AND e.expense_date < ?
+        WHERE e.branch_id = ? AND e.expense_date >= ? AND e.expense_date < ?${categoryFilter}
         ORDER BY e.expense_date DESC, e.created_at DESC
-      `).all(branchId, `${year}-01-01`, `${Number(year) + 1}-01-01`);
+      `).all(branchId, `${year}-01-01`, `${Number(year) + 1}-01-01`, ...categoryParams);
     } else if (month) {
       const [yr, mo] = month.split('-');
       let nextYr = Number(yr);
@@ -146,25 +161,25 @@ router.get('/', async (req, res) => {
         SELECT e.*, u.name as staff_name 
         FROM expenses e
         LEFT JOIN users u ON u.id = e.staff_id
-        WHERE e.branch_id = ? AND e.expense_date >= ? AND e.expense_date < ?
+        WHERE e.branch_id = ? AND e.expense_date >= ? AND e.expense_date < ?${categoryFilter}
         ORDER BY e.expense_date DESC, e.created_at DESC
-      `).all(branchId, `${month}-01`, `${nextYr}-${String(nextMo).padStart(2, '0')}-01`);
+      `).all(branchId, `${month}-01`, `${nextYr}-${String(nextMo).padStart(2, '0')}-01`, ...categoryParams);
     } else if (date) {
       expenses = await db.prepare(`
         SELECT e.*, u.name as staff_name 
         FROM expenses e
         LEFT JOIN users u ON u.id = e.staff_id
-        WHERE e.branch_id = ? AND e.expense_date = ?
+        WHERE e.branch_id = ? AND e.expense_date = ?${categoryFilter}
         ORDER BY e.created_at DESC
-      `).all(branchId, date);
+      `).all(branchId, date, ...categoryParams);
     } else {
       expenses = await db.prepare(`
         SELECT e.*, u.name as staff_name 
         FROM expenses e
         LEFT JOIN users u ON u.id = e.staff_id
-        WHERE e.branch_id = ?
+        WHERE e.branch_id = ?${categoryFilter}
         ORDER BY e.expense_date DESC, e.created_at DESC
-      `).all(branchId);
+      `).all(branchId, ...categoryParams);
     }
 
     res.json({
