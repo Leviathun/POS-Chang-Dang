@@ -58,7 +58,7 @@
             <i class="fa-solid fa-id-card text-primary"></i> ข้อมูลพนักงานและอัตราค่าแรง
           </h3>
           <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
-            กำหนดอัตราค่าจ้างรายวัน, ระดับทักษะ (ฝึกงาน/ประจำ/เชี่ยวชาญ), สวัสดิการ และกฎหักเงินประกัน
+            กำหนดอัตราค่าจ้างรายวัน, ระดับทักษะ, สวัสดิการ และกฎหักเงินประกัน
           </p>
         </div>
       </div>
@@ -423,7 +423,7 @@
       <div class="bulk-hint-box">
         <span class="hint-icon"><i class="fa-solid fa-lightbulb" style="color: var(--accent);"></i></span>
         <div class="hint-text" style="font-size: var(--font-sm); line-height: 1.6;">
-          <strong>กฎระเบียบร้านช้างแดง:</strong> คิดค่าแรงตามวันที่มาปฏิบัติงานจริงเท่านั้น (No Work No Pay) หากมีสถานะ <em>ลาหยุด</em> หรือ <em>ขาดงาน</em> จะไม่ได้รับค่าจ้างในวันนั้น ($0$ บาท) และสิทธิข้าวเที่ยงฟรีจะได้รับเฉพาะวันที่มาทำงานจริง
+          <strong>กฎระเบียบร้านช้างแดง:</strong> คิดค่าแรงตามวันที่มาปฏิบัติงานจริงเท่านั้น หากมีสถานะ <em>ลาหยุด</em> หรือ <em>ขาดงาน</em> จะไม่ได้รับค่าจ้างในวันนั้น และสิทธิข้าวเที่ยงฟรี
         </div>
       </div>
 
@@ -462,7 +462,8 @@
                   <div class="font-bold text-base text-primary">{{ rec.name }}</div>
                   <div class="text-xs text-secondary mt-2xs">
                     <span class="skill-badge" :class="rec.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(rec.skill_level) }}</span>
-                    <span class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
+                    <span v-if="(rec.default_wage_rate || rec.wage_rate) > 0" class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
+                    <span v-else class="text-warning ml-xs font-semibold" style="font-size: 11px;">• ยังไม่ตั้งฐานค่าแรง</span>
                   </div>
                 </td>
                 <td class="text-center p-md">
@@ -471,7 +472,7 @@
                       type="button"
                       class="status-btn"
                       :class="{ 'active-present': rec.status === 'present' }"
-                      @click="rec.status = 'present'; rec.had_lunch_benefit = 1; if (!rec.daily_wage) rec.daily_wage = (rec.default_wage_rate || rec.wage_rate || 300);"
+                      @click="rec.status = 'present'; rec.had_lunch_benefit = 1; if (!rec.daily_wage) rec.daily_wage = (rec.default_wage_rate || rec.wage_rate || 0);"
                     >
                       <i class="fa-solid fa-circle-check"></i> มาทำงาน
                     </button>
@@ -499,7 +500,14 @@
                       type="number" 
                       v-model.number="rec.daily_wage" 
                       class="form-input" 
-                      style="width: 105px; text-align: center; height: 38px; font-weight: bold; font-size: var(--font-base);" 
+                      :style="{
+                        width: '105px',
+                        textAlign: 'center',
+                        height: '38px',
+                        fontWeight: 'bold',
+                        fontSize: 'var(--font-base)',
+                        borderColor: (rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)) ? '#f59e0b' : ''
+                      }" 
                       :disabled="rec.status !== 'present'"
                       min="0" 
                       step="10"
@@ -508,6 +516,9 @@
                     <span class="text-xs text-secondary font-bold">บ.</span>
                   </div>
                   <div v-if="rec.status !== 'present'" class="text-2xs text-muted mt-2xs">ไม่ได้รับค่าจ้าง</div>
+                  <div v-else-if="rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)" class="text-2xs text-warning mt-2xs font-semibold">
+                    (ยังไม่ระบุค่าแรง)
+                  </div>
                   <div v-else-if="rec.default_wage_rate !== undefined && rec.daily_wage !== rec.default_wage_rate" class="text-2xs text-warning mt-2xs">
                     (ปรับจากปกติ {{ rec.default_wage_rate }} บ.)
                   </div>
@@ -688,7 +699,7 @@
                 <td class="text-center p-md">
                   <span class="capsule-badge" :class="adv.status === 'deducted' ? 'badge-success' : 'badge-warning'">
                     <i :class="adv.status === 'deducted' ? 'fa-solid fa-check' : 'fa-solid fa-clock'"></i>
-                    {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : 'รอดำเนินการหัก' }}
+                    {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : 'เบิกสำเร็จ รอหักในบัญชี' }}
                   </span>
                 </td>
                 <td v-if="isAdminUser" class="text-center p-md">
@@ -789,13 +800,13 @@
             <thead>
               <tr style="background: rgba(139, 3, 19, 0.03); border-bottom: 1px solid var(--border-color);">
                 <th class="text-center p-md">พนักงาน</th>
-                <th class="text-center p-md">วันทำงานรอจ่ายรอบนี้</th>
-                <th class="text-center p-md">ฐานค่าแรงรอบนี้</th>
+                <th class="text-center p-md">วันทำงาน</th>
+                <th class="text-center p-md">ฐานค่าแรง</th>
                 <th class="text-center p-md">OT อีเวนต์</th>
-                <th class="text-center p-md">หักเบิกล่วงหน้า</th>
-                <th class="text-center p-md">ยอดจ่ายสุทธิรอบนี้</th>
-                <th class="text-center p-md">เงินประกัน (1,000 บ.)</th>
-                <th class="text-center p-md">ประวัติจ่ายในเดือนนี้</th>
+                <th class="text-center p-md">เบิกล่วงหน้า</th>
+                <th class="text-center p-md">ยอดจ่ายสุทธิ</th>
+                <th class="text-center p-md">เงินประกัน</th>
+                <th class="text-center p-md">ประวัติเดือนนี้</th>
                 <th class="text-center p-md">ดำเนินการ</th>
               </tr>
             </thead>
@@ -842,26 +853,26 @@
                 </td>
                 <!-- Guarantee Deposit Column -->
                 <td class="text-center p-md">
-                  <div v-if="!item.guarantee || item.guarantee.status === 'forfeited'" class="flex justify-center">
-                    <button class="btn btn-sm btn-secondary text-xs guarantee-capsule-btn" @click="openDepositGuaranteeModal(item)">
-                      <i class="fa-solid fa-shield-halved text-warning mr-xs"></i> รับค่าประกัน
-                    </button>
-                  </div>
-                  <div v-else-if="item.guarantee.status === 'held'" class="flex flex-col align-center gap-xs">
+                  <!-- Case 1: Currently Held -->
+                  <div v-if="item.guarantee && item.guarantee.status === 'held'" class="flex flex-col align-center gap-xs">
                     <span class="capsule-badge badge-success text-xs guarantee-capsule-badge">
-                      <i class="fa-solid fa-shield-halved"></i> วางประกันแล้ว
+                      <i class="fa-solid fa-shield-halved"></i> วางประกันแล้ว ({{ formatGuaranteeMonth(item.guarantee.deposit_date) }})
                     </span>
                     <button class="btn btn-sm btn-secondary text-xs guarantee-capsule-btn" @click="openRefundGuaranteeModal(item.guarantee, item)">
-                      <i class="fa-solid fa-arrow-rotate-left mr-2xs text-primary"></i> คืนค่าประกัน
+                      <i class="fa-solid fa-arrow-rotate-left mr-2xs text-primary"></i> คืนค่าประกัน ({{ formatGuaranteeMonth(item.guarantee.deposit_date) }})
                     </button>
                   </div>
-                  <div v-else-if="item.guarantee.status === 'refunded'" class="flex flex-col align-center gap-xs">
+                  <!-- Case 2: Refunded -->
+                  <div v-else-if="item.guarantee && item.guarantee.status === 'refunded'" class="flex flex-col align-center gap-xs">
                     <span class="capsule-badge badge-neutral text-xs guarantee-capsule-badge" style="opacity: 0.85;">
-                      <i class="fa-solid fa-check"></i> คืนเงินประกันแล้ว
+                      <i class="fa-solid fa-check"></i> คืนเงินประกันแล้ว ({{ formatGuaranteeMonth(item.guarantee.deposit_date) }})
                     </span>
-                    <button class="btn btn-sm btn-secondary text-xs guarantee-capsule-btn" @click="openDepositGuaranteeModal(item)">
-                      <i class="fa-solid fa-plus text-warning mr-2xs"></i> รับค่าประกันใหม่
-                    </button>
+                  </div>
+                  <!-- Case 3: Not Held Yet -->
+                  <div v-else class="flex justify-center">
+                    <span class="capsule-badge badge-neutral text-xs guarantee-capsule-badge" style="opacity: 0.75;">
+                      <i class="fa-solid fa-hourglass-half"></i> รอหักตอนจ่ายเงิน
+                    </span>
                   </div>
                 </td>
                 <!-- Month Payout History Column -->
@@ -872,7 +883,7 @@
                     </span>
                   </div>
                   <div v-else>
-                    <span class="text-xs text-muted">ยังไม่เคยจ่ายในเดือนนี้</span>
+                    <span class="text-xs text-muted">ไม่เคยจ่ายเดือนนี้</span>
                   </div>
                 </td>
                 <!-- Action Column -->
@@ -882,7 +893,7 @@
                     class="btn-action btn-action-primary"
                     @click="openPayModal(item)"
                   >
-                    <i class="fa-solid fa-money-bill-wave"></i> จ่ายเงินรอบนี้
+                    <i class="fa-solid fa-money-bill-wave"></i> จ่ายเงิน
                   </button>
                   <span v-else class="text-xs text-muted font-bold">
                     <i class="fa-solid fa-circle-check text-success"></i> จ่ายครบแล้ว
@@ -903,37 +914,73 @@
     <Teleport to="body">
       <div v-if="showCompModal" class="modal-container active">
         <div class="modal-overlay" @click="showCompModal = false"></div>
-        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; min-height: 490px; display: flex; flex-direction: column;">
           <div class="modal-header">
             <h3><i class="fa-solid fa-sliders" style="margin-right: 6px;"></i> ปรับค่าแรง: {{ selectedEmp?.name }}</h3>
             <button class="modal-close" @click="showCompModal = false">✕</button>
           </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label font-bold">ประเภทค่าจ้าง</label>
-              <select class="form-select" v-model="compForm.wage_type">
-                <option value="daily">รายวัน (Daily Wage)</option>
-                <option value="monthly">รายเดือน (Monthly Salary)</option>
-              </select>
-            </div>
+          <div class="modal-body" style="display: flex; flex-direction: column; flex: 1; justify-content: space-between;">
+            <div>
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">ประเภทค่าจ้าง *</label>
+                <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                  <div 
+                    class="custom-select-trigger" 
+                    :class="{ 'active': isCompWageTypeDropdownOpen }" 
+                    @click="isCompWageTypeDropdownOpen = !isCompWageTypeDropdownOpen; isCompSkillLevelDropdownOpen = false;"
+                  >
+                    <span class="custom-select-text">
+                      {{ compForm.wage_type === 'monthly' ? 'รายเดือน (Monthly Salary)' : 'รายวัน (Daily Wage)' }}
+                    </span>
+                  </div>
+                  <div v-if="isCompWageTypeDropdownOpen" class="custom-select-dropdown" style="z-index: 1000;">
+                    <div class="custom-select-option" :class="{ 'selected': compForm.wage_type === 'daily' }" @click="selectCompWageType('daily')">
+                      รายวัน (Daily Wage)
+                    </div>
+                    <div class="custom-select-option" :class="{ 'selected': compForm.wage_type === 'monthly' }" @click="selectCompWageType('monthly')">
+                      รายเดือน (Monthly Salary)
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <div class="form-group">
-              <label class="form-label font-bold">อัตราค่าจ้าง (บาท) *</label>
-              <input type="number" class="form-input" v-model.number="compForm.wage_rate" placeholder="เช่น 450 หรือ 300" min="0" />
-            </div>
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">อัตราค่าจ้าง (บาท) *</label>
+                <input type="number" class="form-input" v-model.number="compForm.wage_rate" placeholder="เช่น 450 หรือ 300" min="0" />
+              </div>
 
-            <div class="form-group">
-              <label class="form-label font-bold">ระดับทักษะ (Skill Tier)</label>
-              <select class="form-select" v-model="compForm.skill_level">
-                <option value="trainee">🌱 ฝึกงาน (Trainee)</option>
-                <option value="regular">⭐ ประจำ (Regular)</option>
-                <option value="expert">🏆 เชี่ยวชาญ (Expert)</option>
-              </select>
-            </div>
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">ระดับทักษะ (Skill Tier) *</label>
+                <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                  <div 
+                    class="custom-select-trigger" 
+                    :class="{ 'active': isCompSkillLevelDropdownOpen }" 
+                    @click="isCompSkillLevelDropdownOpen = !isCompSkillLevelDropdownOpen; isCompWageTypeDropdownOpen = false;"
+                  >
+                    <span class="custom-select-text">
+                      <span v-if="compForm.skill_level === 'trainee'">🌱 ฝึกงาน (Trainee)</span>
+                      <span v-else-if="compForm.skill_level === 'expert'">🏆 เชี่ยวชาญ (Expert)</span>
+                      <span v-else>⭐ ประจำ (Regular)</span>
+                    </span>
+                  </div>
+                  <div v-if="isCompSkillLevelDropdownOpen" class="custom-select-dropdown" style="z-index: 1000;">
+                    <div class="custom-select-option" :class="{ 'selected': compForm.skill_level === 'trainee' }" @click="selectCompSkillLevel('trainee')">
+                      🌱 ฝึกงาน (Trainee)
+                    </div>
+                    <div class="custom-select-option" :class="{ 'selected': compForm.skill_level === 'regular' }" @click="selectCompSkillLevel('regular')">
+                      ⭐ ประจำ (Regular)
+                    </div>
+                    <div class="custom-select-option" :class="{ 'selected': compForm.skill_level === 'expert' }" @click="selectCompSkillLevel('expert')">
+                      🏆 เชี่ยวชาญ (Expert)
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <div class="form-group">
-              <label class="form-label font-bold">สวัสดิการพนักงาน</label>
-              <input type="text" class="form-input" v-model="compForm.benefits" placeholder="เช่น ข้าวเที่ยงฟรี" />
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">สวัสดิการพนักงาน</label>
+                <input type="text" class="form-input" v-model="compForm.benefits" placeholder="เช่น ข้าวเที่ยงฟรี" />
+              </div>
             </div>
 
             <div class="flex gap-md mt-lg">
@@ -970,7 +1017,50 @@
 
             <div class="form-group">
               <label class="form-label font-bold">วันที่ปฏิบัติงาน *</label>
-              <input type="date" class="form-input" v-model="eventOtForm.event_date" />
+              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                <div 
+                  class="picker-trigger-btn w-full" 
+                  :class="{ 'active': isEventOtDateDropdownOpen }" 
+                  @click="toggleEventOtDateDropdown"
+                  style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
+                >
+                  <span class="flex align-center gap-sm">
+                    <i class="fa-solid fa-calendar-day text-primary"></i>
+                    <span>{{ eventOtDateLabel }}</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
+                </div>
+
+                <!-- Date Picker Calendar Popover -->
+                <div v-if="isEventOtDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
+                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustEventOtDatePickerMonth(-1)">
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span class="font-bold" style="font-size: var(--font-sm);">{{ eventOtDatePickerMonthName }} {{ eventOtDatePickerYear + 543 }}</span>
+                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustEventOtDatePickerMonth(1)">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                    <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                    <div v-for="empty in eventOtDatePickerStartOffset" :key="'empty-'+empty"></div>
+                    <button 
+                      v-for="dNum in eventOtDatePickerDaysCount" 
+                      :key="dNum"
+                      type="button"
+                      class="btn btn-sm calendar-day-btn"
+                      :class="isEventOtDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
+                      style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                      @click="selectEventOtDatePickerDay(dNum)"
+                    >
+                      {{ dNum }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
@@ -996,11 +1086,6 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label font-bold">หมายเหตุเพิ่มเติม</label>
-              <input type="text" class="form-input" v-model="eventOtForm.note" placeholder="เช่น ช่วยงาน 2 ชม." />
-            </div>
-
             <div class="flex gap-md mt-lg">
               <button class="btn-modal btn-modal-secondary flex-1" @click="showAddEventOtModal = false">ยกเลิก</button>
               <button 
@@ -1022,92 +1107,174 @@
     <Teleport to="body">
       <div v-if="showAddAdvanceModal" class="modal-container active">
         <div class="modal-overlay" @click="showAddAdvanceModal = false"></div>
-        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; min-height: 760px; max-height: 90vh; display: flex; flex-direction: column;">
           <div class="modal-header">
             <h3><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 6px;"></i> บันทึกการเบิกเงินล่วงหน้า</h3>
             <button class="modal-close" @click="showAddAdvanceModal = false">✕</button>
           </div>
-          <div class="modal-body" style="overflow-y: auto;">
-            <!-- Staff Selector -->
-            <div class="form-group mb-sm">
-              <label class="form-label font-bold text-xs">เลือกพนักงานที่เบิกเงิน *</label>
-              <select class="form-select form-select-sm" v-model="advanceForm.user_id">
-                <option :value="null" disabled>-- กรุณาเลือกพนักงาน --</option>
-                <option v-for="emp in employees" :key="emp.id" :value="emp.id">
-                  {{ emp.name }} ({{ getSkillLabel(emp.skill_level) }})
-                </option>
-              </select>
-            </div>
-
-            <!-- Accumulated Wage Info Box -->
-            <div 
-              v-if="advanceForm.user_id && selectedStaffAvailableWage" 
-              class="form-group mb-sm"
-              style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm);"
-            >
-              <div class="flex flex-between align-center mb-2xs">
-                <span class="text-xs text-secondary font-bold">
-                  <i class="fa-solid fa-coins text-warning mr-xs"></i> ยอดค่าแรงสะสมที่เบิกได้สูงสุดในปัจจุบัน:
-                </span>
-                <span class="text-sm font-bold text-primary">
-                  {{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }}
-                </span>
+          <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; flex: 1; justify-content: space-between;">
+            <div>
+              <!-- Staff Selector with custom select -->
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">เลือกพนักงานที่เบิกเงิน *</label>
+                <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                  <div 
+                    class="custom-select-trigger" 
+                    :class="{ 'active': isAdvanceStaffDropdownOpen }" 
+                    @click="isAdvanceStaffDropdownOpen = !isAdvanceStaffDropdownOpen"
+                  >
+                    <span class="custom-select-text">
+                      {{ selectedAdvanceStaffLabel }}
+                    </span>
+                  </div>
+                  <div v-if="isAdvanceStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; z-index: 1000;">
+                    <div 
+                      v-for="emp in employees" 
+                      :key="emp.id" 
+                      class="custom-select-option flex flex-between align-center" 
+                      :class="{ 'selected': advanceForm.user_id === emp.id }" 
+                      @click="selectAdvanceStaff(emp.id)"
+                    >
+                      <span>{{ emp.name }}</span>
+                      <span class="skill-badge" :class="emp.skill_level" style="font-size: 10px; padding: 1px 6px;">
+                        {{ getSkillLabel(emp.skill_level) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="text-2xs text-secondary flex flex-between" style="font-size: 11px;">
-                <span>วันทำงานรอจ่าย: {{ selectedStaffAvailableWage.unpaidDays }} วัน ({{ formatCurrency(selectedStaffAvailableWage.unpaidBase) }})</span>
-                <span v-if="selectedStaffAvailableWage.existingAdvances > 0" class="text-danger">
-                  (เคยเบิกค้างอยู่ {{ formatCurrency(selectedStaffAvailableWage.existingAdvances) }})
-                </span>
+
+              <!-- Accumulated Wage Info Box -->
+              <div 
+                v-if="advanceForm.user_id && selectedStaffAvailableWage" 
+                class="form-group mb-sm"
+                style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm);"
+              >
+                <div class="flex flex-between align-center mb-2xs">
+                  <span class="text-xs text-secondary font-bold">
+                    <i class="fa-solid fa-coins text-warning mr-xs"></i> ยอดค่าแรงสะสมที่เบิกได้สูงสุดในปัจจุบัน:
+                  </span>
+                  <span class="text-sm font-bold text-primary">
+                    {{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }}
+                  </span>
+                </div>
+                <div class="text-2xs text-secondary flex flex-between flex-wrap gap-2xs" style="font-size: 11px;">
+                  <div class="flex align-center gap-xs flex-wrap">
+                    <span>วันทำงาน: {{ selectedStaffAvailableWage.unpaidDays }} วัน ({{ formatCurrency(selectedStaffAvailableWage.unpaidBase) }})</span>
+                    <span v-if="selectedStaffAvailableWage.eventOt > 0" class="text-success font-semibold">
+                      • OT: +{{ formatCurrency(selectedStaffAvailableWage.eventOt) }}
+                    </span>
+                  </div>
+                  <span v-if="selectedStaffAvailableWage.existingAdvances > 0" class="text-danger font-semibold">
+                    (เคยเบิกค้างอยู่ {{ formatCurrency(selectedStaffAvailableWage.existingAdvances) }})
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div class="form-group mb-sm">
-              <label class="form-label font-bold text-xs">จำนวนเงินที่ขอเบิก (บาท) *</label>
-              <input 
-                type="number" 
-                class="form-input form-input-sm font-bold" 
-                v-model.number="advanceForm.amount" 
-                placeholder="เช่น 500" 
-                min="1" 
-              />
-            </div>
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">จำนวนเงินที่ขอเบิก (บาท) *</label>
+                <input 
+                  type="number" 
+                  class="form-input form-input-sm font-bold" 
+                  v-model.number="advanceForm.amount" 
+                  placeholder="เช่น 500" 
+                  min="1" 
+                />
+              </div>
 
-            <!-- Orange Warning Box when advance exceeds available wage -->
-            <div 
-              v-if="advanceForm.user_id && selectedStaffAvailableWage && advanceForm.amount > selectedStaffAvailableWage.maxAvailable"
-              class="form-group mb-sm"
-              style="background: rgba(255, 149, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-sm);"
-            >
-              <div class="flex align-start gap-xs text-xs font-semibold text-warning" style="line-height: 1.4;">
-                <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; margin-top: 2px;"></i>
-                <div>
-                  <strong>คำเตือน:</strong> จำนวนเงินที่ขอเบิก ({{ formatCurrency(advanceForm.amount) }}) <strong>เกินกว่ายอดค่าแรงสะสม</strong> ที่ทำได้ในปัจจุบัน ({{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }})
-                  <div class="text-2xs text-secondary font-normal mt-2xs">
-                    * นายจ้างยังสามารถยืนยันให้เบิกล่วงหน้าได้ โดยยอดส่วนเกินจะรอหักจากวันทำงานถัดไป
+              <!-- Orange Warning Box when advance exceeds available wage -->
+              <div 
+                v-if="advanceForm.user_id && selectedStaffAvailableWage && advanceForm.amount > selectedStaffAvailableWage.maxAvailable"
+                class="form-group mb-sm"
+                style="background: rgba(255, 149, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-sm);"
+              >
+                <div class="flex align-start gap-xs text-xs font-semibold text-warning" style="line-height: 1.4;">
+                  <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; margin-top: 2px;"></i>
+                  <div>
+                    <strong>คำเตือน:</strong> จำนวนเงินที่ขอเบิก ({{ formatCurrency(advanceForm.amount) }}) <strong>เกินกว่ายอดค่าแรงสะสม</strong> ที่ทำได้ในปัจจุบัน ({{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }})
+                    <div class="text-2xs text-secondary font-normal mt-2xs">
+                      * นายจ้างยังสามารถยืนยันให้เบิกล่วงหน้าได้ โดยยอดส่วนเกินจะรอหักจากวันทำงานถัดไป
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Date Picker for Advance -->
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">วันที่เบิกเงิน *</label>
+                <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                  <div 
+                    class="picker-trigger-btn w-full" 
+                    :class="{ 'active': isAdvanceDateDropdownOpen }" 
+                    @click="toggleAdvanceDateDropdown"
+                    style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
+                  >
+                    <span class="flex align-center gap-sm">
+                      <i class="fa-solid fa-calendar-day text-primary"></i>
+                      <span>{{ advanceDateLabel }}</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
+                  </div>
+
+                  <!-- Date Picker Calendar Popover -->
+                  <div v-if="isAdvanceDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
+                      <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAdvanceDatePickerMonth(-1)">
+                        <i class="fa-solid fa-chevron-left"></i>
+                      </button>
+                      <span class="font-bold" style="font-size: var(--font-sm);">{{ advanceDatePickerMonthName }} {{ advanceDatePickerYear + 543 }}</span>
+                      <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAdvanceDatePickerMonth(1)">
+                        <i class="fa-solid fa-chevron-right"></i>
+                      </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                      <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                      <div v-for="empty in advanceDatePickerStartOffset" :key="'empty-'+empty"></div>
+                      <button 
+                        v-for="dNum in advanceDatePickerDaysCount" 
+                        :key="dNum"
+                        type="button"
+                        class="btn btn-sm calendar-day-btn"
+                        :class="isAdvanceDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
+                        style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                        @click="selectAdvanceDatePickerDay(dNum)"
+                      >
+                        {{ dNum }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Payment Method with custom select -->
+              <div class="form-group mb-sm">
+                <label class="form-label font-bold text-xs">ช่องทางการจ่ายเงิน *</label>
+                <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                  <div 
+                    class="custom-select-trigger" 
+                    :class="{ 'active': isAdvancePaymentMethodDropdownOpen }" 
+                    @click="isAdvancePaymentMethodDropdownOpen = !isAdvancePaymentMethodDropdownOpen"
+                  >
+                    <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i :class="advanceForm.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
+                      {{ advanceForm.payment_method === 'transfer' ? 'เงินโอนผ่านบัญชี' : 'เงินสด (จ่ายจากลิ้นชัก)' }}
+                    </span>
+                  </div>
+                  <div v-if="isAdvancePaymentMethodDropdownOpen" class="custom-select-dropdown" style="z-index: 1000;">
+                    <div class="custom-select-option" :class="{ 'selected': advanceForm.payment_method === 'cash' }" @click="selectAdvancePaymentMethod('cash')">
+                      <i class="fa-solid fa-money-bill-wave" style="margin-right: 4px;"></i> เงินสด (จ่ายจากลิ้นชัก)
+                    </div>
+                    <div class="custom-select-option" :class="{ 'selected': advanceForm.payment_method === 'transfer' }" @click="selectAdvancePaymentMethod('transfer')">
+                      <i class="fa-solid fa-mobile-screen-button" style="margin-right: 4px;"></i> เงินโอนผ่านบัญชี
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="form-group mb-sm">
-              <label class="form-label font-bold text-xs">วันที่เบิกเงิน *</label>
-              <input type="date" class="form-input form-input-sm" v-model="advanceForm.advance_date" />
-            </div>
-
-            <div class="form-group mb-sm">
-              <label class="form-label font-bold text-xs">ช่องทางการจ่ายเงิน *</label>
-              <select class="form-select form-select-sm" v-model="advanceForm.payment_method">
-                <option value="cash">💵 เงินสด (จ่ายจากลิ้นชัก)</option>
-                <option value="transfer">📱 เงินโอนผ่านบัญชี</option>
-              </select>
-            </div>
-
-            <div class="form-group mb-sm">
-              <label class="form-label font-bold text-xs">เหตุผล / บันทึกช่วยจำ</label>
-              <input type="text" class="form-input form-input-sm" v-model="advanceForm.note" placeholder="เช่น ค่าใช้จ่ายฉุกเฉิน" />
-            </div>
-
-            <div class="flex gap-md mt-md">
+            <div class="flex gap-md mt-lg" style="margin-top: auto; padding-top: var(--space-md);">
               <button class="btn-modal btn-modal-secondary flex-1" @click="showAddAdvanceModal = false">ยกเลิก</button>
               <button 
                 class="btn-modal btn-modal-primary flex-1" 
@@ -1135,13 +1302,13 @@
           </div>
           <div class="modal-body" style="overflow-y: auto;">
             <!-- Staff Header -->
-            <div class="form-group" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-sm);">
+            <div class="form-group" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-sm);">
               <div class="flex flex-between align-center mb-xs">
                 <span class="text-sm font-bold text-primary">{{ payingItem?.name }}</span>
                 <span class="capsule-badge badge-neutral text-xs">งวด {{ payrollMonth }}</span>
               </div>
               <div class="text-xs text-secondary flex flex-between">
-                <span>อัตราค่าจ้าง: {{ formatCurrency(payingItem?.wage_rate) }}/{{ payingItem?.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
+                <span>อัตราค่าจ้าง: {{ formatCurrency(payingItem?.wage_rate || (payingItem?.unpaid_days_worked ? Math.round(payingItem?.unpaid_base_salary / payingItem?.unpaid_days_worked) : 0)) }}/{{ payingItem?.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
                 <span class="skill-badge" :class="payingItem?.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(payingItem?.skill_level) }}</span>
               </div>
             </div>
@@ -1157,7 +1324,7 @@
                 <div 
                   class="flex flex-between align-center"
                   :style="{
-                    background: payForm.pay_base_salary ? 'rgba(52, 199, 89, 0.08)' : 'var(--bg-secondary)',
+                    background: payForm.pay_base_salary ? 'rgba(52, 199, 89, 0.08)' : '#ffffff',
                     border: '1px solid ' + (payForm.pay_base_salary ? 'var(--success)' : 'var(--border-color)'),
                     borderRadius: 'var(--radius-md)',
                     padding: 'var(--space-xs) var(--space-sm)',
@@ -1215,7 +1382,7 @@
                   v-if="payingItem?.event_ot_amount > 0"
                   class="flex flex-between align-center cursor-pointer"
                   :style="{
-                    background: payForm.pay_event_ot ? 'rgba(52, 199, 89, 0.08)' : 'var(--bg-secondary)',
+                    background: payForm.pay_event_ot ? 'rgba(52, 199, 89, 0.08)' : '#ffffff',
                     border: '1px solid ' + (payForm.pay_event_ot ? 'var(--success)' : 'var(--border-color)'),
                     borderRadius: 'var(--radius-md)',
                     padding: 'var(--space-xs) var(--space-sm)'
@@ -1238,7 +1405,7 @@
                   v-if="payingItem?.advance_deducted_amount > 0"
                   class="flex flex-between align-center cursor-pointer"
                   :style="{
-                    background: payForm.deduct_advance ? 'rgba(255, 59, 48, 0.08)' : 'var(--bg-secondary)',
+                    background: payForm.deduct_advance ? 'rgba(255, 59, 48, 0.08)' : '#ffffff',
                     border: '1px solid ' + (payForm.deduct_advance ? 'var(--danger)' : 'var(--border-color)'),
                     borderRadius: 'var(--radius-md)',
                     padding: 'var(--space-xs) var(--space-sm)'
@@ -1256,12 +1423,12 @@
                   <span class="font-bold text-xs text-danger">-{{ formatCurrency(payingItem?.advance_deducted_amount) }}</span>
                 </label>
 
-                <!-- 4. Guarantee Deposit Deduction (แสดงเฉพาะเมื่อสถานะไม่ใช่ 'วางประกันแล้ว') -->
-                <div v-if="!payingItem?.guarantee || payingItem?.guarantee?.status !== 'held'">
+                <!-- 4. Guarantee Deposit Deduction (แสดงเฉพาะเมื่อยังไม่เคยวางประกัน หรือไม่มีรายการ held/refunded) -->
+                <div v-if="!payingItem?.guarantee || (payingItem?.guarantee?.status !== 'held' && payingItem?.guarantee?.status !== 'refunded')">
                   <label 
                     class="flex flex-between align-center cursor-pointer"
                     :style="{
-                      background: payForm.deduct_guarantee ? 'rgba(255, 149, 0, 0.08)' : 'var(--bg-secondary)',
+                      background: payForm.deduct_guarantee ? 'rgba(255, 149, 0, 0.08)' : '#ffffff',
                       border: '1px solid ' + (payForm.deduct_guarantee ? 'var(--warning)' : 'var(--border-color)'),
                       borderRadius: 'var(--radius-md)',
                       padding: 'var(--space-xs) var(--space-sm)'
@@ -1275,8 +1442,7 @@
                         style="width: 16px; height: 16px; accent-color: var(--warning);" 
                       />
                       <span class="text-xs font-semibold">
-                        หักเงินประกันพนักงาน ({{ formatCurrency(payForm.holdback_deducted_amount || 1000) }})
-                        <span class="text-2xs text-secondary font-normal">(ยังไม่เคยวางประกัน / วางรอบใหม่)</span>
+                        หักเงินประกันพนักงาน (งวด {{ payrollMonthLabel }})
                       </span>
                     </div>
                     <span class="font-bold text-xs text-warning">-{{ formatCurrency(payForm.holdback_deducted_amount || 1000) }}</span>
@@ -1291,37 +1457,91 @@
               </div>
             </div>
 
-            <!-- Custom Payout Amount Input -->
-            <div class="form-group mb-sm" style="background: rgba(139, 3, 19, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm);">
-              <div class="flex flex-between align-center mb-xs">
-                <label class="form-label font-bold text-xs text-primary" style="margin:0;">
-                  <i class="fa-solid fa-coins mr-xs"></i> กำหนดยอดจ่ายจริงรอบนี้ (บาท) *
-                </label>
+            <!-- Total Net Payout Display Card (Auto calculated from checklist) -->
+            <div class="form-group mb-sm" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
+              <div class="flex flex-between align-center">
+                <span class="font-bold text-xs text-secondary">
+                  <i class="fa-solid fa-coins mr-xs text-warning"></i> ยอดจ่ายสุทธิรอบนี้:
+                </span>
+                <span class="font-bold text-md text-secondary">
+                  {{ formatCurrency(computedNetPayable) }}
+                </span>
               </div>
-              <input 
-                type="number" 
-                class="form-input font-bold" 
-                style="font-size: 1.15rem; color: var(--primary);" 
-                v-model.number="payForm.custom_net_paid" 
-                placeholder="ระบุจำนวนเงินที่จ่ายจริง" 
-                min="0" 
-              />
-              <div class="text-2xs text-secondary mt-2xs">
-                ยอดเงินนี้จะถูกบันทึกเป็นรายจ่ายสาขา
+              <div class="text-secondary mt-xs" style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">
+                * ยอดเงินนี้จะถูกบันทึกเป็นรายจ่ายสาขา (คำนวณอัตโนมัติตามรายการที่เลือก)
               </div>
             </div>
 
             <div class="form-group mb-sm">
               <label class="form-label font-bold text-xs">ช่องทางการจ่ายเงิน *</label>
-              <select class="form-select form-select-sm" v-model="payForm.payment_method">
-                <option value="cash">💵 จ่ายเงินสด (ตัดยอดจากลิ้นชัก)</option>
-                <option value="transfer">📱 จ่ายเงินโอน</option>
-              </select>
+              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isPayPaymentMethodDropdownOpen }" 
+                  @click="isPayPaymentMethodDropdownOpen = !isPayPaymentMethodDropdownOpen"
+                >
+                  <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i :class="payForm.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
+                    {{ payForm.payment_method === 'transfer' ? 'จ่ายเงินโอน' : 'จ่ายเงินสด (ตัดยอดจากลิ้นชัก)' }}
+                  </span>
+                </div>
+                <div v-if="isPayPaymentMethodDropdownOpen" class="custom-select-dropdown" style="z-index: 1000;">
+                  <div class="custom-select-option" :class="{ 'selected': payForm.payment_method === 'cash' }" @click="selectPayPaymentMethod('cash')">
+                    <i class="fa-solid fa-money-bill-wave" style="margin-right: 4px;"></i> จ่ายเงินสด (ตัดยอดจากลิ้นชัก)
+                  </div>
+                  <div class="custom-select-option" :class="{ 'selected': payForm.payment_method === 'transfer' }" @click="selectPayPaymentMethod('transfer')">
+                    <i class="fa-solid fa-mobile-screen-button" style="margin-right: 4px;"></i> จ่ายเงินโอน
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="form-group mb-sm">
               <label class="form-label font-bold text-xs">วันที่จ่ายเงิน *</label>
-              <input type="date" class="form-input form-input-sm" v-model="payForm.payment_date" />
+              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                <div 
+                  class="picker-trigger-btn w-full" 
+                  :class="{ 'active': isPayDateDropdownOpen }" 
+                  @click="togglePayDateDropdown"
+                  style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
+                >
+                  <span class="flex align-center gap-sm">
+                    <i class="fa-solid fa-calendar-day text-primary"></i>
+                    <span>{{ payDateLabel }}</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
+                </div>
+
+                <!-- Date Picker Calendar Popover -->
+                <div v-if="isPayDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
+                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayDatePickerMonth(-1)">
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span class="font-bold" style="font-size: var(--font-sm);">{{ payDatePickerMonthName }} {{ payDatePickerYear + 543 }}</span>
+                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayDatePickerMonth(1)">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                    <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                    <div v-for="empty in payDatePickerStartOffset" :key="'empty-'+empty"></div>
+                    <button 
+                      v-for="dNum in payDatePickerDaysCount" 
+                      :key="dNum"
+                      type="button"
+                      class="btn btn-sm calendar-day-btn"
+                      :class="isPayDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
+                      style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                      @click="selectPayDatePickerDay(dNum)"
+                    >
+                      {{ dNum }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
 
@@ -1423,85 +1643,7 @@
       </div>
     </Teleport>
 
-    <!-- MODAL 7: รับเงินประกันพนักงาน (Deposit Guarantee Modal) -->
-    <Teleport to="body">
-      <div v-if="showDepositModal" class="modal-container active">
-        <div class="modal-overlay" @click="showDepositModal = false"></div>
-        <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
-          <div class="modal-header">
-            <h3><i class="fa-solid fa-shield-halved text-warning" style="margin-right: 6px;"></i> รับเงินประกันพนักงาน</h3>
-            <button class="modal-close" @click="showDepositModal = false">✕</button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group mb-sm" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
-              <div class="flex flex-between align-center mb-xs">
-                <span class="text-sm font-bold text-primary">{{ depositForm.targetStaff?.name }}</span>
-                <span class="skill-badge" :class="depositForm.targetStaff?.skill_level" style="font-size: 10px; padding: 1px 6px;">
-                  {{ getSkillLabel(depositForm.targetStaff?.skill_level) }}
-                </span>
-              </div>
-              <div class="flex flex-between align-center text-xs text-secondary">
-                <span>ยอดค่าแรงสะสมรอจ่ายปัจจุบัน:</span>
-                <span class="font-bold text-primary text-sm">{{ formatCurrency(depositFormTargetAvailableWage) }}</span>
-              </div>
-            </div>
 
-            <!-- Warning Alert if available wage < deposit amount -->
-            <div 
-              v-if="depositFormTargetAvailableWage < (depositForm.amount || 1000)"
-              class="form-group mb-sm" 
-              style="background: rgba(255, 149, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-sm);"
-            >
-              <div class="flex align-start gap-xs text-xs font-semibold text-warning" style="line-height: 1.4;">
-                <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; margin-top: 2px;"></i>
-                <div>
-                  <strong>แจ้งเตือน:</strong> ยอดค่าแรงสะสมปัจจุบัน ({{ formatCurrency(depositFormTargetAvailableWage) }}) <strong>น้อยกว่ายอดเงินประกัน ({{ formatCurrency(depositForm.amount || 1000) }})</strong>
-                  <div class="text-2xs text-secondary font-normal mt-2xs">
-                    * เงื่อนไข: ยอดจ่ายสุทธิ/ค่าแรงสะสมรอบนี้ควรมีค่า ฿1,000 หรือมากกว่า ก่อนรับเงินประกัน
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group mb-sm">
-              <label class="form-label font-bold text-xs">จำนวนเงินประกัน (บาท) *</label>
-              <input type="number" class="form-input form-input-sm" v-model.number="depositForm.amount" placeholder="1000" min="1" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label font-bold">วันที่รับเงินประกัน *</label>
-              <input type="date" class="form-input" v-model="depositForm.deposit_date" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label font-bold">ช่องทางการรับเงิน *</label>
-              <select class="form-select" v-model="depositForm.deposit_payment_method">
-                <option value="cash">💵 เงินสด (เก็บเข้าลิ้นชัก)</option>
-                <option value="transfer">📱 โอนผ่านบัญชีร้าน</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label font-bold">บันทึกช่วยจำ</label>
-              <input type="text" class="form-input" v-model="depositForm.note" placeholder="เช่น วางเงินประกันวันแรกของการทำงาน" />
-            </div>
-
-            <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showDepositModal = false">ยกเลิก</button>
-              <button 
-                class="btn-modal btn-modal-primary flex-1" 
-                :disabled="savingDeposit || !depositForm.amount || depositForm.amount <= 0"
-                @click="handleConfirmDepositGuarantee"
-              >
-                <i v-if="savingDeposit" class="fa-solid fa-spinner fa-spin"></i>
-                <i v-else class="fa-solid fa-shield-halved"></i>
-                <span>{{ savingDeposit ? ' กำลังบันทึก...' : ' ยืนยันรับเงินประกัน' }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
 
     <!-- MODAL 8: คืนเงินประกันพนักงาน (Refund Guarantee Modal) -->
     <Teleport to="body">
@@ -1513,7 +1655,7 @@
             <button class="modal-close" @click="showRefundModal = false">✕</button>
           </div>
           <div class="modal-body">
-            <div class="form-group" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
+            <div class="form-group" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
               <div class="flex flex-between align-center mb-xs">
                 <span class="text-sm font-bold text-primary">{{ refundForm.targetStaff?.name }}</span>
                 <span class="capsule-badge badge-warning text-xs">
@@ -1526,22 +1668,76 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label font-bold">วันที่คืนเงินประกัน *</label>
-              <input type="date" class="form-input" v-model="refundForm.refund_date" />
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">วันที่คืนเงินประกัน *</label>
+              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                <div 
+                  class="picker-trigger-btn w-full" 
+                  :class="{ 'active': isRefundDateDropdownOpen }" 
+                  @click="toggleRefundDateDropdown"
+                  style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
+                >
+                  <span class="flex align-center gap-sm">
+                    <i class="fa-solid fa-calendar-day text-primary"></i>
+                    <span>{{ refundDateLabel }}</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
+                </div>
+
+                <!-- Date Picker Calendar Popover -->
+                <div v-if="isRefundDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
+                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustRefundDatePickerMonth(-1)">
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span class="font-bold" style="font-size: var(--font-sm);">{{ refundDatePickerMonthName }} {{ refundDatePickerYear + 543 }}</span>
+                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustRefundDatePickerMonth(1)">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
+                    <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                    <div v-for="empty in refundDatePickerStartOffset" :key="'empty-'+empty"></div>
+                    <button 
+                      v-for="dNum in refundDatePickerDaysCount" 
+                      :key="dNum"
+                      type="button"
+                      class="btn btn-sm calendar-day-btn"
+                      :class="isRefundDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
+                      style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                      @click="selectRefundDatePickerDay(dNum)"
+                    >
+                      {{ dNum }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label font-bold">ช่องทางการคืนเงิน *</label>
-              <select class="form-select" v-model="refundForm.refund_payment_method">
-                <option value="cash">💵 คืนเงินสด (จ่ายออกจากลิ้นชัก)</option>
-                <option value="transfer">📱 คืนด้วยการโอนเงิน</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label font-bold">บันทึกช่วยจำ</label>
-              <input type="text" class="form-input" v-model="refundForm.note" placeholder="เช่น คืนเงินประกันครบกำหนดวันที่ 10" />
+            <div class="form-group mb-sm">
+              <label class="form-label font-bold text-xs">ช่องทางการคืนเงิน *</label>
+              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isRefundPaymentMethodDropdownOpen }" 
+                  @click="isRefundPaymentMethodDropdownOpen = !isRefundPaymentMethodDropdownOpen"
+                >
+                  <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i :class="refundForm.refund_payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
+                    {{ refundForm.refund_payment_method === 'transfer' ? 'คืนด้วยการโอนเงิน' : 'คืนเงินสด (จ่ายออกจากลิ้นชัก)' }}
+                  </span>
+                </div>
+                <div v-if="isRefundPaymentMethodDropdownOpen" class="custom-select-dropdown" style="z-index: 1000;">
+                  <div class="custom-select-option" :class="{ 'selected': refundForm.refund_payment_method === 'cash' }" @click="selectRefundPaymentMethod('cash')">
+                    <i class="fa-solid fa-money-bill-wave" style="margin-right: 4px;"></i> คืนเงินสด (จ่ายออกจากลิ้นชัก)
+                  </div>
+                  <div class="custom-select-option" :class="{ 'selected': refundForm.refund_payment_method === 'transfer' }" @click="selectRefundPaymentMethod('transfer')">
+                    <i class="fa-solid fa-mobile-screen-button" style="margin-right: 4px;"></i> คืนด้วยการโอนเงิน
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="bulk-hint-box" style="padding: var(--space-xs); margin-bottom: var(--space-md);">
@@ -1728,6 +1924,19 @@ const compForm = ref({
   benefits: 'ข้าวเที่ยงฟรี'
 });
 
+const isCompWageTypeDropdownOpen = ref(false);
+const isCompSkillLevelDropdownOpen = ref(false);
+
+const selectCompWageType = (type) => {
+  compForm.value.wage_type = type;
+  isCompWageTypeDropdownOpen.value = false;
+};
+
+const selectCompSkillLevel = (skill) => {
+  compForm.value.skill_level = skill;
+  isCompSkillLevelDropdownOpen.value = false;
+};
+
 const fetchEmployees = async () => {
   loadingEmployees.value = true;
   try {
@@ -1753,6 +1962,8 @@ const openEditCompensationModal = (emp) => {
     skill_level: emp.skill_level || 'regular',
     benefits: emp.benefits || 'ข้าวเที่ยงฟรี'
   };
+  isCompWageTypeDropdownOpen.value = false;
+  isCompSkillLevelDropdownOpen.value = false;
   showCompModal.value = true;
 };
 
@@ -2117,7 +2328,7 @@ const fetchDailyAttendance = async () => {
     if (res.success) {
       attendanceRecords.value = (res.data || []).map(r => ({
         ...r,
-        daily_wage: (r.daily_wage !== undefined && r.daily_wage !== null) ? Number(r.daily_wage) : (r.wage_rate || 300),
+        daily_wage: (r.daily_wage !== undefined && r.daily_wage !== null) ? Number(r.daily_wage) : (r.wage_rate || 0),
         status: r.status || 'present',
         had_lunch_benefit: r.had_lunch_benefit !== undefined ? r.had_lunch_benefit : 1
       }));
@@ -2130,6 +2341,15 @@ const fetchDailyAttendance = async () => {
 };
 
 const handleSaveAttendance = async () => {
+  const zeroWageEmployee = attendanceRecords.value.find(r => r.status === 'present' && (!r.daily_wage || Number(r.daily_wage) <= 0));
+  if (zeroWageEmployee) {
+    const confirmed = await ui.showConfirm(
+      'แจ้งเตือนค่าแรง 0 บาท',
+      `พนักงาน "${zeroWageEmployee.name}" มีสถานะ "มาทำงาน" แต่ระบุค่าแรง 0 บาท (หรือยังไม่ได้ตั้งฐานค่าแรง)\n\nคุณต้องการยืนยันบันทึกต่อไปหรือไม่? (หรือกดยกเลิกเพื่อใส่ค่าแรงให้เรียบร้อย)`
+    );
+    if (!confirmed) return;
+  }
+
   savingAttendance.value = true;
   try {
     const res = await api.employees.saveAttendance({
@@ -2161,9 +2381,73 @@ const eventOtForm = ref({
   event_name: '',
   event_date: getTodayStr(),
   amount_per_person: 100,
-  user_ids: [],
-  note: ''
+  user_ids: []
 });
+
+const isEventOtDateDropdownOpen = ref(false);
+const eventOtDatePickerYear = ref(new Date().getFullYear());
+const eventOtDatePickerMonth = ref(new Date().getMonth() + 1);
+
+const eventOtDateLabel = computed(() => {
+  if (!eventOtForm.value.event_date) return 'เลือกวัน';
+  return formatDate(eventOtForm.value.event_date);
+});
+
+const eventOtDatePickerMonthName = computed(() => {
+  return thaiMonthsNames[eventOtDatePickerMonth.value - 1] || '';
+});
+
+const eventOtDatePickerDaysCount = computed(() => {
+  return new Date(eventOtDatePickerYear.value, eventOtDatePickerMonth.value, 0).getDate();
+});
+
+const eventOtDatePickerStartOffset = computed(() => {
+  return new Date(eventOtDatePickerYear.value, eventOtDatePickerMonth.value - 1, 1).getDay();
+});
+
+const toggleEventOtDateDropdown = () => {
+  const cur = isEventOtDateDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isEventOtDateDropdownOpen.value = !cur;
+  if (isEventOtDateDropdownOpen.value) {
+    if (eventOtForm.value.event_date) {
+      const [y, m] = eventOtForm.value.event_date.split('-');
+      eventOtDatePickerYear.value = Number(y);
+      eventOtDatePickerMonth.value = Number(m);
+    } else {
+      const today = new Date();
+      eventOtDatePickerYear.value = today.getFullYear();
+      eventOtDatePickerMonth.value = today.getMonth() + 1;
+    }
+  }
+};
+
+const isEventOtDatePickerSelected = (day) => {
+  if (!eventOtForm.value.event_date) return false;
+  const [y, m, d] = eventOtForm.value.event_date.split('-');
+  return eventOtDatePickerYear.value === Number(y) &&
+         eventOtDatePickerMonth.value === Number(m) &&
+         day === Number(d);
+};
+
+const selectEventOtDatePickerDay = (day) => {
+  eventOtForm.value.event_date = `${eventOtDatePickerYear.value}-${String(eventOtDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  isEventOtDateDropdownOpen.value = false;
+};
+
+const adjustEventOtDatePickerMonth = (amount) => {
+  let m = eventOtDatePickerMonth.value + amount;
+  let y = eventOtDatePickerYear.value;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  } else if (m > 12) {
+    m = 1;
+    y += 1;
+  }
+  eventOtDatePickerMonth.value = m;
+  eventOtDatePickerYear.value = y;
+};
 
 const getPeriodQueryParams = () => {
   const params = { branch_id: props.branchId || '' };
@@ -2239,8 +2523,7 @@ const handleSaveEventOt = async () => {
         event_name: '',
         event_date: getTodayStr(),
         amount_per_person: 100,
-        user_ids: [],
-        note: ''
+        user_ids: []
       };
       await fetchEventOts();
       await fetchMonthlyAttendance();
@@ -2288,9 +2571,90 @@ const advanceForm = ref({
   user_id: null,
   amount: 500,
   advance_date: getTodayStr(),
-  payment_method: 'cash',
-  note: ''
+  payment_method: 'cash'
 });
+
+const isAdvanceStaffDropdownOpen = ref(false);
+const selectedAdvanceStaffLabel = computed(() => {
+  if (!advanceForm.value.user_id) return '-- กรุณาเลือกพนักงาน --';
+  const emp = employees.value.find(e => e.id === advanceForm.value.user_id);
+  return emp ? `${emp.name} (${getSkillLabel(emp.skill_level)})` : '-- กรุณาเลือกพนักงาน --';
+});
+const selectAdvanceStaff = (id) => {
+  advanceForm.value.user_id = id;
+  isAdvanceStaffDropdownOpen.value = false;
+};
+
+const isAdvanceDateDropdownOpen = ref(false);
+const advanceDatePickerYear = ref(new Date().getFullYear());
+const advanceDatePickerMonth = ref(new Date().getMonth() + 1);
+
+const advanceDateLabel = computed(() => {
+  if (!advanceForm.value.advance_date) return 'เลือกวัน';
+  return formatDate(advanceForm.value.advance_date);
+});
+
+const advanceDatePickerMonthName = computed(() => {
+  return thaiMonthsNames[advanceDatePickerMonth.value - 1] || '';
+});
+
+const advanceDatePickerDaysCount = computed(() => {
+  return new Date(advanceDatePickerYear.value, advanceDatePickerMonth.value, 0).getDate();
+});
+
+const advanceDatePickerStartOffset = computed(() => {
+  return new Date(advanceDatePickerYear.value, advanceDatePickerMonth.value - 1, 1).getDay();
+});
+
+const toggleAdvanceDateDropdown = () => {
+  const cur = isAdvanceDateDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isAdvanceDateDropdownOpen.value = !cur;
+  if (isAdvanceDateDropdownOpen.value) {
+    if (advanceForm.value.advance_date) {
+      const [y, m] = advanceForm.value.advance_date.split('-');
+      advanceDatePickerYear.value = Number(y);
+      advanceDatePickerMonth.value = Number(m);
+    } else {
+      const today = new Date();
+      advanceDatePickerYear.value = today.getFullYear();
+      advanceDatePickerMonth.value = today.getMonth() + 1;
+    }
+  }
+};
+
+const isAdvanceDatePickerSelected = (day) => {
+  if (!advanceForm.value.advance_date) return false;
+  const [y, m, d] = advanceForm.value.advance_date.split('-');
+  return advanceDatePickerYear.value === Number(y) &&
+         advanceDatePickerMonth.value === Number(m) &&
+         day === Number(d);
+};
+
+const selectAdvanceDatePickerDay = (day) => {
+  advanceForm.value.advance_date = `${advanceDatePickerYear.value}-${String(advanceDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  isAdvanceDateDropdownOpen.value = false;
+};
+
+const adjustAdvanceDatePickerMonth = (amount) => {
+  let m = advanceDatePickerMonth.value + amount;
+  let y = advanceDatePickerYear.value;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  } else if (m > 12) {
+    m = 1;
+    y += 1;
+  }
+  advanceDatePickerMonth.value = m;
+  advanceDatePickerYear.value = y;
+};
+
+const isAdvancePaymentMethodDropdownOpen = ref(false);
+const selectAdvancePaymentMethod = (method) => {
+  advanceForm.value.payment_method = method;
+  isAdvancePaymentMethodDropdownOpen.value = false;
+};
 
 const selectedStaffAvailableWage = computed(() => {
   if (!advanceForm.value.user_id) return null;
@@ -2353,8 +2717,7 @@ const handleSaveAdvance = async () => {
         user_id: null,
         amount: 500,
         advance_date: getTodayStr(),
-        payment_method: 'cash',
-        note: ''
+        payment_method: 'cash'
       };
       await fetchAdvances();
       await fetchMonthlyAttendance();
@@ -2399,9 +2762,79 @@ const payingItem = ref(null);
 const processingPayout = ref(false);
 const payForm = ref({
   payment_method: 'cash',
-  payment_date: getTodayStr(),
-  note: ''
+  payment_date: getTodayStr()
 });
+
+const isPayPaymentMethodDropdownOpen = ref(false);
+const selectPayPaymentMethod = (method) => {
+  payForm.value.payment_method = method;
+  isPayPaymentMethodDropdownOpen.value = false;
+};
+
+const isPayDateDropdownOpen = ref(false);
+const payDatePickerYear = ref(new Date().getFullYear());
+const payDatePickerMonth = ref(new Date().getMonth() + 1);
+
+const payDateLabel = computed(() => {
+  if (!payForm.value.payment_date) return 'เลือกวัน';
+  return formatDate(payForm.value.payment_date);
+});
+
+const payDatePickerMonthName = computed(() => {
+  return thaiMonthsNames[payDatePickerMonth.value - 1] || '';
+});
+
+const payDatePickerDaysCount = computed(() => {
+  return new Date(payDatePickerYear.value, payDatePickerMonth.value, 0).getDate();
+});
+
+const payDatePickerStartOffset = computed(() => {
+  return new Date(payDatePickerYear.value, payDatePickerMonth.value - 1, 1).getDay();
+});
+
+const togglePayDateDropdown = () => {
+  const cur = isPayDateDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isPayDateDropdownOpen.value = !cur;
+  if (isPayDateDropdownOpen.value) {
+    if (payForm.value.payment_date) {
+      const [y, m] = payForm.value.payment_date.split('-');
+      payDatePickerYear.value = Number(y);
+      payDatePickerMonth.value = Number(m);
+    } else {
+      const today = new Date();
+      payDatePickerYear.value = today.getFullYear();
+      payDatePickerMonth.value = today.getMonth() + 1;
+    }
+  }
+};
+
+const isPayDatePickerSelected = (day) => {
+  if (!payForm.value.payment_date) return false;
+  const [y, m, d] = payForm.value.payment_date.split('-');
+  return payDatePickerYear.value === Number(y) &&
+         payDatePickerMonth.value === Number(m) &&
+         day === Number(d);
+};
+
+const selectPayDatePickerDay = (day) => {
+  payForm.value.payment_date = `${payDatePickerYear.value}-${String(payDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  isPayDateDropdownOpen.value = false;
+};
+
+const adjustPayDatePickerMonth = (amount) => {
+  let m = payDatePickerMonth.value + amount;
+  let y = payDatePickerYear.value;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  } else if (m > 12) {
+    m = 1;
+    y += 1;
+  }
+  payDatePickerMonth.value = m;
+  payDatePickerYear.value = y;
+};
 
 const isPayrollMonthDropdownOpen = ref(false);
 const payrollMonthPickerYear = ref(new Date().getFullYear());
@@ -2471,15 +2904,20 @@ const showSlipModal = ref(false);
 const selectedSlipItem = ref(null);
 
 // ─── Subtab 6: Guarantee & Multi-Payout State & Handlers ─────
-const showDepositModal = ref(false);
-const savingDeposit = ref(false);
-const depositForm = ref({
-  targetStaff: null,
-  amount: 1000,
-  deposit_date: getTodayStr(),
-  deposit_payment_method: 'cash',
-  note: ''
-});
+const formatGuaranteeMonth = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length >= 2) {
+    const mIdx = parseInt(parts[1], 10) - 1;
+    const yStr = parts[0];
+    const beYearShort = (parseInt(yStr, 10) + 543).toString().slice(-2);
+    return `${thaiMonthsShort[mIdx]} ${beYearShort}`;
+  }
+  return '';
+};
+
+const showHistoryModal = ref(false);
+const selectedHistoryStaff = ref(null);
 
 const showRefundModal = ref(false);
 const savingRefund = ref(false);
@@ -2487,73 +2925,92 @@ const refundForm = ref({
   guarantee: null,
   targetStaff: null,
   refund_date: getTodayStr(),
-  refund_payment_method: 'cash',
-  note: ''
+  refund_payment_method: 'cash'
 });
 
-const showHistoryModal = ref(false);
-const selectedHistoryStaff = ref(null);
-
-const openDepositGuaranteeModal = (item) => {
-  depositForm.value = {
-    targetStaff: item,
-    amount: item?.guarantee?.amount || 1000,
-    deposit_date: getTodayStr(),
-    deposit_payment_method: 'cash',
-    note: ''
-  };
-  showDepositModal.value = true;
+const isRefundPaymentMethodDropdownOpen = ref(false);
+const selectRefundPaymentMethod = (method) => {
+  refundForm.value.refund_payment_method = method;
+  isRefundPaymentMethodDropdownOpen.value = false;
 };
 
-const depositFormTargetAvailableWage = computed(() => {
-  if (!depositForm.value.targetStaff) return 0;
-  const staff = depositForm.value.targetStaff;
-  const gross = (staff.unpaid_base_salary || 0) + (staff.event_ot_amount || 0) - (staff.advance_deducted_amount || 0);
-  return Math.max(0, gross);
+const isRefundDateDropdownOpen = ref(false);
+const refundDatePickerYear = ref(new Date().getFullYear());
+const refundDatePickerMonth = ref(new Date().getMonth() + 1);
+
+const refundDateLabel = computed(() => {
+  if (!refundForm.value.refund_date) return 'เลือกวัน';
+  return formatDate(refundForm.value.refund_date);
 });
 
-const handleConfirmDepositGuarantee = async () => {
-  if (!depositForm.value.targetStaff) return;
-  const availWage = depositFormTargetAvailableWage.value;
-  const requiredAmount = Number(depositForm.value.amount || 1000);
+const refundDatePickerMonthName = computed(() => {
+  return thaiMonthsNames[refundDatePickerMonth.value - 1] || '';
+});
 
-  if (availWage < requiredAmount) {
-    const confirmed = await ui.showConfirm(
-      'แจ้งเตือนยอดค่าแรงสะสม',
-      `พนักงานมียอดค่าแรงสะสมในรอบนี้เพียง ${formatCurrency(availWage)} (ยังไม่ถึงเกณฑ์ ฿${formatCurrency(requiredAmount)})\n\nคุณต้องการยืนยันบันทึกรับเงินประกันใช่หรือไม่?`
-    );
-    if (!confirmed) return;
-  }
+const refundDatePickerDaysCount = computed(() => {
+  return new Date(refundDatePickerYear.value, refundDatePickerMonth.value, 0).getDate();
+});
 
-  savingDeposit.value = true;
-  try {
-    const res = await api.employees.depositGuarantee({
-      user_id: depositForm.value.targetStaff.user_id,
-      amount: depositForm.value.amount,
-      deposit_date: depositForm.value.deposit_date,
-      deposit_payment_method: depositForm.value.deposit_payment_method,
-      note: depositForm.value.note,
-      branch_id: props.branchId
-    });
-    if (res.success) {
-      ui.showToast('บันทึกรับเงินประกันเรียบร้อยแล้ว', 'success');
-      showDepositModal.value = false;
-      await fetchPayrollCalculations();
+const refundDatePickerStartOffset = computed(() => {
+  return new Date(refundDatePickerYear.value, refundDatePickerMonth.value - 1, 1).getDay();
+});
+
+const toggleRefundDateDropdown = () => {
+  const cur = isRefundDateDropdownOpen.value;
+  closeAllPickerDropdowns();
+  isRefundDateDropdownOpen.value = !cur;
+  if (isRefundDateDropdownOpen.value) {
+    if (refundForm.value.refund_date) {
+      const [y, m] = refundForm.value.refund_date.split('-');
+      refundDatePickerYear.value = Number(y);
+      refundDatePickerMonth.value = Number(m);
+    } else {
+      const today = new Date();
+      refundDatePickerYear.value = today.getFullYear();
+      refundDatePickerMonth.value = today.getMonth() + 1;
     }
-  } catch (err) {
-    ui.showToast(err.message || 'บันทึกรับเงินประกันไม่สำเร็จ', 'error');
-  } finally {
-    savingDeposit.value = false;
   }
+};
+
+const isRefundDatePickerSelected = (day) => {
+  if (!refundForm.value.refund_date) return false;
+  const [y, m, d] = refundForm.value.refund_date.split('-');
+  return refundDatePickerYear.value === Number(y) &&
+         refundDatePickerMonth.value === Number(m) &&
+         day === Number(d);
+};
+
+const selectRefundDatePickerDay = (day) => {
+  refundForm.value.refund_date = `${refundDatePickerYear.value}-${String(refundDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  isRefundDateDropdownOpen.value = false;
+};
+
+const adjustRefundDatePickerMonth = (amount) => {
+  let m = refundDatePickerMonth.value + amount;
+  let y = refundDatePickerYear.value;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  } else if (m > 12) {
+    m = 1;
+    y += 1;
+  }
+  refundDatePickerMonth.value = m;
+  refundDatePickerYear.value = y;
 };
 
 const openRefundGuaranteeModal = (guar, item) => {
+  const today = getTodayStr();
+  const [y, m] = today.split('-');
+  refundDatePickerYear.value = Number(y);
+  refundDatePickerMonth.value = Number(m);
+  isRefundDateDropdownOpen.value = false;
+  isRefundPaymentMethodDropdownOpen.value = false;
   refundForm.value = {
     guarantee: guar,
     targetStaff: item,
-    refund_date: getTodayStr(),
-    refund_payment_method: 'cash',
-    note: ''
+    refund_date: today,
+    refund_payment_method: 'cash'
   };
   showRefundModal.value = true;
 };
@@ -2566,7 +3023,6 @@ const handleConfirmRefundGuarantee = async () => {
       guarantee_id: refundForm.value.guarantee.id,
       refund_date: refundForm.value.refund_date,
       refund_payment_method: refundForm.value.refund_payment_method,
-      note: refundForm.value.note,
       branch_id: props.branchId
     });
     if (res.success) {
@@ -2616,11 +3072,12 @@ const openPayModal = (item) => {
     deduct_advance: hasAdv,
     deduct_guarantee: false,
     holdback_deducted_amount: item.guarantee?.amount || 1000,
-    custom_net_paid: item.net_payable_round || 0,
+    custom_net_paid: 0,
     payment_method: 'cash',
     payment_date: getTodayStr(),
     note: ''
   };
+  payForm.value.custom_net_paid = computedNetPayable.value;
   showPayModal.value = true;
 };
 
@@ -2639,8 +3096,17 @@ const computedBaseSalaryToPay = computed(() => {
     return payingItem.value.unpaid_base_salary || 0;
   }
   const days = payForm.value.days_to_pay !== undefined ? payForm.value.days_to_pay : (payingItem.value.unpaid_days_worked || 0);
-  const rate = payingItem.value.wage_rate || 0;
-  return days * rate;
+  const totalDays = payingItem.value.unpaid_days_worked || 0;
+  const totalUnpaidBase = payingItem.value.unpaid_base_salary || 0;
+
+  if (totalDays > 0 && days === totalDays) {
+    return totalUnpaidBase;
+  }
+  if (totalDays > 0) {
+    const avgRate = payingItem.value.wage_rate || (totalUnpaidBase / totalDays);
+    return Math.round(days * avgRate);
+  }
+  return days * (payingItem.value.wage_rate || 0);
 });
 
 const earningsBeforeGuarantee = computed(() => {
@@ -2678,6 +3144,7 @@ const handleConfirmPayout = async () => {
       ? (payForm.value.days_to_pay !== undefined ? payForm.value.days_to_pay : (payingItem.value.unpaid_days_worked || 0))
       : 0;
     const baseSalaryToPay = computedBaseSalaryToPay.value;
+    const effectiveDailyRate = payingItem.value.wage_rate || (payingItem.value.unpaid_days_worked ? Math.round(payingItem.value.unpaid_base_salary / payingItem.value.unpaid_days_worked) : 0);
 
     const isAlreadyHeldPendingSettlement = Boolean(
       payingItem.value.guarantee && 
@@ -2691,12 +3158,12 @@ const handleConfirmPayout = async () => {
       user_id: payingItem.value.user_id,
       period_month: payrollMonth.value,
       days_worked: daysToPay,
-      daily_rate: payingItem.value.wage_rate,
+      daily_rate: effectiveDailyRate,
       base_salary_amount: baseSalaryToPay,
       event_ot_amount: payingItem.value.event_ot_amount,
       advance_deducted_amount: payingItem.value.advance_deducted_amount,
       holdback_deducted_amount: holdbackAmt,
-      net_paid_amount: payForm.value.custom_net_paid !== undefined && payForm.value.custom_net_paid !== null ? payForm.value.custom_net_paid : computedNetPayable.value,
+      net_paid_amount: computedNetPayable.value,
       payment_method: payForm.value.payment_method,
       payment_date: payForm.value.payment_date,
       note: payForm.value.note,
@@ -2825,6 +3292,16 @@ const closeAllPickerDropdowns = () => {
   isCalendarMonthDropdownOpen.value = false;
   isAttendanceDateDropdownOpen.value = false;
   isPayrollMonthDropdownOpen.value = false;
+  isEventOtDateDropdownOpen.value = false;
+  isAdvanceStaffDropdownOpen.value = false;
+  isAdvanceDateDropdownOpen.value = false;
+  isAdvancePaymentMethodDropdownOpen.value = false;
+  isPayDateDropdownOpen.value = false;
+  isPayPaymentMethodDropdownOpen.value = false;
+  isRefundDateDropdownOpen.value = false;
+  isRefundPaymentMethodDropdownOpen.value = false;
+  isCompWageTypeDropdownOpen.value = false;
+  isCompSkillLevelDropdownOpen.value = false;
 };
 
 onMounted(() => {
@@ -3143,29 +3620,30 @@ onUnmounted(() => {
 
 .guarantee-capsule-badge,
 .guarantee-capsule-btn {
-  width: 140px !important;
+  width: 175px !important;
+  min-width: 175px !important;
   height: 32px !important;
   min-height: 32px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 9999px !important;
-  font-size: 11.5px !important;
-  padding: 0 10px !important;
+  font-size: 12px !important;
+  padding: 0 12px !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
   text-align: center !important;
 }
 
 .history-capsule-badge {
-  min-width: 160px !important;
+  min-width: 175px !important;
   height: 32px !important;
   min-height: 32px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 9999px !important;
-  font-size: 11.5px !important;
+  font-size: 12px !important;
   padding: 0 12px !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
