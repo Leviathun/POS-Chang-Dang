@@ -1660,8 +1660,8 @@
     <!-- Cash Drawer Audit Tab -->
     <div v-if="activeTab === 'cash_audit' && isManagerOrAdminUser" class="card p-md" style="position:relative; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); box-shadow: var(--shadow-md);">
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
-        <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 600; color: var(--text-primary);">
-          <i class="fa-solid fa-cash-register" style="margin-right: 8px; color: var(--primary);"></i>
+        <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-cash-register" style="color: var(--text-primary);"></i>
           ตรวจสอบเงินสดในลิ้นชักประจำวัน
         </h3>
       </div>
