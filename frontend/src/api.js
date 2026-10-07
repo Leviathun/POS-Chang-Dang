@@ -100,8 +100,9 @@ const auth = {
 };
 
 const menu = {
-  async getAll() {
-    return request('GET', '/api/menu');
+  async getAll(params = {}) {
+    const query = typeof params === 'object' && params !== null ? new URLSearchParams(params).toString() : '';
+    return request('GET', `/api/menu${query ? `?${query}` : ''}`);
   },
   async getCategories() {
     return request('GET', '/api/menu/categories');

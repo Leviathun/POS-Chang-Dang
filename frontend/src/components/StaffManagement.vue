@@ -258,7 +258,11 @@
       </div>
 
       <!-- Calendar Month Grid Card -->
-      <div class="card p-md overflow-hidden" style="border: 1px solid var(--border-color);">
+      <div v-if="loadingMonthlyAttendance" class="card text-center p-3xl" style="border: 1px solid var(--border-color);">
+        <div class="spinner mx-auto mb-sm"></div>
+        <div class="text-sm font-bold text-primary">กำลังโหลดข้อมูลปฏิทิน...</div>
+      </div>
+      <div v-else class="card p-md overflow-hidden" style="border: 1px solid var(--border-color);">
         <!-- Day of Week Headers -->
         <div class="calendar-grid-header">
           <div v-for="wd in ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']" :key="wd" class="calendar-weekday-cell">

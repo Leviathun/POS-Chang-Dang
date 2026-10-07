@@ -20,14 +20,6 @@
       <button 
         v-if="isAdminUser"
         class="btn btn-secondary" 
-        :class="{ 'active': activeTab === 'expenses' }"
-        @click="activeTab = 'expenses'"
-      >
-        <i class="fa-solid fa-wallet"></i> บันทึกค่าใช้จ่ายประจำวัน
-      </button>
-      <button 
-        v-if="isAdminUser"
-        class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'top_menus' }"
         @click="activeTab = 'top_menus'"
       >
@@ -48,14 +40,6 @@
         @click="activeTab = 'stock_history'"
       >
         <i class="fa-solid fa-boxes-stacked"></i> ประวัติสต็อก
-      </button>
-      <button 
-        v-if="isManagerOrAdminUser"
-        class="btn btn-secondary" 
-        :class="{ 'active': activeTab === 'cash_audit' }"
-        @click="activeTab = 'cash_audit'"
-      >
-        <i class="fa-solid fa-cash-register"></i> ตรวจสอบยอดลิ้นชัก
       </button>
     </div>
 
@@ -230,7 +214,7 @@
           </div>
 
           <!-- Time Filter (ช่วงเวลา) - Active only on daily mode for specific tabs -->
-          <div v-if="periodMode === 'daily' && ['order_history', 'expenses', 'activity_logs', 'stock_history'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
+          <div v-if="periodMode === 'daily' && ['order_history', 'activity_logs', 'stock_history'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
             <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">ช่วงเวลา:</div>
             <div class="flex align-center gap-xs">
               <input 

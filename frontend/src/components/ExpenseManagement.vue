@@ -29,6 +29,14 @@
       </button>
     </div>
 
+    <!-- Loading Overlay when fetching new data across period/branch changes -->
+    <div v-if="ledgerLoading" class="content-loading-overlay">
+      <div class="loading-box flex flex-col align-center justify-center">
+        <div class="spinner mb-sm"></div>
+        <span class="text-sm font-bold text-primary">กำลังโหลดข้อมูล...</span>
+      </div>
+    </div>
+
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- SUBTAB 1: หน้าบันทึกรายจ่าย (FULL WIDTH VERTICAL FLOW)     -->
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -563,6 +571,48 @@
               </span>
             </div>
 
+            <!-- Profit Sharing Split Card (60% / 40%) -->
+            <div class="profit-sharing-section card p-md" style="background: rgba(139, 3, 19, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+              <div class="flex flex-between align-center mb-sm">
+                <span class="font-bold text-xs flex align-center" style="color: var(--text-primary); gap: 8px;">
+                  <i class="fa-solid fa-handshake-angle" style="color: var(--text-primary); font-size: 14px;"></i>
+                  <span>การจัดสรรส่วนแบ่งกำไร (60% / 40%)</span>
+                </span>
+                <span class="text-xxs text-tertiary">คำนวณจากกำไรจริง</span>
+              </div>
+              <div class="grid grid-2 gap-sm">
+                <!-- 60% Share (ร้าน / ฝ่ายบริหาร) -->
+                <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
+                  <div class="flex flex-between align-center text-xs text-secondary mb-xs">
+                    <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
+                      <i class="fa-solid fa-store text-primary" style="font-size: 14px;"></i> 
+                      <span>ร้าน / บริหาร</span>
+                    </span>
+                    <span class="badge font-bold" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: 11px;">60%</span>
+                  </div>
+                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2;" :class="profitShare60 >= 0 ? 'text-primary' : 'text-danger'">
+                    {{ formatCurrency(profitShare60) }}
+                  </div>
+                  <div class="text-xs text-tertiary mt-2xs font-medium">60% ของกำไรจริง</div>
+                </div>
+
+                <!-- 40% Share (ผู้ร่วมทุน / หุ้นส่วน) -->
+                <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
+                  <div class="flex flex-between align-center text-xs text-secondary mb-xs">
+                    <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
+                      <i class="fa-solid fa-user-tie" style="color: #cc8000; font-size: 14px;"></i> 
+                      <span>ผู้ร่วมทุน / หุ้นส่วน</span>
+                    </span>
+                    <span class="badge font-bold" style="background: rgba(255, 171, 43, 0.18); color: #b26a00; padding: 2px 8px; border-radius: 6px; font-size: 11px;">40%</span>
+                  </div>
+                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2; color: #cc8000;" :class="profitShare40 < 0 ? 'text-danger' : ''">
+                    {{ formatCurrency(profitShare40) }}
+                  </div>
+                  <div class="text-xs text-tertiary mt-2xs font-medium">ยอดจ่ายให้ผู้ร่วมทุน (40%)</div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -750,7 +800,16 @@ const ledgerPerPage = 15;
 const allLedgerEntries = computed(() => {
   const list = [];
   const menuMap = new Map();
-  menuItems.value.forEach(m => menuMap.set(m.id, m));
+  const menuByNameMap = new Map();
+  menuItems.value.forEach(m => {
+    if (m && m.id !== undefined && m.id !== null) {
+      menuMap.set(Number(m.id), m);
+      menuMap.set(String(m.id), m);
+    }
+    if (m && m.name) {
+      menuByNameMap.set(m.name.trim().toLowerCase(), m);
+    }
+  });
 
   // 1. Regular Expenses
   expenses.value.forEach(e => {
@@ -776,9 +835,13 @@ const allLedgerEntries = computed(() => {
   // 2. Waste & Staff Credit from Stock Logs
   rawStockLogs.value.forEach(log => {
     if (!['waste', 'staff_benefit'].includes(log.reason)) return;
-    const item = menuMap.get(log.menu_item_id);
-    const unitPrice = item ? Number(item.price) || 0 : 0;
-    const uom = item ? item.uom : 'ชิ้น';
+    const item = (log.menu_item_id ? (menuMap.get(Number(log.menu_item_id)) || menuMap.get(String(log.menu_item_id))) : null) ||
+                 (log.item_name ? menuByNameMap.get(String(log.item_name).trim().toLowerCase()) : null);
+    const unitPrice = (item && Number(item.price) > 0)
+      ? Number(item.price)
+      : (Number(log.item_price) > 0 ? Number(log.item_price) : 0);
+    const uom = (item && item.uom) ? item.uom : (log.item_uom || 'ชิ้น');
+    const name = log.item_name || (item ? item.name : 'สินค้า');
     const qty = Math.abs(Number(log.change_qty) || 0);
     const lossCost = qty * unitPrice;
     const isWaste = log.reason === 'waste';
@@ -791,14 +854,14 @@ const allLedgerEntries = computed(() => {
       categoryLabel: isWaste ? 'ของเสีย/ทิ้ง' : 'เครดิตพนักงาน',
       icon: isWaste ? 'fa-solid fa-trash-can' : 'fa-solid fa-user-check',
       badgeClass: isWaste ? 'badge-cat-waste' : 'badge-cat-credit',
-      name: `${log.item_name || (item ? item.name : 'สินค้า')} (${qty} ${uom}${log.note ? ' - ' + log.note : ''})`,
+      name: `${name} (${qty} ${uom}${log.note ? ' - ' + log.note : ''})`,
       amount: lossCost,
       paymentLabel: 'ตัดสต็อก',
       paymentClass: 'badge-stock',
       date: log.created_at ? log.created_at.substring(0, 10) : '',
       created_at: log.created_at,
       timestamp: new Date((log.created_at || '').replace(' ', 'T')).getTime(),
-      staffName: log.staff_name
+      staffName: log.staff_name || log.note || '-'
     });
   });
 
@@ -888,24 +951,48 @@ const expenseBreakdown = computed(() => {
 
 const wasteCost = computed(() => {
   const menuMap = new Map();
-  menuItems.value.forEach(m => menuMap.set(m.id, m));
+  const menuByNameMap = new Map();
+  menuItems.value.forEach(m => {
+    if (m && m.id !== undefined && m.id !== null) {
+      menuMap.set(Number(m.id), m);
+      menuMap.set(String(m.id), m);
+    }
+    if (m && m.name) {
+      menuByNameMap.set(m.name.trim().toLowerCase(), m);
+    }
+  });
   return rawStockLogs.value
     .filter(l => l.reason === 'waste')
     .reduce((sum, l) => {
-      const item = menuMap.get(l.menu_item_id);
-      const price = item ? Number(item.price) || 0 : 0;
+      const item = (l.menu_item_id ? (menuMap.get(Number(l.menu_item_id)) || menuMap.get(String(l.menu_item_id))) : null) ||
+                   (l.item_name ? menuByNameMap.get(String(l.item_name).trim().toLowerCase()) : null);
+      const price = (item && Number(item.price) > 0)
+        ? Number(item.price)
+        : (Number(l.item_price) > 0 ? Number(l.item_price) : 0);
       return sum + (Math.abs(Number(l.change_qty) || 0) * price);
     }, 0);
 });
 
 const staffCreditCost = computed(() => {
   const menuMap = new Map();
-  menuItems.value.forEach(m => menuMap.set(m.id, m));
+  const menuByNameMap = new Map();
+  menuItems.value.forEach(m => {
+    if (m && m.id !== undefined && m.id !== null) {
+      menuMap.set(Number(m.id), m);
+      menuMap.set(String(m.id), m);
+    }
+    if (m && m.name) {
+      menuByNameMap.set(m.name.trim().toLowerCase(), m);
+    }
+  });
   return rawStockLogs.value
     .filter(l => l.reason === 'staff_benefit')
     .reduce((sum, l) => {
-      const item = menuMap.get(l.menu_item_id);
-      const price = item ? Number(item.price) || 0 : 0;
+      const item = (l.menu_item_id ? (menuMap.get(Number(l.menu_item_id)) || menuMap.get(String(l.menu_item_id))) : null) ||
+                   (l.item_name ? menuByNameMap.get(String(l.item_name).trim().toLowerCase()) : null);
+      const price = (item && Number(item.price) > 0)
+        ? Number(item.price)
+        : (Number(l.item_price) > 0 ? Number(l.item_price) : 0);
       return sum + (Math.abs(Number(l.change_qty) || 0) * price);
     }, 0);
 });
@@ -917,6 +1004,15 @@ const totalWasteAndCreditCost = computed(() => {
 // คงเหลือสุทธิ = รายรับรวม - รายจ่ายรวม - ของเสีย/เครดิต
 const netProfit = computed(() => {
   return totalRevenue.value - totalExpenses.value - totalWasteAndCreditCost.value;
+});
+
+// การจัดสรรส่วนแบ่งกำไร (60% ร้าน/บริหาร, 40% ผู้ร่วมทุน)
+const profitShare60 = computed(() => {
+  return (netProfit.value || 0) * 0.6;
+});
+
+const profitShare40 = computed(() => {
+  return (netProfit.value || 0) * 0.4;
 });
 
 // Analytics Breakdown Stats (Expenses + Waste + Credit)
@@ -982,7 +1078,7 @@ const loadData = async () => {
       api.orders.getAll(params),
       api.expenses.get(expenseParams),
       api.employees.getGuarantees(guaranteeParams),
-      api.menu.getAll(),
+      api.menu.getAll({ all_branches: 'true', branch_id: props.branchId || '' }),
       api.stock.getAllLogs(stockLogParams)
     ]);
 
@@ -1762,5 +1858,30 @@ onMounted(() => {
   .quick-amount-buttons-full {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+/* 13. Loading Overlay */
+.content-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  border-radius: var(--radius-md);
+  min-height: 250px;
+}
+
+.loading-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(61, 27, 17, 0.12);
+  padding: 24px 36px;
 }
 </style>
