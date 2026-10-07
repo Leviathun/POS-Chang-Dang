@@ -12,8 +12,8 @@ function getThailandDate() {
   return d.toISOString().split('T')[0];
 }
 
-// ─── 1. GET /api/employees — รายชื่อพนักงานและค่าแรง (Admin/Manager) ───
-router.get('/', requireManagerOrAdmin, async (req, res) => {
+// ─── 1. GET /api/employees — รายชื่อพนักงานและค่าแรง (Admin Only) ───
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const db = getDb();
     let branchId = req.user.branch_id;
@@ -51,8 +51,8 @@ router.get('/', requireManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ─── 2. PUT /api/employees/:id/compensation — แก้ไขค่าจ้าง (Admin/Manager) ───
-router.put('/:id/compensation', requireManagerOrAdmin, async (req, res) => {
+// ─── 2. PUT /api/employees/:id/compensation — แก้ไขค่าจ้าง (Admin Only) ───
+router.put('/:id/compensation', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { wage_type, wage_rate, skill_level, benefits } = req.body;
@@ -101,8 +101,8 @@ router.put('/:id/compensation', requireManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ─── 3. GET /api/employees/attendance — ดึงข้อมูลการลงเวลา & การลา (Admin/Manager) ───
-router.get('/attendance', requireManagerOrAdmin, async (req, res) => {
+// ─── 3. GET /api/employees/attendance — ดึงข้อมูลการลงเวลา & การลา (Admin Only) ───
+router.get('/attendance', requireAdmin, async (req, res) => {
   try {
     const { date, month, branch_id } = req.query;
     const db = getDb();
@@ -170,8 +170,8 @@ router.get('/attendance', requireManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ─── 4. POST /api/employees/attendance — บันทึกการลงเวลา/การลาประจำวัน (Admin/Manager) ───
-router.post('/attendance', requireManagerOrAdmin, async (req, res) => {
+// ─── 4. POST /api/employees/attendance — บันทึกการลงเวลา/การลาประจำวัน (Admin Only) ───
+router.post('/attendance', requireAdmin, async (req, res) => {
   try {
     const { work_date, records, branch_id } = req.body;
     const db = getDb();
@@ -239,8 +239,8 @@ router.post('/attendance', requireManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ─── 5. GET /api/employees/event-ots — ดึงรายการ OT อีเวนต์ (Admin/Manager) ───
-router.get('/event-ots', requireManagerOrAdmin, async (req, res) => {
+// ─── 5. GET /api/employees/event-ots — ดึงรายการ OT อีเวนต์ (Admin Only) ───
+router.get('/event-ots', requireAdmin, async (req, res) => {
   try {
     const { date, month, year, branch_id } = req.query;
     const db = getDb();
@@ -291,8 +291,8 @@ router.get('/event-ots', requireManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ─── 6. POST /api/employees/event-ots — สร้าง OT อีเวนต์ใหม่ (Admin/Manager) ───
-router.post('/event-ots', requireManagerOrAdmin, async (req, res) => {
+// ─── 6. POST /api/employees/event-ots — สร้าง OT อีเวนต์ใหม่ (Admin Only) ───
+router.post('/event-ots', requireAdmin, async (req, res) => {
   try {
     const { event_name, event_date, amount_per_person, user_ids, note, branch_id } = req.body;
     const db = getDb();
@@ -357,8 +357,8 @@ router.delete('/event-ots/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── 8. GET /api/employees/advances — ดึงรายการเบิกเงินล่วงหน้า (Admin/Manager) ───
-router.get('/advances', requireManagerOrAdmin, async (req, res) => {
+// ─── 8. GET /api/employees/advances — ดึงรายการเบิกเงินล่วงหน้า (Admin Only) ───
+router.get('/advances', requireAdmin, async (req, res) => {
   try {
     const { date, month, year, branch_id } = req.query;
     const db = getDb();
@@ -399,8 +399,8 @@ router.get('/advances', requireManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ─── 9. POST /api/employees/advances — บันทึกการเบิกเงินล่วงหน้า & ตัดเข้ารายจ่ายสาขาทันที (Admin/Manager) ───
-router.post('/advances', requireManagerOrAdmin, async (req, res) => {
+// ─── 9. POST /api/employees/advances — บันทึกการเบิกเงินล่วงหน้า & ตัดเข้ารายจ่ายสาขาทันที (Admin Only) ───
+router.post('/advances', requireAdmin, async (req, res) => {
   try {
     const { user_id, amount, advance_date, payment_method, note, branch_id } = req.body;
     const db = getDb();
