@@ -44,7 +44,7 @@
     </div>
 
     <!-- Date selector card (hidden on 'top_menus' tab only) -->
-    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md" style="position: relative; z-index: 100;">
+    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
         <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
@@ -91,7 +91,7 @@
               >
                 <span class="custom-select-text">{{ selectedDateLabel }}</span>
               </div>
-              <div v-if="isDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 280px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+              <div v-if="isDateDropdownOpen" class="custom-select-dropdown datepicker-popover" style="top: calc(100% + 2px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
                 <!-- Header: Month & Year Selector -->
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
                   <button class="btn btn-secondary" @click.stop="adjustDatePickerMonth(-1)">
@@ -107,14 +107,14 @@
                   <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                 </div>
                 <!-- Days Grid -->
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                <div class="calendar-days-grid">
                   <div v-for="empty in datePickerStartOffset" :key="'empty-'+empty"></div>
                   <button 
                     v-for="dNum in datePickerDaysCount" 
                     :key="dNum"
-                    class="btn btn-sm calendar-day-btn"
-                    :class="isDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                    style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                    type="button"
+                    class="calendar-day-btn"
+                    :class="{ 'btn-primary selected': isDatePickerSelected(dNum) }"
                     @click="selectDatePickerDay(dNum)"
                   >
                     {{ dNum }}
@@ -132,7 +132,7 @@
               >
                 <span class="custom-select-text">{{ selectedMonthLabel }}</span>
               </div>
-              <div v-if="isMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
+              <div v-if="isMonthDropdownOpen" class="custom-select-dropdown monthpicker-popover" style="top: calc(100% + 2px); width: 300px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
                   <button class="btn btn-secondary" @click.stop="adjustMonthPickerYear(-1)">
                     <i class="fa-solid fa-chevron-left"></i>
@@ -396,21 +396,19 @@
             </div>
 
             <!-- Pagination UI for Daily Orders -->
-            <div v-if="totalDailyOrdersPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+            <div v-if="totalDailyOrdersPages > 1" class="pagination-bar flex flex-center align-center gap-md">
               <button 
-                class="btn btn-secondary" 
-                style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+                class="pagination-btn" 
                 :disabled="dailyOrdersCurrentPage === 1" 
                 @click="dailyOrdersCurrentPage--"
               >
                 <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
               </button>
-              <span style="font-size: var(--font-sm); font-weight: bold;">
+              <span class="pagination-info">
                 หน้า {{ dailyOrdersCurrentPage }} / {{ totalDailyOrdersPages }}
               </span>
               <button 
-                class="btn btn-secondary" 
-                style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+                class="pagination-btn" 
                 :disabled="dailyOrdersCurrentPage === totalDailyOrdersPages" 
                 @click="dailyOrdersCurrentPage++"
               >
@@ -698,21 +696,19 @@
           </div>
 
           <!-- Pagination UI -->
-          <div v-if="totalPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+          <div v-if="totalPages > 1" class="pagination-bar flex flex-center align-center gap-md">
             <button 
-              class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+              class="pagination-btn" 
               :disabled="historyCurrentPage === 1" 
               @click="historyCurrentPage--"
             >
               <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
             </button>
-            <span style="font-size: var(--font-sm); font-weight: bold;">
+            <span class="pagination-info">
               หน้า {{ historyCurrentPage }} / {{ totalPages }}
             </span>
             <button 
-              class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+              class="pagination-btn" 
               :disabled="historyCurrentPage === totalPages" 
               @click="historyCurrentPage++"
             >
@@ -954,21 +950,19 @@
         </div>
 
         <!-- Pagination UI for Ledger -->
-        <div v-if="totalLedgerPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+        <div v-if="totalLedgerPages > 1" class="pagination-bar flex flex-center align-center gap-md">
           <button 
-            class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+            class="pagination-btn" 
             :disabled="ledgerCurrentPage === 1" 
             @click="ledgerCurrentPage--"
           >
             <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
           </button>
-          <span style="font-size: var(--font-sm); font-weight: bold;">
+          <span class="pagination-info">
             หน้า {{ ledgerCurrentPage }} / {{ totalLedgerPages }}
           </span>
           <button 
-            class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+            class="pagination-btn" 
             :disabled="ledgerCurrentPage === totalLedgerPages" 
             @click="ledgerCurrentPage++"
           >
@@ -1254,21 +1248,19 @@
         </div>
 
         <!-- Pagination UI for Activity Logs -->
-        <div v-if="totalActivityPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+        <div v-if="totalActivityPages > 1" class="pagination-bar flex flex-center align-center gap-md">
           <button 
-            class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+            class="pagination-btn" 
             :disabled="activityCurrentPage === 1" 
             @click="activityCurrentPage--"
           >
             <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
           </button>
-          <span style="font-size: var(--font-sm); font-weight: bold;">
+          <span class="pagination-info">
             หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
           </span>
           <button 
-            class="btn btn-secondary" 
-            style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+            class="pagination-btn" 
             :disabled="activityCurrentPage === totalActivityPages" 
             @click="activityCurrentPage++"
           >
@@ -1331,7 +1323,7 @@
     <div v-if="activeTab === 'stock_history' && isManagerOrAdminUser" class="flex flex-col gap-md">
       
       <!-- Summary Stat Cards for Stock History (Waste, Credit, Restock) -->
-      <div class="grid grid-3 gap-md">
+      <div class="stock-summary-cards-grid gap-md">
         <!-- Waste Summary Card -->
         <div class="card p-md" style="position:relative; overflow:hidden; border-left: 4px solid #dc3545; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">
           <div class="flex flex-between align-center mb-xs">
@@ -1464,23 +1456,24 @@
         <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md mb-md" style="background: rgba(253, 126, 20, 0.03); border: 1px solid rgba(253, 126, 20, 0.25); border-radius: var(--radius-md);">
           <div class="flex flex-between align-center mb-sm flex-wrap gap-xs">
             <div class="font-bold text-sm flex align-center gap-xs" style="color: #fd7e14;">
-              <i class="fa-solid fa-users-viewfinder"></i> สรุปการทาน/เบิกเครดิตจำแนกรายพนักงาน
+              <i class="fa-solid fa-users-viewfinder"></i> สรุปเครดิตพนักงานรายคน
             </div>
             <div class="text-xs font-bold" style="color: var(--text-secondary);">
-              รวมทั้งสิ้น: <span class="font-bold mr-xs" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} ชิ้น</span>
-              <span v-if="totalStaffCreditValue > 0">| มูลค่ารวม: <span class="text-danger font-bold">{{ formatMoney(totalStaffCreditValue) }} ฿</span></span>
+              รวม: <span class="font-bold mr-xs" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} ชิ้น</span>
+              <span v-if="totalStaffCreditValue > 0">| <span class="text-danger font-bold">{{ formatMoney(totalStaffCreditValue) }} ฿</span></span>
             </div>
           </div>
 
-          <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-primary);">
+          <!-- Desktop Table (Desktop Only) -->
+          <div class="hide-mobile" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-primary);">
             <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-xs);">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(253, 126, 20, 0.08);">
-                  <th style="padding: 8px 12px; text-align: left;">ชื่อพนักงานที่เบิก</th>
+                  <th style="padding: 8px 12px; text-align: left;">พนักงาน</th>
                   <th style="padding: 8px 12px; text-align: center;">จำนวนครั้ง</th>
-                  <th style="padding: 8px 12px; text-align: center;">จำนวนชิ้นรวม</th>
-                  <th style="padding: 8px 12px; text-align: right;">มูลค่ารวม (บาท)</th>
-                  <th style="padding: 8px 12px; text-align: left;">รายการเมนูที่ทาน/เบิก</th>
+                  <th style="padding: 8px 12px; text-align: center;">จำนวนชิ้น</th>
+                  <th style="padding: 8px 12px; text-align: right;">มูลค่า (บาท)</th>
+                  <th style="padding: 8px 12px; text-align: left;">เมนูที่เบิก/ทาน</th>
                 </tr>
               </thead>
               <tbody>
@@ -1499,6 +1492,36 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Mobile Cards List (Mobile Only) -->
+          <div class="show-mobile-flex flex-col gap-xs">
+            <div 
+              v-for="staff in staffCreditBreakdown" 
+              :key="staff.name" 
+              class="card p-sm"
+              style="background: #ffffff; border: 1px solid var(--border-color); border-left: 3.5px solid #fd7e14; border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,0.03);"
+            >
+              <!-- Row 1: Staff Name & Badges -->
+              <div class="flex flex-between align-center mb-xs">
+                <div class="font-bold text-sm text-primary flex align-center gap-xs">
+                  <i class="fa-solid fa-user-circle text-warning"></i>
+                  <span>{{ staff.name }}</span>
+                </div>
+                <div class="flex align-center gap-xs">
+                  <span class="capsule-badge badge-warning text-xs font-bold">{{ staff.total_qty }} ชิ้น</span>
+                  <span v-if="staff.total_value > 0" class="capsule-badge badge-danger text-xs font-bold">{{ formatMoney(staff.total_value) }} ฿</span>
+                </div>
+              </div>
+
+              <!-- Row 2: Frequency & Menu list -->
+              <div class="flex flex-between align-center text-xs text-secondary mt-xs" style="background: rgba(253, 126, 20, 0.05); border-radius: 6px; padding: 6px 10px;">
+                <span class="text-tertiary font-medium">{{ staff.log_count }} ครั้ง</span>
+                <span class="font-medium text-primary text-right truncate ml-sm" style="max-width: 70%;" :title="staff.items_summary">
+                  {{ staff.items_summary }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1616,21 +1639,19 @@
           </div>
 
           <!-- Pagination UI -->
-          <div v-if="totalStockLogsPages > 1" class="flex flex-center align-center gap-md" style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+          <div v-if="totalStockLogsPages > 1" class="pagination-bar flex flex-center align-center gap-md">
             <button 
-              class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+              class="pagination-btn" 
               :disabled="stockLogsCurrentPage === 1" 
               @click="stockLogsCurrentPage--"
             >
               <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
             </button>
-            <span style="font-size: var(--font-sm); font-weight: bold;">
+            <span class="pagination-info">
               หน้า {{ stockLogsCurrentPage }} / {{ totalStockLogsPages }}
             </span>
             <button 
-              class="btn btn-secondary" 
-              style="min-height:36px; padding: 4px 12px; font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 4px;"
+              class="pagination-btn" 
               :disabled="stockLogsCurrentPage === totalStockLogsPages" 
               @click="stockLogsCurrentPage++"
             >
@@ -1646,19 +1667,19 @@
       <div class="flex align-center mb-md" style="margin-bottom:var(--space-md);">
         <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-cash-register" style="color: var(--text-primary);"></i>
-          ตรวจสอบเงินสดในลิ้นชักประจำวัน
+          ตรวจสอบลิ้นชัก
         </h3>
       </div>
 
       <!-- Hint Explanation Box -->
       <div class="bulk-hint-box mb-lg">
         <span class="hint-icon"><i class="fa-solid fa-lightbulb" style="color: var(--accent);"></i></span>
-        <div class="hint-text" style="font-size: var(--font-sm); line-height: 1.6;">
-          <strong>วิธีใช้งานและระบบเวลาทำงาน:</strong>
-          <ul style="list-style-type: disc; padding-left: 20px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
-            <li>กรอกยอดเงินทอนตั้งต้นก่อนเปิดร้าน (หรือปล่อยเป็น ฿0 หากไม่ต้องการใช้เงินทอน)</li>
-            <li>ตรวจนับเงินสดในลิ้นชักหลังปิดร้าน แล้วกด "ปิดยอดประจำวัน" เพื่อตรวจสอบผลต่าง ยอดเงินที่ระบบคำนวณจะอิงตามบิลเงินสดและบันทึกรายจ่ายที่เกิดขึ้น</li>
-            <li><strong>การเปลี่ยนรอบวันทำงาน (Rollover ตี 4):</strong> เพื่อให้สอดคล้องกับพฤติกรรมการจ่ายตลาดและการปิดร้านหลังเที่ยงคืน ระบบจะตัดยอดและเริ่มรอบวันใหม่ที่เวลา <strong>04:00 น. (ตี 4)</strong> ของทุกวัน บิลและค่าใช้จ่ายช่วงหลังเที่ยงคืนถึงตี 4 จะนำมารวมในรอบวันเดียวกันโดยอัตโนมัติ</li>
+        <div class="hint-text text-xs" style="line-height: 1.5;">
+          <strong>วิธีใช้งาน:</strong>
+          <ul style="list-style-type: disc; padding-left: 18px; margin-top: 3px; display: flex; flex-direction: column; gap: 2px;">
+            <li><strong>เปิดร้าน:</strong> กรอกเงินทอนตั้งต้น (หรือ ฿0 หากไม่มี)</li>
+            <li><strong>ปิดร้าน:</strong> นับเงินสดแล้วกด "ปิดยอดประจำวัน" เพื่อตรวจผลต่างเงินขาด/เกิน</li>
+            <li><strong>ตัดรอบวัน:</strong> ตัดรอบอัตโนมัติเวลา <strong>04:00 น. (ตี 4)</strong> (ยอดหลังเที่ยงคืนถึงตี 4 รวมในวันเดียวกัน)</li>
           </ul>
         </div>
       </div>
@@ -1754,7 +1775,7 @@
       </div>
 
       <!-- Mobile Cards View (Mobile Only) -->
-      <div class="show-mobile-only cash-audit-mobile-list" style="margin-bottom: var(--space-md);">
+      <div class="show-mobile-flex cash-audit-mobile-list" style="flex-direction: column; gap: 12px; margin-bottom: var(--space-md);">
         <div 
           v-for="session in cashDrawerSessions" 
           :key="(session.id || 'virtual') + '-' + session.branch_id + '-' + session.session_date" 
@@ -1784,23 +1805,23 @@
             </div>
             <div class="grid-item">
               <span class="grid-label">ยอดขายเงินสด</span>
-              <span class="grid-value text-success">+{{ formatCurrency(session.cash_sales) }}</span>
+              <span class="grid-value text-success font-bold">+{{ formatCurrency(session.cash_sales) }}</span>
             </div>
             <div class="grid-item">
               <span class="grid-label">ยอดจ่ายเงินสด</span>
-              <span class="grid-value text-danger">-{{ formatCurrency(session.cash_expenses) }}</span>
+              <span class="grid-value text-danger font-bold">-{{ formatCurrency(session.cash_expenses) }}</span>
             </div>
             <div class="grid-item">
-              <span class="grid-label">เงินสดที่ระบบคำนวณ</span>
-              <span class="grid-value font-bold text-primary">{{ formatCurrency(session.calculated_expected_cash) }}</span>
+              <span class="grid-label">เงินสดที่ควรมี</span>
+              <span class="grid-value font-bold text-primary" style="font-size: 1.05rem;">{{ formatCurrency(session.calculated_expected_cash) }}</span>
             </div>
             <div class="grid-item full-width">
               <span class="grid-label">เงินสดนับจริง</span>
               <span class="grid-value">
-                <span v-if="session.status === 'closed'" class="font-bold">
+                <span v-if="session.status === 'closed'" class="font-bold text-base">
                   {{ formatCurrency(session.actual_cash) }}
                 </span>
-                <span v-else class="text-light-italic">ยังไม่ได้ตรวจนับ</span>
+                <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">ยังไม่ได้ตรวจนับ</span>
               </span>
             </div>
             <div class="grid-item full-width">
@@ -1811,24 +1832,24 @@
                     ครบถ้วน (ยอดเท่ากัน)
                   </span>
                   <span v-else-if="session.difference > 0" class="diff-badge surplus">
-                    เกิน {{ formatCurrency(session.difference) }}
+                    เกิน +{{ formatCurrency(session.difference) }}
                   </span>
                   <span v-else class="diff-badge deficit">
-                    ขาด {{ formatCurrency(Math.abs(session.difference)) }}
+                    ขาด -{{ formatCurrency(Math.abs(session.difference)) }}
                   </span>
                 </span>
-                <span v-else class="text-light-italic">รอปิดยอดประจำวัน</span>
+                <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">รอปิดยอดประจำวัน</span>
               </span>
             </div>
           </div>
 
-          <!-- Card Actions: Buttons -->
+          <!-- Card Actions: Buttons (Equal Width and Height) -->
           <div class="cash-card-actions">
-            <button class="btn-action flex-1" @click="openOpeningCashModal(session)">
-              <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
+            <button class="btn btn-secondary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" @click="openOpeningCashModal(session)">
+              <i class="fa-solid fa-coins text-warning" style="font-size: 14px;"></i> กรอกยอดเงินทอน
             </button>
-            <button class="btn-action btn-action-primary flex-1" @click="openAuditModal(session)">
-              <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
+            <button class="btn btn-primary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(139,3,19,0.2);" @click="openAuditModal(session)">
+              <i class="fa-solid fa-circle-check" style="font-size: 14px;"></i> ปิดยอดประจำวัน
             </button>
           </div>
         </div>
@@ -4460,33 +4481,36 @@ select.reports-filter-control,
 
 .cash-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-md);
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  font-size: var(--font-xs);
+  margin-bottom: 4px;
 }
 
 .cash-card-grid .grid-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  align-items: center;
-  text-align: center;
 }
 
 .cash-card-grid .grid-item.full-width {
-  grid-column: span 2;
-  border-top: 1px solid var(--border-color);
-  padding-top: var(--space-sm);
-  margin-top: 2px;
+  grid-column: 1 / -1;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed rgba(139, 3, 19, 0.16);
+  padding-top: 10px;
+  padding-bottom: 8px;
+  margin-top: 4px;
 }
 
 .cash-card-grid .grid-label {
-  font-size: var(--font-xs);
+  font-size: 12px;
   color: var(--text-secondary);
-  font-weight: 600;
 }
 
 .cash-card-grid .grid-value {
-  font-size: var(--font-base);
+  font-size: 14px;
   color: var(--text-primary);
   font-weight: 700;
   white-space: nowrap;
@@ -4535,23 +4559,40 @@ select.reports-filter-control,
 
 .cash-card-actions {
   display: flex;
-  gap: var(--space-sm);
-  margin-top: var(--space-xs);
+  gap: 10px;
+  margin-top: 6px;
 }
-
-.cash-card-actions .btn-action {
-  flex: 1 !important;
-  height: 44px !important;
-  min-height: 44px !important;
-  font-size: var(--font-xs) !important;
+.cash-card-actions .btn,
+.cash-card-actions button {
+  flex: 1 1 0;
+  width: 50%;
+  height: 42px !important;
+  font-size: 13px !important;
   font-weight: 700 !important;
-  border-radius: var(--radius-md) !important;
+  border-radius: 8px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
-  padding: 0 4px !important;
-  white-space: nowrap !important;
+  gap: 6px !important;
+  padding: 0 8px !important;
+  box-sizing: border-box !important;
+}
+.cash-card-actions .btn-secondary {
+  background: #ffffff !important;
+  color: var(--text-primary) !important;
+  border: 1.5px solid var(--border-color) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+.cash-card-actions .btn-secondary:hover {
+  background: rgba(139, 3, 19, 0.04) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+.cash-card-actions .btn-primary {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border: 1.5px solid var(--primary) !important;
+  box-shadow: 0 2px 6px rgba(139,3,19,0.2) !important;
 }
 
 /* Payment Methods Grid */
@@ -4566,10 +4607,6 @@ select.reports-filter-control,
   .payment-methods-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
-}
-
-.calendar-day-btn {
-  border-radius: var(--radius-full) !important;
 }
 
 .btn-delete-action {
