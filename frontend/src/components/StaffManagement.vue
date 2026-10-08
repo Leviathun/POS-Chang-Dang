@@ -694,9 +694,13 @@
                   </span>
                 </td>
                 <td class="text-center p-md">
-                  <span class="capsule-badge" :class="adv.status === 'deducted' ? 'badge-success' : 'badge-warning'">
-                    <i :class="adv.status === 'deducted' ? 'fa-solid fa-check' : 'fa-solid fa-clock'"></i>
-                    {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : 'เบิกสำเร็จ รอหักในบัญชี' }}
+                  <span 
+                    class="capsule-badge" 
+                    :class="adv.status === 'deducted' ? 'badge-success' : (adv.status === 'cancelled' ? 'badge-neutral' : 'badge-warning')"
+                    :style="adv.status === 'cancelled' ? 'background: rgba(139, 3, 19, 0.08); color: var(--primary); border-color: rgba(139, 3, 19, 0.2);' : ''"
+                  >
+                    <i :class="adv.status === 'deducted' ? 'fa-solid fa-check' : (adv.status === 'cancelled' ? 'fa-solid fa-rotate-left text-primary' : 'fa-solid fa-clock')"></i>
+                    {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : (adv.status === 'cancelled' ? 'ยกเลิกเบิกสำเร็จ' : 'เบิกสำเร็จ รอหักในบัญชี') }}
                   </span>
                 </td>
                 <td v-if="isAdminUser" class="text-center p-md">
@@ -705,12 +709,15 @@
                     class="btn-action btn-action-delete" 
                     :disabled="deletingAdvanceId === adv.id"
                     @click="handleDeleteAdvance(adv.id)"
-                    title="ยกเลิกรายการเบิก"
+                    title="ยกเลิก & คืนยอดรายการเบิกเงิน"
                   >
                     <i v-if="deletingAdvanceId === adv.id" class="fa-solid fa-spinner fa-spin"></i>
-                    <i v-else class="fa-solid fa-trash-can"></i>
-                    <span>{{ deletingAdvanceId === adv.id ? ' กำลังลบ...' : ' ลบ' }}</span>
+                    <i v-else class="fa-solid fa-rotate-left"></i>
+                    <span>{{ deletingAdvanceId === adv.id ? ' กำลังยกเลิก...' : ' ยกเลิก/คืน' }}</span>
                   </button>
+                  <span v-else-if="adv.status === 'cancelled'" class="text-xs font-semibold" style="color: var(--primary);">
+                    <i class="fa-solid fa-circle-check mr-2xs"></i> ยกเลิกแล้ว
+                  </span>
                   <span v-else class="text-xs text-muted">หักแล้ว</span>
                 </td>
               </tr>
@@ -787,6 +794,66 @@
 
         <div class="text-xs text-secondary font-bold">
           <i class="fa-solid fa-circle-check text-success"></i> เมื่อกดยืนยันจ่าย ระบบจะตัดเข้าบัญชีรายจ่ายสาขาอัตโนมัติ
+        </div>
+      </div>
+
+      <!-- Guarantee Pool Summary Card (กองทุนเงินประกันพนักงาน / เงินสดหมุนเวียนในร้าน) -->
+      <div class="card p-md" style="background: #ffffff; border: 1px solid var(--border-color); border-left: 4px solid var(--warning, #f59e0b);">
+        <div class="flex flex-between align-center flex-wrap gap-md">
+          <div class="flex align-center gap-md">
+            <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #d97706;">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+              <div class="flex align-center gap-xs">
+                <h4 class="font-bold text-base" style="margin: 0; color: var(--text-primary);">
+                  กองทุนเงินประกันพนักงาน (เงินสดหมุนเวียนในร้าน)
+                </h4>
+                <span class="capsule-badge badge-warning text-2xs font-bold" style="padding: 2px 8px;">
+                  สภาพคล่องร้าน
+                </span>
+              </div>
+              <p class="text-xs text-secondary mt-2xs" style="margin-bottom: 0;">
+                <i class="fa-solid fa-circle-info text-secondary"></i> เงินค้ำประกันที่ร้านถือครองไว้เป็นเงินสดหมุนเวียน ไม่รวมในยอดขายอาหาร และจะคืนเมื่อพนักงานลาออก
+              </p>
+            </div>
+          </div>
+
+          <div class="flex align-center gap-lg flex-wrap">
+            <div class="text-right">
+              <div class="text-2xs text-secondary font-semibold">ยอดถือครองทั้งหมด</div>
+              <div class="font-bold text-xl text-primary" style="font-size: 1.35rem; color: #b45309;">
+                {{ formatCurrency(guaranteePoolSummary.totalHeld) }}
+              </div>
+            </div>
+            <div class="text-right" style="border-left: 1px solid var(--border-color); padding-left: var(--space-md);">
+              <div class="text-2xs text-secondary font-semibold">พนักงานที่วางประกัน</div>
+              <div class="font-bold text-base" style="color: var(--text-primary);">
+                {{ guaranteePoolSummary.heldStaffCount }} <span class="text-xs text-secondary font-normal">คน</span>
+              </div>
+            </div>
+            <div class="text-right" style="border-left: 1px solid var(--border-color); padding-left: var(--space-md);">
+              <div class="text-2xs text-secondary font-semibold">ช่องทางถือครอง</div>
+              <div class="text-xs font-bold" style="color: var(--text-secondary);">
+                สด: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.cashHeld) }}</span> | 
+                โอน: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.transferHeld) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Staff with held guarantee tags -->
+        <div v-if="guaranteePoolSummary.heldStaffCount > 0" class="mt-sm pt-sm flex align-center gap-xs flex-wrap" style="border-top: 1px dashed var(--border-color);">
+          <span class="text-2xs text-secondary font-semibold mr-xs">รายชื่อที่วางประกัน:</span>
+          <span 
+            v-for="st in guaranteePoolSummary.heldStaffList" 
+            :key="st.name" 
+            class="capsule-badge badge-neutral text-xs" 
+            style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3); color: #92400e; padding: 2px 8px;"
+          >
+            <i class="fa-solid fa-user-shield mr-2xs" style="color: #d97706;"></i>
+            <strong>{{ st.name }}</strong> ({{ formatCurrency(st.amount) }} • {{ st.method === 'cash' ? 'เงินสด' : 'เงินโอน' }})
+          </span>
         </div>
       </div>
 
@@ -1589,15 +1656,29 @@
                 v-for="(slip, idx) in selectedHistoryStaff.history_payouts" 
                 :key="slip.id"
                 class="form-group"
-                style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.04);"
+                :style="{
+                  background: slip.status === 'cancelled' ? '#fafafa' : '#ffffff',
+                  border: '1px solid ' + (slip.status === 'cancelled' ? 'rgba(255, 59, 48, 0.35)' : 'var(--border-color)'),
+                  borderRadius: 'var(--radius-md)',
+                  padding: 'var(--space-md)',
+                  marginBottom: '0',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                  opacity: slip.status === 'cancelled' ? '0.85' : '1'
+                }"
               >
                 <div class="flex flex-between align-center mb-xs">
-                  <span class="font-bold text-sm text-primary">
-                    <i class="fa-solid fa-file-invoice-dollar text-primary mr-xs"></i> สลิปรอบที่ {{ selectedHistoryStaff.history_payouts.length - idx }}
+                  <span class="font-bold text-sm" :class="slip.status === 'cancelled' ? 'text-secondary' : 'text-primary'">
+                    <i class="fa-solid fa-file-invoice-dollar mr-xs" :class="slip.status === 'cancelled' ? 'text-secondary' : 'text-primary'"></i> 
+                    สลิปรอบที่ {{ selectedHistoryStaff.history_payouts.length - idx }}
                   </span>
-                  <span class="capsule-badge badge-success text-xs">
-                    {{ slip.payment_method === 'transfer' ? '📱 เงินโอน' : '💵 เงินสด' }} • {{ formatDate(slip.payment_date) }}
-                  </span>
+                  <div class="flex align-center gap-xs">
+                    <span v-if="slip.status === 'cancelled'" class="capsule-badge badge-danger text-xs font-bold">
+                      <i class="fa-solid fa-ban mr-2xs"></i> ยกเลิกสลิป & คืนยอดแล้ว
+                    </span>
+                    <span v-else class="capsule-badge badge-success text-xs">
+                      {{ slip.payment_method === 'transfer' ? '📱 เงินโอน' : '💵 เงินสด' }} • {{ formatDate(slip.payment_date) }}
+                    </span>
+                  </div>
                 </div>
                 <div class="flex flex-between text-xs text-secondary mb-2xs">
                   <span>รอบการทำงาน:</span>
@@ -1622,12 +1703,33 @@
                 <div v-if="slip.note" class="text-xs text-secondary mb-2xs" style="font-style: italic;">
                   หมายเหตุ: {{ slip.note }}
                 </div>
+                <div v-if="slip.status === 'cancelled' && slip.cancel_reason" class="text-xs text-danger mb-2xs font-semibold">
+                  <i class="fa-solid fa-circle-info mr-2xs"></i> เหตุผลยกเลิก: {{ slip.cancel_reason }}
+                </div>
                 <div class="divider my-xs" style="height:1px; background:var(--border-color);"></div>
-                <div class="flex flex-between align-center font-bold text-sm text-primary">
+                <div class="flex flex-between align-center font-bold text-sm">
                   <span>ยอดจ่ายสุทธิ:</span>
-                  <span class="text-base font-bold" :class="Number(slip.net_paid_amount || 0) === 0 ? 'text-danger' : 'text-primary'">
+                  <span 
+                    class="text-base font-bold" 
+                    :class="slip.status === 'cancelled' ? 'text-secondary' : (Number(slip.net_paid_amount || 0) === 0 ? 'text-danger' : 'text-primary')"
+                    :style="slip.status === 'cancelled' ? 'text-decoration: line-through;' : ''"
+                  >
                     {{ formatCurrency(slip.net_paid_amount) }}
                   </span>
+                </div>
+
+                <!-- Reversal Action Button (For active slips only, Admin only) -->
+                <div v-if="slip.status !== 'cancelled' && isAdminUser" class="mt-sm pt-xs flex justify-end" style="border-top: 1px dashed var(--border-color);">
+                  <button 
+                    class="btn-action btn-action-primary" 
+                    style="height: 34px; min-width: auto; padding: 0 14px; font-size: var(--font-xs);"
+                    :disabled="reversingSlipId === slip.id"
+                    @click="handleReversePayrollSlip(slip)"
+                  >
+                    <i v-if="reversingSlipId === slip.id" class="fa-solid fa-spinner fa-spin"></i>
+                    <i v-else class="fa-solid fa-rotate-left"></i>
+                    <span>{{ reversingSlipId === slip.id ? 'กำลังยกเลิก...' : 'ยกเลิกสลิป & คืนยอด' }}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2730,13 +2832,16 @@ const handleSaveAdvance = async () => {
 };
 
 const handleDeleteAdvance = async (id) => {
-  const confirmed = await ui.showConfirm('ยืนยันยกเลิก', 'คุณต้องการยกเลิกรายการเบิกเงินนี้ใช่หรือไม่? (ระบบจะลบออกจากรายจ่ายสาขาด้วย)');
+  const confirmed = await ui.showConfirm(
+    'ยืนยันยกเลิกและคืนยอด',
+    'คุณต้องการยกเลิกรายการเบิกเงินนี้ใช่หรือไม่?\n\nระบบจะบันทึกรายการคืนเงิน (+฿) เพื่อหักล้างรายจ่ายและปรับยอดเงินสดในลิ้นชักกลับมาถูกต้อง พร้อมทั้งยกเลิกรายการเบิกนี้ (จะไม่ถูกนำไปหักในรอบเงินเดือน)'
+  );
   if (!confirmed) return;
   deletingAdvanceId.value = id;
   try {
     const res = await api.employees.deleteAdvance(id);
     if (res.success) {
-      ui.showToast('ยกเลิกรายการเบิกเงินและลบออกจากรายจ่ายเรียบร้อยแล้ว', 'success');
+      ui.showToast('ยกเลิกรายการเบิกเงินและคืนยอดเข้าบัญชีรายจ่ายเรียบร้อยแล้ว', 'success');
       await fetchAdvances();
       await fetchMonthlyAttendance();
       if (isAdminUser.value) {
@@ -2901,6 +3006,41 @@ const showSlipModal = ref(false);
 const selectedSlipItem = ref(null);
 
 // ─── Subtab 6: Guarantee & Multi-Payout State & Handlers ─────
+const guaranteePoolSummary = computed(() => {
+  let totalHeld = 0;
+  let heldStaffCount = 0;
+  let cashHeld = 0;
+  let transferHeld = 0;
+  const heldStaffList = [];
+
+  payrollList.value.forEach(item => {
+    if (item.guarantee && item.guarantee.status === 'held') {
+      const amt = Number(item.guarantee.amount) || 1000;
+      totalHeld += amt;
+      heldStaffCount++;
+      if (item.guarantee.deposit_payment_method === 'cash') {
+        cashHeld += amt;
+      } else {
+        transferHeld += amt;
+      }
+      heldStaffList.push({
+        name: item.name,
+        amount: amt,
+        date: item.guarantee.deposit_date,
+        method: item.guarantee.deposit_payment_method
+      });
+    }
+  });
+
+  return {
+    totalHeld,
+    heldStaffCount,
+    cashHeld,
+    transferHeld,
+    heldStaffList
+  };
+});
+
 const formatGuaranteeMonth = (dateStr) => {
   if (!dateStr) return '';
   const parts = dateStr.split('-');
@@ -3037,6 +3177,39 @@ const handleConfirmRefundGuarantee = async () => {
 const openHistoryPayoutsModal = (item) => {
   selectedHistoryStaff.value = item;
   showHistoryModal.value = true;
+};
+
+const reversingSlipId = ref(null);
+
+const handleReversePayrollSlip = async (slip) => {
+  const confirmed = await ui.showConfirm(
+    'ยกเลิกสลิป & คืนยอด',
+    `คุณต้องการยกเลิกสลิปงวดนี้ (${formatCurrency(slip.net_paid_amount)}) ใช่หรือไม่?\n\nเมื่อยกเลิก:\n1. วันทำงาน/OT/เงินเบิก จะถูกปลดล็อกกลับมาคำนวณใหม่ได้ทันที\n2. ระบบจะบันทึกรายการคืนเงินเข้าสู่บัญชีรายจ่ายสาขาเพื่อคืนยอดเงินสด/เงินโอน`
+  );
+  if (!confirmed) return;
+
+  reversingSlipId.value = slip.id;
+  try {
+    const res = await api.employees.reversePayroll(slip.id);
+    if (res.success) {
+      ui.showToast('ยกเลิกสลิปและคืนยอดเงินเรียบร้อยแล้ว', 'success');
+      slip.status = 'cancelled';
+      await fetchPayrollCalculations();
+      await fetchAdvances();
+      await fetchEventOts();
+      await fetchMonthlyAttendance();
+      if (selectedHistoryStaff.value) {
+        const updated = payrollList.value.find(e => e.user_id === selectedHistoryStaff.value.user_id);
+        if (updated) {
+          selectedHistoryStaff.value = updated;
+        }
+      }
+    }
+  } catch (err) {
+    ui.showToast(err.message || 'ยกเลิกสลิปไม่สำเร็จ', 'error');
+  } finally {
+    reversingSlipId.value = null;
+  }
 };
 
 const fetchPayrollCalculations = async () => {

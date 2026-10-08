@@ -473,11 +473,14 @@ router.post('/advances', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── 10. DELETE /api/employees/advances/:id — ยกเลิกรายการเบิกเงิน (Admin) ───
-router.delete('/advances/:id', requireAdmin, async (req, res) => {
+// ─── 10. DELETE /api/employees/advances/:id — ยกเลิก & คืนยอดรายการเบิกเงิน (Admin) ───
+const handleReverseAdvance = async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
+    const userId = (req.user && req.user.id) ? req.user.id : 1;
+    const nowLocal = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
+    const todayDate = nowLocal.substring(0, 10);
 
     const adv = await db.prepare('SELECT * FROM employee_advances WHERE id = ?').get(Number(id));
     if (!adv) {
@@ -485,22 +488,84 @@ router.delete('/advances/:id', requireAdmin, async (req, res) => {
     }
 
     if (adv.status === 'deducted') {
-      return res.status(400).json({ success: false, error: 'ไม่สามารถลบได้เนื่องจากถูกหักในรอบเงินเดือนแล้ว' });
+      return res.status(400).json({ success: false, error: 'ไม่สามารถยกเลิกได้เนื่องจากถูกหักในรอบเงินเดือนแล้ว' });
     }
 
-    // ลบรายจ่ายที่ผูกกับรายการเบิกนี้ออกจากตาราง expenses
+    if (adv.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'รายการเบิกเงินนี้ถูกยกเลิกไปแล้ว' });
+    }
+
+    // 1. ปรับสถานะ employee_advances เป็น 'cancelled'
+    await db.prepare(`
+      UPDATE employee_advances SET
+        status = 'cancelled'
+      WHERE id = ?
+    `).run(Number(id));
+
+    // 2. ถ้ามี expense_id ผูกอยู่ ให้ทำ reverse/contra expense
     if (adv.expense_id) {
-      await db.prepare('DELETE FROM expenses WHERE id = ?').run(Number(adv.expense_id));
+      const exp = await db.prepare('SELECT * FROM expenses WHERE id = ?').get(Number(adv.expense_id));
+      if (exp && exp.status !== 'cancelled') {
+        // ทำเครื่องหมาย original expense เป็น cancelled
+        await db.prepare(`
+          UPDATE expenses SET
+            status = 'cancelled',
+            cancelled_at = ?,
+            cancelled_by = ?,
+            cancel_reason = ?
+          WHERE id = ?
+        `).run(nowLocal, userId, `ยกเลิกการเบิกเงินล่วงหน้า #${id}`, exp.id);
+
+        // สร้างแถวคืนเงิน Contra / Refund Entry (เข้าเป็นรายรับคืนรายจ่าย ปรับสมดุลเงินสดในร้าน)
+        const refundNote = exp.note ? `คืน: ${exp.note}` : `คืน: เบิกเงินล่วงหน้า #${id}`;
+        await db.prepare(`
+          INSERT INTO expenses (
+            branch_id, staff_id, amount, category, note,
+            expense_date, session_id, payment_method, status,
+            is_refund, refund_ref_id, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'refund', 1, ?, ?)
+        `).run(
+          exp.branch_id || adv.branch_id || 1,
+          userId,
+          Number(exp.amount),
+          exp.category || 'salary',
+          refundNote,
+          todayDate,
+          exp.session_id || null,
+          exp.payment_method || 'cash',
+          exp.id,
+          nowLocal
+        );
+      }
     }
 
-    await db.prepare('DELETE FROM employee_advances WHERE id = ?').run(Number(id));
+    // 3. Activity Log
+    try {
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'cancel_advance', ?, ?)
+      `).run(
+        adv.branch_id || 1,
+        userId,
+        `ยกเลิกรายการเบิกเงินล่วงหน้า #${id} จำนวน ${adv.amount} บาท`,
+        nowLocal
+      );
+    } catch (logErr) {
+      console.warn('⚠️ Log activity failed on cancel_advance:', logErr.message);
+    }
 
-    res.json({ success: true, message: 'ยกเลิกรายการเบิกเงินและลบออกจากรายจ่ายเรียบร้อยแล้ว' });
+    res.json({
+      success: true,
+      message: 'ยกเลิกรายการเบิกเงินและบันทึกคืนยอดเข้าบัญชีรายจ่ายเรียบร้อยแล้ว'
+    });
   } catch (err) {
-    console.error('❌ Delete advance error:', err.message);
-    res.status(500).json({ success: false, error: 'เกิดข้อผิดพลาดในการลบรายการเบิกเงิน' });
+    console.error('❌ Cancel advance error:', err.message);
+    res.status(500).json({ success: false, error: 'เกิดข้อผิดพลาดในการยกเลิกรายการเบิกเงิน: ' + err.message });
   }
-});
+};
+
+router.delete('/advances/:id', requireAdmin, handleReverseAdvance);
+router.post('/advances/:id/reverse', requireAdmin, handleReverseAdvance);
 
 // ─── 11. GET /api/employees/payroll/calculate — คำนวณสรุปเงินเดือนประจำงวด (Admin) ───
 router.get('/payroll/calculate', requireAdmin, async (req, res) => {
@@ -578,9 +643,10 @@ router.get('/payroll/calculate', requireAdmin, async (req, res) => {
         ORDER BY p.payment_date DESC, p.id DESC
       `).all(u.id, month);
 
-      const totalPaidAmountMonth = historyPayouts.reduce((sum, item) => sum + Number(item.net_paid_amount || 0), 0);
-      const totalPaidDaysMonth = historyPayouts.reduce((sum, item) => sum + Number(item.days_worked || 0), 0);
-      const totalHoldbackDeductedMonth = historyPayouts.reduce((sum, item) => sum + Number(item.holdback_deducted_amount || 0), 0);
+      const activePayouts = historyPayouts.filter(p => p.status !== 'cancelled');
+      const totalPaidAmountMonth = activePayouts.reduce((sum, item) => sum + Number(item.net_paid_amount || 0), 0);
+      const totalPaidDaysMonth = activePayouts.reduce((sum, item) => sum + Number(item.days_worked || 0), 0);
+      const totalHoldbackDeductedMonth = activePayouts.reduce((sum, item) => sum + Number(item.holdback_deducted_amount || 0), 0);
 
       // 6. ข้อมูลสถานะเงินประกัน (Guarantee Deposit)
       const guaranteeRecord = await db.prepare(`
@@ -594,7 +660,7 @@ router.get('/payroll/calculate', requireAdmin, async (req, res) => {
       if (guaranteeRecord && guaranteeRecord.status === 'held') {
         const matchingSlip = await db.prepare(`
           SELECT id FROM employee_payrolls
-          WHERE user_id = ? AND holdback_deducted_amount > 0 AND created_at >= ?
+          WHERE user_id = ? AND holdback_deducted_amount > 0 AND created_at >= ? AND (status IS NULL OR status != 'cancelled')
           LIMIT 1
         `).get(u.id, guaranteeRecord.created_at);
         if (matchingSlip) {
@@ -605,7 +671,7 @@ router.get('/payroll/calculate', requireAdmin, async (req, res) => {
       // 7. คำนวณยอดสุทธิที่รอจ่ายรอบนี้ (Net Payable this round)
       let baseSalaryRound = 0;
       if (u.wage_type === 'monthly') {
-        baseSalaryRound = historyPayouts.length === 0 ? (u.wage_rate || 0) : 0;
+        baseSalaryRound = activePayouts.length === 0 ? (u.wage_rate || 0) : 0;
       } else {
         baseSalaryRound = unpaidBaseSalary;
       }
@@ -858,6 +924,144 @@ router.post('/payroll/pay', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('❌ Pay salary error:', err.message);
     res.status(500).json({ success: false, error: 'เกิดข้อผิดพลาดในการบันทึกการจ่ายเงินเดือน' });
+  }
+});
+
+// ─── 12.1 POST /api/employees/payroll/:id/reverse — ยกเลิกสลิป & คืนเงินค่าแรง (Admin) ───
+router.post('/payroll/:id/reverse', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body || {};
+    const db = getDb();
+
+    const payroll = await db.prepare(`
+      SELECT p.*, u.name as user_name
+      FROM employee_payrolls p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.id = ?
+    `).get(Number(id));
+
+    if (!payroll) {
+      return res.status(404).json({ success: false, error: 'ไม่พบสลิปการจ่ายเงินเดือน' });
+    }
+
+    if (payroll.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'สลิปนี้ถูกยกเลิก/คืนยอดไปแล้ว' });
+    }
+
+    const cancelReason = reason || 'ยกเลิกสลิปโดยผู้ดูแลระบบ';
+    const nowLocal = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
+    const todayDate = nowLocal.substring(0, 10);
+    const userId = (req.user && req.user.id) ? req.user.id : 1;
+    const bId = payroll.branch_id || (req.user ? req.user.branch_id : 1);
+
+    // 1. ทำเครื่องหมายสลิปเป็น 'cancelled'
+    await db.prepare(`
+      UPDATE employee_payrolls SET
+        status = 'cancelled',
+        cancelled_at = ?,
+        cancelled_by = ?,
+        cancel_reason = ?
+      WHERE id = ?
+    `).run(nowLocal, userId, cancelReason, Number(id));
+
+    // 2. ปลดล็อกวันทำงาน (attendance)
+    await db.prepare(`
+      UPDATE employee_attendance SET
+        is_paid = 0,
+        payroll_id = NULL
+      WHERE payroll_id = ?
+    `).run(Number(id));
+
+    // 3. ปลดล็อก OT พิเศษ
+    await db.prepare(`
+      UPDATE employee_event_ot_participants SET
+        is_paid = 0,
+        payroll_id = NULL
+      WHERE payroll_id = ?
+    `).run(Number(id));
+
+    // 4. ปลดล็อกเงินเบิกล่วงหน้า
+    await db.prepare(`
+      UPDATE employee_advances SET
+        status = 'pending',
+        payroll_id = NULL
+      WHERE payroll_id = ?
+    `).run(Number(id));
+
+    // 5. คืนเงินประกันที่ถูกหัก (ถ้ามี)
+    if (payroll.holdback_deducted_amount > 0) {
+      try {
+        await db.prepare(`
+          DELETE FROM employee_guarantees
+          WHERE user_id = ? AND status = 'held' AND note LIKE ?
+        `).run(payroll.user_id, `%สลิป #${payroll.id}%`);
+      } catch (gErr) {
+        console.warn('⚠️ Revert guarantee error:', gErr.message);
+      }
+    }
+
+    // 6. ยกเลิกรายการรายจ่ายและสร้างแถวคืนเงินใน expenses (ถ้ามียอดจ่ายจริง > 0)
+    let refundExpenseId = null;
+    if (payroll.expense_id) {
+      const exp = await db.prepare('SELECT * FROM expenses WHERE id = ?').get(payroll.expense_id);
+      if (exp && exp.status !== 'cancelled') {
+        await db.prepare(`
+          UPDATE expenses SET
+            status = 'cancelled',
+            cancelled_at = ?,
+            cancelled_by = ?,
+            cancel_reason = ?
+          WHERE id = ?
+        `).run(nowLocal, userId, `ยกเลิกสลิปเงินเดือน #${id}`, exp.id);
+
+        const refundRes = await db.prepare(`
+          INSERT INTO expenses (
+            branch_id, staff_id, amount, category, note,
+            expense_date, session_id, payment_method, status,
+            is_refund, refund_ref_id, created_at
+          ) VALUES (?, ?, ?, 'salary', ?, ?, ?, ?, 'refund', 1, ?, ?)
+        `).run(
+          exp.branch_id || bId,
+          userId,
+          Number(exp.amount),
+          `คืน: ${exp.note || `ค่าแรง ${payroll.user_name} (สลิป #${id})`}`,
+          todayDate,
+          exp.session_id || null,
+          exp.payment_method || payroll.payment_method || 'cash',
+          exp.id,
+          nowLocal
+        );
+        refundExpenseId = refundRes.lastInsertRowid;
+      }
+    }
+
+    // 7. Activity Log
+    try {
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'reverse_payroll', ?, ?)
+      `).run(
+        bId,
+        userId,
+        `ยกเลิกสลิปเงินเดือน #${id} ของ ${payroll.user_name} งวด ${payroll.period_month} (จำนวน ${payroll.net_paid_amount} บาท)${refundExpenseId ? ` [สร้างรายการคืนเงิน #${refundExpenseId}]` : ''}`,
+        nowLocal
+      );
+    } catch (logErr) {
+      console.warn('⚠️ Log activity failed on reverse_payroll:', logErr.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'ยกเลิกสลิปการจ่ายเงินและคืนยอดเข้าสู่ระบบเรียบร้อยแล้ว',
+      data: {
+        payroll_id: Number(id),
+        refund_expense_id: refundExpenseId
+      }
+    });
+  } catch (err) {
+    console.error('❌ Reverse payroll error:', err.message);
+    res.status(500).json({ success: false, error: 'เกิดข้อผิดพลาดในการยกเลิกสลิป: ' + err.message });
   }
 });
 

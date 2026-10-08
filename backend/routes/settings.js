@@ -363,7 +363,12 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
     const whereExpenses = buildWhere(timeClauseExpenses, branchClause);
     const paramsExpenses = buildParams(timeClauseExpenses);
     const expenseOverview = await db.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as total_expenses FROM expenses ${whereExpenses}
+      SELECT COALESCE(SUM(
+        CASE 
+          WHEN is_refund = 1 OR status = 'refund' THEN -amount
+          ELSE amount
+        END
+      ), 0) as total_expenses FROM expenses ${whereExpenses}
     `).get(...paramsExpenses);
 
     const totalSales = Number(ordersOverview?.total_sales || 0);
@@ -547,7 +552,12 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       SELECT 
         substr(expense_date, 1, 7) as month_key,
         branch_id,
-        COALESCE(SUM(amount), 0) as month_expenses
+        COALESCE(SUM(
+          CASE 
+            WHEN is_refund = 1 OR status = 'refund' THEN -amount
+            ELSE amount
+          END
+        ), 0) as month_expenses
       FROM expenses
       ${whereExpenses}
       GROUP BY month_key, branch_id

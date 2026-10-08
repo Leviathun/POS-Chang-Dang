@@ -628,6 +628,69 @@ async function initDatabase() {
     console.warn('⚠️ Migration update users table failed:', e.message);
   }
 
+  // Migration: Add status, cancelled_at, cancelled_by, is_refund, refund_ref_id, cancel_reason to expenses table if not exists
+  try {
+    const expCols = await db.prepare("PRAGMA table_info(expenses)").all();
+    if (!expCols.some(c => c.name === 'status')) {
+      await db.exec("ALTER TABLE expenses ADD COLUMN status TEXT DEFAULT 'completed'");
+    }
+    if (!expCols.some(c => c.name === 'cancelled_at')) {
+      await db.exec("ALTER TABLE expenses ADD COLUMN cancelled_at DATETIME");
+    }
+    if (!expCols.some(c => c.name === 'cancelled_by')) {
+      await db.exec("ALTER TABLE expenses ADD COLUMN cancelled_by INTEGER REFERENCES users(id)");
+    }
+    if (!expCols.some(c => c.name === 'is_refund')) {
+      await db.exec("ALTER TABLE expenses ADD COLUMN is_refund INTEGER DEFAULT 0");
+    }
+    if (!expCols.some(c => c.name === 'refund_ref_id')) {
+      await db.exec("ALTER TABLE expenses ADD COLUMN refund_ref_id INTEGER REFERENCES expenses(id)");
+    }
+    if (!expCols.some(c => c.name === 'cancel_reason')) {
+      await db.exec("ALTER TABLE expenses ADD COLUMN cancel_reason TEXT");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration reversal columns on expenses failed:', e.message);
+  }
+
+  // Migration: Add status, cancelled_at, cancelled_by, cancel_reason to employee_payrolls table if not exists
+  try {
+    const payCols = await db.prepare("PRAGMA table_info(employee_payrolls)").all();
+    if (!payCols.some(c => c.name === 'status')) {
+      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN status TEXT DEFAULT 'completed'");
+    }
+    if (!payCols.some(c => c.name === 'cancelled_at')) {
+      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN cancelled_at DATETIME");
+    }
+    if (!payCols.some(c => c.name === 'cancelled_by')) {
+      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN cancelled_by INTEGER REFERENCES users(id)");
+    }
+    if (!payCols.some(c => c.name === 'cancel_reason')) {
+      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN cancel_reason TEXT");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration reversal columns on employee_payrolls failed:', e.message);
+  }
+
+  // Migration: Add status, cancelled_at, cancelled_by, cancel_reason to stock_logs table if not exists
+  try {
+    const stockCols = await db.prepare("PRAGMA table_info(stock_logs)").all();
+    if (!stockCols.some(c => c.name === 'status')) {
+      await db.exec("ALTER TABLE stock_logs ADD COLUMN status TEXT DEFAULT 'completed'");
+    }
+    if (!stockCols.some(c => c.name === 'cancelled_at')) {
+      await db.exec("ALTER TABLE stock_logs ADD COLUMN cancelled_at DATETIME");
+    }
+    if (!stockCols.some(c => c.name === 'cancelled_by')) {
+      await db.exec("ALTER TABLE stock_logs ADD COLUMN cancelled_by INTEGER REFERENCES users(id)");
+    }
+    if (!stockCols.some(c => c.name === 'cancel_reason')) {
+      await db.exec("ALTER TABLE stock_logs ADD COLUMN cancel_reason TEXT");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration reversal columns on stock_logs failed:', e.message);
+  }
+
   // Migration: Fix users with NULL branch_id — assign to first branch
   try {
     const firstBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
