@@ -191,6 +191,10 @@
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
             <span class="nav-label">รายงาน</span>
           </router-link>
+          <router-link v-if="isManagerOrAdminUser" to="/management" class="nav-item" active-class="active" data-page="management">
+            <span class="nav-icon flex justify-center"><i class="fa-solid fa-briefcase"></i></span>
+            <span class="nav-label">จัดการร้าน</span>
+          </router-link>
           <router-link to="/settings" class="nav-item" active-class="active" data-page="settings">
             <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-label">ตั้งค่า</span>
@@ -802,11 +806,12 @@ onUnmounted(() => {
 .nav-item {
   flex: 1;
   max-width: 75px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 0; /* Premium uniform size */
+  padding: 5px 2px; /* Premium uniform size */
   color: var(--text-tertiary);
   font-size: var(--font-xs);
   font-weight: var(--font-weight-medium);
@@ -814,6 +819,14 @@ onUnmounted(() => {
   position: relative;
   -webkit-tap-highlight-color: transparent;
   border-radius: var(--radius-lg); /* Rounded pill active background shape */
+}
+
+.nav-item .nav-label {
+  font-size: clamp(9.5px, 2.6vw, 11.5px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .nav-item .nav-icon {

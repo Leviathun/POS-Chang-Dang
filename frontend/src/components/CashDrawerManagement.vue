@@ -3,19 +3,19 @@
     <div class="flex flex-between align-center mb-md" style="margin-bottom:var(--space-md); flex-wrap: wrap; gap: var(--space-sm);">
       <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
         <i class="fa-solid fa-cash-register" style="color: var(--text-primary);"></i>
-        ตรวจสอบเงินสดในลิ้นชักประจำวัน
+        ตรวจสอบลิ้นชัก
       </h3>
     </div>
 
     <!-- Hint Explanation Box -->
     <div class="bulk-hint-box mb-lg">
       <span class="hint-icon"><i class="fa-solid fa-lightbulb" style="color: var(--accent);"></i></span>
-      <div class="hint-text" style="font-size: var(--font-sm); line-height: 1.6;">
-        <strong>วิธีใช้งานและระบบเวลาทำงาน:</strong>
-        <ul style="list-style-type: disc; padding-left: 20px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
-          <li>กรอกยอดเงินทอนตั้งต้นก่อนเปิดร้าน (หรือปล่อยเป็น ฿0 หากไม่ต้องการใช้เงินทอน)</li>
-          <li>ตรวจนับเงินสดในลิ้นชักหลังปิดร้าน แล้วกด "ปิดยอดประจำวัน" เพื่อตรวจสอบผลต่าง ยอดเงินที่ระบบคำนวณจะอิงตามบิลเงินสดและบันทึกรายจ่ายที่เกิดขึ้น</li>
-          <li><strong>การเปลี่ยนรอบวันทำงาน (Rollover ตี 4):</strong> เพื่อให้สอดคล้องกับพฤติกรรมการจ่ายตลาดและการปิดร้านหลังเที่ยงคืน ระบบจะตัดยอดและเริ่มรอบวันใหม่ที่เวลา <strong>04:00 น. (ตี 4)</strong> ของทุกวัน บิลและค่าใช้จ่ายช่วงหลังเที่ยงคืนถึงตี 4 จะนำมารวมในรอบวันเดียวกันโดยอัตโนมัติ</li>
+      <div class="hint-text text-xs" style="line-height: 1.5;">
+        <strong>วิธีใช้งาน:</strong>
+        <ul style="list-style-type: disc; padding-left: 18px; margin-top: 3px; display: flex; flex-direction: column; gap: 2px;">
+          <li><strong>เปิดร้าน:</strong> กรอกเงินทอนตั้งต้น (หรือ ฿0 หากไม่มี)</li>
+          <li><strong>ปิดร้าน:</strong> นับเงินสดแล้วกด "ปิดยอดประจำวัน" เพื่อตรวจผลต่างเงินขาด/เกิน</li>
+          <li><strong>ตัดรอบวัน:</strong> ตัดรอบอัตโนมัติเวลา <strong>04:00 น. (ตี 4)</strong> (ยอดหลังเที่ยงคืนถึงตี 4 รวมในวันเดียวกัน)</li>
         </ul>
       </div>
     </div>
@@ -110,7 +110,7 @@
     </div>
 
     <!-- Mobile Cards View (Mobile Only) -->
-    <div class="show-mobile-only cash-audit-mobile-list" style="margin-bottom: var(--space-md);">
+    <div class="show-mobile-flex cash-audit-mobile-list" style="flex-direction: column; gap: 12px; margin-bottom: var(--space-md);">
       <div 
         v-for="session in cashDrawerSessions" 
         :key="(session.id || 'virtual') + '-' + session.branch_id + '-' + session.session_date" 
@@ -137,23 +137,23 @@
           </div>
           <div class="grid-item">
             <span class="grid-label">ยอดขายเงินสด</span>
-            <span class="grid-value text-success">+{{ formatCurrency(session.cash_sales) }}</span>
+            <span class="grid-value text-success font-bold">+{{ formatCurrency(session.cash_sales) }}</span>
           </div>
           <div class="grid-item">
             <span class="grid-label">ยอดจ่ายเงินสด</span>
-            <span class="grid-value text-danger">-{{ formatCurrency(session.cash_expenses) }}</span>
+            <span class="grid-value text-danger font-bold">-{{ formatCurrency(session.cash_expenses) }}</span>
           </div>
           <div class="grid-item">
             <span class="grid-label">เงินสดที่ควรมี</span>
-            <span class="grid-value font-bold text-primary">{{ formatCurrency(session.calculated_expected_cash) }}</span>
+            <span class="grid-value font-bold text-primary" style="font-size: 1.05rem;">{{ formatCurrency(session.calculated_expected_cash) }}</span>
           </div>
           <div class="grid-item full-width">
             <span class="grid-label">เงินสดนับจริง</span>
             <span class="grid-value">
-              <span v-if="session.status === 'closed'" class="font-bold">
+              <span v-if="session.status === 'closed'" class="font-bold text-base">
                 {{ formatCurrency(session.actual_cash) }}
               </span>
-              <span v-else class="text-light-italic">ยังไม่ได้ตรวจนับ</span>
+              <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">ยังไม่ได้ตรวจนับ</span>
             </span>
           </div>
           <div class="grid-item full-width">
@@ -164,24 +164,24 @@
                   ครบถ้วน (ยอดเท่ากัน)
                 </span>
                 <span v-else-if="session.difference > 0" class="diff-badge surplus">
-                  เกิน {{ formatCurrency(session.difference) }}
+                  เกิน +{{ formatCurrency(session.difference) }}
                 </span>
                 <span v-else class="diff-badge deficit">
-                  ขาด {{ formatCurrency(Math.abs(session.difference)) }}
+                  ขาด -{{ formatCurrency(Math.abs(session.difference)) }}
                 </span>
               </span>
-              <span v-else class="text-light-italic">รอปิดยอดประจำวัน</span>
+              <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">รอปิดยอดประจำวัน</span>
             </span>
           </div>
         </div>
 
-        <!-- Card Actions: Buttons -->
+        <!-- Card Actions: Buttons (Equal Width and Height) -->
         <div class="cash-card-actions">
-          <button class="btn-action flex-1" @click="openOpeningCashModal(session)">
-            <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
+          <button class="btn btn-secondary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" @click="openOpeningCashModal(session)">
+            <i class="fa-solid fa-coins text-warning" style="font-size: 14px;"></i> กรอกยอดเงินทอน
           </button>
-          <button class="btn-action btn-action-primary flex-1" @click="openAuditModal(session)">
-            <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
+          <button class="btn btn-primary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(139,3,19,0.2);" @click="openAuditModal(session)">
+            <i class="fa-solid fa-circle-check" style="font-size: 14px;"></i> ปิดยอดประจำวัน
           </button>
         </div>
       </div>
@@ -563,82 +563,116 @@ onMounted(() => {
   gap: var(--space-xs) !important;
   white-space: nowrap !important;
 }
+.cash-audit-mobile-list {
+  display: none;
+}
+@media (max-width: 768px) {
+  .cash-audit-mobile-list {
+    display: flex !important;
+  }
+}
 .cash-audit-mobile-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  margin-bottom: var(--space-sm);
+  background: #ffffff;
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-md, 12px);
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .cash-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-sm);
-  padding-bottom: var(--space-xs);
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border-color);
 }
 .session-date {
   font-weight: 700;
+  font-size: 16px;
   color: var(--primary);
 }
 .session-status-badge {
-  font-size: var(--font-xs);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 600;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 700;
 }
 .session-status-badge.closed {
-  background: rgba(52, 199, 89, 0.2);
-  color: #30d158;
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
 }
 .session-status-badge.open {
-  background: rgba(255, 149, 0, 0.2);
-  color: #ff9f0a;
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
 }
 .cash-card-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-xs) var(--space-sm);
+  gap: 10px 14px;
   font-size: var(--font-xs);
-  margin-bottom: var(--space-md);
+  margin-bottom: 4px;
 }
 .cash-card-grid .grid-item {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 .cash-card-grid .grid-item.full-width {
   grid-column: 1 / -1;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px dashed var(--border-color);
-  padding-top: var(--space-2xs);
+  border-top: 1px dashed rgba(139, 3, 19, 0.16);
+  padding-top: 10px;
+  padding-bottom: 8px;
+  margin-top: 4px;
 }
 .grid-label {
   color: var(--text-secondary);
+  font-size: 12px;
 }
 .grid-value {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
 }
 .cash-card-actions {
   display: flex;
-  gap: var(--space-sm);
-  margin-top: var(--space-xs);
+  gap: 10px;
+  margin-top: 6px;
 }
-.cash-card-actions .btn-action {
-  flex: 1 !important;
-  height: 44px !important;
-  min-height: 44px !important;
-  font-size: var(--font-xs) !important;
+.cash-card-actions .btn,
+.cash-card-actions button {
+  flex: 1 1 0;
+  width: 50%;
+  height: 42px !important;
+  font-size: 13px !important;
   font-weight: 700 !important;
-  border-radius: var(--radius-md) !important;
+  border-radius: 8px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
-  padding: 0 4px !important;
-  white-space: nowrap !important;
+  gap: 6px !important;
+  padding: 0 8px !important;
+  box-sizing: border-box !important;
+}
+.cash-card-actions .btn-secondary {
+  background: #ffffff !important;
+  color: var(--text-primary) !important;
+  border: 1.5px solid var(--border-color) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+.cash-card-actions .btn-secondary:hover {
+  background: rgba(139, 3, 19, 0.04) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+.cash-card-actions .btn-primary {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border: 1.5px solid var(--primary) !important;
+  box-shadow: 0 2px 6px rgba(139,3,19,0.2) !important;
 }
 .diff-badge {
   padding: 2px 6px;

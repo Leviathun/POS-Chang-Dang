@@ -19,7 +19,7 @@
     </div>
 
     <!-- Date & Period Filter Card (Exact match with Reports.vue & Image 3) -->
-    <div class="card mb-lg p-md" style="position: relative; z-index: 100; background: #ffffff;">
+    <div class="card mb-lg p-md" style="background: #ffffff;">
       <div class="flex flex-col gap-md">
         <!-- Period Mode Tabs -->
         <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
@@ -66,7 +66,7 @@
               >
                 <span class="custom-select-text">{{ selectedDateLabel }}</span>
               </div>
-              <div v-if="isDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 280px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+              <div v-if="isDateDropdownOpen" class="custom-select-dropdown datepicker-popover" style="top: calc(100% + 2px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
                 <!-- Header: Month & Year Selector -->
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
                   <button class="btn btn-secondary btn-sm" @click.stop="adjustDatePickerMonth(-1)">
@@ -82,14 +82,14 @@
                   <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                 </div>
                 <!-- Days Grid -->
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                <div class="calendar-days-grid">
                   <div v-for="empty in datePickerStartOffset" :key="'empty-'+empty"></div>
                   <button 
                     v-for="dNum in datePickerDaysCount" 
                     :key="dNum"
-                    class="btn btn-sm calendar-day-btn"
-                    :class="isDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                    style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                    type="button"
+                    class="calendar-day-btn"
+                    :class="{ 'btn-primary selected': isDatePickerSelected(dNum) }"
                     @click="selectDatePickerDay(dNum)"
                   >
                     {{ dNum }}
@@ -108,7 +108,7 @@
               >
                 <span class="custom-select-text">{{ selectedMonthLabel }}</span>
               </div>
-              <div v-if="isMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
+              <div v-if="isMonthDropdownOpen" class="custom-select-dropdown monthpicker-popover" style="top: calc(100% + 2px); width: 300px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
                   <button class="btn btn-secondary btn-sm" @click.stop="adjustMonthPickerYear(-1)">
                     <i class="fa-solid fa-chevron-left"></i>
@@ -208,12 +208,13 @@
     </div>
 
     <!-- Main Navigation Tabs (Clean names without numbers) -->
-    <div class="category-tabs mb-lg flex gap-xs flex-wrap">
+    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
       <button 
         v-if="isAdminUser"
         class="btn btn-secondary" 
         :class="{ 'active': mainTab === 'staff' }"
         @click="mainTab = 'staff'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-users-gear"></i> จัดการพนักงาน & ค่าแรง
       </button>
@@ -221,6 +222,7 @@
         class="btn btn-secondary" 
         :class="{ 'active': mainTab === 'expenses' }"
         @click="mainTab = 'expenses'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-wallet"></i> บันทึกรายจ่าย
       </button>
@@ -228,6 +230,7 @@
         class="btn btn-secondary" 
         :class="{ 'active': mainTab === 'drawers' }"
         @click="mainTab = 'drawers'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-cash-register"></i> รอบกะ & ลิ้นชักเงิน
       </button>
