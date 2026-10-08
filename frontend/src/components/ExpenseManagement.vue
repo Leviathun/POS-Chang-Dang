@@ -57,7 +57,7 @@
       <!-- Main Full-Width Form Card -->
       <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
 
-        <!-- ── แถวที่ 1: เลือกหมวดหมู่ค่าใช้จ่าย (12 ปุ่ม บน 6 ล่าง 6) ── -->
+        <!-- ── แถวที่ 1: เลือกหมวดหมู่ค่าใช้จ่าย ── -->
         <div class="form-step-section mb-lg">
           <label class="form-section-label mb-sm">
             <span class="step-num">1</span> หมวดหมู่ค่าใช้จ่าย (เลือก 1 หมวด):
@@ -237,18 +237,20 @@
       </div>
 
       <!-- Working Capital Note / Staff Guarantee Fund Indicator -->
-      <div v-if="activeHeldGuaranteesTotal > 0" class="card p-sm flex flex-between align-center flex-wrap gap-xs" style="background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-md);">
+      <div v-if="activeHeldGuaranteesTotal > 0" class="card p-sm flex flex-col gap-xs" style="background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-md);">
         <div class="flex align-center gap-xs text-xs">
           <i class="fa-solid fa-shield-halved text-warning"></i>
-          <span class="text-secondary">
-            เงินประกันพนักงานที่ถือครองหมุนเวียนในร้าน (สภาพคล่องเสริม):
-          </span>
-          <strong class="text-primary font-bold">{{ formatCurrency(activeHeldGuaranteesTotal) }}</strong>
-          <span class="text-secondary">({{ activeHeldGuaranteesCount }} คน)</span>
+          <span class="text-secondary font-medium">เงินประกันพนักงาน (หมุนเวียน):</span>
         </div>
-        <div class="flex align-center gap-xs text-secondary" style="font-size: 11px;">
-          <i class="fa-solid fa-circle-info"></i>
-          <span>ไม่นับรวมเป็นยอดขายอาหาร</span>
+        <div class="flex flex-between align-center flex-wrap gap-xs" style="padding-left: 20px;">
+          <div class="flex align-baseline gap-xs">
+            <strong class="text-primary font-bold text-sm">{{ formatCurrency(activeHeldGuaranteesTotal) }}</strong>
+            <span class="text-secondary text-xs">({{ activeHeldGuaranteesCount }} คน)</span>
+          </div>
+          <div class="flex align-center gap-xs text-secondary" style="font-size: 11px;">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>ไม่รวมในยอดขายอาหาร</span>
+          </div>
         </div>
       </div>
 
@@ -287,24 +289,26 @@
         </div>
 
         <!-- Search Input & CSV Export Button Row -->
-        <div class="filter-search-row flex flex-between align-center gap-md flex-wrap">
-          <div class="search-input-wrapper">
+        <div class="filter-search-row flex flex-col gap-sm">
+          <div class="search-input-wrapper" style="width: 100%; max-width: 100%;">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input 
               type="text" 
               class="form-input search-input" 
               v-model="searchQuery" 
               placeholder="ค้นหาชื่อรายการ, หมายเหตุ, หรือผู้บันทึก..." 
+              style="width: 100%;"
             />
           </div>
-          <button 
-            v-if="filteredLedgerEntries.length > 0"
-            class="btn btn-secondary csv-export-btn" 
-            style="display:inline-flex; align-items:center; gap:6px; height: 38px; padding: 0 16px; font-size: var(--font-sm); white-space: nowrap;"
-            @click="exportLedgerCSV"
-          >
-            <i class="fa-solid fa-file-csv text-primary"></i> ส่งออกบัญชี (CSV)
-          </button>
+          <div v-if="filteredLedgerEntries.length > 0" class="flex" style="width: 100%;">
+            <button 
+              class="btn btn-secondary csv-export-btn" 
+              style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px; font-size: var(--font-sm); border-radius: 8px; width: 100%;"
+              @click="exportLedgerCSV"
+            >
+              <i class="fa-solid fa-file-csv text-primary"></i> ส่งออกบัญชี (CSV)
+            </button>
+          </div>
         </div>
 
         <!-- Filter Sub-summary Banner with Proper Margin/Padding -->
@@ -323,7 +327,7 @@
       </div>
 
       <!-- Combined Table Card (Expenses + Waste + Staff Credit) -->
-      <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="hide-mobile" style="width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
         <table class="table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
@@ -436,11 +440,11 @@
       </div>
 
       <!-- Mobile List Cards -->
-      <div class="mobile-menu-list-container" style="display: none;">
+      <div class="show-mobile-flex mobile-menu-list-container flex-col" style="gap: 12px; padding-bottom: 24px; width: 100%;">
         <div v-if="filteredLedgerEntries.length === 0" class="card text-center py-xl" style="color: var(--text-tertiary);">
           ไม่มีรายการในหมวดหมู่นี้
         </div>
-        <div v-else class="flex flex-col gap-sm">
+        <div v-else class="flex flex-col" style="gap: 12px; width: 100%;">
           <div 
             v-for="item in paginatedLedgerEntries" 
             :key="'mobile-' + item.entryKey"
@@ -451,40 +455,41 @@
               <span class="category-badge" :class="item.badgeClass">
                 <i :class="item.icon"></i> {{ item.categoryLabel }}
               </span>
-              <span v-if="item.isRefund" class="font-bold text-success text-base">+{{ formatCurrency(item.amount) }}</span>
-              <span v-else-if="item.isCancelled" class="font-bold text-tertiary text-sm" style="text-decoration: line-through;">{{ formatCurrency(item.amount) }}</span>
-              <span v-else class="font-bold text-danger text-base">{{ formatCurrency(item.amount) }}</span>
+              <span v-if="item.isRefund" class="font-bold text-success text-base" style="font-size: 16px;">+{{ formatCurrency(item.amount) }}</span>
+              <span v-else-if="item.isCancelled" class="font-bold text-tertiary text-sm" style="text-decoration: line-through; font-size: 14px;">{{ formatCurrency(item.amount) }}</span>
+              <span v-else class="font-bold text-danger text-base" style="font-size: 16px;">{{ formatCurrency(item.amount) }}</span>
             </div>
-            <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word;">
+            <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word; font-size: 14px; line-height: 1.4;">
               {{ item.name }}
             </div>
-            <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mb-xs font-semibold">
+            <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mb-xs font-semibold" style="margin-top: 4px;">
               <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
             </div>
-            <div class="flex flex-between align-center text-xs text-secondary mt-xs pt-xs" style="border-top: 1px solid var(--border-color);">
+            <div class="flex flex-between align-center text-xs text-secondary" style="border-top: 1px dashed var(--border-color); padding-top: 12px; margin-top: 6px;">
               <span>{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
               <div class="flex align-center gap-xs">
                 <span class="payment-method-badge" :class="item.paymentClass">{{ item.paymentLabel }}</span>
                 <!-- Reversal Badges / Buttons for Mobile -->
-                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 3px 8px; font-size: 10.5px;">
+                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 4px 10px; font-size: 11px;">
                   <i class="fa-solid fa-circle-check"></i> คืนเงินแล้ว
                 </span>
-                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'" style="padding: 3px 8px; font-size: 10.5px;">
+                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'" style="padding: 4px 10px; font-size: 11px;">
                   <i :class="item.category === 'salary' ? 'fa-solid fa-user-clock' : 'fa-solid fa-ban'"></i>
                   {{ item.category === 'salary' ? 'คืนบัญชีพนักงาน' : 'ยกเลิกแล้ว' }}
                 </span>
-                <span v-else-if="item.isCancelled" class="badge-status-pill badge-stock-cancelled" style="padding: 3px 8px; font-size: 10.5px;">
+                <span v-else-if="item.isCancelled" class="badge-status-pill badge-stock-cancelled" style="padding: 4px 10px; font-size: 11px;">
                   <i class="fa-solid fa-rotate-left"></i> คืนสต็อกแล้ว
                 </span>
                 <button 
                   v-else-if="item.type === 'expense' || item.type === 'waste_loss' || item.type === 'credit_loss'"
                   class="btn-action-reverse" 
-                  style="padding: 3px 8px; font-size: 11px;"
+                  style="padding: 4px 12px; font-size: 11.5px; height: 32px;"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                 >
                   <i v-if="reversingEntryId === item.entryKey" class="fa-solid fa-spinner fa-spin"></i>
                   <i v-else class="fa-solid fa-rotate-left"></i>
+                  <span> ยกเลิก/คืน</span>
                 </button>
               </div>
             </div>
@@ -493,19 +498,19 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalLedgerPages > 1" class="flex flex-between align-center mt-md pt-md" style="border-top: 1px solid var(--border-color);">
+      <div v-if="totalLedgerPages > 1" class="pagination-bar flex flex-between align-center">
         <button 
-          class="btn btn-secondary btn-sm" 
+          class="pagination-btn" 
           :disabled="ledgerCurrentPage === 1" 
           @click="ledgerCurrentPage--"
         >
           <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
         </button>
-        <span class="text-xs text-secondary">
+        <span class="pagination-info">
           หน้า {{ ledgerCurrentPage }} จาก {{ totalLedgerPages }}
         </span>
         <button 
-          class="btn btn-secondary btn-sm" 
+          class="pagination-btn" 
           :disabled="ledgerCurrentPage === totalLedgerPages" 
           @click="ledgerCurrentPage++"
         >
@@ -523,9 +528,12 @@
         
         <!-- Chart 1: Category Breakdown (Including Waste & Credit) -->
         <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-          <div class="card-title font-bold text-base mb-lg flex align-center gap-xs" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <i class="fa-solid fa-chart-pie text-primary"></i> 
-            <span>สัดส่วนค่าใช้จ่าย & ความสูญเสีย ({{ ledgerPeriodLabel }})</span>
+          <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <i class="fa-solid fa-chart-pie text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+            <div class="flex flex-col">
+              <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.3;">สัดส่วนค่าใช้จ่าย & ของเสีย</span>
+              <span class="text-xs text-secondary font-medium" style="margin-top: 2px;">({{ ledgerPeriodLabel }})</span>
+            </div>
           </div>
           
           <div v-if="allCostBreakdownStats.length === 0" class="text-center py-xl text-secondary text-sm">
@@ -559,21 +567,23 @@
 
         <!-- Chart 2: Revenue vs Expenses vs Waste Comparison -->
         <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-          <div class="card-title font-bold text-base mb-lg flex align-center gap-xs" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <i class="fa-solid fa-chart-simple text-primary"></i> 
-            <span>เปรียบเทียบ รายรับ vs รายจ่าย vs ของเสีย/เครดิต</span>
+          <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+            <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.35;">
+              เปรียบเทียบ รายรับ vs รายจ่าย
+            </span>
           </div>
 
           <div class="financial-bars-container flex flex-col gap-lg">
             
             <!-- Revenue -->
             <div class="financial-bar-item">
-              <div class="flex flex-between align-center text-xs mb-xs">
-                <span class="font-bold text-success flex align-center gap-xs">
+              <div class="flex flex-between align-center text-xs mb-xs" style="gap: 8px;">
+                <span class="font-bold text-success flex align-center gap-xs" style="white-space: nowrap;">
                   <i class="fa-solid fa-sack-dollar"></i> 
-                  <span>รายรับ/ยอดขายรวม</span>
+                  <span>รายรับรวม</span>
                 </span>
-                <span class="font-bold text-success text-sm">{{ formatCurrency(totalRevenue) }}</span>
+                <span class="font-bold text-success text-sm" style="white-space: nowrap;">{{ formatCurrency(totalRevenue) }}</span>
               </div>
               <div class="progress-bar-bg" style="height: 14px;">
                 <div class="progress-bar-fill" style="width: 100%; background-color: var(--success, #2a9d8f);"></div>
@@ -582,14 +592,14 @@
 
             <!-- Expense -->
             <div class="financial-bar-item">
-              <div class="flex flex-between align-center text-xs mb-xs">
-                <span class="font-bold text-danger flex align-center gap-xs">
+              <div class="flex flex-between align-center text-xs mb-xs" style="gap: 8px;">
+                <span class="font-bold text-danger flex align-center gap-xs" style="white-space: nowrap;">
                   <i class="fa-solid fa-wallet"></i> 
                   <span>รายจ่ายรวม</span>
                 </span>
-                <span class="font-bold text-danger text-sm">
+                <span class="font-bold text-danger text-sm" style="white-space: nowrap;">
                   {{ formatCurrency(totalExpenses) }} 
-                  <span class="text-secondary font-normal text-xs">({{ totalRevenue > 0 ? ((totalExpenses / totalRevenue) * 100).toFixed(1) : 0 }}% ของยอดขาย)</span>
+                  <span class="text-secondary font-normal text-xs">({{ totalRevenue > 0 ? ((totalExpenses / totalRevenue) * 100).toFixed(1) : 0 }}%)</span>
                 </span>
               </div>
               <div class="progress-bar-bg" style="height: 14px;">
@@ -605,14 +615,14 @@
 
             <!-- Waste & Credit -->
             <div class="financial-bar-item">
-              <div class="flex flex-between align-center text-xs mb-xs">
-                <span class="font-bold text-warning flex align-center gap-xs">
+              <div class="flex flex-between align-center text-xs mb-xs" style="gap: 8px;">
+                <span class="font-bold text-warning flex align-center gap-xs" style="white-space: nowrap;">
                   <i class="fa-solid fa-trash-can"></i> 
-                  <span>ต้นทุนของเสีย & เครดิต</span>
+                  <span>ของเสีย & เครดิต</span>
                 </span>
-                <span class="font-bold text-warning text-sm">
+                <span class="font-bold text-warning text-sm" style="white-space: nowrap;">
                   {{ formatCurrency(totalWasteAndCreditCost) }}
-                  <span class="text-secondary font-normal text-xs">({{ totalRevenue > 0 ? ((totalWasteAndCreditCost / totalRevenue) * 100).toFixed(1) : 0 }}% ของยอดขาย)</span>
+                  <span class="text-secondary font-normal text-xs">({{ totalRevenue > 0 ? ((totalWasteAndCreditCost / totalRevenue) * 100).toFixed(1) : 0 }}%)</span>
                 </span>
               </div>
               <div class="progress-bar-bg" style="height: 14px;">
@@ -627,24 +637,23 @@
             </div>
 
             <!-- Net Result Card -->
-            <div class="net-profit-card card p-md flex flex-between align-center" :class="netProfit >= 0 ? 'profit-box-positive' : 'profit-box-negative'">
-              <span class="font-bold text-sm flex align-center gap-xs" :class="netProfit >= 0 ? 'text-success' : 'text-danger'">
+            <div class="net-profit-card card p-md flex flex-between align-center flex-wrap gap-xs" :class="netProfit >= 0 ? 'profit-box-positive' : 'profit-box-negative'">
+              <span class="font-bold text-sm flex align-center gap-xs" :class="netProfit >= 0 ? 'text-success' : 'text-danger'" style="white-space: nowrap;">
                 <i :class="netProfit >= 0 ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation'"></i>
                 <span>คงเหลือสุทธิ (กำไรจริง)</span>
               </span>
-              <span class="font-bold text-lg" :class="netProfit >= 0 ? 'text-success' : 'text-danger'">
+              <span class="font-bold text-lg" :class="netProfit >= 0 ? 'text-success' : 'text-danger'" style="white-space: nowrap;">
                 {{ formatCurrency(netProfit) }}
               </span>
             </div>
 
             <!-- Profit Sharing Split Card (60% / 40%) -->
             <div class="profit-sharing-section card p-md" style="background: rgba(139, 3, 19, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
-              <div class="flex flex-between align-center mb-sm">
+              <div class="flex align-center mb-sm">
                 <span class="font-bold text-xs flex align-center" style="color: var(--text-primary); gap: 8px;">
                   <i class="fa-solid fa-handshake-angle" style="color: var(--text-primary); font-size: 14px;"></i>
-                  <span>การจัดสรรส่วนแบ่งกำไร (60% / 40%)</span>
+                  <span>การจัดสรรส่วนแบ่งกำไร</span>
                 </span>
-                <span class="text-xxs text-tertiary">คำนวณจากกำไรจริง</span>
               </div>
               <div class="grid grid-2 gap-sm">
                 <!-- 60% Share (ร้าน / ฝ่ายบริหาร) -->
@@ -698,19 +707,31 @@
           <div 
             v-for="(top, idx) in topExpenses" 
             :key="'top-' + top.id" 
-            class="top-expense-row flex flex-between align-center flex-wrap gap-sm"
+            class="top-expense-row flex flex-col gap-2xs"
+            style="padding: 10px 4px; border-bottom: 1px solid var(--border-color);"
           >
-            <div class="flex align-center gap-md flex-wrap">
-              <span class="rank-indicator" :class="'rank-' + (idx + 1)">#{{ idx + 1 }}</span>
-              <span class="category-badge" :class="'badge-cat-' + top.category">
-                <i :class="getExpenseCategoryIcon(top.category)"></i>
-                <span>{{ getCategoryLabel(top.category) }}</span>
-              </span>
-              <span class="top-expense-note font-medium" style="color: var(--text-primary);">
-                {{ top.note || getCategoryLabel(top.category) }}
+            <!-- แถวที่ 1: อันดับ + หมวดหมู่ (ซ้าย) และ ยอดเงิน (ขวา) -->
+            <div class="flex flex-between align-center">
+              <div class="flex align-center gap-xs">
+                <span class="rank-indicator" :class="'rank-' + (idx + 1)">#{{ idx + 1 }}</span>
+                <span class="category-badge top-cat-badge" :class="'badge-cat-' + top.category">
+                  <i :class="getExpenseCategoryIcon(top.category)"></i>
+                  <span>{{ getCategoryLabel(top.category) }}</span>
+                </span>
+              </div>
+              <span class="font-bold text-danger text-base" style="font-size: 15.5px; white-space: nowrap;">
+                {{ formatCurrency(top.amount) }}
               </span>
             </div>
-            <span class="font-bold text-danger text-base">{{ formatCurrency(top.amount) }}</span>
+            
+            <!-- แถวที่ 2: ชื่อคำอธิบาย / รายละเอียด (แสดงเต็มข้อความ ไม่ตัดทอน) -->
+            <div 
+              v-if="top.note && top.note.trim() && top.note.trim() !== getCategoryLabel(top.category)" 
+              class="text-xs font-medium" 
+              style="padding-left: 32px; word-break: break-word; line-height: 1.4; color: var(--text-secondary);"
+            >
+              {{ top.note }}
+            </div>
           </div>
         </div>
       </div>
@@ -764,16 +785,17 @@ const activePeriodMode = computed(() => props.periodMode || 'daily');
 // Sub-tabs: 'form' (บันทึกรายจ่าย), 'list' (หน้ารายการ), 'analytics' (หน้ากราฟ)
 const activeSubTab = ref('form');
 
-// 12 Categories arranged in 2 rows of 6
+// Categories list
 const categoryList = [
-  // Row 1 (6 items)
+  // Row 1: ของสดและพลังงาน
   { id: 'raw_chicken', name: 'ไก่สด', icon: 'fa-solid fa-drumstick-bite' },
+  { id: 'ice', name: 'น้ำแข็ง', icon: 'fa-solid fa-cube' },
   { id: 'cooking_oil', name: 'น้ำมันพืช', icon: 'fa-solid fa-bottle-droplet' },
   { id: 'fuel_transport', name: 'น้ำมันรถ', icon: 'fa-solid fa-gas-pump' },
   { id: 'gas_lpg', name: 'แก๊ส LPG', icon: 'fa-solid fa-fire' },
   { id: 'sticky_rice', name: 'ข้าวเหนียว', icon: 'fa-solid fa-bowl-rice' },
   { id: 'meatballs', name: 'ลูกชิ้น', icon: 'fa-solid fa-circle' },
-  // Row 2 (6 items)
+  // Row 2: ของสดอื่นๆ บรรจุภัณฑ์ และการเงิน
   { id: 'salapao', name: 'ซาลาเปา', icon: 'fa-solid fa-cookie' },
   { id: 'packaging', name: 'บรรจุภัณฑ์', icon: 'fa-solid fa-box' },
   { id: 'salary', name: 'เงินเดือน/ค่าแรง', icon: 'fa-solid fa-hand-holding-dollar' },
@@ -830,7 +852,7 @@ const expenseFormTitle = computed(() => {
   } else if (activePeriodMode.value === 'monthly') {
     const [y, m] = activeMonth.value.split('-');
     const d = new Date(Number(y), Number(m) - 1, 1);
-    return `บันทึกค่าใช้จ่าย (${d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })})`;
+    return `บันทึกค่าใช้จ่าย (${d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' })})`;
   } else {
     return `บันทึกค่าใช้จ่าย (${Number(activeYear.value) + 543})`;
   }
@@ -838,11 +860,11 @@ const expenseFormTitle = computed(() => {
 
 const ledgerPeriodLabel = computed(() => {
   if (activePeriodMode.value === 'daily') {
-    return `วัน ${formatDate(activeDate.value)}`;
+    return formatDate(activeDate.value);
   } else if (activePeriodMode.value === 'monthly') {
     const [y, m] = activeMonth.value.split('-');
     const d = new Date(Number(y), Number(m) - 1, 1);
-    return `เดือน ${d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}`;
+    return d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
   } else {
     return `ปี ${Number(activeYear.value) + 543}`;
   }
@@ -1124,6 +1146,7 @@ const allCostBreakdownStats = computed(() => {
     map[c.id] = { ...c, total: 0, color: 'var(--primary-light, #ad281e)' };
   });
   map['raw_chicken'].color = '#ad281e';
+  map['ice'].color = '#0284c7';
   map['cooking_oil'].color = 'var(--accent, #ffab2b)';
   map['fuel_transport'].color = 'var(--accent-dark, #cc8000)';
   map['gas_lpg'].color = 'var(--primary, #8b0313)';
@@ -1312,6 +1335,7 @@ const exportLedgerCSV = () => {
 const getCategoryLabel = (cat) => {
   const map = {
     'raw_chicken': 'ไก่สด',
+    'ice': 'น้ำแข็ง',
     'cooking_oil': 'น้ำมันพืช',
     'fuel_transport': 'น้ำมันรถ',
     'fuel_oil': 'น้ำมันพืช',
@@ -1337,6 +1361,7 @@ const getFilterCategoryLabel = (cat) => {
 const getExpenseCategoryIcon = (cat) => {
   const map = {
     'raw_chicken': 'fa-solid fa-drumstick-bite',
+    'ice': 'fa-solid fa-cube',
     'cooking_oil': 'fa-solid fa-bottle-droplet',
     'fuel_transport': 'fa-solid fa-gas-pump',
     'fuel_oil': 'fa-solid fa-bottle-droplet',
@@ -1406,35 +1431,35 @@ onMounted(() => {
   font-weight: var(--font-weight-bold, 700);
 }
 
-/* 3. Category 12 Buttons Grid (6x2) */
+/* 3. Category 12 Buttons Grid */
 .category-grid-12 {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: var(--space-sm, 8px);
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
 }
 
 .category-card-btn {
   background: #ffffff;
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md, 12px);
-  padding: var(--space-md, 12px) var(--space-xs, 4px);
+  padding: 14px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-xs, 4px);
+  gap: 8px;
   cursor: pointer;
   transition: all var(--transition-fast, 0.15s ease);
   user-select: none;
-  min-height: 74px;
+  min-height: 90px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .category-card-btn:hover {
   border-color: var(--primary-light);
-  background: rgba(139, 3, 19, 0.02);
+  background: rgba(139, 3, 19, 0.03);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px var(--primary-glow, rgba(139, 3, 19, 0.12));
+  box-shadow: 0 4px 12px var(--primary-glow, rgba(139, 3, 19, 0.12));
 }
 
 .category-card-btn.active {
@@ -1446,7 +1471,7 @@ onMounted(() => {
 }
 
 .cat-icon-wrap {
-  font-size: 1.45rem;
+  font-size: 1.75rem;
   line-height: 1;
   color: var(--text-secondary);
   transition: color var(--transition-fast, 0.15s ease);
@@ -1457,7 +1482,7 @@ onMounted(() => {
 }
 
 .cat-name {
-  font-size: var(--font-xs, 0.8rem);
+  font-size: var(--font-sm, 13.5px);
   font-weight: var(--font-weight-bold, 700);
   text-align: center;
   white-space: nowrap;
@@ -1758,8 +1783,8 @@ onMounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1;
-  max-width: 340px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .search-icon {
@@ -1804,7 +1829,20 @@ onMounted(() => {
   font-size: 13px;
 }
 
+.top-cat-badge {
+  padding: 3px 8px !important;
+  font-size: 11.5px !important;
+  border-radius: 6px !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+.top-cat-badge i {
+  font-size: 11px !important;
+}
+
 .badge-cat-raw_chicken { background: rgba(173, 40, 30, 0.12); color: #a81c1c; border: 1px solid rgba(173, 40, 30, 0.2); }
+.badge-cat-ice { background: rgba(56, 189, 248, 0.14); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.25); }
 .badge-cat-cooking_oil, .badge-cat-fuel_oil { background: rgba(255, 153, 0, 0.14); color: #b26a00; border: 1px solid rgba(255, 153, 0, 0.25); }
 .badge-cat-fuel_transport { background: rgba(255, 153, 0, 0.14); color: #b26a00; border: 1px solid rgba(255, 153, 0, 0.25); }
 .badge-cat-gas_lpg { background: rgba(139, 3, 19, 0.12); color: var(--primary); border: 1px solid rgba(139, 3, 19, 0.2); }
@@ -1881,6 +1919,41 @@ onMounted(() => {
 
 .payment-method-badge i {
   font-size: 12px;
+}
+
+/* Action Reverse Button */
+.btn-action-reverse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #ffffff;
+  color: var(--primary, #8b0313);
+  border: 1.5px solid rgba(139, 3, 19, 0.35);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(139, 3, 19, 0.08);
+  transition: all var(--transition-fast, 0.15s ease);
+  user-select: none;
+}
+
+.btn-action-reverse:hover:not(:disabled) {
+  background: rgba(139, 3, 19, 0.06);
+  border-color: var(--primary, #8b0313);
+  transform: translateY(-1px);
+}
+
+.btn-action-reverse:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-action-reverse:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .badge-cash { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
@@ -1992,19 +2065,60 @@ onMounted(() => {
   font-size: var(--font-sm);
 }
 
-/* 12. Mobile cards */
 .expense-mobile-card {
   background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.expense-mobile-card .category-badge {
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 6px;
+  gap: 4px;
+}
+
+.expense-mobile-card .category-badge i {
+  font-size: 11px;
+}
+
+.expense-mobile-card .payment-method-badge {
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 6px;
+  gap: 4px;
+}
+
+.expense-mobile-card .payment-method-badge i {
+  font-size: 10px;
+}
+
+.expense-mobile-card .badge-status-pill {
+  min-width: unset;
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 6px;
+  gap: 4px;
 }
 
 /* Responsive Grids */
 @media (max-width: 1100px) {
   .category-grid-12 {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+    gap: 10px;
+  }
+  .category-card-btn {
+    min-height: 80px;
+    padding: 12px 6px;
+    gap: 6px;
+  }
+  .cat-icon-wrap {
+    font-size: 1.5rem;
+  }
+  .cat-name {
+    font-size: 12.5px;
   }
   .quick-notes-grid-6 {
     grid-template-columns: repeat(3, 1fr);
@@ -2019,7 +2133,19 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
   .category-grid-12 {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .category-card-btn {
+    min-height: 72px;
+    padding: 10px 4px;
+    gap: 5px;
+  }
+  .cat-icon-wrap {
+    font-size: 1.35rem;
+  }
+  .cat-name {
+    font-size: 12px;
   }
   .quick-notes-grid-6 {
     grid-template-columns: repeat(3, 1fr);
@@ -2032,7 +2158,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .hide-mobile {
     display: none !important;
   }
@@ -2041,12 +2167,40 @@ onMounted(() => {
   }
   .category-grid-12 {
     grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .category-card-btn {
+    min-height: 56px;
+    padding: 6px 3px;
+    border-radius: 10px;
+  }
+  .cat-icon-wrap {
+    font-size: 1.2rem;
+  }
+  .cat-name {
+    font-size: 11.5px;
   }
   .quick-notes-grid-6 {
     grid-template-columns: repeat(2, 1fr);
   }
   .quick-amount-buttons-full {
     grid-template-columns: repeat(3, 1fr);
+  }
+  /* Profit Sharing 60/40 Stack on Mobile */
+  .profit-sharing-section .grid.grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Top Expenses on Mobile */
+  .top-expense-row {
+    padding: 10px 8px;
+  }
+  .top-expense-note {
+    font-size: 12px;
+  }
+  .rank-indicator {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
   }
 }
 

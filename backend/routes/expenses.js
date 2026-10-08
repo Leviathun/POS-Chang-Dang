@@ -10,6 +10,7 @@ const getCategoryLabel = (cat) => {
     'gas_fuel': 'แก๊สและเชื้อเพลิง',
     'packaging': 'บรรจุภัณฑ์/แพ็คเกจ',
     'raw_chicken': 'ของสด: ไก่ดิบ',
+    'ice': 'ของสด: น้ำแข็ง',
     'sticky_rice': 'ของสด: ข้าวเหนียว',
     'meatballs': 'ของสด: ลูกชิ้น',
     'salapao': 'ของสด: ซาลาเปา',
@@ -44,7 +45,7 @@ router.post('/', async (req, res) => {
 
     const validCategories = [
       'raw_materials', 'gas_fuel', 'packaging', 'other', 'raw_chicken', 
-      'sticky_rice', 'meatballs', 'salapao', 'cooking_oil', 'fuel_transport', 
+      'ice', 'sticky_rice', 'meatballs', 'salapao', 'cooking_oil', 'fuel_transport', 
       'fuel_oil', 'gas_lpg', 'salary', 'utility_bills', 'debt'
     ];
 

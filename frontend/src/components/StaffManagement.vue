@@ -1,12 +1,13 @@
 <template>
-  <div class="staff-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+  <div class="staff-management-wrapper card p-md" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation for Staff Management -->
-    <div class="category-tabs mb-lg flex gap-xs flex-wrap">
+    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
       <button 
         class="btn btn-secondary" 
         :class="{ 'active': activeSubTab === 'employees' }"
         @click="activeSubTab = 'employees'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-users"></i> รายชื่อ & ค่าจ้าง
       </button>
@@ -14,6 +15,7 @@
         class="btn btn-secondary" 
         :class="{ 'active': activeSubTab === 'calendar' }"
         @click="activeSubTab = 'calendar'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-calendar-days"></i> ปฏิทินรายบุคคล
       </button>
@@ -21,6 +23,7 @@
         class="btn btn-secondary" 
         :class="{ 'active': activeSubTab === 'attendance' }"
         @click="activeSubTab = 'attendance'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-calendar-check"></i> บันทึกเวลา & การลา
       </button>
@@ -28,6 +31,7 @@
         class="btn btn-secondary" 
         :class="{ 'active': activeSubTab === 'event_ot' }"
         @click="activeSubTab = 'event_ot'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-tags"></i> OT งานพิเศษ
       </button>
@@ -35,6 +39,7 @@
         class="btn btn-secondary" 
         :class="{ 'active': activeSubTab === 'advances' }"
         @click="activeSubTab = 'advances'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-hand-holding-dollar"></i> เบิกเงินล่วงหน้า
       </button>
@@ -43,6 +48,7 @@
         class="btn btn-secondary" 
         :class="{ 'active': activeSubTab === 'payroll' }"
         @click="activeSubTab = 'payroll'"
+        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-file-invoice-dollar"></i> คำนวณ & จ่ายเงินเดือน
       </button>
@@ -63,7 +69,8 @@
         </div>
       </div>
 
-      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+      <!-- Desktop & Tablet Table View -->
+      <div class="hide-mobile card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
@@ -129,6 +136,50 @@
           </table>
         </div>
       </div>
+
+      <!-- Mobile Card List View -->
+      <div class="show-mobile-flex staff-mobile-card-list">
+        <div v-if="loadingEmployees" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <div v-else-if="employees.length === 0" class="card text-center p-xl text-secondary">ไม่พบข้อมูลพนักงาน</div>
+        <div 
+          v-else 
+          v-for="emp in employees" 
+          :key="'m-emp-' + emp.id"
+          class="staff-mobile-card"
+        >
+          <div class="flex flex-between align-center gap-xs">
+            <div>
+              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ emp.name }}</div>
+              <div class="text-xs text-secondary" style="margin-top: 4px;">
+                <span class="font-bold text-primary" style="font-size: 12px;">รหัส PIN: {{ emp.pin }}</span>
+              </div>
+            </div>
+            <div class="flex gap-2xs flex-wrap justify-end" style="gap: 4px;">
+              <span class="capsule-badge" :class="emp.role === 'admin' ? 'badge-primary' : emp.role === 'manager' ? 'badge-warning' : 'badge-neutral'" style="font-size: 11px; padding: 3px 8px;">
+                {{ getRoleLabel(emp.role) }}
+              </span>
+              <span class="skill-badge" :class="emp.skill_level" style="font-size: 11px; padding: 3px 8px;">
+                <i :class="getSkillIcon(emp.skill_level)"></i> {{ getSkillLabel(emp.skill_level) }}
+              </span>
+            </div>
+          </div>
+          <div class="flex flex-between align-center text-sm staff-mobile-divider">
+            <div>
+              <span class="text-secondary text-xs">อัตราค่าจ้าง:</span>
+              <span class="font-bold text-base text-primary ml-xs" style="font-size: 15px;">{{ formatCurrency(emp.wage_rate) }}</span>
+              <span class="text-xs text-secondary"> / {{ emp.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
+            </div>
+            <span class="benefit-tag" style="font-size: 11px; padding: 3px 9px;">
+              <i class="fa-solid fa-bowl-rice text-warning"></i> {{ emp.benefits || 'ข้าวเที่ยงฟรี' }}
+            </span>
+          </div>
+          <div v-if="isAdminUser" style="margin-top: 2px;">
+            <button class="btn btn-secondary w-full" style="height: 40px; font-size: 13px; font-weight: 600; border-radius: var(--radius-md);" @click="openEditCompensationModal(emp)">
+              <i class="fa-solid fa-sliders mr-xs"></i> ปรับค่าแรงและสวัสดิการ
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -136,96 +187,98 @@
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div v-if="activeSubTab === 'calendar'" class="flex flex-col gap-md">
       <!-- Calendar Control Bar -->
-      <div class="card p-md flex flex-between align-center flex-wrap gap-md" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color); position: relative; z-index: 50;">
-        <div class="flex align-center gap-md flex-wrap">
-          <!-- Staff Selector Dropdown -->
-          <div class="flex align-center gap-xs">
-            <span class="font-bold text-sm text-secondary" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fa-solid fa-user text-primary"></i> เลือกพนักงาน:
-            </span>
-            <div class="custom-select-wrapper" style="width: auto; min-width: 200px; position: relative;" @click.stop>
+      <div class="card p-md flex flex-col gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color);">
+        <!-- Staff Selector (Label on own line, Dropdown 100% full width) -->
+        <div class="flex flex-col gap-2xs" style="width: 100%;">
+          <label class="font-bold text-sm text-secondary flex align-center gap-xs" style="margin-bottom: 2px;">
+            <i class="fa-solid fa-user text-primary"></i> เลือกพนักงาน:
+          </label>
+          <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
+            <div 
+              class="custom-select-trigger" 
+              :class="{ 'active': isCalendarStaffDropdownOpen }" 
+              @click="toggleCalendarStaffDropdown"
+              style="height: 40px; width: 100%; padding: 0 32px 0 var(--space-md); display: flex; align-items: center; cursor: pointer; border-radius: var(--radius-md); font-weight: bold; font-size: var(--font-sm);"
+            >
+              <span class="custom-select-text" style="width: 100%;">
+                {{ currentCalendarStaff ? `${currentCalendarStaff.name} (${getSkillLabel(currentCalendarStaff.skill_level)})` : 'เลือกพนักงาน' }}
+              </span>
+            </div>
+            <div v-if="isCalendarStaffDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100%; max-height: 220px; z-index: 1000; overflow-x: hidden;">
               <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isCalendarStaffDropdownOpen }" 
-                @click="toggleCalendarStaffDropdown"
-                style="height: 42px; min-width: 200px; padding: 0 36px 0 var(--space-md); display: flex; align-items: center; cursor: pointer; border-radius: var(--radius-md); font-weight: bold;"
+                v-for="emp in employees" 
+                :key="emp.id" 
+                class="custom-select-option" 
+                :class="{ 'selected': calendarSelectedStaffId === emp.id }" 
+                @click="selectCalendarStaff(emp.id)"
+                style="width: 100%; box-sizing: border-box;"
               >
-                <span class="custom-select-text">
-                  {{ currentCalendarStaff ? `${currentCalendarStaff.name} (${getSkillLabel(currentCalendarStaff.skill_level)})` : 'เลือกพนักงาน' }}
-                </span>
-              </div>
-              <div v-if="isCalendarStaffDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); min-width: 200px; max-height: 220px; z-index: 1000;">
-                <div 
-                  v-for="emp in employees" 
-                  :key="emp.id" 
-                  class="custom-select-option" 
-                  :class="{ 'selected': calendarSelectedStaffId === emp.id }" 
-                  @click="selectCalendarStaff(emp.id)"
-                >
-                  {{ emp.name }} ({{ getSkillLabel(emp.skill_level) }})
-                </div>
+                {{ emp.name }} ({{ getSkillLabel(emp.skill_level) }})
               </div>
             </div>
-          </div>
-
-          <!-- Month Selector -->
-          <div class="flex align-center gap-xs">
-            <button type="button" class="picker-nav-btn" @click="adjustCalendarMonth(-1)" title="เดือนก่อนหน้า">
-              <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            
-            <!-- Custom Month Picker for Calendar -->
-            <div class="custom-select-wrapper" style="width: auto; position: relative;" @click.stop>
-              <div 
-                class="picker-trigger-btn" 
-                :class="{ 'active': isCalendarMonthDropdownOpen }" 
-                @click="toggleCalendarMonthDropdown"
-                style="min-width: 190px; padding: 0 var(--space-lg); justify-content: space-between; gap: var(--space-md);"
-              >
-                <span class="flex align-center gap-sm">
-                  <i class="fa-solid fa-calendar-days text-primary"></i>
-                  <span>{{ calendarMonthLabel }}</span>
-                </span>
-                <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
-              </div>
-
-              <!-- Month Dropdown Grid -->
-              <div v-if="isCalendarMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
-                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(-1)">
-                    <i class="fa-solid fa-chevron-left"></i>
-                  </button>
-                  <span class="font-bold">ปี พ.ศ. {{ calendarMonthPickerYear + 543 }}</span>
-                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(1)">
-                    <i class="fa-solid fa-chevron-right"></i>
-                  </button>
-                </div>
-                <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-                  <button 
-                    v-for="(mName, idx) in thaiMonthsShort" 
-                    :key="idx" 
-                    type="button"
-                    class="btn btn-secondary btn-sm"
-                    :class="{ 'btn-primary active': isCalendarMonthPickerSelected(idx + 1) }"
-                    @click="selectCalendarMonthPicker(idx + 1)"
-                  >
-                    {{ mName }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button type="button" class="picker-nav-btn" @click="adjustCalendarMonth(1)" title="เดือนถัดไป">
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-            <button type="button" class="picker-current-btn ml-xs" @click="setCalendarCurrentMonth">
-              เดือนปัจจุบัน
-            </button>
           </div>
         </div>
 
-        <div class="text-xs text-secondary">
-          <i class="fa-solid fa-circle-info text-primary mr-2xs"></i> คลิกที่ช่องวันที่เพื่อดูสรุปรายละเอียดประจำวัน
+        <!-- Month Navigation Bar (Spans full width, arrows locked at far ends) -->
+        <div class="flex align-center gap-xs" style="width: 100%;">
+          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustCalendarMonth(-1)" title="เดือนก่อนหน้า">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          
+          <!-- Custom Month Picker for Calendar (Fills remaining width between arrows) -->
+          <div class="custom-select-wrapper" style="flex: 1; min-width: 0; width: 100%; position: relative;" @click.stop>
+            <div 
+              class="picker-trigger-btn" 
+              :class="{ 'active': isCalendarMonthDropdownOpen }" 
+              @click="toggleCalendarMonthDropdown"
+              style="width: 100%; height: 38px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: 13px; white-space: nowrap;"
+            >
+              <span class="flex align-center gap-xs" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <i class="fa-solid fa-calendar-days text-primary flex-shrink-0"></i>
+                <span style="overflow: hidden; text-overflow: ellipsis;">{{ calendarMonthLabel }}</span>
+              </span>
+              <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs flex-shrink-0"></i>
+            </div>
+
+            <!-- Month Dropdown Grid -->
+            <div v-if="isCalendarMonthDropdownOpen" class="custom-select-dropdown monthpicker-popover dropdown-center-desktop" style="top: calc(100% + 4px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
+                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(-1)">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="font-bold">ปี พ.ศ. {{ calendarMonthPickerYear + 543 }}</span>
+                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(1)">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+              <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                <button 
+                  v-for="(mName, idx) in thaiMonthsShort" 
+                  :key="idx" 
+                  type="button" 
+                  class="btn btn-secondary btn-sm"
+                  :class="{ 'btn-primary active': isCalendarMonthPickerSelected(idx + 1) }"
+                  @click="selectCalendarMonthPicker(idx + 1)"
+                >
+                  {{ mName }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustCalendarMonth(1)" title="เดือนถัดไป">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Sub-bar: Hint and Current Month Button -->
+        <div class="flex flex-between align-center flex-wrap gap-xs" style="margin-top: 2px;">
+          <div style="font-size: 11px; color: var(--text-tertiary);">
+            <i class="fa-solid fa-circle-info text-primary mr-2xs" style="font-size: 10px;"></i> คลิกที่ช่องวันที่เพื่อดูสรุปรายละเอียดประจำวัน
+          </div>
+          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: 11px; white-space: nowrap;" @click="setCalendarCurrentMonth">
+            <i class="fa-solid fa-clock-rotate-left mr-2xs"></i> เดือนปัจจุบัน
+          </button>
         </div>
       </div>
 
@@ -262,79 +315,85 @@
         <div class="spinner mx-auto mb-sm"></div>
         <div class="text-sm font-bold text-primary">กำลังโหลดข้อมูลปฏิทิน...</div>
       </div>
-      <div v-else class="card p-md overflow-hidden" style="border: 1px solid var(--border-color);">
-        <!-- Day of Week Headers -->
-        <div class="calendar-grid-header">
-          <div v-for="wd in ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']" :key="wd" class="calendar-weekday-cell">
-            {{ wd }}
-          </div>
-        </div>
-
-        <!-- Days Grid -->
-        <div class="calendar-grid-body">
-          <!-- Offset empty cells before 1st day of month -->
-          <div v-for="emptyIdx in calendarStartOffset" :key="'empty-'+emptyIdx" class="calendar-day-empty"></div>
-
-          <!-- Active Day Cells -->
-          <div 
-            v-for="day in calendarDays" 
-            :key="day.dateStr"
-            class="calendar-day-cell"
-            :class="{
-              'is-today': day.isToday,
-              'has-worked': day.status === 'present',
-              'has-leave': day.status === 'leave_unpaid',
-              'has-absent': day.status === 'absent'
-            }"
-            @click="openDayDetail(day)"
-          >
-            <!-- Day Cell Header: Day Number & Status Icon -->
-            <div class="flex flex-between align-center mb-xs">
-              <span class="day-number" :class="{ 'today-badge': day.isToday }">{{ day.dayNum }}</span>
-              <span v-if="day.status === 'present'" class="status-indicator present" title="มาทำงาน">
-                <i class="fa-solid fa-circle-check"></i>
-              </span>
-              <span v-else-if="day.status === 'leave_unpaid'" class="status-indicator leave" title="ลาหยุด">
-                <i class="fa-solid fa-calendar-xmark"></i>
-              </span>
-              <span v-else-if="day.status === 'absent'" class="status-indicator absent" title="ขาดงาน">
-                <i class="fa-solid fa-circle-xmark"></i>
-              </span>
+      <div v-else class="card p-sm md:p-md overflow-hidden" style="border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <!-- Calendar Scroll Wrapper to prevent overflowing outside card -->
+        <div class="calendar-scroll-wrapper">
+          <div style="min-width: 520px; width: 100%;">
+            <!-- Day of Week Headers -->
+            <div class="calendar-grid-header">
+              <div v-for="(wd, idx) in ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']" :key="wd" class="calendar-weekday-cell">
+                <span class="hide-mobile">{{ wd }}</span>
+                <span class="show-mobile-inline">{{ ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'][idx] }}</span>
+              </div>
             </div>
 
-            <!-- Day Badges / Details inside Cell -->
-            <div class="day-events-list">
-              <!-- Attendance Badge -->
-              <div v-if="day.status === 'present'" class="day-badge badge-work">
-                <span>✓ ค่าแรง {{ formatCurrency(day.dailyWage) }}</span>
-                <span v-if="day.hadLunchBenefit" title="ได้รับข้าวเที่ยงฟรี">🍚</span>
-              </div>
-              <div v-else-if="day.status === 'leave_unpaid'" class="day-badge badge-leave">
-                <span>ลาหยุด (฿0)</span>
-              </div>
-              <div v-else-if="day.status === 'absent'" class="day-badge badge-absent">
-                <span>ขาดงาน (฿0)</span>
-              </div>
+            <!-- Days Grid -->
+            <div class="calendar-grid-body">
+              <!-- Offset empty cells before 1st day of month -->
+              <div v-for="emptyIdx in calendarStartOffset" :key="'empty-'+emptyIdx" class="calendar-day-empty"></div>
 
-              <!-- OT Events Badges -->
-              <div v-for="ot in day.ots" :key="'ot-'+ot.id" class="day-badge badge-ot" :title="'OT: ' + ot.event_name">
-                <i class="fa-solid fa-tags mr-2xs"></i> +{{ formatCurrency(ot.amount_per_person) }} ({{ ot.event_name }})
-              </div>
-
-              <!-- Advance Badges -->
-              <div v-for="adv in day.advances" :key="'adv-'+adv.id" class="day-badge badge-advance" :title="'เบิกล่วงหน้า: ' + formatCurrency(adv.amount)">
-                <i class="fa-solid fa-hand-holding-dollar mr-2xs"></i> -{{ formatCurrency(adv.amount) }}
-              </div>
-
-              <!-- Payout Badges (จ่ายค่าแรงในวันที่จ่าย) -->
+              <!-- Active Day Cells -->
               <div 
-                v-for="pay in day.payouts" 
-                :key="'pay-'+pay.id" 
-                class="day-badge badge-payout" 
-                :title="'จ่ายค่าจ้าง: ' + formatCurrency(pay.net_paid_amount)"
+                v-for="day in calendarDays" 
+                :key="day.dateStr"
+                class="calendar-day-cell"
+                :class="{
+                  'is-today': day.isToday,
+                  'has-worked': day.status === 'present',
+                  'has-leave': day.status === 'leave_unpaid',
+                  'has-absent': day.status === 'absent'
+                }"
+                @click="openDayDetail(day)"
               >
-                <span><i class="fa-solid fa-receipt mr-2xs"></i> จ่ายค่าจ้าง</span>
-                <span class="font-bold">{{ formatCurrency(pay.net_paid_amount) }}</span>
+                <!-- Day Cell Header: Day Number & Status Icon -->
+                <div class="flex flex-between align-center mb-xs">
+                  <span class="day-number" :class="{ 'today-badge': day.isToday }">{{ day.dayNum }}</span>
+                  <span v-if="day.status === 'present'" class="status-indicator present" title="มาทำงาน">
+                    <i class="fa-solid fa-circle-check"></i>
+                  </span>
+                  <span v-else-if="day.status === 'leave_unpaid'" class="status-indicator leave" title="ลาหยุด">
+                    <i class="fa-solid fa-calendar-xmark"></i>
+                  </span>
+                  <span v-else-if="day.status === 'absent'" class="status-indicator absent" title="ขาดงาน">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                  </span>
+                </div>
+
+                <!-- Day Badges / Details inside Cell -->
+                <div class="day-events-list">
+                  <!-- Attendance Badge -->
+                  <div v-if="day.status === 'present'" class="day-badge badge-work">
+                    <span>✓ ค่าแรง {{ formatCurrency(day.dailyWage) }}</span>
+                    <span v-if="day.hadLunchBenefit" title="ได้รับข้าวเที่ยงฟรี">🍚</span>
+                  </div>
+                  <div v-else-if="day.status === 'leave_unpaid'" class="day-badge badge-leave">
+                    <span>ลาหยุด (฿0)</span>
+                  </div>
+                  <div v-else-if="day.status === 'absent'" class="day-badge badge-absent">
+                    <span>ขาดงาน (฿0)</span>
+                  </div>
+
+                  <!-- OT Events Badges -->
+                  <div v-for="ot in day.ots" :key="'ot-'+ot.id" class="day-badge badge-ot" :title="'OT: ' + ot.event_name">
+                    <i class="fa-solid fa-tags mr-2xs"></i> +{{ formatCurrency(ot.amount_per_person) }} ({{ ot.event_name }})
+                  </div>
+
+                  <!-- Advance Badges -->
+                  <div v-for="adv in day.advances" :key="'adv-'+adv.id" class="day-badge badge-advance" :title="'เบิกล่วงหน้า: ' + formatCurrency(adv.amount)">
+                    <i class="fa-solid fa-hand-holding-dollar mr-2xs"></i> -{{ formatCurrency(adv.amount) }}
+                  </div>
+
+                  <!-- Payout Badges (จ่ายค่าแรงในวันที่จ่าย) -->
+                  <div 
+                    v-for="pay in day.payouts" 
+                    :key="'pay-'+pay.id" 
+                    class="day-badge badge-payout" 
+                    :title="'จ่ายค่าจ้าง: ' + formatCurrency(pay.net_paid_amount)"
+                  >
+                    <span><i class="fa-solid fa-receipt mr-2xs"></i> จ่ายค่าจ้าง</span>
+                    <span class="font-bold">{{ formatCurrency(pay.net_paid_amount) }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -346,7 +405,7 @@
     <!-- SUBTAB 3: บันทึกเวลา & การลา (Attendance & Leave) -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div v-if="activeSubTab === 'attendance'" class="flex flex-col gap-md">
-      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color); position: relative; z-index: 50;">
+      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color);">
         <div class="flex align-center gap-md flex-wrap">
           <div class="flex align-center gap-xs font-bold text-base" style="white-space: nowrap;">
             <i class="fa-solid fa-calendar-day text-primary"></i> วันที่ลงเวลา:
@@ -358,9 +417,9 @@
               class="picker-trigger-btn" 
               :class="{ 'active': isAttendanceDateDropdownOpen }" 
               @click="toggleAttendanceDateDropdown"
-              style="min-width: 210px; padding: 0 var(--space-lg); justify-content: space-between; gap: var(--space-md);"
+              style="min-width: 170px; height: 38px; padding: 0 var(--space-md); justify-content: space-between; gap: var(--space-xs); font-size: var(--font-sm);"
             >
-              <span class="flex align-center gap-sm">
+              <span class="flex align-center gap-xs">
                 <i class="fa-solid fa-calendar-day text-primary"></i>
                 <span>{{ attendanceDateLabel }}</span>
               </span>
@@ -368,7 +427,7 @@
             </div>
 
             <!-- Date Picker Calendar Popover -->
-            <div v-if="isAttendanceDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 290px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
+            <div v-if="isAttendanceDateDropdownOpen" class="custom-select-dropdown datepicker-popover" style="top: calc(100% + 4px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
               <!-- Header: Month & Year Selector -->
               <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
                 <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAttendanceDatePickerMonth(-1)">
@@ -384,15 +443,14 @@
                 <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
               </div>
               <!-- Days Grid -->
-              <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+              <div class="calendar-days-grid">
                 <div v-for="empty in attendanceDatePickerStartOffset" :key="'empty-'+empty"></div>
                 <button 
                   v-for="dNum in attendanceDatePickerDaysCount" 
                   :key="dNum"
                   type="button"
-                  class="btn btn-sm calendar-day-btn"
-                  :class="isAttendanceDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                  style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                  class="calendar-day-btn"
+                  :class="{ 'btn-primary selected': isAttendanceDatePickerSelected(dNum) }"
                   @click="selectAttendanceDatePickerDay(dNum)"
                 >
                   {{ dNum }}
@@ -401,14 +459,14 @@
             </div>
           </div>
 
-          <button type="button" class="picker-current-btn" @click="setTodayAttendance">
+          <button type="button" class="picker-current-btn" style="height: 38px; padding: 0 10px; font-size: 12px;" @click="setTodayAttendance">
             วันนี้
           </button>
         </div>
 
         <button 
           class="btn btn-primary" 
-          style="height: 42px;"
+          style="height: 38px; font-size: 13px;"
           :disabled="savingAttendance || attendanceRecords.length === 0"
           @click="handleSaveAttendance"
         >
@@ -424,8 +482,8 @@
         </div>
       </div>
 
-      <!-- Attendance Sheet Table (4 Columns & Center Aligned) -->
-      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+      <!-- Attendance Sheet Desktop & Tablet Table (4 Columns & Center Aligned) -->
+      <div class="hide-mobile card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
@@ -541,6 +599,108 @@
           </table>
         </div>
       </div>
+
+      <!-- Attendance Sheet Mobile Cards List -->
+      <div class="show-mobile-flex staff-mobile-card-list">
+        <div v-if="loadingAttendance" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <div v-else-if="attendanceRecords.length === 0" class="card text-center p-xl text-secondary">ไม่พบรายชื่อพนักงาน</div>
+        <div 
+          v-else 
+          v-for="rec in attendanceRecords" 
+          :key="'m-att-' + rec.user_id"
+          class="staff-mobile-card"
+        >
+          <!-- Card Header: Name & Lunch -->
+          <div class="flex flex-between align-center gap-xs">
+            <div>
+              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ rec.name }}</div>
+              <div class="text-xs text-secondary" style="margin-top: 4px;">
+                <span class="skill-badge" :class="rec.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(rec.skill_level) }}</span>
+                <span v-if="(rec.default_wage_rate || rec.wage_rate) > 0" class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
+              </div>
+            </div>
+            <label class="lunch-benefit-wrapper" :class="{ 'disabled': rec.status !== 'present' }" style="margin: 0; padding: 5px 9px; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; background: rgba(245, 158, 11, 0.05);">
+              <input 
+                type="checkbox" 
+                v-model="rec.had_lunch_benefit" 
+                :true-value="1" 
+                :false-value="0"
+                :disabled="rec.status !== 'present'"
+                class="lunch-benefit-checkbox"
+              />
+              <span class="lunch-benefit-content" style="font-size: 11.5px;">
+                <span class="lunch-benefit-icon" style="font-size: 14px;">🍚</span>
+                <span class="lunch-benefit-text">ข้าวเที่ยง</span>
+              </span>
+            </label>
+          </div>
+
+          <!-- Status Buttons (3 columns) -->
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <button 
+              type="button"
+              class="status-btn w-full"
+              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
+              :class="{ 'active-present': rec.status === 'present' }"
+              @click="rec.status = 'present'; rec.had_lunch_benefit = 1; if (!rec.daily_wage) rec.daily_wage = (rec.default_wage_rate || rec.wage_rate || 0);"
+            >
+              <i class="fa-solid fa-circle-check mr-2xs"></i> มาทำงาน
+            </button>
+            <button 
+              type="button"
+              class="status-btn w-full"
+              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
+              :class="{ 'active-leave': rec.status === 'leave_unpaid' }"
+              @click="rec.status = 'leave_unpaid'; rec.had_lunch_benefit = 0;"
+            >
+              <i class="fa-solid fa-calendar-xmark mr-2xs"></i> ลาหยุด
+            </button>
+            <button 
+              type="button"
+              class="status-btn w-full"
+              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
+              :class="{ 'active-absent': rec.status === 'absent' }"
+              @click="rec.status = 'absent'; rec.had_lunch_benefit = 0;"
+            >
+              <i class="fa-solid fa-user-xmark mr-2xs"></i> ขาดงาน
+            </button>
+          </div>
+
+          <!-- Wage input row -->
+          <div class="flex flex-between align-center staff-mobile-divider">
+            <div class="flex flex-col">
+              <span class="text-xs text-secondary font-bold" style="font-size: 12.5px;">ค่าแรงวันนี้:</span>
+              <span v-if="rec.status !== 'present'" class="text-2xs text-muted" style="margin-top: 2px;">ไม่ได้รับค่าจ้าง</span>
+              <span v-else-if="rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)" class="text-2xs text-warning font-semibold" style="margin-top: 2px;">
+                (ยังไม่ระบุค่าแรง)
+              </span>
+              <span v-else-if="rec.default_wage_rate !== undefined && rec.daily_wage !== rec.default_wage_rate" class="text-2xs text-warning" style="margin-top: 2px;">
+                (ปรับจากปกติ {{ rec.default_wage_rate }} บ.)
+              </span>
+            </div>
+            <div class="flex align-center gap-xs">
+              <input 
+                type="number" 
+                v-model.number="rec.daily_wage" 
+                class="form-input" 
+                :style="{
+                  width: '100px',
+                  textAlign: 'center',
+                  height: '38px',
+                  fontWeight: 'bold',
+                  fontSize: 'var(--font-sm)',
+                  borderColor: (rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)) ? '#f59e0b' : ''
+                }" 
+                :disabled="rec.status !== 'present'"
+                min="0" 
+                step="10"
+                placeholder="0"
+              />
+              <span class="text-xs text-secondary font-bold">บาท</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -561,7 +721,8 @@
         </button>
       </div>
 
-      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+      <!-- Event OT Desktop & Tablet Table -->
+      <div class="hide-mobile card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
@@ -625,6 +786,52 @@
           </table>
         </div>
       </div>
+
+      <!-- Event OT Mobile Cards List -->
+      <div class="show-mobile-flex staff-mobile-card-list">
+        <div v-if="loadingEventOts" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <div v-else-if="eventOts.length === 0" class="card text-center p-xl text-secondary">{{ emptyEventOtsMessage }}</div>
+        <div 
+          v-else 
+          v-for="ev in eventOts" 
+          :key="'m-ev-' + ev.id"
+          class="staff-mobile-card"
+        >
+          <div class="flex flex-between align-center">
+            <div>
+              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ ev.event_name }}</div>
+              <div class="text-xs text-secondary" style="margin-top: 4px;">
+                <i class="fa-solid fa-calendar-day mr-2xs text-primary"></i> {{ formatDate(ev.event_date) }}
+              </div>
+            </div>
+            <div class="font-bold text-success text-base" style="font-size: 16px;">
+              +{{ formatCurrency(ev.amount_per_person) }} <span class="text-xs text-secondary font-normal">/คน</span>
+            </div>
+          </div>
+          <div v-if="ev.note" class="text-xs text-secondary" style="font-style: italic;">{{ ev.note }}</div>
+          <div class="flex flex-col gap-xs staff-mobile-divider">
+            <span class="text-2xs text-secondary font-semibold">พนักงานที่ได้รับ ({{ ev.participants ? ev.participants.length : 0 }} คน):</span>
+            <div class="flex gap-xs flex-wrap" style="gap: 5px;">
+              <span 
+                v-for="p in ev.participants" 
+                :key="'m-p-' + p.user_id" 
+                class="capsule-badge badge-neutral text-xs"
+                style="font-size: 11px; padding: 3px 8px;"
+              >
+                <i class="fa-solid fa-user mr-xs"></i> {{ p.name }}
+              </span>
+            </div>
+          </div>
+          <div v-if="isAdminUser" class="flex flex-between align-center staff-mobile-divider" style="margin-top: 0;">
+            <span class="text-2xs text-secondary">โดย: {{ ev.creator_name || 'แอดมิน' }}</span>
+            <button class="btn btn-sm btn-action-delete" :disabled="deletingEventOtId === ev.id" @click="handleDeleteEventOt(ev.id)" style="padding: 5px 14px; font-size: 12px; height: 34px;">
+              <i v-if="deletingEventOtId === ev.id" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-trash-can"></i>
+              <span>{{ deletingEventOtId === ev.id ? ' กำลังลบ...' : ' ลบ' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -645,7 +852,8 @@
         </button>
       </div>
 
-      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+      <!-- Advances Desktop & Tablet Table -->
+      <div class="hide-mobile card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
@@ -725,140 +933,209 @@
           </table>
         </div>
       </div>
+
+      <!-- Advances Mobile Cards List -->
+      <div class="show-mobile-flex staff-mobile-card-list">
+        <div v-if="loadingAdvances" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <div v-else-if="advances.length === 0" class="card text-center p-xl text-secondary">{{ emptyAdvancesMessage }}</div>
+        <div 
+          v-else 
+          v-for="adv in advances" 
+          :key="'m-adv-' + adv.id"
+          class="staff-mobile-card"
+          :style="adv.status === 'cancelled' ? 'opacity: 0.7; background: #fafafa;' : ''"
+        >
+          <div class="flex flex-between align-center">
+            <div>
+              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ adv.name }}</div>
+              <div class="text-xs text-secondary" style="margin-top: 4px;">
+                <span class="skill-badge" :class="adv.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(adv.skill_level) }}</span>
+                <span class="ml-xs">{{ formatDate(adv.advance_date) }}</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-danger text-base" :style="adv.status === 'cancelled' ? 'text-decoration: line-through;' : ''" style="font-size: 16px;">
+                -{{ formatCurrency(adv.amount) }}
+              </div>
+              <span class="capsule-badge mt-2xs" :class="adv.payment_method === 'transfer' ? 'badge-primary' : 'badge-warning'" style="font-size: 11px; padding: 2px 8px; margin-top: 4px;">
+                <i :class="adv.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
+                {{ adv.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด' }}
+              </span>
+            </div>
+          </div>
+          <div class="flex flex-between align-center staff-mobile-divider">
+            <span 
+              class="capsule-badge" 
+              :class="adv.status === 'deducted' ? 'badge-success' : (adv.status === 'cancelled' ? 'badge-neutral' : 'badge-warning')"
+              :style="adv.status === 'cancelled' ? 'background: rgba(139, 3, 19, 0.08); color: var(--primary); border-color: rgba(139, 3, 19, 0.2);' : ''"
+              style="font-size: 11px; padding: 3px 9px;"
+            >
+              <i :class="adv.status === 'deducted' ? 'fa-solid fa-check' : (adv.status === 'cancelled' ? 'fa-solid fa-rotate-left text-primary' : 'fa-solid fa-clock')"></i>
+              {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : (adv.status === 'cancelled' ? 'ยกเลิกเบิกสำเร็จ' : 'เบิกสำเร็จ รอหักในบัญชี') }}
+            </span>
+
+            <div v-if="isAdminUser">
+              <button 
+                v-if="adv.status === 'pending'"
+                class="btn-action btn-action-delete" 
+                :disabled="deletingAdvanceId === adv.id"
+                @click="handleDeleteAdvance(adv.id)"
+                style="padding: 5px 14px; font-size: 12px; height: 34px;"
+              >
+                <i v-if="deletingAdvanceId === adv.id" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-rotate-left"></i>
+                <span>{{ deletingAdvanceId === adv.id ? ' กำลังยกเลิก...' : ' ยกเลิก/คืน' }}</span>
+              </button>
+              <span v-else-if="adv.status === 'cancelled'" class="text-xs font-semibold" style="color: var(--primary);">
+                <i class="fa-solid fa-circle-check mr-2xs"></i> ยกเลิกแล้ว
+              </span>
+              <span v-else class="text-xs text-muted">หักแล้ว</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- SUBTAB 6: คำนวณ & จ่ายเงินเดือน (Payroll & Salary Payout) -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div v-if="activeSubTab === 'payroll' && isAdminUser" class="flex flex-col gap-md">
-      <div class="card p-md flex flex-between align-center flex-wrap gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color); position: relative; z-index: 50;">
-        <div class="flex align-center gap-md flex-wrap">
-          <div class="flex align-center gap-xs font-bold text-base" style="white-space: nowrap;">
-            <i class="fa-solid fa-calendar text-primary"></i> รอบเดือนที่คำนวณ:
-          </div>
+      <!-- Payroll Month Control Bar -->
+      <div class="card p-md flex flex-col gap-sm" style="background: rgba(139, 3, 19, 0.02); border: 1px solid var(--border-color);">
+        <label class="font-bold text-sm text-secondary flex align-center gap-xs" style="margin-bottom: 2px;">
+          <i class="fa-solid fa-calendar text-primary"></i> รอบเดือนที่คำนวณ:
+        </label>
 
-          <!-- Custom Month Picker for Payroll -->
-          <div class="flex align-center gap-xs">
-            <button type="button" class="picker-nav-btn" @click="adjustPayrollMonth(-1)" title="เดือนก่อนหน้า">
-              <i class="fa-solid fa-chevron-left"></i>
-            </button>
+        <!-- Month Navigation Bar (100% full width, arrows locked at far ends) -->
+        <div class="flex align-center gap-xs" style="width: 100%;">
+          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustPayrollMonth(-1)" title="เดือนก่อนหน้า">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
 
-            <div class="custom-select-wrapper" style="width: auto; position: relative;" @click.stop>
-              <div 
-                class="picker-trigger-btn" 
-                :class="{ 'active': isPayrollMonthDropdownOpen }" 
-                @click="togglePayrollMonthDropdown"
-                style="min-width: 190px; padding: 0 var(--space-lg); justify-content: space-between; gap: var(--space-md);"
-              >
-                <span class="flex align-center gap-sm">
-                  <i class="fa-solid fa-calendar-days text-primary"></i>
-                  <span>{{ payrollMonthLabel }}</span>
-                </span>
-                <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
-              </div>
-
-              <!-- Month Dropdown Grid -->
-              <div v-if="isPayrollMonthDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 300px !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
-                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(-1)">
-                    <i class="fa-solid fa-chevron-left"></i>
-                  </button>
-                  <span class="font-bold">ปี พ.ศ. {{ payrollMonthPickerYear + 543 }}</span>
-                  <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(1)">
-                    <i class="fa-solid fa-chevron-right"></i>
-                  </button>
-                </div>
-                <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-                  <button 
-                    v-for="(mName, idx) in thaiMonthsShort" 
-                    :key="idx" 
-                    type="button"
-                    class="btn btn-secondary btn-sm"
-                    :class="{ 'btn-primary active': isPayrollMonthPickerSelected(idx + 1) }"
-                    @click="selectPayrollMonthPicker(idx + 1)"
-                  >
-                    {{ mName }}
-                  </button>
-                </div>
-              </div>
+          <!-- Custom Month Picker for Payroll (Fills remaining width between arrows) -->
+          <div class="custom-select-wrapper" style="flex: 1; min-width: 0; width: 100%; position: relative;" @click.stop>
+            <div 
+              class="picker-trigger-btn" 
+              :class="{ 'active': isPayrollMonthDropdownOpen }" 
+              @click="togglePayrollMonthDropdown"
+              style="width: 100%; height: 40px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: 14px; white-space: nowrap;"
+            >
+              <span class="flex align-center gap-xs" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <i class="fa-solid fa-calendar-days text-primary flex-shrink-0"></i>
+                <span style="overflow: hidden; text-overflow: ellipsis; font-weight: bold;">{{ payrollMonthLabel }}</span>
+              </span>
+              <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs flex-shrink-0"></i>
             </div>
 
-            <button type="button" class="picker-nav-btn" @click="adjustPayrollMonth(1)" title="เดือนถัดไป">
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-            <button type="button" class="picker-current-btn ml-xs" @click="setPayrollCurrentMonth">
-              เดือนปัจจุบัน
-            </button>
+            <!-- Month Dropdown Grid -->
+            <div v-if="isPayrollMonthDropdownOpen" class="custom-select-dropdown monthpicker-popover dropdown-center-desktop" style="top: calc(100% + 4px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
+                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(-1)">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="font-bold">ปี พ.ศ. {{ payrollMonthPickerYear + 543 }}</span>
+                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(1)">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+              <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                <button 
+                  v-for="(mName, idx) in thaiMonthsShort" 
+                  :key="idx" 
+                  type="button" 
+                  class="btn btn-secondary btn-sm"
+                  :class="{ 'btn-primary active': isPayrollMonthPickerSelected(idx + 1) }"
+                  @click="selectPayrollMonthPicker(idx + 1)"
+                >
+                  {{ mName }}
+                </button>
+              </div>
+            </div>
           </div>
+
+          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustPayrollMonth(1)" title="เดือนถัดไป">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
 
-        <div class="text-xs text-secondary font-bold">
-          <i class="fa-solid fa-circle-check text-success"></i> เมื่อกดยืนยันจ่าย ระบบจะตัดเข้าบัญชีรายจ่ายสาขาอัตโนมัติ
+        <!-- Sub-bar: Short Hint and Current Month Button -->
+        <div class="flex flex-between align-center flex-wrap gap-xs" style="margin-top: 2px;">
+          <div style="font-size: 11px; color: var(--text-tertiary);">
+            <i class="fa-solid fa-circle-check text-success mr-2xs" style="font-size: 10px;"></i> ตัดจ่ายเข้าบัญชีรายจ่ายสาขาอัตโนมัติเมื่อยืนยัน
+          </div>
+          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: 11px; white-space: nowrap;" @click="setPayrollCurrentMonth">
+            <i class="fa-solid fa-clock-rotate-left mr-2xs"></i> เดือนปัจจุบัน
+          </button>
         </div>
       </div>
 
       <!-- Guarantee Pool Summary Card (กองทุนเงินประกันพนักงาน / เงินสดหมุนเวียนในร้าน) -->
       <div class="card p-md" style="background: #ffffff; border: 1px solid var(--border-color); border-left: 4px solid var(--warning, #f59e0b);">
-        <div class="flex flex-between align-center flex-wrap gap-md">
-          <div class="flex align-center gap-md">
-            <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #d97706;">
-              <i class="fa-solid fa-shield-halved"></i>
+        <!-- Header -->
+        <div class="flex align-center gap-sm mb-sm">
+          <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: #d97706; flex-shrink: 0;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex align-center gap-xs flex-wrap">
+              <h4 class="font-bold text-base" style="margin: 0; color: var(--text-primary);">
+                กองทุนเงินประกันพนักงาน
+              </h4>
+              <span class="capsule-badge badge-warning" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">
+                สภาพคล่องร้าน
+              </span>
             </div>
-            <div>
-              <div class="flex align-center gap-xs">
-                <h4 class="font-bold text-base" style="margin: 0; color: var(--text-primary);">
-                  กองทุนเงินประกันพนักงาน (เงินสดหมุนเวียนในร้าน)
-                </h4>
-                <span class="capsule-badge badge-warning text-2xs font-bold" style="padding: 2px 8px;">
-                  สภาพคล่องร้าน
-                </span>
-              </div>
-              <p class="text-xs text-secondary mt-2xs" style="margin-bottom: 0;">
-                <i class="fa-solid fa-circle-info text-secondary"></i> เงินค้ำประกันที่ร้านถือครองไว้เป็นเงินสดหมุนเวียน ไม่รวมในยอดขายอาหาร และจะคืนเมื่อพนักงานลาออก
-              </p>
+            <p class="text-xs text-secondary mt-2xs" style="margin: 0; font-size: 11px; color: var(--text-tertiary);">
+              เงินสดหมุนเวียน (ไม่นับเป็นยอดขายอาหาร และจะคืนเมื่อลาออก)
+            </p>
+          </div>
+        </div>
+
+        <!-- Stat Tiles Grid for Mobile & Desktop -->
+        <div class="grid gap-sm" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-md); padding: 10px 14px;">
+          <!-- Tile 1: Total Held -->
+          <div>
+            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ยอดถือครองทั้งหมด</div>
+            <div class="font-bold" style="font-size: 1.25rem; color: #b45309; line-height: 1.2;">
+              {{ formatCurrency(guaranteePoolSummary.totalHeld) }}
+            </div>
+          </div>
+          
+          <!-- Tile 2: Staff Count -->
+          <div>
+            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ผู้วางประกัน</div>
+            <div class="font-bold" style="font-size: 1.1rem; color: var(--text-primary); line-height: 1.2;">
+              {{ guaranteePoolSummary.heldStaffCount }} <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">คน</span>
             </div>
           </div>
 
-          <div class="flex align-center gap-lg flex-wrap">
-            <div class="text-right">
-              <div class="text-2xs text-secondary font-semibold">ยอดถือครองทั้งหมด</div>
-              <div class="font-bold text-xl text-primary" style="font-size: 1.35rem; color: #b45309;">
-                {{ formatCurrency(guaranteePoolSummary.totalHeld) }}
-              </div>
-            </div>
-            <div class="text-right" style="border-left: 1px solid var(--border-color); padding-left: var(--space-md);">
-              <div class="text-2xs text-secondary font-semibold">พนักงานที่วางประกัน</div>
-              <div class="font-bold text-base" style="color: var(--text-primary);">
-                {{ guaranteePoolSummary.heldStaffCount }} <span class="text-xs text-secondary font-normal">คน</span>
-              </div>
-            </div>
-            <div class="text-right" style="border-left: 1px solid var(--border-color); padding-left: var(--space-md);">
-              <div class="text-2xs text-secondary font-semibold">ช่องทางถือครอง</div>
-              <div class="text-xs font-bold" style="color: var(--text-secondary);">
-                สด: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.cashHeld) }}</span> | 
-                โอน: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.transferHeld) }}</span>
-              </div>
+          <!-- Tile 3: Channels -->
+          <div>
+            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ช่องทางถือครอง</div>
+            <div style="font-size: 12px; font-weight: bold; color: var(--text-primary); line-height: 1.2;">
+              สด: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.cashHeld) }}</span> | 
+              โอน: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.transferHeld) }}</span>
             </div>
           </div>
         </div>
 
         <!-- Staff with held guarantee tags -->
-        <div v-if="guaranteePoolSummary.heldStaffCount > 0" class="mt-sm pt-sm flex align-center gap-xs flex-wrap" style="border-top: 1px dashed var(--border-color);">
-          <span class="text-2xs text-secondary font-semibold mr-xs">รายชื่อที่วางประกัน:</span>
+        <div v-if="guaranteePoolSummary.heldStaffCount > 0" class="mt-xs pt-xs flex align-center gap-xs flex-wrap" style="border-top: 1px dashed rgba(245, 158, 11, 0.2);">
+          <span style="font-size: 10px; color: var(--text-secondary); font-weight: 600;">รายชื่อ:</span>
           <span 
             v-for="st in guaranteePoolSummary.heldStaffList" 
             :key="st.name" 
-            class="capsule-badge badge-neutral text-xs" 
-            style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3); color: #92400e; padding: 2px 8px;"
+            class="capsule-badge badge-neutral" 
+            style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3); color: #92400e; padding: 2px 8px; font-size: 11px;"
           >
-            <i class="fa-solid fa-user-shield mr-2xs" style="color: #d97706;"></i>
+            <i class="fa-solid fa-user-shield mr-2xs" style="color: #d97706; font-size: 10px;"></i>
             <strong>{{ st.name }}</strong> ({{ formatCurrency(st.amount) }} • {{ st.method === 'cash' ? 'เงินสด' : 'เงินโอน' }})
           </span>
         </div>
       </div>
 
-      <!-- Payroll Summary Grid / Table -->
-      <div class="card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
+      <!-- Payroll Summary Desktop & Tablet Table -->
+      <div class="hide-mobile card p-0 overflow-hidden" style="border: 1px solid var(--border-color);">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
@@ -966,6 +1243,108 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Payroll Summary Mobile Cards List -->
+      <div class="show-mobile-flex staff-mobile-card-list">
+        <div v-if="loadingPayroll" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <div v-else-if="payrollList.length === 0" class="card text-center p-xl text-secondary">ไม่พบรายการคำนวณเงินเดือนในงวดนี้</div>
+        <div 
+          v-else 
+          v-for="item in payrollList" 
+          :key="'m-pay-' + item.user_id"
+          class="staff-mobile-card"
+        >
+          <!-- Header: Employee info + Net amount -->
+          <div class="flex flex-between align-center">
+            <div>
+              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ item.name }}</div>
+              <div class="text-xs text-secondary" style="margin-top: 4px;">
+                <span class="skill-badge" :class="item.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(item.skill_level) }}</span>
+                <span class="ml-xs font-semibold">{{ formatCurrency(item.wage_rate) }}/วัน</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-2xs text-secondary">ยอดจ่ายสุทธิรอบนี้</div>
+              <div class="font-bold text-lg text-primary" style="font-size: 1.3rem;">
+                {{ formatCurrency(item.net_payable_round) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Breakdown Grid (2x2) -->
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(139, 3, 19, 0.03); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <div class="flex flex-col">
+              <span class="text-2xs text-secondary">วันทำงานรอบนี้</span>
+              <span class="text-xs font-bold text-primary" style="font-size: 12.5px; margin-top: 2px;">{{ item.unpaid_days_worked }} วัน (ข้าว {{ item.unpaid_lunch_count }} มื้อ)</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-2xs text-secondary">ฐานค่าแรงค้างจ่าย</span>
+              <span class="text-xs font-bold" style="font-size: 12.5px; margin-top: 2px;">{{ formatCurrency(item.unpaid_base_salary) }}</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-2xs text-secondary">OT อีเวนต์</span>
+              <span class="text-xs font-bold text-success" style="font-size: 12.5px; margin-top: 2px;" v-if="item.event_ot_amount > 0">+{{ formatCurrency(item.event_ot_amount) }}</span>
+              <span class="text-xs text-muted" style="font-size: 12.5px; margin-top: 2px;" v-else>฿0</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-2xs text-secondary">เบิกล่วงหน้า</span>
+              <span class="text-xs font-bold text-danger" style="font-size: 12.5px; margin-top: 2px;" v-if="item.advance_deducted_amount > 0">-{{ formatCurrency(item.advance_deducted_amount) }}</span>
+              <span class="text-xs text-muted" style="font-size: 12.5px; margin-top: 2px;" v-else>฿0</span>
+            </div>
+          </div>
+
+          <!-- Guarantee & History status -->
+          <div class="flex flex-between align-center flex-wrap gap-xs staff-mobile-divider">
+            <div>
+              <span v-if="item.guarantee && item.guarantee.status === 'held'" class="capsule-badge badge-success text-2xs" style="padding: 3px 8px; font-size: 11px;">
+                <i class="fa-solid fa-shield-halved"></i> วางประกันแล้ว
+              </span>
+              <span v-else-if="item.guarantee && item.guarantee.status === 'refunded'" class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: 11px;">
+                <i class="fa-solid fa-check"></i> คืนประกันแล้ว
+              </span>
+              <span v-else class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: 11px; opacity: 0.75;">
+                <i class="fa-solid fa-hourglass-half"></i> รอหักประกัน
+              </span>
+            </div>
+
+            <div>
+              <button 
+                v-if="item.history_payouts && item.history_payouts.length > 0"
+                class="btn btn-sm btn-secondary text-xs" 
+                style="padding: 4px 10px; font-size: 11.5px;"
+                @click="openHistoryPayoutsModal(item)"
+              >
+                <i class="fa-solid fa-receipt mr-2xs text-primary"></i> สลิป {{ item.payout_count_month }} รอบ
+              </button>
+              <span v-else class="text-2xs text-muted">ยังไม่มีสลิปเดือนนี้</span>
+            </div>
+          </div>
+
+          <!-- Bottom Actions: Refund Guarantee & Pay -->
+          <div class="flex gap-sm" style="margin-top: 2px;">
+            <button 
+              v-if="item.guarantee && item.guarantee.status === 'held'"
+              class="btn btn-secondary flex-1 text-xs" 
+              style="height: 40px; padding: 0 8px; font-size: 12.5px; font-weight: 600;"
+              @click="openRefundGuaranteeModal(item.guarantee, item)"
+            >
+              <i class="fa-solid fa-arrow-rotate-left mr-2xs text-primary"></i> คืนประกัน
+            </button>
+
+            <button 
+              v-if="item.has_pending_payout" 
+              class="btn btn-primary flex-1 font-bold"
+              style="height: 40px; font-size: 13.5px;"
+              @click="openPayModal(item)"
+            >
+              <i class="fa-solid fa-money-bill-wave mr-xs"></i> สั่งจ่ายค่าจ้าง
+            </button>
+            <div v-else class="flex-1 text-center py-xs text-xs text-success font-bold" style="background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">
+              <i class="fa-solid fa-circle-check mr-2xs"></i> จ่ายครบแล้ว
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1109,15 +1488,14 @@
                   <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
                     <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                   </div>
-                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                  <div class="calendar-days-grid">
                     <div v-for="empty in eventOtDatePickerStartOffset" :key="'empty-'+empty"></div>
                     <button 
                       v-for="dNum in eventOtDatePickerDaysCount" 
                       :key="dNum"
                       type="button"
-                      class="btn btn-sm calendar-day-btn"
-                      :class="isEventOtDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                      style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                      class="calendar-day-btn"
+                      :class="{ 'btn-primary selected': isEventOtDatePickerSelected(dNum) }"
                       @click="selectEventOtDatePickerDay(dNum)"
                     >
                       {{ dNum }}
@@ -1294,15 +1672,14 @@
                     <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
                       <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                    <div class="calendar-days-grid">
                       <div v-for="empty in advanceDatePickerStartOffset" :key="'empty-'+empty"></div>
                       <button 
                         v-for="dNum in advanceDatePickerDaysCount" 
                         :key="dNum"
                         type="button"
-                        class="btn btn-sm calendar-day-btn"
-                        :class="isAdvanceDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                        style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                        class="calendar-day-btn"
+                        :class="{ 'btn-primary selected': isAdvanceDatePickerSelected(dNum) }"
                         @click="selectAdvanceDatePickerDay(dNum)"
                       >
                         {{ dNum }}
@@ -1590,15 +1967,14 @@
                   <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
                     <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                   </div>
-                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                  <div class="calendar-days-grid">
                     <div v-for="empty in payDatePickerStartOffset" :key="'empty-'+empty"></div>
                     <button 
                       v-for="dNum in payDatePickerDaysCount" 
                       :key="dNum"
                       type="button"
-                      class="btn btn-sm calendar-day-btn"
-                      :class="isPayDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                      style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                      class="calendar-day-btn"
+                      :class="{ 'btn-primary selected': isPayDatePickerSelected(dNum) }"
                       @click="selectPayDatePickerDay(dNum)"
                     >
                       {{ dNum }}
@@ -1797,15 +2173,14 @@
                   <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
                     <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
                   </div>
-                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 4px;">
+                  <div class="calendar-days-grid">
                     <div v-for="empty in refundDatePickerStartOffset" :key="'empty-'+empty"></div>
                     <button 
                       v-for="dNum in refundDatePickerDaysCount" 
                       :key="dNum"
                       type="button"
-                      class="btn btn-sm calendar-day-btn"
-                      :class="isRefundDatePickerSelected(dNum) ? 'btn-primary' : 'btn-secondary'"
-                      style="min-height: 28px; width: 100%; padding: 0; font-size: var(--font-xs); display: flex; align-items: center; justify-content: center;"
+                      class="calendar-day-btn"
+                      :class="{ 'btn-primary selected': isRefundDatePickerSelected(dNum) }"
                       @click="selectRefundDatePickerDay(dNum)"
                     >
                       {{ dNum }}
@@ -1868,7 +2243,7 @@
         <div class="modal-overlay" @click="showDayDetailModal = false"></div>
         <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
           <div class="modal-header">
-            <h3><i class="fa-solid fa-calendar-day" style="margin-right: 6px;"></i> รายละเอียดวันที่ {{ selectedDayDetail?.formattedDate }}</h3>
+            <h3><i class="fa-solid fa-calendar-day" style="margin-right: 6px;"></i> วันที่ {{ selectedDayDetail?.formattedDate }}</h3>
             <button class="modal-close" @click="showDayDetailModal = false">✕</button>
           </div>
           <div class="modal-body">
@@ -3674,8 +4049,9 @@ onUnmounted(() => {
 .calendar-grid-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 6px;
+  width: 100%;
 }
 .calendar-weekday-cell {
   text-align: center;
@@ -3683,19 +4059,27 @@ onUnmounted(() => {
   font-size: var(--font-xs);
   color: var(--text-secondary);
   padding: 6px 2px;
-  background: rgba(139, 3, 19, 0.03);
+  background: rgba(139, 3, 19, 0.04);
   border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .calendar-grid-body {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
+  width: 100%;
 }
 .calendar-day-empty {
   min-height: 85px;
   background: rgba(0, 0, 0, 0.015);
   border-radius: var(--radius-sm);
   border: 1px dashed rgba(0, 0, 0, 0.05);
+  min-width: 0;
+  box-sizing: border-box;
 }
 .calendar-day-cell {
   min-height: 85px;
@@ -3707,6 +4091,9 @@ onUnmounted(() => {
   transition: all 0.15s ease;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 .calendar-day-cell:hover {
   transform: translateY(-2px);
@@ -3818,6 +4205,50 @@ onUnmounted(() => {
   box-sizing: border-box !important;
   white-space: nowrap !important;
   text-align: center !important;
+}
+
+/* Mobile Card List & Items */
+.staff-mobile-card-list {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .staff-mobile-card-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding-bottom: 24px;
+  }
+}
+
+.staff-mobile-card {
+  background: #ffffff;
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.staff-mobile-divider {
+  border-top: 1px dashed rgba(139, 3, 19, 0.18);
+  padding-top: 10px;
+}
+
+.calendar-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.calendar-scroll-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.calendar-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(139, 3, 19, 0.2);
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {
