@@ -174,6 +174,9 @@ const stock = {
   async bulkAdjust(data) {
     return request('POST', '/api/stock/bulk-adjust', data);
   },
+  async reverseLog(id, reason = '') {
+    return request('POST', `/api/stock/logs/${id}/reverse`, { reason });
+  },
 };
 
 const reports = {
@@ -284,6 +287,9 @@ const expenses = {
   async delete(id) {
     return request('DELETE', `/api/expenses/${id}`);
   },
+  async reverse(id, reason = '') {
+    return request('POST', `/api/expenses/${id}/reverse`, { reason });
+  },
 };
 
 const activities = {
@@ -346,6 +352,9 @@ const employees = {
   async deleteAdvance(id) {
     return request('DELETE', `/api/employees/advances/${id}`);
   },
+  async reverseAdvance(id) {
+    return request('POST', `/api/employees/advances/${id}/reverse`);
+  },
   async calculatePayroll(params = {}) {
     const query = new URLSearchParams(params).toString();
     return request('GET', `/api/employees/payroll/calculate?${query}`);
@@ -362,6 +371,9 @@ const employees = {
   },
   async refundGuarantee(data) {
     return request('POST', '/api/employees/guarantees/refund', data);
+  },
+  async reversePayroll(id, reason = '') {
+    return request('POST', `/api/employees/payroll/${id}/reverse`, { reason });
   },
 };
 

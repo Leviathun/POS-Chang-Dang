@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
-const { attachUser, requireAdmin } = require('../middleware/auth');
+const { attachUser, requireManagerOrAdmin } = require('../middleware/auth');
 const { getOrCreateSession } = require('./cash_drawers');
 
 const getCategoryLabel = (cat) => {
@@ -27,7 +27,7 @@ const getCategoryLabel = (cat) => {
 
 // Apply auth middleware to all routes
 router.use(attachUser);
-router.use(requireAdmin);
+router.use(requireManagerOrAdmin);
 
 // ─── POST / — Create New Expense ────────────────────────────
 router.post('/', async (req, res) => {
@@ -195,31 +195,21 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ─── DELETE /:id — Delete Expense ───────────────────────────
-router.delete('/:id', async (req, res) => {
+// ─── POST /:id/reverse — ยกเลิก & คืนยอดรายจ่าย (Reversal / Audit Trail) ───
+router.post('/:id/reverse', async (req, res) => {
   try {
     const { id } = req.params;
+    const { reason } = req.body || {};
     const db = getDb();
 
-    let branchId = req.user.branch_id;
+    let branchId = (req.user && req.user.branch_id) ? req.user.branch_id : null;
     if (!branchId) {
       const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-      branchId = defaultBranch ? defaultBranch.id : null;
+      branchId = defaultBranch ? defaultBranch.id : 1;
     }
+    const userId = (req.user && req.user.id) ? req.user.id : 1;
 
-    // คิวรีข้อมูลและทำการลบออกภายใน Transaction/Batch เดียวกันเพื่อลดการวิ่งกลับไปกลับมาระหว่างฐานข้อมูล
-    const batchRes = await db.batch([
-      {
-        sql: 'SELECT category, amount FROM expenses WHERE id = ?',
-        args: [Number(id)]
-      },
-      {
-        sql: 'DELETE FROM expenses WHERE id = ?',
-        args: [Number(id)]
-      }
-    ]);
-
-    const expense = batchRes[0].rows[0];
+    const expense = await db.prepare('SELECT * FROM expenses WHERE id = ?').get(Number(id));
     if (!expense) {
       return res.status(404).json({
         success: false,
@@ -227,24 +217,160 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    // บันทึก Log กิจกรรมในเบื้องหลังแบบขนานโดยไม่บล็อกรอบการส่งข้อมูลกลับหาผู้ใช้
-    db.prepare(`
-      INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-      VALUES (?, ?, 'delete_expense', ?, datetime('now', '+7 hours'))
-    `).run(branchId, req.user.id, `ลบรายการค่าใช้จ่าย หมวดหมู่ ${getCategoryLabel(expense.category)} จำนวน ${expense.amount} บาท`)
-      .catch(err => console.error('Failed to log delete_expense activity:', err.message));
+    if (expense.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: 'รายการนี้ถูกยกเลิก/คืนยอดไปแล้ว'
+      });
+    }
+
+    if (expense.is_refund === 1 || expense.status === 'refund') {
+      return res.status(400).json({
+        success: false,
+        error: 'ไม่สามารถยกเลิกรายการคืนเงินซ้ำได้'
+      });
+    }
+
+    const cancelReason = reason || 'ยกเลิกรายการโดยผู้ใช้';
+    const nowLocal = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
+    const todayDate = nowLocal.substring(0, 10);
+
+    // 1. ทำเครื่องหมายรายการเดิมว่า 'cancelled'
+    await db.prepare(`
+      UPDATE expenses SET
+        status = 'cancelled',
+        cancelled_at = ?,
+        cancelled_by = ?,
+        cancel_reason = ?
+      WHERE id = ?
+    `).run(nowLocal, userId, cancelReason, Number(id));
+
+    // 2. ถ้าเป็นค่าแรง/เงินเดือนที่ผูกกับสลิป (employee_payrolls)
+    let payrollUnlocked = false;
+    const linkedPayroll = await db.prepare('SELECT * FROM employee_payrolls WHERE expense_id = ? OR id = ?').get(Number(id), Number(id));
+    if (linkedPayroll && linkedPayroll.status !== 'cancelled') {
+      await db.prepare(`
+        UPDATE employee_payrolls SET
+          status = 'cancelled',
+          cancelled_at = ?,
+          cancelled_by = ?,
+          cancel_reason = ?
+        WHERE id = ?
+      `).run(nowLocal, userId, `ยกเลิกตามรายการค่าใช้จ่าย #${id}`, linkedPayroll.id);
+
+      // ปลดล็อกวันทำงาน
+      await db.prepare(`
+        UPDATE employee_attendance SET
+          is_paid = 0,
+          payroll_id = NULL
+        WHERE payroll_id = ?
+      `).run(linkedPayroll.id);
+
+      // ปลดล็อก OT พิเศษ
+      await db.prepare(`
+        UPDATE employee_event_ot_participants SET
+          is_paid = 0,
+          payroll_id = NULL
+        WHERE payroll_id = ?
+      `).run(linkedPayroll.id);
+
+      // ปลดล็อกเงินเบิกล่วงหน้า
+      await db.prepare(`
+        UPDATE employee_advances SET
+          status = 'pending',
+          payroll_id = NULL
+        WHERE payroll_id = ?
+      `).run(linkedPayroll.id);
+
+      // ถ้ามีการหักเงินประกันในสลิปนี้ ให้ลบรายการ held ที่เกิดจากสลิปนี้
+      if (linkedPayroll.holdback_deducted_amount > 0) {
+        try {
+          await db.prepare(`
+            DELETE FROM employee_guarantees 
+            WHERE user_id = ? AND status = 'held' AND note LIKE ?
+          `).run(linkedPayroll.user_id, `%สลิป #${linkedPayroll.id}%`);
+        } catch (gErr) {
+          console.warn('⚠️ Revert guarantee deduction warning:', gErr.message);
+        }
+      }
+      payrollUnlocked = true;
+    }
+
+    // 3. ถ้าเป็นเงินเบิกล่วงหน้า (employee_advances) ที่ผูกกับ expense_id
+    try {
+      await db.prepare(`
+        UPDATE employee_advances SET
+          status = 'cancelled'
+        WHERE expense_id = ? AND status != 'cancelled'
+      `).run(Number(id));
+    } catch (advErr) {
+      console.warn('⚠️ Cancel linked advance warning:', advErr.message);
+    }
+
+    // 4. สร้างแถวคู่ตรงข้าม (Contra / Refund Entry)
+    const refundNote = expense.note ? `คืน: ${expense.note}` : `คืน: ${getCategoryLabel(expense.category)}`;
+    const refundRes = await db.prepare(`
+      INSERT INTO expenses (
+        branch_id, staff_id, amount, category, note,
+        expense_date, session_id, payment_method, status,
+        is_refund, refund_ref_id, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'refund', 1, ?, ?)
+    `).run(
+      expense.branch_id || branchId,
+      userId,
+      Number(expense.amount),
+      expense.category,
+      refundNote,
+      todayDate,
+      expense.session_id || null,
+      expense.payment_method || 'cash',
+      Number(id),
+      nowLocal
+    );
+
+    const refundId = refundRes.lastInsertRowid;
+
+    // 5. บันทึก Activity Log
+    try {
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'reverse_expense', ?, ?)
+      `).run(
+        expense.branch_id || branchId,
+        userId,
+        `ยกเลิกและคืนยอดค่าใช้จ่าย #${id} (${getCategoryLabel(expense.category)}) จำนวน ${expense.amount} บาท (คืนในแถว #${refundId})${payrollUnlocked ? ' [ปลดล็อกสลิปและวันทำงานพนักงานกลับสู่สถานะรอจ่าย]' : ''}`,
+        nowLocal
+      );
+    } catch (logErr) {
+      console.warn('⚠️ Log activity failed on reverse_expense:', logErr.message);
+    }
+
+    const updatedExpense = await db.prepare('SELECT e.*, u.name as staff_name FROM expenses e LEFT JOIN users u ON u.id = e.staff_id WHERE e.id = ?').get(Number(id));
+    const refundExpense = await db.prepare('SELECT e.*, u.name as staff_name FROM expenses e LEFT JOIN users u ON u.id = e.staff_id WHERE e.id = ?').get(Number(refundId));
 
     res.json({
       success: true,
-      message: 'ลบรายการค่าใช้จ่ายเรียบร้อยแล้ว'
+      message: 'ยกเลิกรายการและคืนยอดเรียบร้อยแล้ว',
+      data: {
+        original: updatedExpense,
+        refund: refundExpense,
+        payroll_unlocked: payrollUnlocked
+      }
     });
   } catch (error) {
-    console.error('❌ Delete expense error:', error.message);
+    console.error('❌ Reverse expense error:', error.message);
     res.status(500).json({
       success: false,
-      error: 'เกิดข้อผิดพลาดในการลบค่าใช้จ่าย'
+      error: 'เกิดข้อผิดพลาดในการยกเลิกและคืนยอด: ' + error.message
     });
   }
+});
+
+// ─── DELETE /:id — Delete/Reverse Expense (Wrapper for backward compatibility) ───
+router.delete('/:id', async (req, res) => {
+  // Redirect delete requests to reverse handler for safe audit trail
+  req.url = `/${req.params.id}/reverse`;
+  return router.handle(req, res);
 });
 
 module.exports = router;

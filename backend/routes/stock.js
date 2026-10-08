@@ -685,6 +685,116 @@ router.get('/logs/all', async (req, res) => {
   }
 });
 
+// ─── POST /logs/:id/reverse — ยกเลิกรายการบันทึกของเสีย/เครดิต และคืนจำนวนสต็อกเข้าคลัง (Admin/Manager) ───
+router.post('/logs/:id/reverse', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body || {};
+    const db = getDb();
+
+    let branchId = req.user ? req.user.branch_id : null;
+    if (!branchId) {
+      const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
+      branchId = defaultBranch ? defaultBranch.id : 1;
+    }
+    const userId = req.user ? req.user.id : 1;
+
+    const log = await db.prepare(`
+      SELECT sl.*, mi.name as item_name, mi.quantity as current_stock, mi.raw_quantity as current_raw_stock
+      FROM stock_logs sl
+      LEFT JOIN menu_items mi ON mi.id = sl.menu_item_id
+      WHERE sl.id = ?
+    `).get(Number(id));
+
+    if (!log) {
+      return res.status(404).json({ success: false, error: 'ไม่พบรายการบันทึกสต็อก' });
+    }
+
+    if (log.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'รายการนี้ถูกยกเลิก/คืนสต็อกไปแล้ว' });
+    }
+
+    if (!['waste', 'staff_benefit', 'adjustment'].includes(log.reason)) {
+      return res.status(400).json({ success: false, error: 'สามารถยกเลิกได้เฉพาะรายการของเสีย, เครดิตพนักงาน หรือการปรับปรุงสต็อกเท่านั้น' });
+    }
+
+    const cancelReason = reason || 'ยกเลิกรายการโดยผู้ใช้';
+    const nowLocal = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
+
+    // 1. ทำเครื่องหมาย log เดิมว่า 'cancelled'
+    await db.prepare(`
+      UPDATE stock_logs SET
+        status = 'cancelled',
+        cancelled_at = ?,
+        cancelled_by = ?,
+        cancel_reason = ?
+      WHERE id = ?
+    `).run(nowLocal, userId, cancelReason, Number(id));
+
+    // 2. คืนจำนวนสต็อกกลับเข้าสู่ menu_items (หาก log ลดสต็อก change_qty < 0)
+    const restoreQty = Math.abs(Number(log.change_qty) || 0);
+    let newStockVal = Number(log.current_stock || 0);
+
+    if (restoreQty > 0 && log.menu_item_id) {
+      newStockVal = Math.round((Number(log.current_stock || 0) + restoreQty) * 100) / 100;
+      await db.prepare(`
+        UPDATE menu_items 
+        SET quantity = ?, updated_at = datetime('now', 'localtime')
+        WHERE id = ?
+      `).run(newStockVal, Number(log.menu_item_id));
+
+      // 3. สร้าง log รายการคืนสต็อก
+      const reasonLabel = log.reason === 'waste' ? 'ของเสีย/ทิ้ง' : (log.reason === 'staff_benefit' ? 'เครดิตพนักงาน' : 'ปรับสต็อก');
+      await db.prepare(`
+        INSERT INTO stock_logs (
+          branch_id, menu_item_id, change_qty, previous_stock,
+          new_stock, reason, staff_id, note, created_at
+        ) VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, ?)
+      `).run(
+        log.branch_id || branchId,
+        Number(log.menu_item_id),
+        restoreQty,
+        log.current_stock || 0,
+        newStockVal,
+        userId,
+        `คืนสต็อก: ยกเลิก${reasonLabel} (สลิป/บันทึก #${id})`,
+        nowLocal
+      );
+    }
+
+    // 4. Activity Log
+    try {
+      await db.prepare(`
+        INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+        VALUES (?, ?, 'reverse_stock_log', ?, ?)
+      `).run(
+        log.branch_id || branchId,
+        userId,
+        `ยกเลิกบันทึกสต็อก #${id} (${log.item_name || 'สินค้า'} ${restoreQty} ชิ้น) และคืนสต็อกเข้าคลังเรียบร้อยแล้ว`,
+        nowLocal
+      );
+    } catch (logErr) {
+      console.warn('⚠️ Log activity failed on reverse_stock_log:', logErr.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'ยกเลิกรายการและคืนจำนวนสต็อกเข้าคลังเรียบร้อยแล้ว',
+      data: {
+        log_id: Number(id),
+        restored_qty: restoreQty,
+        new_stock: newStockVal
+      }
+    });
+  } catch (error) {
+    console.error('❌ Reverse stock log error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการยกเลิกและคืนสต็อก: ' + error.message
+    });
+  }
+});
+
 // ─── GET /:id/logs — ประวัติการเปลี่ยนแปลงสต็อกแยกสาขา ────────
 router.get('/:id/logs', async (req, res) => {
   try {

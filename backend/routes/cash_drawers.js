@@ -248,12 +248,17 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
 
     // 2. Calculate cash expenses
     const expensesResult = await db.prepare(`
-      SELECT SUM(amount) as cash_expenses
+      SELECT SUM(
+        CASE 
+          WHEN is_refund = 1 OR status = 'refund' THEN -amount
+          ELSE amount
+        END
+      ) as cash_expenses
       FROM expenses
       WHERE (session_id = ? OR (branch_id = ? AND expense_date = ?))
         AND (payment_method = 'cash' OR payment_method IS NULL)
     `).get(sessionId, targetBranchId, targetDate);
-    const cashExpenses = expensesResult ? (expensesResult.cash_expenses || 0) : 0;
+    const cashExpenses = Math.max(0, expensesResult ? (expensesResult.cash_expenses || 0) : 0);
 
     // 3. Reconcile
     const expectedCash = (session.opening_cash || 0) + cashSales - cashExpenses;
@@ -359,12 +364,17 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
 
       // Get cash expenses comprehensively
       const expRes = await db.prepare(`
-        SELECT SUM(amount) as cash_expenses
+        SELECT SUM(
+          CASE 
+            WHEN is_refund = 1 OR status = 'refund' THEN -amount
+            ELSE amount
+          END
+        ) as cash_expenses
         FROM expenses
         WHERE (session_id = ? OR (session_id IS NULL AND branch_id = ? AND expense_date = ?))
           AND (payment_method = 'cash' OR payment_method IS NULL)
       `).get(session.id, session.branch_id, session.session_date);
-      const cashExpenses = expRes ? (expRes.cash_expenses || 0) : 0;
+      const cashExpenses = Math.max(0, expRes ? (expRes.cash_expenses || 0) : 0);
 
       // For open session, calculate expected cash on the fly
       const expectedCash = (session.opening_cash || 0) + cashSales - cashExpenses;
@@ -421,12 +431,17 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
               WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
             `).get(targetBranch.id, dStr);
             const dExpenses = await db.prepare(`
-              SELECT SUM(amount) as cash_expenses FROM expenses 
+              SELECT SUM(
+                CASE 
+                  WHEN is_refund = 1 OR status = 'refund' THEN -amount
+                  ELSE amount
+                END
+              ) as cash_expenses FROM expenses 
               WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
             `).get(targetBranch.id, dStr);
 
             const cashSales = dSales ? (dSales.cash_sales || 0) : 0;
-            const cashExpenses = dExpenses ? (dExpenses.cash_expenses || 0) : 0;
+            const cashExpenses = Math.max(0, dExpenses ? (dExpenses.cash_expenses || 0) : 0);
 
             enrichedSessions.push({
               id: null,
@@ -456,12 +471,17 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
             WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
           `).get(targetBranch.id, yesterdayStr);
           const yExpenses = await db.prepare(`
-            SELECT SUM(amount) as cash_expenses FROM expenses 
+            SELECT SUM(
+              CASE 
+                WHEN is_refund = 1 OR status = 'refund' THEN -amount
+                ELSE amount
+              END
+            ) as cash_expenses FROM expenses 
             WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
           `).get(targetBranch.id, yesterdayStr);
           
           const yCashSales = ySales ? (ySales.cash_sales || 0) : 0;
-          const yCashExpenses = yExpenses ? (yExpenses.cash_expenses || 0) : 0;
+          const yCashExpenses = Math.max(0, yExpenses ? (yExpenses.cash_expenses || 0) : 0);
 
           enrichedSessions.push({
             id: null,
@@ -486,12 +506,17 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
             WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
           `).get(targetBranch.id, todayStr);
           const tExpenses = await db.prepare(`
-            SELECT SUM(amount) as cash_expenses FROM expenses 
+            SELECT SUM(
+              CASE 
+                WHEN is_refund = 1 OR status = 'refund' THEN -amount
+                ELSE amount
+              END
+            ) as cash_expenses FROM expenses 
             WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
           `).get(targetBranch.id, todayStr);
           
           const tCashSales = tSales ? (tSales.cash_sales || 0) : 0;
-          const tCashExpenses = tExpenses ? (tExpenses.cash_expenses || 0) : 0;
+          const tCashExpenses = Math.max(0, tExpenses ? (tExpenses.cash_expenses || 0) : 0);
 
           enrichedSessions.push({
             id: null,
