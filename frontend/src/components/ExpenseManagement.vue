@@ -236,6 +236,22 @@
         </div>
       </div>
 
+      <!-- Working Capital Note / Staff Guarantee Fund Indicator -->
+      <div v-if="activeHeldGuaranteesTotal > 0" class="card p-sm flex flex-between align-center flex-wrap gap-xs" style="background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-md);">
+        <div class="flex align-center gap-xs text-xs">
+          <i class="fa-solid fa-shield-halved text-warning"></i>
+          <span class="text-secondary">
+            เงินประกันพนักงานที่ถือครองหมุนเวียนในร้าน (สภาพคล่องเสริม):
+          </span>
+          <strong class="text-primary font-bold">{{ formatCurrency(activeHeldGuaranteesTotal) }}</strong>
+          <span class="text-secondary">({{ activeHeldGuaranteesCount }} คน)</span>
+        </div>
+        <div class="flex align-center gap-xs text-secondary" style="font-size: 11px;">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>ไม่นับรวมเป็นยอดขายอาหาร</span>
+        </div>
+      </div>
+
       <!-- Enhanced Filter & Search Bar Card -->
       <div class="card p-md" style="background: #ffffff; border: 1px solid var(--border-color);">
         
@@ -311,12 +327,12 @@
         <table class="table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-              <th class="text-center" style="width: 14%; padding: 14px var(--space-sm); white-space:nowrap;">วัน-เวลา</th>
-              <th class="text-center" style="width: 20%; padding: 14px var(--space-sm); white-space:nowrap;">ประเภท / หมวดหมู่</th>
+              <th class="text-center" style="width: 12%; padding: 14px var(--space-xs); white-space:nowrap;">วัน-เวลา</th>
+              <th class="text-center" style="width: 16%; padding: 14px var(--space-xs); white-space:nowrap;">ประเภท / หมวดหมู่</th>
               <th class="text-left" style="width: 29%; padding: 14px var(--space-md);">ชื่อรายการ / รายละเอียด</th>
-              <th class="text-center" style="width: 14%; padding: 14px var(--space-sm); white-space:nowrap;">ช่องทาง</th>
-              <th class="text-center" style="width: 13%; padding: 14px var(--space-sm); white-space:nowrap;">จำนวนเงิน (บาท)</th>
-              <th class="text-center" style="width: 10%; padding: 14px var(--space-sm); white-space:nowrap;">จัดการ</th>
+              <th class="text-center" style="width: 12%; padding: 14px var(--space-xs); white-space:nowrap;">ช่องทาง</th>
+              <th class="text-center" style="width: 14%; padding: 14px var(--space-xs); white-space:nowrap;">จำนวนเงิน (บาท)</th>
+              <th class="text-center" style="width: 17%; padding: 14px var(--space-xs); white-space:nowrap;">จัดการ</th>
             </tr>
           </thead>
           <tbody>
@@ -339,24 +355,28 @@
               :key="item.entryKey" 
               style="border-bottom: 1px solid var(--border-color);"
               class="table-row-hover"
+              :style="item.isCancelled ? 'opacity: 0.65; background: #fafafa;' : ''"
             >
-              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle; white-space:nowrap; color:var(--text-secondary); font-size: var(--font-xs);">
+              <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; white-space:nowrap; color:var(--text-secondary); font-size: var(--font-xs);">
                 {{ formatDate(item.date) }}<br/>
                 <span class="text-tertiary">{{ formatTime(item.created_at) }}</span>
               </td>
-              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle;">
+              <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle;">
                 <span class="category-badge" :class="item.badgeClass">
                   <i :class="item.icon"></i>
                   <span>{{ item.categoryLabel }}</span>
                 </span>
               </td>
               <td class="text-left" style="padding: 14px var(--space-md); vertical-align: middle; font-weight: 500; word-break: break-word;">
-                <div>{{ item.name }}</div>
+                <div :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''">{{ item.name }}</div>
                 <div v-if="item.staffName" class="text-xs text-secondary mt-xxs">
                   <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
                 </div>
+                <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mt-xxs font-semibold">
+                  <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
+                </div>
               </td>
-              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle;">
+              <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle;">
                 <span class="payment-method-badge" :class="item.paymentClass">
                   <i v-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
                   <i v-else-if="item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
@@ -364,19 +384,49 @@
                   <span>{{ item.paymentLabel }}</span>
                 </span>
               </td>
-              <td class="text-danger text-center" style="padding: 14px var(--space-sm); vertical-align: middle; font-weight:bold; font-size: var(--font-base);">
-                {{ formatCurrency(item.amount) }}
+              <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; font-weight:bold; font-size: var(--font-base);">
+                <span v-if="item.isRefund" class="text-success font-bold">+{{ formatCurrency(item.amount) }}</span>
+                <span v-else-if="item.isCancelled" class="text-tertiary" style="text-decoration: line-through; font-size: var(--font-sm);">{{ formatCurrency(item.amount) }}</span>
+                <span v-else class="text-danger font-bold">{{ formatCurrency(item.amount) }}</span>
               </td>
-              <td class="text-center" style="padding: 14px var(--space-sm); vertical-align: middle;">
+              <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle;">
+                <!-- Reversal / Status Column -->
+                <!-- Case 1: Refund Entry -->
+                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done">
+                  <i class="fa-solid fa-circle-check"></i> คืนยอดเงินแล้ว
+                </span>
+                <!-- Case 2: Cancelled Expense -->
+                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'">
+                  <i :class="item.category === 'salary' ? 'fa-solid fa-user-clock' : 'fa-solid fa-ban'"></i>
+                  {{ item.category === 'salary' ? 'คืนบัญชีพนักงาน' : 'ยกเลิก & คืนเงิน' }}
+                </span>
+                <!-- Case 3: Cancelled Stock Log -->
+                <span v-else-if="item.isCancelled && (item.type === 'waste_loss' || item.type === 'credit_loss')" class="badge-status-pill badge-stock-cancelled">
+                  <i class="fa-solid fa-rotate-left"></i> คืนสต็อกแล้ว
+                </span>
+                <!-- Case 4: Active Expense -->
                 <button 
-                  v-if="item.type === 'expense'"
-                  class="btn-action btn-action-delete"
-                  :disabled="deletingExpenseId === item.id"
-                  @click="handleDeleteExpense(item.id)"
+                  v-else-if="item.type === 'expense'"
+                  class="btn-action btn-action-primary table-action-btn"
+                  :disabled="reversingEntryId === item.entryKey"
+                  @click="handleReverseEntry(item)"
+                  title="ยกเลิกและคืนยอด"
                 >
-                  <i v-if="deletingExpenseId === item.id" class="fa-solid fa-spinner fa-spin"></i>
-                  <i v-else class="fa-solid fa-trash-can"></i>
-                  <span>{{ deletingExpenseId === item.id ? ' ลบ...' : ' ลบ' }}</span>
+                  <i v-if="reversingEntryId === item.entryKey" class="fa-solid fa-spinner fa-spin"></i>
+                  <i v-else class="fa-solid fa-rotate-left"></i>
+                  <span>{{ reversingEntryId === item.entryKey ? ' กำลังยกเลิก...' : ' ยกเลิก/คืน' }}</span>
+                </button>
+                <!-- Case 5: Active Stock Waste/Credit -->
+                <button 
+                  v-else-if="item.type === 'waste_loss' || item.type === 'credit_loss'"
+                  class="btn-action btn-action-primary table-action-btn"
+                  :disabled="reversingEntryId === item.entryKey"
+                  @click="handleReverseEntry(item)"
+                  title="ยกเลิกและคืนสต็อกเข้าคลัง"
+                >
+                  <i v-if="reversingEntryId === item.entryKey" class="fa-solid fa-spinner fa-spin"></i>
+                  <i v-else class="fa-solid fa-rotate-left"></i>
+                  <span>{{ reversingEntryId === item.entryKey ? ' กำลังคืน...' : ' คืนสต็อก' }}</span>
                 </button>
                 <span v-else class="text-tertiary text-xs">-</span>
               </td>
@@ -395,30 +445,46 @@
             v-for="item in paginatedLedgerEntries" 
             :key="'mobile-' + item.entryKey"
             class="expense-mobile-card"
+            :style="item.isCancelled ? 'opacity: 0.65; background: #fafafa;' : ''"
           >
             <div class="flex flex-between align-center mb-xs">
               <span class="category-badge" :class="item.badgeClass">
                 <i :class="item.icon"></i> {{ item.categoryLabel }}
               </span>
-              <span class="font-bold text-danger text-base">
-                {{ formatCurrency(item.amount) }}
-              </span>
+              <span v-if="item.isRefund" class="font-bold text-success text-base">+{{ formatCurrency(item.amount) }}</span>
+              <span v-else-if="item.isCancelled" class="font-bold text-tertiary text-sm" style="text-decoration: line-through;">{{ formatCurrency(item.amount) }}</span>
+              <span v-else class="font-bold text-danger text-base">{{ formatCurrency(item.amount) }}</span>
             </div>
-            <div class="text-sm font-semibold mb-xs" style="word-break: break-word;">
+            <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word;">
               {{ item.name }}
+            </div>
+            <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mb-xs font-semibold">
+              <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
             </div>
             <div class="flex flex-between align-center text-xs text-secondary mt-xs pt-xs" style="border-top: 1px solid var(--border-color);">
               <span>{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
               <div class="flex align-center gap-xs">
                 <span class="payment-method-badge" :class="item.paymentClass">{{ item.paymentLabel }}</span>
+                <!-- Reversal Badges / Buttons for Mobile -->
+                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 3px 8px; font-size: 10.5px;">
+                  <i class="fa-solid fa-circle-check"></i> คืนเงินแล้ว
+                </span>
+                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'" style="padding: 3px 8px; font-size: 10.5px;">
+                  <i :class="item.category === 'salary' ? 'fa-solid fa-user-clock' : 'fa-solid fa-ban'"></i>
+                  {{ item.category === 'salary' ? 'คืนบัญชีพนักงาน' : 'ยกเลิกแล้ว' }}
+                </span>
+                <span v-else-if="item.isCancelled" class="badge-status-pill badge-stock-cancelled" style="padding: 3px 8px; font-size: 10.5px;">
+                  <i class="fa-solid fa-rotate-left"></i> คืนสต็อกแล้ว
+                </span>
                 <button 
-                  v-if="item.type === 'expense'"
-                  class="btn-action btn-action-delete" 
-                  style="padding: 2px 6px; font-size: 11px;"
-                  :disabled="deletingExpenseId === item.id"
-                  @click="handleDeleteExpense(item.id)"
+                  v-else-if="item.type === 'expense' || item.type === 'waste_loss' || item.type === 'credit_loss'"
+                  class="btn-action-reverse" 
+                  style="padding: 3px 8px; font-size: 11px;"
+                  :disabled="reversingEntryId === item.entryKey"
+                  @click="handleReverseEntry(item)"
                 >
-                  <i class="fa-solid fa-trash-can"></i>
+                  <i v-if="reversingEntryId === item.entryKey" class="fa-solid fa-spinner fa-spin"></i>
+                  <i v-else class="fa-solid fa-rotate-left"></i>
                 </button>
               </div>
             </div>
@@ -811,17 +877,31 @@ const allLedgerEntries = computed(() => {
     }
   });
 
-  // 1. Regular Expenses
+  // 1. Regular Expenses & Refunds
   expenses.value.forEach(e => {
+    const isRefund = Boolean(e.is_refund === 1 || e.status === 'refund');
+    const isCancelled = e.status === 'cancelled';
+    const catLabel = isRefund ? 'คืนเงิน/ยกเลิก' : getCategoryLabel(e.category);
+    const catIcon = isRefund ? 'fa-solid fa-rotate-left' : getExpenseCategoryIcon(e.category);
+    const badgeCls = isRefund ? 'badge-cat-refund' : ('badge-cat-' + e.category);
+    const displayName = isRefund
+      ? (e.note || `คืน: ${getCategoryLabel(e.category)}`)
+      : (e.note || getCategoryLabel(e.category));
+
     list.push({
       entryKey: 'exp-' + e.id,
       id: e.id,
       type: 'expense',
+      status: e.status || (isRefund ? 'refund' : 'completed'),
+      isRefund,
+      isCancelled,
+      cancelReason: e.cancel_reason || '',
+      cancelledAt: e.cancelled_at || null,
       category: e.category,
-      categoryLabel: getCategoryLabel(e.category),
-      icon: getExpenseCategoryIcon(e.category),
-      badgeClass: 'badge-cat-' + e.category,
-      name: e.note || getCategoryLabel(e.category),
+      categoryLabel: catLabel,
+      icon: catIcon,
+      badgeClass: badgeCls,
+      name: displayName,
       amount: Number(e.amount) || 0,
       paymentLabel: e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด',
       paymentClass: e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash',
@@ -845,11 +925,17 @@ const allLedgerEntries = computed(() => {
     const qty = Math.abs(Number(log.change_qty) || 0);
     const lossCost = qty * unitPrice;
     const isWaste = log.reason === 'waste';
+    const isCancelled = log.status === 'cancelled';
 
     list.push({
       entryKey: 'stock-' + log.id,
       id: log.id,
       type: isWaste ? 'waste_loss' : 'credit_loss',
+      status: log.status || 'completed',
+      isRefund: false,
+      isCancelled,
+      cancelReason: log.cancel_reason || '',
+      cancelledAt: log.cancelled_at || null,
       category: isWaste ? 'waste_loss' : 'credit_loss',
       categoryLabel: isWaste ? 'ของเสีย/ทิ้ง' : 'เครดิตพนักงาน',
       icon: isWaste ? 'fa-solid fa-trash-can' : 'fa-solid fa-user-check',
@@ -892,7 +978,11 @@ const filteredLedgerEntries = computed(() => {
 });
 
 const filteredLedgerTotal = computed(() => {
-  return filteredLedgerEntries.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  return filteredLedgerEntries.value.reduce((sum, item) => {
+    if (item.type !== 'expense' && item.isCancelled) return sum;
+    if (item.isRefund) return sum - (Number(item.amount) || 0);
+    return sum + (Number(item.amount) || 0);
+  }, 0);
 });
 
 const totalLedgerPages = computed(() => {
@@ -913,11 +1003,9 @@ const getEntryCountByCategory = (catId) => {
 
 // Calculations for Financial Summary
 const totalRevenue = computed(() => {
-  const ordersRev = orders.value
+  return orders.value
     .filter(o => o.status === 'completed')
     .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-  const guaranteeRev = guarantees.value.reduce((sum, g) => sum + (Number(g.amount) || 0), 0);
-  return ordersRev + guaranteeRev;
 });
 
 const revenueBreakdown = computed(() => {
@@ -928,25 +1016,26 @@ const revenueBreakdown = computed(() => {
     if (o.payment_method === 'cash') cash += Number(o.total) || 0;
     else qr += Number(o.total) || 0;
   });
-  guarantees.value.forEach(g => {
-    if (g.deposit_payment_method === 'cash') cash += Number(g.amount) || 0;
-    else qr += Number(g.amount) || 0;
-  });
   return { cash, qr };
 });
 
 const totalExpenses = computed(() => {
-  return expenses.value.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  return expenses.value.reduce((sum, e) => {
+    if (e.is_refund === 1 || e.status === 'refund') return sum - (Number(e.amount) || 0);
+    return sum + (Number(e.amount) || 0);
+  }, 0);
 });
 
 const expenseBreakdown = computed(() => {
   let cash = 0;
   let transfer = 0;
   expenses.value.forEach(e => {
-    if (e.payment_method === 'cash') cash += Number(e.amount) || 0;
-    else transfer += Number(e.amount) || 0;
+    const amt = Number(e.amount) || 0;
+    const mult = (e.is_refund === 1 || e.status === 'refund') ? -1 : 1;
+    if (e.payment_method === 'cash') cash += (amt * mult);
+    else transfer += (amt * mult);
   });
-  return { cash, transfer };
+  return { cash: Math.max(0, cash), transfer: Math.max(0, transfer) };
 });
 
 const wasteCost = computed(() => {
@@ -962,7 +1051,7 @@ const wasteCost = computed(() => {
     }
   });
   return rawStockLogs.value
-    .filter(l => l.reason === 'waste')
+    .filter(l => l.reason === 'waste' && l.status !== 'cancelled')
     .reduce((sum, l) => {
       const item = (l.menu_item_id ? (menuMap.get(Number(l.menu_item_id)) || menuMap.get(String(l.menu_item_id))) : null) ||
                    (l.item_name ? menuByNameMap.get(String(l.item_name).trim().toLowerCase()) : null);
@@ -986,7 +1075,7 @@ const staffCreditCost = computed(() => {
     }
   });
   return rawStockLogs.value
-    .filter(l => l.reason === 'staff_benefit')
+    .filter(l => l.reason === 'staff_benefit' && l.status !== 'cancelled')
     .reduce((sum, l) => {
       const item = (l.menu_item_id ? (menuMap.get(Number(l.menu_item_id)) || menuMap.get(String(l.menu_item_id))) : null) ||
                    (l.item_name ? menuByNameMap.get(String(l.item_name).trim().toLowerCase()) : null);
@@ -999,6 +1088,17 @@ const staffCreditCost = computed(() => {
 
 const totalWasteAndCreditCost = computed(() => {
   return wasteCost.value + staffCreditCost.value;
+});
+
+// กองทุนเงินประกันพนักงานที่ถือครองอยู่ (Staff Guarantee Working Capital)
+const activeHeldGuaranteesTotal = computed(() => {
+  return guarantees.value
+    .filter(g => g.status === 'held')
+    .reduce((sum, g) => sum + (Number(g.amount) || 0), 0);
+});
+
+const activeHeldGuaranteesCount = computed(() => {
+  return guarantees.value.filter(g => g.status === 'held').length;
 });
 
 // คงเหลือสุทธิ = รายรับรวม - รายจ่ายรวม - ของเสีย/เครดิต
@@ -1032,9 +1132,14 @@ const allCostBreakdownStats = computed(() => {
   map['credit_loss'] = { id: 'credit_loss', name: 'เครดิตพนักงาน', icon: 'fa-solid fa-user-check', color: 'var(--accent, #ffab2b)', total: staffCreditCost.value };
 
   expenses.value.forEach(e => {
+    const amt = Number(e.amount) || 0;
     const key = (e.category === 'fuel_oil') ? 'cooking_oil' : (map[e.category] ? e.category : 'other');
     if (map[key]) {
-      map[key].total += Number(e.amount) || 0;
+      if (e.is_refund === 1 || e.status === 'refund') {
+        map[key].total = Math.max(0, map[key].total - amt);
+      } else {
+        map[key].total += amt;
+      }
     }
   });
 
@@ -1048,7 +1153,10 @@ const allCostBreakdownStats = computed(() => {
 });
 
 const topExpenses = computed(() => {
-  return [...expenses.value].sort((a, b) => (b.amount || 0) - (a.amount || 0)).slice(0, 5);
+  return expenses.value
+    .filter(e => e.status !== 'cancelled' && !e.is_refund && e.status !== 'refund')
+    .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+    .slice(0, 5);
 });
 
 // Data Loading
@@ -1126,22 +1234,57 @@ const handleAddExpense = async () => {
   }
 };
 
-const deletingExpenseId = ref(null);
+const reversingEntryId = ref(null);
 
-const handleDeleteExpense = async (id) => {
-  const ok = await ui.showConfirm('ลบรายจ่าย', 'ต้องการลบรายการค่าใช้จ่ายนี้ใช่หรือไม่?');
-  if (!ok) return;
-  deletingExpenseId.value = id;
-  try {
-    const res = await api.expenses.delete(id);
-    if (res.success) {
-      ui.showToast('ลบค่าใช้จ่ายสำเร็จ', 'success');
-      expenses.value = expenses.value.filter(e => e.id !== id);
+const handleReverseEntry = async (item) => {
+  if (item.type === 'expense') {
+    const isSalary = item.category === 'salary';
+    const isAdvance = isSalary && (item.name && item.name.includes('เบิกเงินล่วงหน้า'));
+    const isPayroll = isSalary && !isAdvance;
+
+    let msg = '';
+    if (isAdvance) {
+      msg = `ต้องการยกเลิกรายการ "${item.name}" (${formatCurrency(item.amount)}) ใช่หรือไม่?\n\nเมื่อยกเลิก ระบบจะ:\n1. บันทึกคืนเงิน (+${formatCurrency(item.amount)}) เพื่อหักล้างรายจ่ายและปรับยอดเงินสดในลิ้นชักกลับมาถูกต้อง\n2. ยกเลิกรายการเบิกเงินล่วงหน้า (จะไม่นำไปหักค่าแรงพนักงานตอนสิ้นเดือน)`;
+    } else if (isPayroll) {
+      msg = `ต้องการยกเลิกและคืนยอดค่าใช้จ่ายค่าแรง "${item.name}" (${formatCurrency(item.amount)}) ใช่หรือไม่?\n\nเมื่อยกเลิก ระบบจะ:\n1. บันทึกคืนเงิน (+${formatCurrency(item.amount)}) เพื่อหักล้างรายจ่ายและปรับยอดเงินสดในลิ้นชักกลับมาถูกต้อง\n2. ปลดล็อกวันทำงาน/OT ให้กลับสู่สถานะรอคำนวณเงินเดือนใหม่`;
+    } else {
+      msg = `ต้องการยกเลิกและคืนยอดรายจ่าย "${item.name}" (${formatCurrency(item.amount)}) ใช่หรือไม่?\n\nระบบจะบันทึกแถวคืนเงิน (+${formatCurrency(item.amount)}) เพื่อหักล้างรายจ่ายและปรับยอดเงินสดในลิ้นชักกลับมาถูกต้อง`;
     }
-  } catch (err) {
-    ui.showToast('ลบไม่สำเร็จ: ' + err.message, 'error');
-  } finally {
-    deletingExpenseId.value = null;
+
+    const confirmed = await ui.showConfirm('ยืนยันยกเลิก & คืนยอด', msg);
+    if (!confirmed) return;
+
+    reversingEntryId.value = item.entryKey;
+    try {
+      const res = await api.expenses.reverse(item.id);
+      if (res.success) {
+        ui.showToast('ยกเลิกรายการและคืนยอดสำเร็จ', 'success');
+        await loadData();
+      }
+    } catch (err) {
+      ui.showToast(err.message || 'ยกเลิกรายการไม่สำเร็จ', 'error');
+    } finally {
+      reversingEntryId.value = null;
+    }
+  } else if (item.type === 'waste_loss' || item.type === 'credit_loss') {
+    const confirmed = await ui.showConfirm(
+      'ยืนยันคืนสต็อกเข้าคลัง',
+      `ต้องการยกเลิกรายการ "${item.name}" และคืนจำนวนสต็อกเข้าคลังสินค้าใช่หรือไม่?`
+    );
+    if (!confirmed) return;
+
+    reversingEntryId.value = item.entryKey;
+    try {
+      const res = await api.stock.reverseLog(item.id);
+      if (res.success) {
+        ui.showToast('ยกเลิกรายการและคืนสต็อกเข้าคลังสำเร็จ', 'success');
+        await loadData();
+      }
+    } catch (err) {
+      ui.showToast(err.message || 'ยกเลิกรายการไม่สำเร็จ', 'error');
+    } finally {
+      reversingEntryId.value = null;
+    }
   }
 };
 
@@ -1672,9 +1815,56 @@ onMounted(() => {
 .badge-cat-salary { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
 .badge-cat-utility_bills { background: rgba(13, 202, 240, 0.14); color: #087990; border: 1px solid rgba(13, 202, 240, 0.25); }
 .badge-cat-debt { background: rgba(173, 40, 30, 0.12); color: var(--danger); border: 1px solid rgba(173, 40, 30, 0.2); }
-.badge-cat-other { background: rgba(108, 117, 125, 0.14); color: #495057; border: 1px solid rgba(108, 117, 125, 0.2); }
 .badge-cat-waste, .badge-cat-waste_loss { background: rgba(173, 40, 30, 0.14); color: #a81c1c; border: 1px solid rgba(173, 40, 30, 0.25); }
 .badge-cat-credit, .badge-cat-credit_loss { background: rgba(255, 153, 0, 0.14); color: #b26a00; border: 1px solid rgba(255, 153, 0, 0.25); }
+.badge-cat-refund { background: rgba(52, 199, 89, 0.14); color: #1f7a3f; border: 1px solid rgba(52, 199, 89, 0.3); }
+
+.badge-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: var(--font-weight-bold, 700);
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  min-width: 130px;
+}
+
+.badge-status-pill i {
+  font-size: 11px;
+}
+
+.table-action-btn {
+  width: 130px !important;
+  min-width: 130px !important;
+}
+
+.badge-refund-done {
+  background: rgba(52, 199, 89, 0.14);
+  color: #1f7a3f;
+  border: 1px solid rgba(52, 199, 89, 0.3);
+}
+
+.badge-salary-cancelled {
+  background: rgba(255, 153, 0, 0.14);
+  color: #b26a00;
+  border: 1px solid rgba(255, 153, 0, 0.3);
+}
+
+.badge-cancelled {
+  background: rgba(108, 117, 125, 0.12);
+  color: #555555;
+  border: 1px solid rgba(108, 117, 125, 0.25);
+}
+
+.badge-stock-cancelled {
+  background: rgba(69, 123, 157, 0.14);
+  color: #2a5d7e;
+  border: 1px solid rgba(69, 123, 157, 0.3);
+}
 
 .payment-method-badge {
   display: inline-flex;
