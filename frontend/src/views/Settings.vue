@@ -78,7 +78,7 @@
         </div>
       </div>
 
-      <div class="card-title text-sm"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
+      <div class="card-title text-sm"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> การแจ้งเตือนสต็อกวัตถุดิบ</div>
 
 
 
@@ -95,8 +95,10 @@
       </div>
 
       <!-- Save Shop Settings Button -->
-      <button class="btn btn-primary btn-block mt-lg" @click="saveShopSettings">
-        <i class="fa-solid fa-floppy-disk"></i> บันทึกตั้งค่าระบบร้าน
+      <button class="btn btn-primary btn-block mt-lg" :disabled="isSavingShopSettings" @click="saveShopSettings">
+        <i v-if="isSavingShopSettings" class="fa-solid fa-spinner fa-spin"></i>
+        <i v-else class="fa-solid fa-floppy-disk"></i>
+        {{ isSavingShopSettings ? 'กำลังบันทึก...' : 'บันทึกตั้งค่าระบบร้าน' }}
       </button>
     </div>
 
@@ -311,13 +313,15 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showUserModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingUser" @click="showUserModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!userForm.name || !userForm.pin || userForm.pin.length !== 4"
+              :disabled="!userForm.name || !userForm.pin || userForm.pin.length !== 4 || isSavingUser"
               @click="handleSaveUser"
             >
-              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              <i v-if="isSavingUser" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingUser ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
             </button>
           </div>
         </div>
@@ -450,13 +454,15 @@
           </div>
 
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showBranchModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!branchForm.name || !branchForm.name.trim()"
+              :disabled="!branchForm.name || !branchForm.name.trim() || isSavingBranch"
               @click="handleSaveBranch"
             >
-              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              <i v-if="isSavingBranch" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingBranch ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
             </button>
           </div>
         </div>
@@ -820,11 +826,15 @@
 
         <!-- Testing Buttons -->
         <div class="flex gap-md printer-btn-container" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
-          <button class="btn btn-secondary" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
-            <i class="fa-solid fa-file-invoice"></i> ทดสอบพิมพ์ใบเสร็จทดลอง
+          <button class="btn btn-secondary" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+            <i v-if="isTestingPrint" class="fa-solid fa-spinner fa-spin"></i>
+            <i v-else class="fa-solid fa-file-invoice"></i>
+            {{ isTestingPrint ? 'กำลังทดสอบ...' : 'ทดสอบพิมพ์ใบเสร็จทดลอง' }}
           </button>
-          <button class="btn btn-secondary" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
-            <i class="fa-solid fa-key"></i> ทดสอบเปิดลิ้นชักเก็บเงิน
+          <button class="btn btn-secondary" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+            <i v-if="isTestingKick" class="fa-solid fa-spinner fa-spin"></i>
+            <i v-else class="fa-solid fa-key"></i>
+            {{ isTestingKick ? 'กำลังทดสอบ...' : 'ทดสอบเปิดลิ้นชักเก็บเงิน' }}
           </button>
         </div>
       </div>
@@ -887,13 +897,15 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showPresetModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingPreset" @click="showPresetModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!presetForm.name.trim() || presetForm.modifier_ids.length === 0"
+              :disabled="!presetForm.name.trim() || presetForm.modifier_ids.length === 0 || isSavingPreset"
               @click="handleSavePreset"
             >
-              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              <i v-if="isSavingPreset" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingPreset ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
             </button>
           </div>
         </div>
@@ -1061,7 +1073,12 @@ const saveLocalPrinterConfig = () => {
 
 
 
+const isTestingPrint = ref(false);
+const isTestingKick = ref(false);
+
 const handleTestPrint = async () => {
+  if (isTestingPrint.value) return;
+  isTestingPrint.value = true;
   try {
     const testOrder = {
       order_number: 'TEST-0001',
@@ -1094,10 +1111,14 @@ const handleTestPrint = async () => {
     }
   } catch (e) {
     ui.showToast('การพิมพ์ล้มเหลว: ' + e.message, 'error');
+  } finally {
+    isTestingPrint.value = false;
   }
 };
 
 const handleTestKick = async () => {
+  if (isTestingKick.value) return;
+  isTestingKick.value = true;
   try {
     if (isPrinterConnected()) {
       await kickDrawer();
@@ -1107,6 +1128,8 @@ const handleTestKick = async () => {
     }
   } catch (e) {
     ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
+  } finally {
+    isTestingKick.value = false;
   }
 };
 
@@ -1199,7 +1222,13 @@ const openEditBranchModal = (b) => {
   showBranchModal.value = true;
 };
 
+const isSavingBranch = ref(false);
+const isSavingShopSettings = ref(false);
+const isSavingUser = ref(false);
+
 const handleSaveBranch = async () => {
+  if (isSavingBranch.value) return;
+  isSavingBranch.value = true;
   ui.showLoading();
   try {
     const payload = {
@@ -1224,6 +1253,7 @@ const handleSaveBranch = async () => {
     ui.showToast('บันทึกข้อมูลสาขาไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingBranch.value = false;
   }
 };
 
@@ -1278,6 +1308,8 @@ const loadShopSettings = async (force = false) => {
 
 // Save Shop Settings to Database
 const saveShopSettings = async () => {
+  if (isSavingShopSettings.value) return;
+  isSavingShopSettings.value = true;
   ui.showLoading();
   try {
     const promises = Object.entries(shopForm.value).map(([key, val]) => {
@@ -1292,6 +1324,7 @@ const saveShopSettings = async () => {
     ui.showToast('บันทึกตั้งค่าไม่สำเร็จ: ' + error.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingShopSettings.value = false;
   }
 };
 
@@ -1333,6 +1366,8 @@ const openEditUserModal = (u) => {
 };
 
 const handleSaveUser = async () => {
+  if (isSavingUser.value) return;
+  isSavingUser.value = true;
   ui.showLoading();
   try {
     const payload = {
@@ -1359,6 +1394,7 @@ const handleSaveUser = async () => {
     ui.showToast('บันทึกข้อมูลพนักงานไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingUser.value = false;
   }
 };
 
@@ -1505,7 +1541,11 @@ const openEditPresetModal = (p) => {
   showPresetModal.value = true;
 };
 
+const isSavingPreset = ref(false);
+
 const handleSavePreset = async () => {
+  if (isSavingPreset.value) return;
+  isSavingPreset.value = true;
   ui.showLoading();
   try {
     const payload = {
@@ -1531,6 +1571,7 @@ const handleSavePreset = async () => {
     ui.showToast('บันทึกข้อมูลสูตรผสมล้มเหลว: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingPreset.value = false;
   }
 };
 

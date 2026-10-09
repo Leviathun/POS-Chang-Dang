@@ -28,8 +28,12 @@
             จัดเรียงลำดับเมนูอาหาร: <strong>{{ reorderItems.length }}</strong> รายการ
           </div>
           <div class="menu-action-buttons">
-            <button class="btn btn-primary btn-bulk-back" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
-            <button class="btn btn-primary btn-bulk-header-save" @click="handleSaveReorder"><i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
+            <button class="btn btn-primary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
+            <button class="btn btn-primary btn-bulk-header-save" :disabled="isSavingReorder" @click="handleSaveReorder">
+              <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingReorder ? 'กำลังบันทึก...' : 'บันทึก' }}
+            </button>
           </div>
         </div>
 
@@ -446,10 +450,12 @@
           <div class="flex gap-md mt-xl">
             <button 
               class="btn-modal btn-modal-primary" 
-              :disabled="!catForm.name" 
+              :disabled="!catForm.name || isSavingCat" 
               @click="handleCreateCat"
             >
-              บันทึก
+              <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingCat ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -651,14 +657,15 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showItemModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!itemForm.name || (!itemForm.price && !itemForm.use_multiple_prices) || !itemForm.category_id"
+              :disabled="!itemForm.name || (!itemForm.price && !itemForm.use_multiple_prices) || !itemForm.category_id || isSavingItem"
               @click="handleSaveItem"
             >
-              <i class="fa-solid fa-floppy-disk"></i>
-              บันทึก
+              <i v-if="isSavingItem" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingItem ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -785,6 +792,7 @@ const editItemId = ref(null);
 const isReorderMode = ref(false);
 const reorderItems = ref([]);
 const dragIndex = ref(null);
+const isSavingReorder = ref(false);
 
 const openReorderMode = () => {
   reorderItems.value = [...store.menuItems];
@@ -796,6 +804,8 @@ const closeReorderMode = () => {
 };
 
 const handleSaveReorder = async () => {
+  if (isSavingReorder.value) return;
+  isSavingReorder.value = true;
   ui.showLoading();
   try {
     const ids = reorderItems.value.map(item => item.id);
@@ -814,6 +824,7 @@ const handleSaveReorder = async () => {
     ui.showToast('เปลี่ยนลำดับเมนูอาหารไม่สำเร็จ: ' + err.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingReorder.value = false;
   }
 };
 
@@ -1119,8 +1130,13 @@ const handlePaste = (e) => {
   }
 };
 
+const isSavingCat = ref(false);
+const isSavingItem = ref(false);
+
 // Create new Category
 const handleCreateCat = async () => {
+  if (isSavingCat.value) return;
+  isSavingCat.value = true;
   ui.showLoading();
   try {
     const res = await api.menu.createCategory({ name: catForm.value.name });
@@ -1134,6 +1150,7 @@ const handleCreateCat = async () => {
     ui.showToast('เพิ่มหมวดหมู่ไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingCat.value = false;
   }
 };
 
@@ -1166,6 +1183,8 @@ const handleDeleteCat = async (catId) => {
 
 // Save Menu Item (Add or Edit)
 const handleSaveItem = async () => {
+  if (isSavingItem.value) return;
+  isSavingItem.value = true;
   ui.showLoading();
   try {
     let multiplePricesPayload = null;
@@ -1222,6 +1241,7 @@ const handleSaveItem = async () => {
     ui.showToast('บันทึกข้อมูลไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingItem.value = false;
   }
 };
 
