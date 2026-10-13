@@ -377,6 +377,75 @@ const employees = {
   },
 };
 
+export const centralKitchen = {
+  async getItems(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/items?${query}`);
+  },
+  async createItem(data) {
+    return request('POST', '/api/central-kitchen/items', data);
+  },
+  async updateItem(id, data) {
+    return request('PUT', `/api/central-kitchen/items/${id}`, data);
+  },
+  async quickRestock(id, data) {
+    return request('POST', `/api/central-kitchen/items/${id}/restock`, data);
+  },
+  async getTransfers(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/transfers?${query}`);
+  },
+  async createTransfer(data) {
+    return request('POST', '/api/central-kitchen/transfers', data);
+  },
+  async dispatchTransfer(id) {
+    return request('PUT', `/api/central-kitchen/transfers/${id}/dispatch`);
+  },
+  async receiveTransfer(id) {
+    return request('PUT', `/api/central-kitchen/transfers/${id}/receive`);
+  },
+  async getHistory(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/history?${query}`);
+  },
+  async getPartners(branchId) {
+    return request('GET', `/api/central-kitchen/partners/${branchId}`);
+  },
+  async savePartners(branchId, partners) {
+    return request('POST', `/api/central-kitchen/partners/${branchId}`, { partners });
+  },
+  async getProfitSettlement(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/profit-settlement?${query}`);
+  },
+  async getFinancesSummary() {
+    return request('GET', '/api/central-kitchen/finances/summary');
+  },
+  async getFinancesLogs(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/finances/logs?${query}`);
+  },
+  async addFinancesTransaction(data) {
+    return request('POST', '/api/central-kitchen/finances/transaction', data);
+  },
+  async reimburseBranchTransfers(data) {
+    return request('POST', '/api/central-kitchen/transfers/reimburse-branch', data);
+  },
+  async recordWaste(itemId, data) {
+    return request('POST', `/api/central-kitchen/items/${itemId}/waste`, data);
+  },
+  async getWasteLogs() {
+    return request('GET', '/api/central-kitchen/waste-logs');
+  },
+  async recordPayouts(data) {
+    return request('POST', '/api/central-kitchen/payouts', data);
+  },
+  async getPayouts(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/payouts?${query}`);
+  }
+};
+
 export default {
   auth,
   menu,
@@ -390,5 +459,6 @@ export default {
   modifiers: freeModifiers,
   cashDrawers,
   employees,
+  centralKitchen,
 };
 

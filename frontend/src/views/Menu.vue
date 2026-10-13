@@ -660,7 +660,7 @@
             <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!itemForm.name || (!itemForm.price && !itemForm.use_multiple_prices) || !itemForm.category_id || isSavingItem"
+              :disabled="isSaveItemDisabled"
               @click="handleSaveItem"
             >
               <i v-if="isSavingItem" class="fa-solid fa-spinner fa-spin"></i>
@@ -1180,6 +1180,27 @@ const handleDeleteCat = async (catId) => {
     }
   }
 };
+
+// Validation helper for saving item
+const isSaveItemDisabled = computed(() => {
+  if (isSavingItem.value) return true;
+  if (!itemForm.value.name || !itemForm.value.name.trim()) return true;
+  if (!itemForm.value.category_id) return true;
+
+  if (itemForm.value.use_multiple_prices) {
+    const s = Number(itemForm.value.multiple_prices?.S);
+    const m = Number(itemForm.value.multiple_prices?.M);
+    const l = Number(itemForm.value.multiple_prices?.L);
+    if (!s || s <= 0 || !m || m <= 0 || !l || l <= 0) {
+      return true;
+    }
+  } else {
+    const p = Number(itemForm.value.price);
+    if (!p || p <= 0) return true;
+  }
+
+  return false;
+});
 
 // Save Menu Item (Add or Edit)
 const handleSaveItem = async () => {

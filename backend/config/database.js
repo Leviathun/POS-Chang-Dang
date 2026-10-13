@@ -417,6 +417,98 @@ async function initDatabase() {
       created_by INTEGER REFERENCES users(id),
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS central_kitchen_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'packaging' CHECK(category IN ('raw_material', 'packaging', 'equipment', 'general')),
+      unit TEXT NOT NULL DEFAULT 'ชิ้น',
+      cost_price REAL NOT NULL DEFAULT 0,
+      quantity REAL NOT NULL DEFAULT 0,
+      min_stock_alert REAL DEFAULT 10,
+      image_url TEXT,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS central_kitchen_transfers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transfer_no TEXT NOT NULL UNIQUE,
+      branch_id INTEGER NOT NULL REFERENCES branches(id),
+      requested_by_user_id INTEGER REFERENCES users(id),
+      requested_by_name TEXT,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'dispatched', 'received', 'cancelled')),
+      total_cost REAL NOT NULL DEFAULT 0,
+      expense_id INTEGER REFERENCES expenses(id),
+      notes TEXT,
+      dispatched_by_name TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      dispatched_at DATETIME,
+      received_at DATETIME
+    )`,
+    `CREATE TABLE IF NOT EXISTS central_kitchen_transfer_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transfer_id INTEGER NOT NULL REFERENCES central_kitchen_transfers(id) ON DELETE CASCADE,
+      item_id INTEGER NOT NULL REFERENCES central_kitchen_items(id),
+      item_name TEXT NOT NULL,
+      unit TEXT NOT NULL,
+      cost_price REAL NOT NULL DEFAULT 0,
+      quantity REAL NOT NULL DEFAULT 1
+    )`,
+    `CREATE TABLE IF NOT EXISTS central_kitchen_restock_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_id INTEGER NOT NULL REFERENCES central_kitchen_items(id),
+      quantity_added REAL NOT NULL,
+      unit_cost REAL NOT NULL,
+      total_amount REAL NOT NULL,
+      supplier_note TEXT,
+      created_by_name TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS branch_partners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id),
+      partner_name TEXT NOT NULL,
+      share_percentage REAL NOT NULL DEFAULT 50,
+      is_owner INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS central_kitchen_finances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL CHECK(type IN ('capital_in', 'reimbursement_in', 'purchase_out', 'operating_expense_out', 'other_out')),
+      amount REAL NOT NULL,
+      branch_id INTEGER REFERENCES branches(id),
+      transfer_id INTEGER REFERENCES central_kitchen_transfers(id),
+      payment_method TEXT DEFAULT 'transfer' CHECK(payment_method IN ('cash', 'transfer')),
+      note TEXT,
+      created_by_name TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS central_kitchen_waste_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_id INTEGER NOT NULL REFERENCES central_kitchen_items(id),
+      quantity REAL NOT NULL,
+      unit_cost REAL NOT NULL,
+      total_cost REAL NOT NULL,
+      reason TEXT,
+      created_by_name TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS branch_dividend_payouts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      branch_id INTEGER NOT NULL REFERENCES branches(id),
+      period_start DATE NOT NULL,
+      period_end DATE NOT NULL,
+      partner_id INTEGER REFERENCES branch_partners(id),
+      partner_name TEXT NOT NULL,
+      share_percentage REAL NOT NULL,
+      payout_amount REAL NOT NULL,
+      net_profit REAL NOT NULL,
+      paid_by_name TEXT,
+      payment_method TEXT DEFAULT 'transfer',
+      note TEXT,
+      paid_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`
   ];
 
@@ -691,19 +783,40 @@ async function initDatabase() {
     console.warn('⚠️ Migration reversal columns on stock_logs failed:', e.message);
   }
 
-  // Migration: Fix users with NULL branch_id — assign to first branch
+  // Migration: Add is_central_kitchen to branches table if not exists
   try {
-    const firstBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
-    if (firstBranch) {
-      const updated = await db.prepare(
-        'UPDATE users SET branch_id = ? WHERE branch_id IS NULL'
-      ).run(firstBranch.id);
-      if (updated.changes > 0) {
-        console.log(`  🔧 Migration: อัปเดต ${updated.changes} ผู้ใช้ที่ยังไม่มีสาขา → สาขา ID ${firstBranch.id}`);
-      }
+    const branchCols = await db.prepare("PRAGMA table_info(branches)").all();
+    if (!branchCols.some(c => c.name === 'is_central_kitchen')) {
+      await db.exec("ALTER TABLE branches ADD COLUMN is_central_kitchen INTEGER DEFAULT 0");
+    }
+
+    // Ensure Central Kitchen branch exists
+    const ckBranch = await db.prepare("SELECT id FROM branches WHERE is_central_kitchen = 1 OR name LIKE '%ครัวกลาง%' LIMIT 1").get();
+    if (!ckBranch) {
+      await db.prepare('INSERT INTO branches (name, address, is_central_kitchen) VALUES (?, ?, 1)')
+        .run('ครัวกลาง (โกดังส่วนกลาง)', 'คลังสินค้าส่วนกลาง');
+      console.log('  🏬 สร้างสาขาเริ่มต้น: ครัวกลาง (โกดังส่วนกลาง)');
+    } else {
+      await db.prepare('UPDATE branches SET is_central_kitchen = 1 WHERE id = ?').run(ckBranch.id);
     }
   } catch (e) {
-    console.warn('⚠️ Migration fix branch_id:', e.message);
+    console.warn('⚠️ Migration is_central_kitchen failed:', e.message);
+  }
+
+  // Migration: Add reimbursement columns to central_kitchen_transfers table if not exists
+  try {
+    const transferCols = await db.prepare("PRAGMA table_info(central_kitchen_transfers)").all();
+    if (!transferCols.some(c => c.name === 'is_reimbursed')) {
+      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN is_reimbursed INTEGER DEFAULT 0");
+    }
+    if (!transferCols.some(c => c.name === 'reimbursed_at')) {
+      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN reimbursed_at DATETIME");
+    }
+    if (!transferCols.some(c => c.name === 'reimbursed_by_name')) {
+      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN reimbursed_by_name TEXT");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration central_kitchen_transfers reimbursement columns failed:', e.message);
   }
 
   // ─── Create Indexes ───────────────────────────────────────
@@ -742,13 +855,13 @@ async function initDatabase() {
     console.log('  👤 สร้างผู้ใช้เริ่มต้น: เจ้าของร้าน (PIN: 1234), พนักงาน 1 (PIN: 0000)');
   }
 
-  // Seed default categories per branch
-  const branches = await db.prepare('SELECT id FROM branches').all();
+  // Seed default categories per branch (exclude central kitchen)
+  const retailBranches = await db.prepare("SELECT id FROM branches WHERE is_central_kitchen = 0 AND name NOT LIKE '%ครัวกลาง%'").all();
 
-  for (const b of branches) {
+  for (const b of retailBranches) {
     const catCount = await db.prepare('SELECT COUNT(*) as count FROM categories WHERE branch_id = ?').get(b.id);
     if (catCount.count === 0) {
-      const insertCat = db.prepare('INSERT INTO categories (branch_id, name, sort_order) VALUES (?, ?, ?)');
+      const insertCat = db.prepare('INSERT OR IGNORE INTO categories (branch_id, name, sort_order) VALUES (?, ?, ?)');
       await insertCat.run(b.id, 'สามกรอบ', 1);
       await insertCat.run(b.id, 'ไก่ทอด', 2);
       await insertCat.run(b.id, 'ของทานเล่น', 3);
@@ -757,7 +870,7 @@ async function initDatabase() {
   }
 
   // Seed default 23 store menu items per branch
-  for (const b of branches) {
+  for (const b of retailBranches) {
     const menuCount = await db.prepare('SELECT COUNT(*) as count FROM menu_items WHERE branch_id = ?').get(b.id);
     if (menuCount.count === 0) {
       const cats = await db.prepare('SELECT id, name FROM categories WHERE branch_id = ?').all(b.id);
@@ -807,20 +920,21 @@ async function initDatabase() {
   }
 
   // Seed default settings per branch (without shop_name)
-  for (const b of branches) {
+  const allBranches = await db.prepare('SELECT id FROM branches').all();
+  for (const b of allBranches) {
     const settingsCount = await db.prepare('SELECT COUNT(*) as count FROM settings WHERE branch_id = ?').get(b.id);
     if (settingsCount.count === 0) {
-      const insertSetting = db.prepare('INSERT INTO settings (branch_id, key, value) VALUES (?, ?, ?)');
+      const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (branch_id, key, value) VALUES (?, ?, ?)');
       await insertSetting.run(b.id, 'low_stock_threshold', '5');
     }
   }
 
   // Seed default_opening_cash (500) per branch if not exists
   try {
-    for (const b of branches) {
+    for (const b of allBranches) {
       const existing = await db.prepare("SELECT value FROM settings WHERE branch_id = ? AND key = 'default_opening_cash'").get(b.id);
       if (!existing) {
-        await db.prepare("INSERT INTO settings (branch_id, key, value) VALUES (?, 'default_opening_cash', '500')").run(b.id);
+        await db.prepare("INSERT OR IGNORE INTO settings (branch_id, key, value) VALUES (?, 'default_opening_cash', '500')").run(b.id);
         console.log(`  ⚙️ Seeded default_opening_cash (500) for branch ID ${b.id}`);
       }
     }
@@ -851,7 +965,7 @@ async function initDatabase() {
   ];
 
   let seededCount = 0;
-  for (const b of branches) {
+  for (const b of allBranches) {
     for (const m of defaultModifiers) {
       // For Branch ID 2 (สาขารอง หน้าบ้าน), we ONLY allow these 3 modifiers
       if (b.id === 2 && !['ซอสเปรี้ยว (ขวด)', 'ซอสหวาน (ขวด)', 'กระเทียมเจียว (ถุง)'].includes(m.name)) {
@@ -885,7 +999,7 @@ async function initDatabase() {
   }
 
   // Seed default presets per branch
-  for (const b of branches) {
+  for (const b of allBranches) {
     // For Branch 2, we shouldn't seed 'มะเขือเทศ + ผงชีส' since those modifiers don't exist in Branch 2
     if (b.id === 2) {
       try {

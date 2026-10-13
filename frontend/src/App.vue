@@ -77,8 +77,8 @@
             <img src="@/assets/image/Logo POS.png" alt="Logo" class="brand-logo-img" />
           </span>
           <div class="brand-text">
-            <span class="brand-name">ร้านไก่ทอดช้างแดง</span>
-            <span class="brand-tagline">ระบบจัดการร้านค้า POS</span>
+            <span class="brand-name">{{ isCentralKitchenSessionActive ? 'ครัวกลางช้างแดง' : 'ร้านไก่ทอดช้างแดง' }}</span>
+            <span class="brand-tagline">{{ isCentralKitchenSessionActive ? 'ระบบคลังส่วนกลาง' : 'ระบบจัดการร้านค้า POS' }}</span>
           </div>
         </div>
 
@@ -97,28 +97,106 @@
 
         <div class="sidebar-divider"></div>
 
-        <!-- Navigation Links -->
-        <nav class="sidebar-menu">
+        <!-- Navigation Links for Central Kitchen Mode -->
+        <nav class="sidebar-menu" v-if="isCentralKitchenSessionActive">
+          <router-link 
+            to="/central-kitchen/catalog" 
+            class="sidebar-item" 
+            :class="{ 'active': route.path === '/central-kitchen' || route.path === '/central-kitchen/catalog' }"
+          >
+            <span class="sidebar-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+            <span class="sidebar-label">แคตตาล็อก</span>
+          </router-link>
+
+          <router-link 
+            to="/central-kitchen/orders" 
+            class="sidebar-item" 
+            active-class="active"
+          >
+            <span class="sidebar-icon"><i class="fa-solid fa-truck-ramp-box"></i></span>
+            <span class="sidebar-label">คำขอเบิกจากสาขา</span>
+            <span v-if="pendingOrdersCount > 0" class="sidebar-badge">{{ pendingOrdersCount }}</span>
+          </router-link>
+
+          <router-link 
+            to="/central-kitchen/history" 
+            class="sidebar-item" 
+            active-class="active"
+          >
+            <span class="sidebar-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+            <span class="sidebar-label">ประวัติเติม & เบิก</span>
+          </router-link>
+
+          <router-link 
+            to="/central-kitchen/finance" 
+            class="sidebar-item" 
+            active-class="active"
+          >
+            <span class="sidebar-icon"><i class="fa-solid fa-vault"></i></span>
+            <span class="sidebar-label">การเงินกองกลาง</span>
+          </router-link>
+
+          <router-link 
+            to="/central-kitchen/partners" 
+            class="sidebar-item" 
+            active-class="active"
+          >
+            <span class="sidebar-icon"><i class="fa-solid fa-handshake"></i></span>
+            <span class="sidebar-label">หุ้นส่วน & ปันผล</span>
+          </router-link>
+
+          <!-- Quick Switch to Retail POS branch for convenience -->
+          <div class="sidebar-divider" style="margin: var(--space-xs) 0;"></div>
+          <button class="sidebar-item branch-switch-btn" @click="switchToPosBranch" title="สลับไปสาขาหน้าร้านเพื่อขายของหรือดูสต็อกสาขา">
+            <span class="sidebar-icon"><i class="fa-solid fa-store"></i></span>
+            <span class="sidebar-label">สลับไปหน้าร้าน POS</span>
+          </button>
+
+          <router-link to="/settings" class="sidebar-item" active-class="active">
+            <span class="sidebar-icon"><i class="fa-solid fa-gear"></i></span>
+            <span class="sidebar-label">ตั้งค่าระบบ</span>
+          </router-link>
+        </nav>
+
+        <!-- Navigation Links for Retail Branches Mode (Standard POS) -->
+        <nav class="sidebar-menu" v-else>
           <router-link to="/pos" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
             <span class="sidebar-label">ขายหน้าร้าน (POS)</span>
           </router-link>
+
+          <router-link to="/requisition" class="sidebar-item" active-class="active">
+            <span class="sidebar-icon"><i class="fa-solid fa-boxes-packing"></i></span>
+            <span class="sidebar-label">เบิกของจากครัวกลาง</span>
+          </router-link>
+
           <router-link v-if="isManagerOrAdminUser" to="/menu" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-utensils"></i></span>
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
           </router-link>
+
           <router-link to="/stock" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="sidebar-label">คลังสินค้า/สต็อก</span>
           </router-link>
+
           <router-link to="/reports" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-chart-line"></i></span>
             <span class="sidebar-label">รายงานยอดขาย</span>
           </router-link>
+
           <router-link v-if="isManagerOrAdminUser" to="/management" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-briefcase"></i></span>
             <span class="sidebar-label">บริหารจัดการร้าน</span>
           </router-link>
+
+          <!-- For Manager & Admin: Quick link to Central Kitchen! -->
+          <router-link v-if="isManagerOrAdminUser" to="/central-kitchen/catalog" class="sidebar-item" active-class="active">
+            <span class="sidebar-icon"><i class="fa-solid fa-warehouse"></i></span>
+            <span class="sidebar-label">ระบบครัวกลาง</span>
+            <span v-if="pendingOrdersCount > 0" class="sidebar-badge">{{ pendingOrdersCount }}</span>
+          </router-link>
+
           <router-link to="/settings" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-gear"></i></span>
             <span class="sidebar-label">ตั้งค่าระบบ</span>
@@ -140,6 +218,8 @@
         <header id="app-header">
           <span class="header-title flex align-center gap-xs">
             <img v-if="route.path === '/pos'" src="@/assets/image/Logo POS.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
+            <i v-else-if="route.path.startsWith('/central-kitchen')" class="fa-solid fa-warehouse text-primary"></i>
+            <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary"></i>
             <i v-else-if="route.path.startsWith('/management')" class="fa-solid fa-briefcase"></i>
             <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
             <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
@@ -159,7 +239,11 @@
         <main id="app-content" :class="{ 'has-cart-bar': hasCartBar }">
           <!-- Desktop Page Title Header (Visible on Desktop) -->
           <div class="desktop-content-header">
-            <h2 class="desktop-page-title">{{ activeTitle }}</h2>
+            <h2 class="desktop-page-title flex align-center gap-xs">
+              <i v-if="route.path.startsWith('/central-kitchen')" class="fa-solid fa-warehouse text-primary mr-1" style="font-size: 1.15rem;"></i>
+              <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: 1.15rem;"></i>
+              <span>{{ activeTitle }}</span>
+            </h2>
             <div class="desktop-user-profile" v-if="user">
               <span class="user-greeting">สวัสดี, <strong>{{ user.name }}</strong></span>
               <span class="user-badge" :class="user.role">{{ getRoleLabel(user.role) }}</span>
@@ -175,30 +259,65 @@
 
         <!-- Bottom Navigation (Visible on Mobile) -->
         <nav id="bottom-nav">
-          <router-link to="/pos" class="nav-item" active-class="active" data-page="pos">
-            <span class="nav-icon flex justify-center"><i class="fa-solid fa-house"></i></span>
-            <span class="nav-label">ขาย</span>
-          </router-link>
-          <router-link v-if="isManagerOrAdminUser" to="/menu" class="nav-item" active-class="active" data-page="menu">
-            <span class="nav-icon flex justify-center"><i class="fa-solid fa-utensils"></i></span>
-            <span class="nav-label">เมนู</span>
-          </router-link>
-          <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
-            <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
-            <span class="nav-label">สต็อก</span>
-          </router-link>
-          <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
-            <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
-            <span class="nav-label">รายงาน</span>
-          </router-link>
-          <router-link v-if="isManagerOrAdminUser" to="/management" class="nav-item" active-class="active" data-page="management">
-            <span class="nav-icon flex justify-center"><i class="fa-solid fa-briefcase"></i></span>
-            <span class="nav-label">จัดการร้าน</span>
-          </router-link>
-          <router-link to="/settings" class="nav-item" active-class="active" data-page="settings">
-            <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
-            <span class="nav-label">ตั้งค่า</span>
-          </router-link>
+          <template v-if="isCentralKitchenSessionActive">
+            <router-link to="/central-kitchen/catalog" class="nav-item" active-class="active">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
+              <span class="nav-label">คลัง</span>
+            </router-link>
+            <router-link to="/central-kitchen/orders" class="nav-item" active-class="active">
+              <span class="nav-icon flex justify-center relative">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+                <span v-if="pendingOrdersCount > 0" class="badge-mini-dot"></span>
+              </span>
+              <span class="nav-label">คำขอเบิก</span>
+            </router-link>
+            <router-link to="/central-kitchen/history" class="nav-item" active-class="active">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-clock-rotate-left"></i></span>
+              <span class="nav-label">ประวัติ</span>
+            </router-link>
+            <router-link to="/central-kitchen/finance" class="nav-item" active-class="active">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-vault"></i></span>
+              <span class="nav-label">การเงิน</span>
+            </router-link>
+            <router-link to="/central-kitchen/partners" class="nav-item" active-class="active">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-handshake"></i></span>
+              <span class="nav-label">หุ้นส่วน</span>
+            </router-link>
+            <router-link to="/settings" class="nav-item" active-class="active">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
+              <span class="nav-label">ตั้งค่า</span>
+            </router-link>
+          </template>
+          <template v-else>
+            <router-link to="/pos" class="nav-item" active-class="active" data-page="pos">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-house"></i></span>
+              <span class="nav-label">ขาย</span>
+            </router-link>
+            <router-link to="/requisition" class="nav-item" active-class="active" data-page="requisition">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-packing"></i></span>
+              <span class="nav-label">เบิกของ</span>
+            </router-link>
+            <router-link v-if="isManagerOrAdminUser" to="/menu" class="nav-item" active-class="active" data-page="menu">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-utensils"></i></span>
+              <span class="nav-label">เมนู</span>
+            </router-link>
+            <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
+              <span class="nav-label">สต็อก</span>
+            </router-link>
+            <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
+              <span class="nav-label">รายงาน</span>
+            </router-link>
+            <router-link v-if="isManagerOrAdminUser" to="/management" class="nav-item" active-class="active" data-page="management">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-briefcase"></i></span>
+              <span class="nav-label">จัดการร้าน</span>
+            </router-link>
+            <router-link to="/settings" class="nav-item" active-class="active" data-page="settings">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
+              <span class="nav-label">ตั้งค่า</span>
+            </router-link>
+          </template>
         </nav>
       </div>
     </div>
@@ -322,9 +441,59 @@ const isManagerOrAdminUser = computed(() => {
   return user.value && ['admin', 'manager'].includes(user.value.role);
 });
 
+const isCentralKitchenSessionActive = computed(() => {
+  if (route.path.startsWith('/central-kitchen')) return true;
+  const branchName = selectedBranchName.value || sessionStorage.getItem('selected_branch_name') || '';
+  if (branchName.includes('ครัวกลาง')) return true;
+  const b = branches.value.find(x => x.id === selectedBranch.value || (user.value && x.id === user.value.branch_id));
+  if (b && (b.is_central_kitchen === 1 || b.name.includes('ครัวกลาง'))) return true;
+  return false;
+});
+
+const switchToPosBranch = () => {
+  // Find first retail branch (is_central_kitchen !== 1)
+  const retailBranch = branches.value.find(b => !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1) || branches.value[0];
+  if (retailBranch) {
+    selectBranch(retailBranch.id);
+  }
+  router.push('/pos');
+};
+
+const pendingOrdersCount = ref(0);
+const loadPendingOrdersCount = async () => {
+  if (!isCentralKitchenSessionActive.value) return;
+  try {
+    const res = await api.centralKitchen.getTransfers({ status: 'pending' });
+    if (res.success && res.data) {
+      pendingOrdersCount.value = res.data.length;
+    }
+  } catch (e) {
+    // ignore
+  }
+};
+
+watch(() => [route.path, isCentralKitchenSessionActive.value], () => {
+  if (isCentralKitchenSessionActive.value) {
+    loadPendingOrdersCount();
+  }
+}, { immediate: true });
+
 const activeTitle = computed(() => {
+  if (route.path.startsWith('/central-kitchen')) {
+    const tab = route.params.tab || 'catalog';
+    const tabTitles = {
+      catalog: 'แคตตาล็อก',
+      orders: 'คำขอเบิกจากสาขา',
+      history: 'ประวัติเติม & เบิก',
+      finance: 'การเงินกองกลาง',
+      partners: 'หุ้นส่วน & ปันผล'
+    };
+    return tabTitles[tab] || 'ครัวกลาง';
+  }
+
   const titles = {
     '/pos': 'ร้านไก่ทอดช้างแดง',
+    '/requisition': 'เบิกของจากครัวกลาง',
     '/management': 'บริหารจัดการร้าน',
     '/menu': 'จัดการเมนู',
     '/stock': 'คลังสินค้า',
@@ -361,9 +530,16 @@ const submitPin = async () => {
       sessionStorage.setItem('pos_user', JSON.stringify(res.data.user));
       user.value = res.data.user;
       const branchName = res.data.branch ? res.data.branch.name : '';
+      if (branchName) {
+        sessionStorage.setItem('selected_branch_name', branchName);
+      }
       ui.showToast(`ยินดีต้อนรับคุณ ${user.value.name} 🎉${branchName ? ' (สาขา: ' + branchName + ')' : ''}`, 'success');
       enteredPin.value = '';
-      router.push('/pos');
+      if (branchName.includes('ครัวกลาง')) {
+        router.push('/central-kitchen/catalog');
+      } else {
+        router.push('/pos');
+      }
     } else {
       throw new Error('รหัส PIN ไม่ถูกต้อง');
     }
@@ -1193,6 +1369,22 @@ onUnmounted(() => {
     transform: translateX(6px);
   }
 
+  .sidebar-badge {
+    margin-left: auto;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    font-weight: bold;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar-item.active .sidebar-badge {
+    background-color: white;
+    color: var(--primary);
+  }
+
   .sidebar-footer {
     padding-top: var(--space-md);
   }
@@ -1259,5 +1451,27 @@ onUnmounted(() => {
     background: var(--gradient-success);
     color: white;
   }
+
+  .branch-switch-btn {
+    background: rgba(139, 3, 19, 0.04);
+    border: 1px dashed rgba(139, 3, 19, 0.2);
+    color: var(--primary) !important;
+    cursor: pointer;
+  }
+
+  .branch-switch-btn:hover {
+    background: rgba(139, 3, 19, 0.09) !important;
+  }
+}
+
+.badge-mini-dot {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  border: 1px solid white;
 }
 </style>

@@ -6,6 +6,8 @@ import StockBulk from '../views/StockBulk.vue'
 import Reports from '../views/Reports.vue'
 import Settings from '../views/Settings.vue'
 import Management from '../views/Management.vue'
+import CentralKitchenView from '../views/CentralKitchenView.vue'
+import BranchRequisitionView from '../views/BranchRequisitionView.vue'
 import { getUser, isManagerOrAdmin } from '../helpers'
 
 const routes = [
@@ -75,6 +77,34 @@ const routes = [
     path: '/settings',
     name: 'Settings',
     component: Settings,
+    beforeEnter: (to, from, next) => {
+      if (getUser()) {
+        next()
+      } else {
+        next('/pos')
+      }
+    }
+  },
+  {
+    path: '/central-kitchen',
+    redirect: '/central-kitchen/catalog'
+  },
+  {
+    path: '/central-kitchen/:tab',
+    name: 'CentralKitchen',
+    component: CentralKitchenView,
+    beforeEnter: (to, from, next) => {
+      if (isManagerOrAdmin()) {
+        next()
+      } else {
+        next('/pos')
+      }
+    }
+  },
+  {
+    path: '/requisition',
+    name: 'BranchRequisition',
+    component: BranchRequisitionView,
     beforeEnter: (to, from, next) => {
       if (getUser()) {
         next()
