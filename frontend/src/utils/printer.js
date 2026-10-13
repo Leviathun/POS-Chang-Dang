@@ -337,7 +337,9 @@ export async function sendRawToPrinter(bytes) {
           binary += String.fromCharCode(bytes[i]);
         }
         const base64Data = btoa(binary);
-        window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+        const rawbtUrl = 'rawbt:base64,' + base64Data;
+        const intentUrl = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+        triggerRawBtNavigation(rawbtUrl, intentUrl);
       } catch (intentErr) {
         console.error('RawBT Intent redirect failed:', intentErr);
         throw new Error('ไม่สามารถพิมพ์ผ่านพอร์ต USB หรือแอป RawBT ได้: ' + err.message);
@@ -389,6 +391,28 @@ function formatLine(leftText, rightText, width = 28) {
   return leftText + ' '.repeat(padLength) + rightText;
 }
 
+// Helper to navigate to RawBT across Samsung Internet and Chrome
+export function triggerRawBtNavigation(rawbtUrl, intentUrl) {
+  const isSamsung = typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('SamsungBrowser');
+  // Samsung Internet prefers direct 'rawbt:' custom scheme; Chrome prefers explicit 'intent:...'
+  const targetUrl = isSamsung ? rawbtUrl : (intentUrl || rawbtUrl);
+  
+  try {
+    const a = document.createElement('a');
+    a.href = targetUrl;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (document.body && document.body.contains(a)) {
+        document.body.removeChild(a);
+      }
+    }, 1000);
+  } catch (e) {
+    window.location.href = targetUrl;
+  }
+}
+
 // Synchronous version to bypass Chrome Android async microtask gesture blocks
 export function sendRawToPrinterSync(bytes) {
   const config = getSavedPrinterConfig();
@@ -400,7 +424,9 @@ export function sendRawToPrinterSync(bytes) {
         binary += String.fromCharCode(bytes[i]);
       }
       const base64Data = btoa(binary);
-      window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      const rawbtUrl = 'rawbt:base64,' + base64Data;
+      const intentUrl = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      triggerRawBtNavigation(rawbtUrl, intentUrl);
       return true;
     } catch (err) {
       console.error('RawBT Intent redirect failed:', err);
@@ -898,31 +924,7 @@ export function buildReceiptHTMLMinimal(order, cartItems = [], options = {}) {
 export async function printReceipt(order, cartItems = [], options = {}) {
   const config = getSavedPrinterConfig();
   if (config.connectionType === 'rawbt') {
-    if (config.printMode === 'html') {
-      const htmlString = buildReceiptHTMLMinimal(order, cartItems, options);
-      const base64Html = btoa(unescape(encodeURIComponent(htmlString)));
-      window.location.href = 'intent:data:text/html;base64,' + base64Html + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else if (config.printMode === 'image') {
-      const bytes = buildReceiptBytes(order, cartItems, options);
-      let binary = '';
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Data = btoa(binary);
-      window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else {
-      // 'text' mode (default for RawBT - fast, reliable, lightweight)
-      const textString = buildReceiptTextString(order, cartItems, options);
-      const utf8Bytes = new TextEncoder().encode(textString);
-      let binary = '';
-      const len = utf8Bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(utf8Bytes[i]);
-      }
-      const base64Data = btoa(binary);
-      window.location.href = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    }
+    printReceiptSync(order, cartItems, options);
     return;
   }
   const bytes = buildReceiptBytes(order, cartItems, options);
@@ -936,7 +938,9 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
     if (config.printMode === 'html') {
       const htmlString = buildReceiptHTMLMinimal(order, cartItems, options);
       const base64Html = btoa(unescape(encodeURIComponent(htmlString)));
-      window.location.href = 'intent:data:text/html;base64,' + base64Html + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      const rawbtUrl = 'rawbt:data:text/html;base64,' + base64Html;
+      const intentUrl = 'intent:data:text/html;base64,' + base64Html + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      triggerRawBtNavigation(rawbtUrl, intentUrl);
     } else if (config.printMode === 'image') {
       const bytes = buildReceiptBytes(order, cartItems, options);
       let binary = '';
@@ -945,7 +949,9 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
         binary += String.fromCharCode(bytes[i]);
       }
       const base64Data = btoa(binary);
-      window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      const rawbtUrl = 'rawbt:base64,' + base64Data;
+      const intentUrl = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      triggerRawBtNavigation(rawbtUrl, intentUrl);
     } else {
       // 'text' mode (default for RawBT - fast, reliable, lightweight)
       const textString = buildReceiptTextString(order, cartItems, options);
@@ -956,7 +962,9 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
         binary += String.fromCharCode(utf8Bytes[i]);
       }
       const base64Data = btoa(binary);
-      window.location.href = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      const rawbtUrl = 'rawbt:data:text/plain;base64,' + base64Data;
+      const intentUrl = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+      triggerRawBtNavigation(rawbtUrl, intentUrl);
     }
     return;
   }
