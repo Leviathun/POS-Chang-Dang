@@ -894,16 +894,17 @@
           <div class="setting-item" v-if="printerConfig.connectionType === 'rawbt'">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
               <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จบน RawBT</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือกรูปแบบการส่งข้อมูลไปยังแอป RawBT (แนะนำโหมดข้อความ เร็วและเสถียรที่สุด)</span>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือกรูปแบบการส่งข้อมูลไปยังแอป RawBT (แนะนำโหมดรูปภาพ เหมือนสาขา 1 คมชัด 100%)</span>
             </div>
             <select 
               v-model="printerConfig.printMode" 
               @change="saveLocalPrinterConfig" 
               class="form-input" 
-              style="width: 220px; min-height: 38px; padding: 4px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);"
+              style="width: 250px; min-height: 38px; padding: 4px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);"
             >
-              <option value="text">ข้อความธรรมดา (Text) - แนะนำ เร็วสุด</option>
-              <option value="html">ตารางจัดหน้า (HTML) - จัดคอลัมน์สวยงาม</option>
+              <option value="image">รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)</option>
+              <option value="html">ตารางจัดหน้า (HTML)</option>
+              <option value="text">ข้อความธรรมดา (Text - เครื่องที่มี Thai ROM)</option>
             </select>
           </div>
 
@@ -1106,6 +1107,11 @@ const printerConfig = ref({
 
 const loadPrinterSettings = async () => {
   const cfg = getSavedPrinterConfig();
+  // Automatically migrate legacy 'text' mode to 'image' for Branch 1 design quality
+  if (cfg.connectionType === 'rawbt' && (!cfg.printMode || cfg.printMode === 'text')) {
+    cfg.printMode = 'image';
+    savePrinterConfig(cfg.vendorId, cfg.productId, cfg.autoPrint, cfg.autoKick, cfg.connectionType, 'image');
+  }
   printerConfig.value = cfg;
   
   printerConnected.value = isPrinterConnected();
@@ -1163,8 +1169,8 @@ const saveLocalPrinterConfig = () => {
 
 const setConnectionType = (type) => {
   printerConfig.value.connectionType = type;
-  if (type === 'rawbt' && (!printerConfig.value.printMode || printerConfig.value.printMode === 'image')) {
-    printerConfig.value.printMode = 'text';
+  if (type === 'rawbt' && !printerConfig.value.printMode) {
+    printerConfig.value.printMode = 'image';
   }
   saveLocalPrinterConfig();
   ui.showToast(`เปลี่ยนประเภทการเชื่อมต่อเป็น ${type === 'rawbt' ? 'แอป RawBT (แท็บเล็ต)' : 'สาย USB'} สำเร็จ`, 'success');

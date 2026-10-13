@@ -17,7 +17,23 @@ const CMD = {
   FONT_BOLD_ON: [ESC, 69, 1],     // Turn bold on
   FONT_BOLD_OFF: [ESC, 69, 0],    // Turn bold off
   CUT: [GS, 86, 66, 0],           // Feed and cut paper
-  KICK_DRAWER: [ESC, 112, 0, 20, 100, ESC, 112, 1, 20, 100, 16, 20, 0, 0, 0, 16, 20, 1, 0, 1, 16, 20, 1, 1, 1, 16, 20, 1, 0, 5, 7], // Universal kick: Epson/Star (ESC p) + Sunmi integrated (DLE DC4 variations) + Beep (BEL)
+  KICK_DRAWER: [
+    ESC, 64,                         // ESC @ (Init printer)
+    ESC, 112, 0, 60, 255,            // ESC p 0 60 255 (Epson Pin 2, 120ms pulse)
+    ESC, 112, 1, 60, 255,            // ESC p 1 60 255 (Epson Pin 5, 120ms pulse)
+    ESC, 112, 0, 50, 250,            // ESC p 0 50 250 (100ms pulse)
+    ESC, 112, 1, 50, 250,            // ESC p 1 50 250 (100ms pulse)
+    ESC, 112, 0, 25, 250,            // ESC p 0 25 250 (50ms pulse)
+    ESC, 112, 1, 25, 250,            // ESC p 1 25 250 (50ms pulse)
+    27, 7,                           // ESC BEL (Star Micronics pin 2)
+    28, 7,                           // FS BEL
+    16, 20, 0, 0, 0,                 // Sunmi DLE DC4 pin 2
+    16, 20, 1, 0, 1,                 // Sunmi DLE DC4 pin 5
+    16, 20, 1, 1, 1, 
+    16, 20, 1, 0, 5, 
+    7,                               // BEL
+    10, 10                           // LF, LF (Flush buffer)
+  ],
 };
 
 // Convert Thai Unicode characters (0x0E01 - 0x0E5B) to TIS-620 / CP874 bytes
@@ -47,6 +63,18 @@ export function encodeTIS620(str) {
 export function encodeString(str) {
   // Use TIS-620 / CP874 encoding for all printing modes to ensure RawBT parser reads CP874 bytes correctly
   return encodeTIS620(str);
+}
+
+// Efficiently convert Uint8Array / binary byte array to Base64 in 8KB chunks (safe & fast for Android)
+export function uint8ArrayToBase64(bytes) {
+  let binary = '';
+  const len = bytes.byteLength;
+  const chunkSize = 8192;
+  for (let i = 0; i < len; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, len));
+    binary += String.fromCharCode.apply(null, chunk);
+  }
+  return btoa(binary);
 }
 
 // EscPos Command Builder
@@ -112,7 +140,8 @@ export function getSavedPrinterConfig() {
   const autoPrint = localStorage.getItem('printer_auto_print') !== 'false';
   const autoKick = localStorage.getItem('printer_auto_kick') !== 'false';
   const connectionType = localStorage.getItem('printer_connection_type') || 'usb';
-  const printMode = localStorage.getItem('printer_print_mode') || (connectionType === 'rawbt' ? 'text' : 'image');
+  // Default printMode to 'image' for Branch 1 design fidelity across all devices
+  const printMode = localStorage.getItem('printer_print_mode') || 'image';
   return {
     vendorId: vendorId ? parseInt(vendorId, 10) : null,
     productId: productId ? parseInt(productId, 10) : null,
@@ -331,12 +360,7 @@ export async function sendRawToPrinter(bytes) {
       
       // 3. Last resort fallback: Redirect via Chrome Intent URL to RawBT app
       try {
-        let binary = '';
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64Data = btoa(binary);
+        const base64Data = uint8ArrayToBase64(bytes);
         const rawbtUrl = 'rawbt:base64,' + base64Data;
         const intentUrl = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
         triggerRawBtNavigation(rawbtUrl, intentUrl);
@@ -355,13 +379,13 @@ export async function kickDrawer() {
     kickDrawerSync();
     return;
   }
-  const bytes = new EscPosBuilder().kick().build();
+  const bytes = new EscPosBuilder().init().kick().feed(2).build();
   await sendRawToPrinter(bytes);
 }
 
 // Open cash drawer only (Sync Chrome Intent path)
 export function kickDrawerSync() {
-  const bytes = new EscPosBuilder().kick().build();
+  const bytes = new EscPosBuilder().init().kick().feed(2).build();
   sendRawToPrinterSync(bytes);
 }
 
@@ -418,12 +442,7 @@ export function sendRawToPrinterSync(bytes) {
   const config = getSavedPrinterConfig();
   if (config.connectionType === 'rawbt') {
     try {
-      let binary = '';
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Data = btoa(binary);
+      const base64Data = uint8ArrayToBase64(bytes);
       const rawbtUrl = 'rawbt:base64,' + base64Data;
       const intentUrl = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
       triggerRawBtNavigation(rawbtUrl, intentUrl);
@@ -943,25 +962,15 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
       triggerRawBtNavigation(rawbtUrl, intentUrl);
     } else if (config.printMode === 'image') {
       const bytes = buildReceiptBytes(order, cartItems, options);
-      let binary = '';
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Data = btoa(binary);
+      const base64Data = uint8ArrayToBase64(bytes);
       const rawbtUrl = 'rawbt:base64,' + base64Data;
       const intentUrl = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
       triggerRawBtNavigation(rawbtUrl, intentUrl);
     } else {
-      // 'text' mode (default for RawBT - fast, reliable, lightweight)
+      // 'text' mode (for printers with built-in Thai ROM font)
       const textString = buildReceiptTextString(order, cartItems, options);
       const utf8Bytes = new TextEncoder().encode(textString);
-      let binary = '';
-      const len = utf8Bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(utf8Bytes[i]);
-      }
-      const base64Data = btoa(binary);
+      const base64Data = uint8ArrayToBase64(utf8Bytes);
       const rawbtUrl = 'rawbt:data:text/plain;base64,' + base64Data;
       const intentUrl = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
       triggerRawBtNavigation(rawbtUrl, intentUrl);
