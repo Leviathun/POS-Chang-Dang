@@ -1207,7 +1207,7 @@ const handleTestPrint = async () => {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
         branchName: activeBranch.name,
         phone: '081-234-5678',
-        forceKick: false
+        forceKick: !!printerConfig.value.autoKick
       });
       ui.showToast('ส่งข้อมูลสั่งพิมพ์ไปยังแอป RawBT แล้ว 🖨️', 'success');
       return;
@@ -1216,7 +1216,7 @@ const handleTestPrint = async () => {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
         branchName: activeBranch.name,
         phone: '081-234-5678',
-        forceKick: false
+        forceKick: !!printerConfig.value.autoKick
       });
       ui.showToast('พิมพ์ใบเสร็จทดสอบสำเร็จแล้ว 🖨️', 'success');
     } else {

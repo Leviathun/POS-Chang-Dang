@@ -18,21 +18,14 @@ const CMD = {
   FONT_BOLD_OFF: [ESC, 69, 0],    // Turn bold off
   CUT: [GS, 86, 66, 0],           // Feed and cut paper
   KICK_DRAWER: [
-    ESC, 64,                         // ESC @ (Init printer)
-    ESC, 112, 0, 60, 255,            // ESC p 0 60 255 (Epson Pin 2, 120ms pulse)
-    ESC, 112, 1, 60, 255,            // ESC p 1 60 255 (Epson Pin 5, 120ms pulse)
-    ESC, 112, 0, 50, 250,            // ESC p 0 50 250 (100ms pulse)
-    ESC, 112, 1, 50, 250,            // ESC p 1 50 250 (100ms pulse)
-    ESC, 112, 0, 25, 250,            // ESC p 0 25 250 (50ms pulse)
-    ESC, 112, 1, 25, 250,            // ESC p 1 25 250 (50ms pulse)
-    27, 7,                           // ESC BEL (Star Micronics pin 2)
-    28, 7,                           // FS BEL
-    16, 20, 0, 0, 0,                 // Sunmi DLE DC4 pin 2
-    16, 20, 1, 0, 1,                 // Sunmi DLE DC4 pin 5
-    16, 20, 1, 1, 1, 
-    16, 20, 1, 0, 5, 
-    7,                               // BEL
-    10, 10                           // LF, LF (Flush buffer)
+    ESC, 112, 0, 25, 250,         // ESC p 0 25 250 (Epson Pin 2, 50ms pulse)
+    ESC, 112, 1, 25, 250,         // ESC p 1 25 250 (Epson Pin 5, 50ms pulse)
+    ESC, 112, 0, 50, 250,         // ESC p 0 50 250 (Pin 2, 100ms pulse for heavy solenoids)
+    ESC, 112, 1, 50, 250,         // ESC p 1 50 250 (Pin 5, 100ms pulse for heavy solenoids)
+    16, 20, 1, 0, 2,              // DLE DC4 1 0 2 (Real-time pulse Pin 2, 200ms)
+    16, 20, 1, 1, 2,              // DLE DC4 1 1 2 (Real-time pulse Pin 5, 200ms)
+    27, 7,                        // ESC BEL (Star Micronics pulse)
+    10                            // Line feed to flush buffer
   ],
 };
 
@@ -717,24 +710,24 @@ function buildReceiptBytes(order, cartItems = [], options = {}) {
   const config = getSavedPrinterConfig();
   const builder = new EscPosBuilder();
   
-  // 1. Initialize printer and open drawer if auto-kick is set
+  // 1. Initialize printer
   builder.init();
-  const isCash = order && (order.payment_method === 'cash' || !order.payment_method);
-  if (((config.autoKick && isCash) || options.forceKick) && !options.skipKick) {
-    builder.kick();
-  }
   const builderBytes = builder.build();
 
   // 2. Generate raster bytes
   const canvas = renderReceiptToCanvas(order, cartItems, options);
   const rasterBytes = convertCanvasToEscPosRaster(canvas);
 
-  // 3. Cut
+  // 3. Kick drawer & Cut paper (standard POS sequence: kick at completion before cutting)
   const cutBuilder = new EscPosBuilder();
+  const isCash = order && (order.payment_method === 'cash' || !order.payment_method);
+  if (((config.autoKick && isCash) || options.forceKick) && !options.skipKick) {
+    cutBuilder.kick();
+  }
   cutBuilder.cut();
   const cutBytes = cutBuilder.build();
 
-  // Combine [init & kick] + [raster image] + [cut]
+  // Combine [init] + [raster image] + [kick & cut]
   const combined = new Uint8Array(builderBytes.length + rasterBytes.length + cutBytes.length);
   combined.set(builderBytes, 0);
   combined.set(rasterBytes, builderBytes.length);
