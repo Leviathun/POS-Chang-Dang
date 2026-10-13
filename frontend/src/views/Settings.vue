@@ -78,7 +78,7 @@
         </div>
       </div>
 
-      <div class="card-title text-sm"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> ข้อมูลร้านและคีย์การทำธุรกรรม</div>
+      <div class="card-title text-sm"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> การแจ้งเตือนสต็อกวัตถุดิบ</div>
 
 
 
@@ -95,8 +95,10 @@
       </div>
 
       <!-- Save Shop Settings Button -->
-      <button class="btn btn-primary btn-block mt-lg" @click="saveShopSettings">
-        <i class="fa-solid fa-floppy-disk"></i> บันทึกตั้งค่าระบบร้าน
+      <button class="btn btn-primary btn-block mt-lg" :disabled="isSavingShopSettings" @click="saveShopSettings">
+        <i v-if="isSavingShopSettings" class="fa-solid fa-spinner fa-spin"></i>
+        <i v-else class="fa-solid fa-floppy-disk"></i>
+        {{ isSavingShopSettings ? 'กำลังบันทึก...' : 'บันทึกตั้งค่าระบบร้าน' }}
       </button>
     </div>
 
@@ -311,13 +313,15 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showUserModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingUser" @click="showUserModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!userForm.name || !userForm.pin || userForm.pin.length !== 4"
+              :disabled="!userForm.name || !userForm.pin || userForm.pin.length !== 4 || isSavingUser"
               @click="handleSaveUser"
             >
-              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              <i v-if="isSavingUser" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingUser ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
             </button>
           </div>
         </div>
@@ -450,13 +454,15 @@
           </div>
 
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showBranchModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!branchForm.name || !branchForm.name.trim()"
+              :disabled="!branchForm.name || !branchForm.name.trim() || isSavingBranch"
               @click="handleSaveBranch"
             >
-              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              <i v-if="isSavingBranch" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingBranch ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
             </button>
           </div>
         </div>
@@ -745,8 +751,53 @@
           เชื่อมต่อกับเครื่องพิมพ์ใบเสร็จและสั่งงานลิ้นชักเก็บเงินอเนกประสงค์ โดยเลือกประเภทการเชื่อมต่อที่เหมาะสมกับอุปกรณ์ของคุณ
         </p>
 
+        <!-- Connection Type Selection (Cards) -->
+        <div class="mb-xl">
+          <strong class="font-bold text-sm block mb-sm" style="color: var(--text-primary); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm);">
+            ประเภทการเชื่อมต่อเครื่องพิมพ์
+          </strong>
+          <div class="connection-selector-grid">
+            <!-- 1. USB Connection -->
+            <div 
+              class="connection-option-card"
+              :class="{ selected: printerConfig.connectionType === 'usb' }"
+              @click="setConnectionType('usb')"
+            >
+              <div class="option-icon">
+                <i class="fa-solid fa-plug font-xl"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">เครื่องพิมพ์ทั่วไป (ต่อสาย USB ตรง)</div>
+                <div class="option-desc">เชื่อมต่อผ่าน Google Chrome โดยตรง (เหมาะสำหรับคอมพิวเตอร์ PC/โน้ตบุ๊ก)</div>
+              </div>
+              <div class="option-badge">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+
+            <!-- 2. RawBT App Connection -->
+            <div 
+              class="connection-option-card"
+              :class="{ selected: printerConfig.connectionType === 'rawbt' }"
+              @click="setConnectionType('rawbt')"
+            >
+              <div class="option-icon">
+                <i class="fa-solid fa-tablet-screen-button font-xl"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">แอป RawBT (แนะนำสำหรับแท็บเล็ต / Android)</div>
+                <div class="option-desc">สั่งพิมพ์และดีดลิ้นชักผ่านแอป RawBT บนแท็บเล็ต เสถียร ไม่หลุดง่าย</div>
+              </div>
+              <div class="option-badge">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Connection Status (USB Mode) -->
         <div 
+          v-if="printerConfig.connectionType === 'usb'"
           :style="{
             background: printerConnected ? 'rgba(42, 157, 143, 0.08)' : 'rgba(139, 3, 19, 0.04)',
             border: '1px solid ' + (printerConnected ? 'var(--success)' : 'var(--primary)'),
@@ -760,8 +811,8 @@
           }"
         >
           <div style="font-size: 2.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <i v-if="printerConnected" class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-            <i v-else class="fa-solid fa-circle-xmark" style="color: var(--primary);"></i>
+            <i v-if="printerConnected" class="fa-solid fa-circle-check" style="color: var(--success)"></i>
+            <i v-else class="fa-solid fa-circle-xmark" style="color: var(--primary)"></i>
           </div>
           <div style="flex: 1; min-width: 0;">
             <div class="font-bold text-base" :style="{ color: printerConnected ? 'var(--success)' : 'var(--primary)', fontSize: 'var(--font-base)', lineHeight: '1.4' }">
@@ -776,8 +827,36 @@
           </div>
         </div>
 
+        <!-- Connection Status (RawBT Mode) -->
+        <div 
+          v-if="printerConfig.connectionType === 'rawbt'"
+          :style="{
+            background: 'rgba(42, 157, 143, 0.08)',
+            border: '1px solid var(--success)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-md) var(--space-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-md)',
+            marginBottom: 'var(--space-xl)',
+            transition: 'all 0.3s ease'
+          }"
+        >
+          <div style="font-size: 2.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="fa-solid fa-circle-check" style="color: var(--success)"></i>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
+              สถานะ: เปิดใช้งานร่วมกับแอป RawBT เรียบร้อยแล้ว
+            </div>
+            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+              ระบบจะส่งคำสั่งพิมพ์ใบเสร็จและดีดลิ้นชักไปยังแอป RawBT โดยตรงอัตโนมัติ (ไม่ต้องกดจับคู่ USB ในเบราว์เซอร์)
+            </div>
+          </div>
+        </div>
+
         <!-- Action Buttons (USB Mode Only) -->
-        <div class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
+        <div v-if="printerConfig.connectionType === 'usb'" class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
           <button class="btn btn-primary" @click="handleConnectPrinter" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i class="fa-solid fa-plug"></i> เชื่อมต่อเครื่องพิมพ์ใหม่
           </button>
@@ -820,11 +899,15 @@
 
         <!-- Testing Buttons -->
         <div class="flex gap-md printer-btn-container" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
-          <button class="btn btn-secondary" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
-            <i class="fa-solid fa-file-invoice"></i> ทดสอบพิมพ์ใบเสร็จทดลอง
+          <button class="btn btn-secondary" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+            <i v-if="isTestingPrint" class="fa-solid fa-spinner fa-spin"></i>
+            <i v-else class="fa-solid fa-file-invoice"></i>
+            {{ isTestingPrint ? 'กำลังทดสอบ...' : 'ทดสอบพิมพ์ใบเสร็จทดลอง' }}
           </button>
-          <button class="btn btn-secondary" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
-            <i class="fa-solid fa-key"></i> ทดสอบเปิดลิ้นชักเก็บเงิน
+          <button class="btn btn-secondary" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+            <i v-if="isTestingKick" class="fa-solid fa-spinner fa-spin"></i>
+            <i v-else class="fa-solid fa-key"></i>
+            {{ isTestingKick ? 'กำลังทดสอบ...' : 'ทดสอบเปิดลิ้นชักเก็บเงิน' }}
           </button>
         </div>
       </div>
@@ -887,13 +970,15 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showPresetModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingPreset" @click="showPresetModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!presetForm.name.trim() || presetForm.modifier_ids.length === 0"
+              :disabled="!presetForm.name.trim() || presetForm.modifier_ids.length === 0 || isSavingPreset"
               @click="handleSavePreset"
             >
-              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              <i v-if="isSavingPreset" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingPreset ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
             </button>
           </div>
         </div>
@@ -1010,6 +1095,7 @@ const loadPrinterSettings = async () => {
   printerConfig.value = cfg;
   
   printerConnected.value = isPrinterConnected();
+  if (cfg.connectionType === 'rawbt') return;
   if (!navigator.usb) return;
   
   if (!printerConnected.value && cfg.vendorId && cfg.productId) {
@@ -1054,14 +1140,27 @@ const saveLocalPrinterConfig = () => {
     printerConfig.value.vendorId,
     printerConfig.value.productId,
     printerConfig.value.autoPrint,
-    printerConfig.value.autoKick
+    printerConfig.value.autoKick,
+    printerConfig.value.connectionType,
+    printerConfig.value.printMode
   );
   printerConnected.value = isPrinterConnected();
 };
 
+const setConnectionType = (type) => {
+  printerConfig.value.connectionType = type;
+  saveLocalPrinterConfig();
+  ui.showToast(`เปลี่ยนประเภทการเชื่อมต่อเป็น ${type === 'rawbt' ? 'แอป RawBT (แท็บเล็ต)' : 'สาย USB'} สำเร็จ`, 'success');
+};
 
+
+
+const isTestingPrint = ref(false);
+const isTestingKick = ref(false);
 
 const handleTestPrint = async () => {
+  if (isTestingPrint.value) return;
+  isTestingPrint.value = true;
   try {
     const testOrder = {
       order_number: 'TEST-0001',
@@ -1079,7 +1178,16 @@ const handleTestPrint = async () => {
     
     const activeBranch = store.branches.find(b => b.id === selectedSettingsBranchId.value) || { name: 'สาขาทดสอบ' };
     
-    if (isPrinterConnected()) {
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      await printReceipt(testOrder, testItems, {
+        shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
+        branchName: activeBranch.name,
+        phone: '081-234-5678',
+        forceKick: false
+      });
+      ui.showToast('ส่งข้อมูลสั่งพิมพ์ไปยังแอป RawBT แล้ว 🖨️', 'success');
+    } else if (isPrinterConnected()) {
       await printReceipt(testOrder, testItems, {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
         branchName: activeBranch.name,
@@ -1094,12 +1202,20 @@ const handleTestPrint = async () => {
     }
   } catch (e) {
     ui.showToast('การพิมพ์ล้มเหลว: ' + e.message, 'error');
+  } finally {
+    isTestingPrint.value = false;
   }
 };
 
 const handleTestKick = async () => {
+  if (isTestingKick.value) return;
+  isTestingKick.value = true;
   try {
-    if (isPrinterConnected()) {
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      kickDrawerSync();
+      ui.showToast('ส่งคำสั่งเปิดลิ้นชักไปยังแอป RawBT แล้ว 🔓', 'success');
+    } else if (isPrinterConnected()) {
       await kickDrawer();
       ui.showToast('ดีดเปิดลิ้นชักสำเร็จแล้ว 🔓', 'success');
     } else {
@@ -1107,6 +1223,8 @@ const handleTestKick = async () => {
     }
   } catch (e) {
     ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
+  } finally {
+    isTestingKick.value = false;
   }
 };
 
@@ -1199,7 +1317,13 @@ const openEditBranchModal = (b) => {
   showBranchModal.value = true;
 };
 
+const isSavingBranch = ref(false);
+const isSavingShopSettings = ref(false);
+const isSavingUser = ref(false);
+
 const handleSaveBranch = async () => {
+  if (isSavingBranch.value) return;
+  isSavingBranch.value = true;
   ui.showLoading();
   try {
     const payload = {
@@ -1224,6 +1348,7 @@ const handleSaveBranch = async () => {
     ui.showToast('บันทึกข้อมูลสาขาไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingBranch.value = false;
   }
 };
 
@@ -1278,6 +1403,8 @@ const loadShopSettings = async (force = false) => {
 
 // Save Shop Settings to Database
 const saveShopSettings = async () => {
+  if (isSavingShopSettings.value) return;
+  isSavingShopSettings.value = true;
   ui.showLoading();
   try {
     const promises = Object.entries(shopForm.value).map(([key, val]) => {
@@ -1292,6 +1419,7 @@ const saveShopSettings = async () => {
     ui.showToast('บันทึกตั้งค่าไม่สำเร็จ: ' + error.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingShopSettings.value = false;
   }
 };
 
@@ -1333,6 +1461,8 @@ const openEditUserModal = (u) => {
 };
 
 const handleSaveUser = async () => {
+  if (isSavingUser.value) return;
+  isSavingUser.value = true;
   ui.showLoading();
   try {
     const payload = {
@@ -1359,6 +1489,7 @@ const handleSaveUser = async () => {
     ui.showToast('บันทึกข้อมูลพนักงานไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingUser.value = false;
   }
 };
 
@@ -1505,7 +1636,11 @@ const openEditPresetModal = (p) => {
   showPresetModal.value = true;
 };
 
+const isSavingPreset = ref(false);
+
 const handleSavePreset = async () => {
+  if (isSavingPreset.value) return;
+  isSavingPreset.value = true;
   ui.showLoading();
   try {
     const payload = {
@@ -1531,6 +1666,7 @@ const handleSavePreset = async () => {
     ui.showToast('บันทึกข้อมูลสูตรผสมล้มเหลว: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSavingPreset.value = false;
   }
 };
 

@@ -470,7 +470,9 @@
           :disabled="savingAttendance || attendanceRecords.length === 0"
           @click="handleSaveAttendance"
         >
-          <i class="fa-solid fa-floppy-disk"></i> {{ savingAttendance ? 'กำลังบันทึก...' : 'บันทึกการลงเวลาวันนี้' }}
+          <i v-if="savingAttendance" class="fa-solid fa-spinner fa-spin"></i>
+          <i v-else class="fa-solid fa-floppy-disk"></i>
+          {{ savingAttendance ? 'กำลังบันทึก...' : 'บันทึกการลงเวลาวันนี้' }}
         </button>
       </div>
 
@@ -3767,14 +3769,18 @@ const reloadAllData = async () => {
     payrollMonth.value = props.selectedMonth;
     calendarMonth.value = props.selectedMonth;
   }
-  await fetchEmployees();
-  await fetchDailyAttendance();
-  await fetchMonthlyAttendance();
-  await fetchEventOts();
-  await fetchAdvances();
+  
+  const promises = [
+    fetchEmployees(),
+    fetchDailyAttendance(),
+    fetchMonthlyAttendance(),
+    fetchEventOts(),
+    fetchAdvances()
+  ];
   if (isAdminUser.value) {
-    await fetchPayrollCalculations();
+    promises.push(fetchPayrollCalculations());
   }
+  await Promise.all(promises);
 };
 
 watch(() => props.branchId, () => {

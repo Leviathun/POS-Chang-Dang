@@ -800,8 +800,10 @@
             </button>
           </div>
           <div class="form-group mb-xs expense-form-submit-group">
-            <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0">
-              <i class="fa-solid fa-floppy-disk"></i> บันทึก
+            <button class="btn btn-primary btn-block" @click="handleAddExpense" :disabled="!expenseForm.amount || expenseForm.amount <= 0 || isSubmittingExpense">
+              <i v-if="isSubmittingExpense" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSubmittingExpense ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -1306,13 +1308,15 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showVoidModal = false">ยกเลิก</button>
+            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isVoidingOrder" @click="showVoidModal = false">ยกเลิก</button>
             <button 
               class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!voidReason || (voidReason === 'custom' && !voidCustomReason.trim())"
+              :disabled="!voidReason || (voidReason === 'custom' && !voidCustomReason.trim()) || isVoidingOrder"
               @click="handleVoidOrder"
             >
-              <i class="fa-solid fa-circle-check"></i> ยืนยันลบบิล
+              <i v-if="isVoidingOrder" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-circle-check"></i>
+              {{ isVoidingOrder ? 'กำลังลบบิล...' : 'ยืนยันลบบิล' }}
             </button>
           </div>
         </div>
@@ -3598,11 +3602,15 @@ const openVoidModal = (order) => {
   showVoidModal.value = true;
 };
 
+const isVoidingOrder = ref(false);
+const isSubmittingExpense = ref(false);
+
 const handleVoidOrder = async () => {
-  if (!voidOrder.value) return;
+  if (!voidOrder.value || isVoidingOrder.value) return;
   const finalReason = voidReason.value === 'custom' ? voidCustomReason.value.trim() : voidReason.value;
   if (!finalReason) return;
 
+  isVoidingOrder.value = true;
   ui.showLoading();
   try {
     const res = await api.orders.cancel(voidOrder.value.id, finalReason);
@@ -3621,10 +3629,13 @@ const handleVoidOrder = async () => {
     ui.showToast('ยกเลิกบิลไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isVoidingOrder.value = false;
   }
 };
 
 const handleAddExpense = async () => {
+  if (!expenseForm.value.amount || expenseForm.value.amount <= 0 || isSubmittingExpense.value) return;
+  isSubmittingExpense.value = true;
   ui.showLoading();
   try {
     const res = await api.expenses.create({
@@ -3651,6 +3662,7 @@ const handleAddExpense = async () => {
     ui.showToast('บันทึกค่าใช้จ่ายไม่สำเร็จ: ' + e.message, 'error');
   } finally {
     ui.hideLoading();
+    isSubmittingExpense.value = false;
   }
 };
 
