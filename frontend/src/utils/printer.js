@@ -111,22 +111,26 @@ export function getSavedPrinterConfig() {
   const productId = localStorage.getItem('printer_product_id');
   const autoPrint = localStorage.getItem('printer_auto_print') !== 'false';
   const autoKick = localStorage.getItem('printer_auto_kick') !== 'false';
+  const connectionType = localStorage.getItem('printer_connection_type') || 'usb';
+  const printMode = localStorage.getItem('printer_print_mode') || 'image';
   return {
     vendorId: vendorId ? parseInt(vendorId, 10) : null,
     productId: productId ? parseInt(productId, 10) : null,
     autoPrint,
     autoKick,
-    connectionType: 'usb',
-    printMode: 'image',
+    connectionType,
+    printMode,
   };
 }
 
 // Save configuration
-export function savePrinterConfig(vendorId, productId, autoPrint, autoKick) {
+export function savePrinterConfig(vendorId, productId, autoPrint, autoKick, connectionType, printMode) {
   if (vendorId !== undefined && vendorId !== null) localStorage.setItem('printer_vendor_id', vendorId);
   if (productId !== undefined && productId !== null) localStorage.setItem('printer_product_id', productId);
   if (autoPrint !== undefined && autoPrint !== null) localStorage.setItem('printer_auto_print', String(autoPrint));
   if (autoKick !== undefined && autoKick !== null) localStorage.setItem('printer_auto_kick', String(autoKick));
+  if (connectionType !== undefined && connectionType !== null) localStorage.setItem('printer_connection_type', connectionType);
+  if (printMode !== undefined && printMode !== null) localStorage.setItem('printer_print_mode', printMode);
 }
 
 // Clear configuration

@@ -751,8 +751,53 @@
           เชื่อมต่อกับเครื่องพิมพ์ใบเสร็จและสั่งงานลิ้นชักเก็บเงินอเนกประสงค์ โดยเลือกประเภทการเชื่อมต่อที่เหมาะสมกับอุปกรณ์ของคุณ
         </p>
 
+        <!-- Connection Type Selection (Cards) -->
+        <div class="mb-xl">
+          <strong class="font-bold text-sm block mb-sm" style="color: var(--text-primary); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm);">
+            ประเภทการเชื่อมต่อเครื่องพิมพ์
+          </strong>
+          <div class="connection-selector-grid">
+            <!-- 1. USB Connection -->
+            <div 
+              class="connection-option-card"
+              :class="{ selected: printerConfig.connectionType === 'usb' }"
+              @click="setConnectionType('usb')"
+            >
+              <div class="option-icon">
+                <i class="fa-solid fa-plug font-xl"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">เครื่องพิมพ์ทั่วไป (ต่อสาย USB ตรง)</div>
+                <div class="option-desc">เชื่อมต่อผ่าน Google Chrome โดยตรง (เหมาะสำหรับคอมพิวเตอร์ PC/โน้ตบุ๊ก)</div>
+              </div>
+              <div class="option-badge">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+
+            <!-- 2. RawBT App Connection -->
+            <div 
+              class="connection-option-card"
+              :class="{ selected: printerConfig.connectionType === 'rawbt' }"
+              @click="setConnectionType('rawbt')"
+            >
+              <div class="option-icon">
+                <i class="fa-solid fa-tablet-screen-button font-xl"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">แอป RawBT (แนะนำสำหรับแท็บเล็ต / Android)</div>
+                <div class="option-desc">สั่งพิมพ์และดีดลิ้นชักผ่านแอป RawBT บนแท็บเล็ต เสถียร ไม่หลุดง่าย</div>
+              </div>
+              <div class="option-badge">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Connection Status (USB Mode) -->
         <div 
+          v-if="printerConfig.connectionType === 'usb'"
           :style="{
             background: printerConnected ? 'rgba(42, 157, 143, 0.08)' : 'rgba(139, 3, 19, 0.04)',
             border: '1px solid ' + (printerConnected ? 'var(--success)' : 'var(--primary)'),
@@ -766,8 +811,8 @@
           }"
         >
           <div style="font-size: 2.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <i v-if="printerConnected" class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-            <i v-else class="fa-solid fa-circle-xmark" style="color: var(--primary);"></i>
+            <i v-if="printerConnected" class="fa-solid fa-circle-check" style="color: var(--success)"></i>
+            <i v-else class="fa-solid fa-circle-xmark" style="color: var(--primary)"></i>
           </div>
           <div style="flex: 1; min-width: 0;">
             <div class="font-bold text-base" :style="{ color: printerConnected ? 'var(--success)' : 'var(--primary)', fontSize: 'var(--font-base)', lineHeight: '1.4' }">
@@ -782,8 +827,36 @@
           </div>
         </div>
 
+        <!-- Connection Status (RawBT Mode) -->
+        <div 
+          v-if="printerConfig.connectionType === 'rawbt'"
+          :style="{
+            background: 'rgba(42, 157, 143, 0.08)',
+            border: '1px solid var(--success)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-md) var(--space-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-md)',
+            marginBottom: 'var(--space-xl)',
+            transition: 'all 0.3s ease'
+          }"
+        >
+          <div style="font-size: 2.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="fa-solid fa-circle-check" style="color: var(--success)"></i>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
+              สถานะ: เปิดใช้งานร่วมกับแอป RawBT เรียบร้อยแล้ว
+            </div>
+            <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+              ระบบจะส่งคำสั่งพิมพ์ใบเสร็จและดีดลิ้นชักไปยังแอป RawBT โดยตรงอัตโนมัติ (ไม่ต้องกดจับคู่ USB ในเบราว์เซอร์)
+            </div>
+          </div>
+        </div>
+
         <!-- Action Buttons (USB Mode Only) -->
-        <div class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
+        <div v-if="printerConfig.connectionType === 'usb'" class="flex gap-md mb-xl printer-btn-container" style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl);">
           <button class="btn btn-primary" @click="handleConnectPrinter" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i class="fa-solid fa-plug"></i> เชื่อมต่อเครื่องพิมพ์ใหม่
           </button>
@@ -1022,6 +1095,7 @@ const loadPrinterSettings = async () => {
   printerConfig.value = cfg;
   
   printerConnected.value = isPrinterConnected();
+  if (cfg.connectionType === 'rawbt') return;
   if (!navigator.usb) return;
   
   if (!printerConnected.value && cfg.vendorId && cfg.productId) {
@@ -1066,9 +1140,17 @@ const saveLocalPrinterConfig = () => {
     printerConfig.value.vendorId,
     printerConfig.value.productId,
     printerConfig.value.autoPrint,
-    printerConfig.value.autoKick
+    printerConfig.value.autoKick,
+    printerConfig.value.connectionType,
+    printerConfig.value.printMode
   );
   printerConnected.value = isPrinterConnected();
+};
+
+const setConnectionType = (type) => {
+  printerConfig.value.connectionType = type;
+  saveLocalPrinterConfig();
+  ui.showToast(`เปลี่ยนประเภทการเชื่อมต่อเป็น ${type === 'rawbt' ? 'แอป RawBT (แท็บเล็ต)' : 'สาย USB'} สำเร็จ`, 'success');
 };
 
 
@@ -1096,7 +1178,16 @@ const handleTestPrint = async () => {
     
     const activeBranch = store.branches.find(b => b.id === selectedSettingsBranchId.value) || { name: 'สาขาทดสอบ' };
     
-    if (isPrinterConnected()) {
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      await printReceipt(testOrder, testItems, {
+        shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
+        branchName: activeBranch.name,
+        phone: '081-234-5678',
+        forceKick: false
+      });
+      ui.showToast('ส่งข้อมูลสั่งพิมพ์ไปยังแอป RawBT แล้ว 🖨️', 'success');
+    } else if (isPrinterConnected()) {
       await printReceipt(testOrder, testItems, {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
         branchName: activeBranch.name,
@@ -1120,7 +1211,11 @@ const handleTestKick = async () => {
   if (isTestingKick.value) return;
   isTestingKick.value = true;
   try {
-    if (isPrinterConnected()) {
+    const config = getSavedPrinterConfig();
+    if (config.connectionType === 'rawbt') {
+      kickDrawerSync();
+      ui.showToast('ส่งคำสั่งเปิดลิ้นชักไปยังแอป RawBT แล้ว 🔓', 'success');
+    } else if (isPrinterConnected()) {
       await kickDrawer();
       ui.showToast('ดีดเปิดลิ้นชักสำเร็จแล้ว 🔓', 'success');
     } else {
