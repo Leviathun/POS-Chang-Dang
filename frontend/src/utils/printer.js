@@ -112,7 +112,7 @@ export function getSavedPrinterConfig() {
   const autoPrint = localStorage.getItem('printer_auto_print') !== 'false';
   const autoKick = localStorage.getItem('printer_auto_kick') !== 'false';
   const connectionType = localStorage.getItem('printer_connection_type') || 'usb';
-  const printMode = localStorage.getItem('printer_print_mode') || 'image';
+  const printMode = localStorage.getItem('printer_print_mode') || (connectionType === 'rawbt' ? 'text' : 'image');
   return {
     vendorId: vendorId ? parseInt(vendorId, 10) : null,
     productId: productId ? parseInt(productId, 10) : null,
@@ -337,7 +337,7 @@ export async function sendRawToPrinter(bytes) {
           binary += String.fromCharCode(bytes[i]);
         }
         const base64Data = btoa(binary);
-        window.location.href = 'intent:#Intent;action=ru.a402d.rawbtprinter.action.PRINT;category=android.intent.category.DEFAULT;type=application/octet-stream;S.base64=' + base64Data + ';end;';
+        window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
       } catch (intentErr) {
         console.error('RawBT Intent redirect failed:', intentErr);
         throw new Error('ไม่สามารถพิมพ์ผ่านพอร์ต USB หรือแอป RawBT ได้: ' + err.message);
@@ -400,7 +400,7 @@ export function sendRawToPrinterSync(bytes) {
         binary += String.fromCharCode(bytes[i]);
       }
       const base64Data = btoa(binary);
-      window.location.href = 'intent:#Intent;action=ru.a402d.rawbtprinter.action.PRINT;category=android.intent.category.DEFAULT;type=application/octet-stream;S.base64=' + base64Data + ';end;';
+      window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
       return true;
     } catch (err) {
       console.error('RawBT Intent redirect failed:', err);
@@ -902,7 +902,17 @@ export async function printReceipt(order, cartItems = [], options = {}) {
       const htmlString = buildReceiptHTMLMinimal(order, cartItems, options);
       const base64Html = btoa(unescape(encodeURIComponent(htmlString)));
       window.location.href = 'intent:data:text/html;base64,' + base64Html + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else if (config.printMode === 'text') {
+    } else if (config.printMode === 'image') {
+      const bytes = buildReceiptBytes(order, cartItems, options);
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+    } else {
+      // 'text' mode (default for RawBT - fast, reliable, lightweight)
       const textString = buildReceiptTextString(order, cartItems, options);
       const utf8Bytes = new TextEncoder().encode(textString);
       let binary = '';
@@ -912,16 +922,6 @@ export async function printReceipt(order, cartItems = [], options = {}) {
       }
       const base64Data = btoa(binary);
       window.location.href = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else {
-      // 'image' mode (default) - Sends raw monochrome raster bytes to RawBT
-      const bytes = buildReceiptBytes(order, cartItems, options);
-      let binary = '';
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Data = btoa(binary);
-      window.location.href = 'intent:#Intent;action=ru.a402d.rawbtprinter.action.PRINT;category=android.intent.category.DEFAULT;type=application/octet-stream;S.base64=' + base64Data + ';end;';
     }
     return;
   }
@@ -937,7 +937,17 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
       const htmlString = buildReceiptHTMLMinimal(order, cartItems, options);
       const base64Html = btoa(unescape(encodeURIComponent(htmlString)));
       window.location.href = 'intent:data:text/html;base64,' + base64Html + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else if (config.printMode === 'text') {
+    } else if (config.printMode === 'image') {
+      const bytes = buildReceiptBytes(order, cartItems, options);
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binary);
+      window.location.href = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+    } else {
+      // 'text' mode (default for RawBT - fast, reliable, lightweight)
       const textString = buildReceiptTextString(order, cartItems, options);
       const utf8Bytes = new TextEncoder().encode(textString);
       let binary = '';
@@ -947,16 +957,6 @@ export function printReceiptSync(order, cartItems = [], options = {}) {
       }
       const base64Data = btoa(binary);
       window.location.href = 'intent:data:text/plain;base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    } else {
-      // 'image' mode (default) - Sends raw monochrome raster bytes to RawBT
-      const bytes = buildReceiptBytes(order, cartItems, options);
-      let binary = '';
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Data = btoa(binary);
-      window.location.href = 'intent:#Intent;action=ru.a402d.rawbtprinter.action.PRINT;category=android.intent.category.DEFAULT;type=application/octet-stream;S.base64=' + base64Data + ';end;';
     }
     return;
   }

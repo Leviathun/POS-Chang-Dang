@@ -891,7 +891,21 @@
             </label>
           </div>
 
-
+          <div class="setting-item" v-if="printerConfig.connectionType === 'rawbt'">
+            <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
+              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จบน RawBT</strong>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือกรูปแบบการส่งข้อมูลไปยังแอป RawBT (แนะนำโหมดข้อความ เร็วและเสถียรที่สุด)</span>
+            </div>
+            <select 
+              v-model="printerConfig.printMode" 
+              @change="saveLocalPrinterConfig" 
+              class="form-input" 
+              style="width: 220px; min-height: 38px; padding: 4px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);"
+            >
+              <option value="text">ข้อความธรรมดา (Text) - แนะนำ เร็วสุด</option>
+              <option value="html">ตารางจัดหน้า (HTML) - จัดคอลัมน์สวยงาม</option>
+            </select>
+          </div>
 
         </div>
 
@@ -1149,6 +1163,9 @@ const saveLocalPrinterConfig = () => {
 
 const setConnectionType = (type) => {
   printerConfig.value.connectionType = type;
+  if (type === 'rawbt' && (!printerConfig.value.printMode || printerConfig.value.printMode === 'image')) {
+    printerConfig.value.printMode = 'text';
+  }
   saveLocalPrinterConfig();
   ui.showToast(`เปลี่ยนประเภทการเชื่อมต่อเป็น ${type === 'rawbt' ? 'แอป RawBT (แท็บเล็ต)' : 'สาย USB'} สำเร็จ`, 'success');
 };
@@ -1180,13 +1197,14 @@ const handleTestPrint = async () => {
     
     const config = getSavedPrinterConfig();
     if (config.connectionType === 'rawbt') {
-      await printReceipt(testOrder, testItems, {
+      printReceiptSync(testOrder, testItems, {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
         branchName: activeBranch.name,
         phone: '081-234-5678',
         forceKick: false
       });
       ui.showToast('ส่งข้อมูลสั่งพิมพ์ไปยังแอป RawBT แล้ว 🖨️', 'success');
+      return;
     } else if (isPrinterConnected()) {
       await printReceipt(testOrder, testItems, {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
