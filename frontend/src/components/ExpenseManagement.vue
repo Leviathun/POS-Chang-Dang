@@ -194,6 +194,8 @@
           <div class="summary-sub-badges">
             <span class="sub-badge">สด: {{ formatCurrency(revenueBreakdown.cash) }}</span>
             <span class="sub-badge">โอน: {{ formatCurrency(revenueBreakdown.qr) }}</span>
+            <span v-if="revenueBreakdown.gov > 0" class="sub-badge">รัฐ: {{ formatCurrency(revenueBreakdown.gov) }}</span>
+            <span v-if="revenueBreakdown.delivery > 0" class="sub-badge">เดลิ: {{ formatCurrency(revenueBreakdown.delivery) }}</span>
           </div>
         </div>
 
@@ -1033,12 +1035,16 @@ const totalRevenue = computed(() => {
 const revenueBreakdown = computed(() => {
   let cash = 0;
   let qr = 0;
+  let gov = 0;
+  let delivery = 0;
   orders.value.forEach(o => {
     if (o.status !== 'completed') return;
     if (o.payment_method === 'cash') cash += Number(o.total) || 0;
+    else if (o.payment_method === 'gov') gov += Number(o.total) || 0;
+    else if (o.payment_method === 'delivery') delivery += Number(o.total) || 0;
     else qr += Number(o.total) || 0;
   });
-  return { cash, qr };
+  return { cash, qr, gov, delivery };
 });
 
 const totalExpenses = computed(() => {

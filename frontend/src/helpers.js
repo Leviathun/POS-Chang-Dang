@@ -148,6 +148,12 @@ export function isStaff() {
   return user && user.role === 'staff';
 }
 
+export function isCentralKitchenSession() {
+  const branchName = sessionStorage.getItem('selected_branch_name') || '';
+  const isCkFlag = sessionStorage.getItem('is_central_kitchen') === '1';
+  return isCkFlag || branchName.includes('ครัวกลาง');
+}
+
 export function getRoleLabel(role) {
   if (role === 'admin') return 'เจ้าของร้าน';
   if (role === 'manager') return 'ผู้จัดการ';

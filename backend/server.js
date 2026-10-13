@@ -38,6 +38,7 @@ app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/activities', require('./routes/activities'));
 app.use('/api/cash-drawers', require('./routes/cash_drawers'));
 app.use('/api/employees', require('./routes/employees'));
+app.use('/api/central-kitchen', require('./routes/central_kitchen'));
 
 // ─── SPA Fallback ─────────────────────────────────────────
 app.get('*', (req, res) => {
