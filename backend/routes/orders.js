@@ -67,7 +67,7 @@ router.post('/', requireAuth, async (req, res) => {
     const prefix = `CD-${dateStr}-`;
 
     // ทำ Parallel Read เพื่อความเร็วสูงสุด (1 round trip)
-    const [dbMenuItems, dbIngredients, dbModifiers, orderCountResult] = await Promise.all([
+    const [dbMenuItems, dbIngredients, dbModifiers, orderMaxResult, archivedMaxResult] = await Promise.all([
       db.prepare(`
         SELECT id, name, price, active, quantity as stock
         FROM menu_items
@@ -83,8 +83,11 @@ router.post('/', requireAuth, async (req, res) => {
         WHERE branch_id = ? AND id IN (${uniqueModifierIds.map(() => '?').join(',')})
       `).all(branchId, ...uniqueModifierIds) : Promise.resolve([]),
       db.prepare(`
-        SELECT COUNT(*) as count FROM orders WHERE order_number LIKE ?
-      `).get(`${prefix}%`)
+        SELECT MAX(CAST(SUBSTR(order_number, ?) AS INTEGER)) as max_num FROM orders WHERE order_number LIKE ?
+      `).get(prefix.length + 1, `${prefix}%`),
+      db.prepare(`
+        SELECT MAX(CAST(SUBSTR(order_number, ?) AS INTEGER)) as max_num FROM archived_orders WHERE order_number LIKE ?
+      `).get(prefix.length + 1, `${prefix}%`)
     ]);
 
     // สร้างแผนผังสต็อกในหน่วยความจำสำหรับการตรวจสอบและการตัดสต็อก (เพื่อป้องกันปัญหาการตัดสต็อกข้ามบิลและการตัดสต็อกล่าช้า)
@@ -202,70 +205,104 @@ router.post('/', requireAuth, async (req, res) => {
       cashChange = Number(cash_received) - total;
     }
 
-    // สร้างเลขออเดอร์
-    const num = (orderCountResult.count + 1).toString().padStart(3, '0');
-    const orderNumber = `${prefix}${num}`;
+    // คำนวณเลขออเดอร์เริ่มต้นจากค่าสูงสุด + 1
+    const currentMaxSeq = Math.max(
+      Number(orderMaxResult?.max_num || 0),
+      Number(archivedMaxResult?.max_num || 0)
+    );
+    let currentSeq = currentMaxSeq + 1;
+    let initialOrderNumber = `${prefix}${currentSeq.toString().padStart(3, '0')}`;
 
-    // รวบรวมคำสั่ง SQL เพื่อรันใน Transaction batch เดียว (1 write round trip)
-    const statements = [];
+    // ฟังก์ชันสร้างชุดคำสั่ง SQL Batch สำหรับออเดอร์
+    const buildBatchStatements = (assignedOrderNumber) => {
+      const statements = [];
 
-    // 1. บันทึกออเดอร์ (ดึง id และ created_at กลับมาทันทีในขั้นตอน batch)
-    statements.push({
-      sql: `INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, session_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, datetime('now', '+7 hours'))
-            RETURNING id, created_at`,
-      args: [
-        branchId,
-        orderNumber,
-        req.user.id,
-        subtotal,
-        orderDiscount,
-        total,
-        payment_method,
-        cash_received || null,
-        cashChange,
-        note || null,
-        modifiers ? (typeof modifiers === 'string' ? modifiers : JSON.stringify(modifiers)) : null,
-        sessionId
-      ]
-    });
-
-    // 2. บันทึกรายการสินค้าในออเดอร์
-    for (const oi of orderItems) {
+      // 1. บันทึกออเดอร์ (ดึง id และ created_at กลับมาทันทีในขั้นตอน batch)
       statements.push({
-        sql: `INSERT INTO order_items (order_id, menu_item_id, item_name, item_price, quantity, subtotal, options)
-              VALUES ((SELECT id FROM orders WHERE order_number = ?), ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO orders (branch_id, order_number, staff_id, subtotal, discount, total, payment_method, cash_received, cash_change, status, note, modifiers, session_id, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, datetime('now', '+7 hours'))
+              RETURNING id, created_at`,
         args: [
-          orderNumber,
-          oi.menu_item_id,
-          oi.item_name,
-          oi.item_price,
-          oi.quantity,
-          oi.subtotal,
-          oi.options
+          branchId,
+          assignedOrderNumber,
+          req.user.id,
+          subtotal,
+          orderDiscount,
+          total,
+          payment_method,
+          cash_received || null,
+          cashChange,
+          note || null,
+          modifiers ? (typeof modifiers === 'string' ? modifiers : JSON.stringify(modifiers)) : null,
+          sessionId
         ]
       });
-    }
 
-    // 3. คำสั่งหักสต็อกและเขียนประวัติสต็อก
-    for (const oi of orderItems) {
-      let optionsObj = null;
-      if (oi.options) {
-        try { optionsObj = JSON.parse(oi.options); } catch (e) {}
+      // 2. บันทึกรายการสินค้าในออเดอร์
+      for (const oi of orderItems) {
+        statements.push({
+          sql: `INSERT INTO order_items (order_id, menu_item_id, item_name, item_price, quantity, subtotal, options)
+                VALUES ((SELECT id FROM orders WHERE order_number = ?), ?, ?, ?, ?, ?, ?)`,
+          args: [
+            assignedOrderNumber,
+            oi.menu_item_id,
+            oi.item_name,
+            oi.item_price,
+            oi.quantity,
+            oi.subtotal,
+            oi.options
+          ]
+        });
       }
 
-      if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
-        for (const ingredient of optionsObj.selected_items) {
-          const ingId = Number(ingredient.id);
-          if (stockMap.has(ingId)) {
-            const previousStock = stockMap.get(ingId);
-            const deductAmount = Number(ingredient.weight) * oi.quantity;
-            const newStock = Math.round((previousStock - deductAmount) * 100) / 100;
-            stockMap.set(ingId, newStock);
+      // 3. คำสั่งหักสต็อกและเขียนประวัติสต็อก (ใช้ Map สำเนาเพื่อไม่ให้กระทบกรณีเกิด retry)
+      const batchStockMap = new Map(stockMap);
+      for (const oi of orderItems) {
+        let optionsObj = null;
+        if (oi.options) {
+          try { optionsObj = JSON.parse(oi.options); } catch (e) {}
+        }
+
+        if (optionsObj && Array.isArray(optionsObj.selected_items) && optionsObj.selected_items.length > 0) {
+          for (const ingredient of optionsObj.selected_items) {
+            const ingId = Number(ingredient.id);
+            if (batchStockMap.has(ingId)) {
+              const previousStock = batchStockMap.get(ingId);
+              const deductAmount = Number(ingredient.weight) * oi.quantity;
+              const newStock = Math.round((previousStock - deductAmount) * 100) / 100;
+              batchStockMap.set(ingId, newStock);
+
+              statements.push({
+                sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
+                args: [deductAmount, branchId, ingId]
+              });
+
+              statements.push({
+                sql: `INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                      VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
+                args: [
+                  branchId,
+                  ingId,
+                  -deductAmount,
+                  previousStock,
+                  newStock,
+                  assignedOrderNumber,
+                  req.user.id,
+                  `ขาย ${oi.item_name} (วัตถุดิบ: ${ingredient.name} ${deductAmount}ก.) (${assignedOrderNumber})`
+                ]
+              });
+            }
+          }
+        } else {
+          const mId = Number(oi.menu_item_id);
+          if (batchStockMap.has(mId)) {
+            const previousStock = batchStockMap.get(mId);
+            const newStock = Math.round((previousStock - oi.quantity) * 100) / 100;
+            batchStockMap.set(mId, newStock);
 
             statements.push({
               sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
-              args: [deductAmount, branchId, ingId]
+              args: [oi.quantity, branchId, mId]
             });
 
             statements.push({
@@ -273,100 +310,109 @@ router.post('/', requireAuth, async (req, res) => {
                     VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
               args: [
                 branchId,
-                ingId,
-                -deductAmount,
+                mId,
+                -oi.quantity,
                 previousStock,
                 newStock,
-                orderNumber,
+                assignedOrderNumber,
                 req.user.id,
-                `ขาย ${oi.item_name} (วัตถุดิบ: ${ingredient.name} ${deductAmount}ก.) (${orderNumber})`
+                `ขาย ${oi.item_name} x${oi.quantity} (${assignedOrderNumber})`
               ]
             });
           }
         }
-      } else {
-        const mId = Number(oi.menu_item_id);
-        const menuItem = dbMenuItems.find(i => i.id === mId);
-        
-        if (stockMap.has(mId)) {
-          const previousStock = stockMap.get(mId);
-          const newStock = Math.round((previousStock - oi.quantity) * 100) / 100;
-          stockMap.set(mId, newStock);
-
-          statements.push({
-            sql: `UPDATE menu_items SET quantity = ROUND(quantity - ?, 2) WHERE branch_id = ? AND id = ? AND quantity IS NOT NULL`,
-            args: [oi.quantity, branchId, mId]
-          });
-
-          statements.push({
-            sql: `INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-                  VALUES (?, ?, ?, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
-            args: [
-              branchId,
-              mId,
-              -oi.quantity,
-              previousStock,
-              newStock,
-              orderNumber,
-              req.user.id,
-              `ขาย ${oi.item_name} x${oi.quantity} (${orderNumber})`
-            ]
-          });
-        }
-
-
       }
-    }
 
-    // 4. คำสั่งหักสต็อกเครื่องปรุง (Modifiers)
-    if (modifiers) {
-      try {
-        const selectedModifiers = Array.isArray(modifiers) ? modifiers : JSON.parse(modifiers);
-        if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
-          for (const mod of selectedModifiers) {
-            const currentMod = dbModifiers.find(m => m.id === Number(mod.id));
-            if (currentMod && currentMod.total_servings !== null) {
-              const prevModStock = currentMod.total_servings;
-              const newModStock = prevModStock - 1;
+      // 4. คำสั่งหักสต็อกเครื่องปรุง (Modifiers)
+      if (modifiers) {
+        try {
+          const selectedModifiers = Array.isArray(modifiers) ? modifiers : JSON.parse(modifiers);
+          if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+            for (const mod of selectedModifiers) {
+              const currentMod = dbModifiers.find(m => m.id === Number(mod.id));
+              if (currentMod && currentMod.total_servings !== null) {
+                const prevModStock = currentMod.total_servings;
+                const newModStock = prevModStock - 1;
 
-              statements.push({
-                sql: `UPDATE modifiers SET total_servings = total_servings - 1 WHERE branch_id = ? AND id = ? AND total_servings IS NOT NULL`,
-                args: [branchId, mod.id]
-              });
+                statements.push({
+                  sql: `UPDATE modifiers SET total_servings = total_servings - 1 WHERE branch_id = ? AND id = ? AND total_servings IS NOT NULL`,
+                  args: [branchId, mod.id]
+                });
 
-              statements.push({
-                sql: `INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
-                      VALUES (?, ?, -1, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
-                args: [
-                  branchId,
-                  mod.id,
-                  prevModStock,
-                  newModStock,
-                  orderNumber,
-                  req.user.id,
-                  `ใช้เครื่องปรุง ${mod.name} ในออเดอร์ ${orderNumber}`
-                ]
-              });
+                statements.push({
+                  sql: `INSERT INTO modifier_stock_logs (branch_id, modifier_id, change_qty, previous_stock, new_stock, reason, order_id, staff_id, note, created_at)
+                        VALUES (?, ?, -1, ?, ?, 'sale', (SELECT id FROM orders WHERE order_number = ?), ?, ?, datetime('now', '+7 hours'))`,
+                  args: [
+                    branchId,
+                    mod.id,
+                    prevModStock,
+                    newModStock,
+                    assignedOrderNumber,
+                    req.user.id,
+                    `ใช้เครื่องปรุง ${mod.name} ในออเดอร์ ${assignedOrderNumber}`
+                  ]
+                });
+              }
             }
           }
+        } catch (modErr) {
+          console.error('⚠️ Error building modifiers batch:', modErr.message);
         }
-      } catch (modErr) {
-        console.error('⚠️ Error building modifiers batch:', modErr.message);
+      }
+
+      statements.push({
+        sql: `INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
+              VALUES (?, ?, 'complete_order', ?, datetime('now', '+7 hours'))`,
+        args: [
+          branchId,
+          req.user.id,
+          `สร้างออเดอร์และชำระเงินสำเร็จ เลขที่ ${assignedOrderNumber} ยอดรวม ${total} บาท`
+        ]
+      });
+
+      return statements;
+    };
+
+    // รันธุรกรรมบันทึกทั้งหมดใน Transaction batch เดียว พร้อมกลไก Retry กรณีเลขบิลชนกันพร้อมกัน
+    let finalOrderNumber = initialOrderNumber;
+    let batchResults;
+    const maxRetries = 3;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      if (attempt > 0) {
+        // ดึงเลขสูงสุดใหม่อีกครั้งเพื่อป้องกันการชนกัน (Concurrency collision)
+        const [retryMax, retryArchivedMax] = await Promise.all([
+          db.prepare('SELECT MAX(CAST(SUBSTR(order_number, ?) AS INTEGER)) as max_num FROM orders WHERE order_number LIKE ?')
+            .get(prefix.length + 1, `${prefix}%`),
+          db.prepare('SELECT MAX(CAST(SUBSTR(order_number, ?) AS INTEGER)) as max_num FROM archived_orders WHERE order_number LIKE ?')
+            .get(prefix.length + 1, `${prefix}%`)
+        ]);
+        const retryMaxNum = Math.max(
+          Number(retryMax?.max_num || 0),
+          Number(retryArchivedMax?.max_num || 0)
+        );
+        const retrySeq = retryMaxNum + 1;
+        finalOrderNumber = `${prefix}${retrySeq.toString().padStart(3, '0')}`;
+      }
+
+      const statements = buildBatchStatements(finalOrderNumber);
+      try {
+        batchResults = await db.batch(statements);
+        break; // บันทึกสำเร็จ
+      } catch (err) {
+        const isUniqueConstraint = err.message && (
+          err.message.includes('orders.order_number') ||
+          err.message.includes('UNIQUE constraint failed')
+        );
+        if (isUniqueConstraint && attempt < maxRetries - 1) {
+          console.warn(`⚠️ ตรวจพบเลขออเดอร์ชนกัน ${finalOrderNumber}, กำลังลองใหม่รอบที่ ${attempt + 1}...`);
+          await new Promise(r => setTimeout(r, 50 * (attempt + 1)));
+          continue;
+        }
+        throw err;
       }
     }
 
-    statements.push({
-      sql: `INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
-            VALUES (?, ?, 'complete_order', ?, datetime('now', '+7 hours'))`,
-      args: [
-        branchId,
-        req.user.id,
-        `สร้างออเดอร์และชำระเงินสำเร็จ เลขที่ ${orderNumber} ยอดรวม ${total} บาท`
-      ]
-    });
-
-    // รันธุรกรรมบันทึกทั้งหมดในครั้งเดียว (ได้ผลลัพธ์ของคำสั่งแรกกลับมาทันที)
-    const batchResults = await db.batch(statements);
     const orderResult = batchResults[0];
     const insertedOrderRow = orderResult && orderResult.rows && orderResult.rows[0];
     if (!insertedOrderRow) {
@@ -380,7 +426,7 @@ router.post('/', requireAuth, async (req, res) => {
     const mockOrder = {
       id: orderId,
       branch_id: branchId,
-      order_number: orderNumber,
+      order_number: finalOrderNumber,
       staff_id: req.user.id,
       subtotal,
       discount: orderDiscount,
