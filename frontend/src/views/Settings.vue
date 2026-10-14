@@ -891,21 +891,33 @@
             </label>
           </div>
 
-          <div class="setting-item" v-if="printerConfig.connectionType === 'rawbt'">
+          <div class="setting-item setting-item-select" v-if="printerConfig.connectionType === 'rawbt'">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
               <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จบน RawBT</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือกรูปแบบการส่งข้อมูลไปยังแอป RawBT (แนะนำโหมดรูปภาพ เหมือนสาขา 1 คมชัด 100%)</span>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือกรูปแบบการส่งข้อมูลไปยังแอป RawBT (โหมดรูปภาพ เหมือนสาขา 1 คมชัด 100%)</span>
             </div>
-            <select 
-              v-model="printerConfig.printMode" 
-              @change="saveLocalPrinterConfig" 
-              class="form-input" 
-              style="width: 250px; min-height: 38px; padding: 4px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);"
-            >
-              <option value="image">รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)</option>
-              <option value="html">ตารางจัดหน้า (HTML)</option>
-              <option value="text">ข้อความธรรมดา (Text - เครื่องที่มี Thai ROM)</option>
-            </select>
+            
+            <div class="custom-select-wrapper" @click.stop style="width: auto; min-width: 280px; max-width: 100%; position: relative; z-index: 5;">
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isPrintModeDropdownOpen }" 
+                @click="togglePrintModeDropdown"
+              >
+                <span class="custom-select-text font-semibold">
+                  <i class="fa-solid fa-image mr-xs" style="color: var(--primary);"></i>
+                  รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)
+                </span>
+              </div>
+              <div v-if="isPrintModeDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  class="custom-select-option selected" 
+                  @click="selectPrintMode('image')"
+                >
+                  <i class="fa-solid fa-circle-check mr-xs text-primary"></i>
+                  รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -1107,8 +1119,8 @@ const printerConfig = ref({
 
 const loadPrinterSettings = async () => {
   const cfg = getSavedPrinterConfig();
-  // Automatically migrate legacy 'text' mode to 'image' for Branch 1 design quality
-  if (cfg.connectionType === 'rawbt' && (!cfg.printMode || cfg.printMode === 'text')) {
+  // Ensure RawBT print mode is strictly 'image' for Branch 1 design quality
+  if (cfg.connectionType === 'rawbt' && cfg.printMode !== 'image') {
     cfg.printMode = 'image';
     savePrinterConfig(cfg.vendorId, cfg.productId, cfg.autoPrint, cfg.autoKick, cfg.connectionType, 'image');
   }
@@ -1182,6 +1194,36 @@ const isTestingPrint = ref(false);
 const isTestingKick = ref(false);
 
 const handleTestPrint = async () => {
+  const config = getSavedPrinterConfig();
+  if (config.connectionType === 'rawbt') {
+    try {
+      const testOrder = {
+        order_number: 'TEST-0001',
+        created_at: new Date().toISOString(),
+        payment_method: 'cash',
+        cash_received: 500,
+        discount: 50,
+        total: 350
+      };
+      const testItems = [
+        { name: 'ไก่ทอดช้างแดงชิ้นใหญ่', quantity: 2, price: 150 },
+        { name: 'ข้าวเหนียวนุ่มพิเศษ', quantity: 3, price: 20 },
+        { name: 'น้ำจิ้มแจ่วรสเด็ด', quantity: 1, price: 10 }
+      ];
+      const activeBranch = store.branches.find(b => b.id === selectedSettingsBranchId.value) || { name: 'สาขาทดสอบ' };
+      printReceiptSync(testOrder, testItems, {
+        shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
+        branchName: activeBranch.name,
+        phone: '081-234-5678',
+        forceKick: !!printerConfig.value.autoKick
+      });
+      ui.showToast('ส่งข้อมูลสั่งพิมพ์ไปยังแอป RawBT แล้ว 🖨️', 'success');
+    } catch (e) {
+      ui.showToast('การพิมพ์ล้มเหลว: ' + e.message, 'error');
+    }
+    return;
+  }
+
   if (isTestingPrint.value) return;
   isTestingPrint.value = true;
   try {
@@ -1201,17 +1243,7 @@ const handleTestPrint = async () => {
     
     const activeBranch = store.branches.find(b => b.id === selectedSettingsBranchId.value) || { name: 'สาขาทดสอบ' };
     
-    const config = getSavedPrinterConfig();
-    if (config.connectionType === 'rawbt') {
-      printReceiptSync(testOrder, testItems, {
-        shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
-        branchName: activeBranch.name,
-        phone: '081-234-5678',
-        forceKick: !!printerConfig.value.autoKick
-      });
-      ui.showToast('ส่งข้อมูลสั่งพิมพ์ไปยังแอป RawBT แล้ว 🖨️', 'success');
-      return;
-    } else if (isPrinterConnected()) {
+    if (isPrinterConnected()) {
       await printReceipt(testOrder, testItems, {
         shopName: 'ไก่ทอดช้างแดง (ทดสอบ)',
         branchName: activeBranch.name,
@@ -1232,14 +1264,21 @@ const handleTestPrint = async () => {
 };
 
 const handleTestKick = async () => {
+  const config = getSavedPrinterConfig();
+  if (config.connectionType === 'rawbt') {
+    try {
+      kickDrawerSync();
+      ui.showToast('ส่งคำสั่งเปิดลิ้นชักไปยังแอป RawBT แล้ว 🔓', 'success');
+    } catch (e) {
+      ui.showToast('เปิดลิ้นชักล้มเหลว: ' + e.message, 'error');
+    }
+    return;
+  }
+
   if (isTestingKick.value) return;
   isTestingKick.value = true;
   try {
-    const config = getSavedPrinterConfig();
-    if (config.connectionType === 'rawbt') {
-      kickDrawerSync();
-      ui.showToast('ส่งคำสั่งเปิดลิ้นชักไปยังแอป RawBT แล้ว 🔓', 'success');
-    } else if (isPrinterConnected()) {
+    if (isPrinterConnected()) {
       await kickDrawer();
       ui.showToast('ดีดเปิดลิ้นชักสำเร็จแล้ว 🔓', 'success');
     } else {
@@ -1256,6 +1295,7 @@ const handleTestKick = async () => {
 const isRoleDropdownOpen = ref(false);
 const isBranchDropdownOpen = ref(false);
 const isSettingsBranchDropdownOpen = ref(false);
+const isPrintModeDropdownOpen = ref(false);
 
 const selectedUserBranchName = computed(() => {
   const b = branches.value.find(x => x.id === userForm.value.branch_id);
@@ -1292,12 +1332,25 @@ const toggleSettingsBranchDropdown = () => {
   isSettingsBranchDropdownOpen.value = !current;
 };
 
+const togglePrintModeDropdown = () => {
+  const current = isPrintModeDropdownOpen.value;
+  closeSettingsDropdowns();
+  isPrintModeDropdownOpen.value = !current;
+};
+
+const selectPrintMode = (mode) => {
+  printerConfig.value.printMode = mode;
+  saveLocalPrinterConfig();
+  isPrintModeDropdownOpen.value = false;
+};
+
 const closeSettingsDropdowns = () => {
   isRoleDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
   isSettingsBranchDropdownOpen.value = false;
   isBackupPeriodDropdownOpen.value = false;
   isBackupBranchDropdownOpen.value = false;
+  isPrintModeDropdownOpen.value = false;
 };
 
 // States
@@ -2192,6 +2245,15 @@ input:checked + .slider:before {
   .connection-selector-grid {
     grid-template-columns: 1fr !important;
     gap: var(--space-sm) !important;
+  }
+  .setting-item.setting-item-select {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
+  }
+  .setting-item.setting-item-select .custom-select-wrapper {
+    width: 100% !important;
+    min-width: 100% !important;
   }
 }
 </style>
