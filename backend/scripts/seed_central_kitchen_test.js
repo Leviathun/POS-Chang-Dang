@@ -258,17 +258,18 @@ async function run() {
 
   // 8. เติมยอดขายจำลองของสาขา test ในเดือนนี้ (~18,500 บาท) เพื่อให้คำนวณกำไร 60/40 แสดงผลได้จริง
   console.log('🍗 เพิ่มยอดขายตัวอย่างสำหรับสาขา test ในเดือนนี้เพื่อทดสอบรายงานแบ่งกำไร...');
+  const todayStr = getThaiToday().replace(/-/g, '');
   const mockOrders = [
-    { num: 'CD-20261014-101', sub: 450, total: 450, pay: 'cash', staff: 8 },
-    { num: 'CD-20261014-102', sub: 620, total: 620, pay: 'qr', staff: 9 },
-    { num: 'CD-20261014-103', sub: 1250, total: 1250, pay: 'cash', staff: 8 },
-    { num: 'CD-20261014-104', sub: 890, total: 890, pay: 'qr', staff: 11 },
-    { num: 'CD-20261014-105', sub: 2400, total: 2400, pay: 'delivery', staff: 9 },
-    { num: 'CD-20261014-106', sub: 1550, total: 1550, pay: 'cash', staff: 8 },
-    { num: 'CD-20261014-107', sub: 3200, total: 3200, pay: 'qr', staff: 8 },
-    { num: 'CD-20261014-108', sub: 1800, total: 1800, pay: 'qr', staff: 9 },
-    { num: 'CD-20261014-109', sub: 2650, total: 2650, pay: 'cash', staff: 8 },
-    { num: 'CD-20261014-110', sub: 3500, total: 3500, pay: 'qr', staff: 11 }
+    { num: `CD-TEST-${todayStr}-001`, sub: 450, total: 450, pay: 'cash', staff: 8 },
+    { num: `CD-TEST-${todayStr}-002`, sub: 620, total: 620, pay: 'qr', staff: 9 },
+    { num: `CD-TEST-${todayStr}-003`, sub: 1250, total: 1250, pay: 'cash', staff: 8 },
+    { num: `CD-TEST-${todayStr}-004`, sub: 890, total: 890, pay: 'qr', staff: 11 },
+    { num: `CD-TEST-${todayStr}-005`, sub: 2400, total: 2400, pay: 'delivery', staff: 9 },
+    { num: `CD-TEST-${todayStr}-006`, sub: 1550, total: 1550, pay: 'cash', staff: 8 },
+    { num: `CD-TEST-${todayStr}-007`, sub: 3200, total: 3200, pay: 'qr', staff: 8 },
+    { num: `CD-TEST-${todayStr}-008`, sub: 1800, total: 1800, pay: 'qr', staff: 9 },
+    { num: `CD-TEST-${todayStr}-009`, sub: 2650, total: 2650, pay: 'cash', staff: 8 },
+    { num: `CD-TEST-${todayStr}-010`, sub: 3500, total: 3500, pay: 'qr', staff: 11 }
   ];
 
   for (let idx = 0; idx < mockOrders.length; idx++) {

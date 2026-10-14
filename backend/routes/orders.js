@@ -59,12 +59,15 @@ router.post('/', requireAuth, async (req, res) => {
     }
     const uniqueModifierIds = [...new Set(modifierIds)];
 
+    // กำหนดรหัสย่อสาขาสำหรับ Prefix เพื่อแยกเลขบิลของแต่ละสาขาให้เป็นอิสระจากกัน
+    const branchCode = branchId === 3 ? 'TEST' : (branchId === 4 ? 'CK' : `B${branchId}`);
+
     // ดึงเลขออเดอร์ prefix
     const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
     const dateStr = today.getUTCFullYear().toString() +
       String(today.getUTCMonth() + 1).padStart(2, '0') +
       String(today.getUTCDate()).padStart(2, '0');
-    const prefix = `CD-${dateStr}-`;
+    const prefix = `CD-${branchCode}-${dateStr}-`;
 
     // ทำ Parallel Read เพื่อความเร็วสูงสุด (1 round trip)
     const [dbMenuItems, dbIngredients, dbModifiers, orderMaxResult, archivedMaxResult] = await Promise.all([

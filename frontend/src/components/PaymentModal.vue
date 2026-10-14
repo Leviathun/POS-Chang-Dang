@@ -716,12 +716,20 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
   }
   
   // สร้างเลขออเดอร์จำลองระหว่างรอเซิร์ฟเวอร์
+  let branchCode = 'B1';
+  try {
+    const userStr = sessionStorage.getItem('pos_user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const bId = Number(user?.branch_id || sessionStorage.getItem('selected_branch_id') || 1);
+    branchCode = bId === 3 ? 'TEST' : (bId === 4 ? 'CK' : `B${bId}`);
+  } catch (e) {}
+
   const today = new Date(Date.now() + 7 * 60 * 60 * 1000);
   const dateStr = today.getUTCFullYear().toString() +
     String(today.getUTCMonth() + 1).padStart(2, '0') +
     String(today.getUTCDate()).padStart(2, '0');
   const tempNum = Math.floor(100 + Math.random() * 900);
-  orderId.value = `กำลังบันทึก... (CD-${dateStr}-${tempNum})`;
+  orderId.value = `กำลังบันทึก... (CD-${branchCode}-${dateStr}-${tempNum})`;
 
   isCheckingOut.value = true;
   checkoutPromise.value = (async () => {
