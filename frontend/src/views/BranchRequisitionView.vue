@@ -953,7 +953,12 @@ onMounted(() => {
   align-items: center;
 }
 
+.relative {
+  position: relative !important;
+}
+
 .requisition-tab-btn {
+  position: relative !important;
   height: 44px;
   padding: 0 20px;
   border-radius: var(--radius-full);
@@ -984,17 +989,29 @@ onMounted(() => {
 }
 
 .badge-count {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background-color: var(--primary);
-  color: white;
+  position: absolute !important;
+  top: -5px !important;
+  right: -5px !important;
+  background-color: var(--primary, #8b0313);
+  color: #ffffff;
   border-radius: 999px;
-  font-size: 0.7rem;
-  padding: 1px 7px;
-  font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  font-size: 0.72rem;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
   border: 2px solid #ffffff;
+  z-index: 2;
+}
+
+.requisition-tab-btn.active .badge-count {
+  background-color: var(--accent, #ffab2b) !important;
+  color: var(--primary-dark, #500000) !important;
+  border-color: #ffffff !important;
 }
 
 /* Catalog Layout */

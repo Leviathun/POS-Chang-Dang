@@ -1992,3 +1992,9 @@ select.form-input:focus {
   line-height: 1.5;
 }
 /* --- Universal Empty States end --- */
+
+/* --- Global Positioning Utilities --- */
+.relative {
+  position: relative !important;
+}
+
