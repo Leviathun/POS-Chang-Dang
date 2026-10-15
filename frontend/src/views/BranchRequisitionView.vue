@@ -317,17 +317,17 @@
 
     <!-- Mobile-only Docked Cart Bar (เหมือนหน้าขาย POS บนมือถือ) -->
     <div 
-      v-if="currentTab === 'shop' && cart.length > 0" 
+      v-if="currentTab === 'shop' && cart.length > 0 && !isCartDrawerOpen" 
       class="cart-bar mobile-only-cart"
     >
       <div class="cart-bar-inner">
-        <div class="cart-info" style="cursor: pointer;" @click="isCartDrawerOpen = !isCartDrawerOpen">
+        <div class="cart-info" style="cursor: pointer;" @click="isCartDrawerOpen = true">
           <span class="cart-count">{{ totalCartQty }} รายการ</span>
           <span class="cart-total">฿{{ formatNumber(totalCartCost) }}</span>
         </div>
         <button 
           class="cart-pay-btn flex align-center justify-center gap-xs" 
-          @click="isCartDrawerOpen = !isCartDrawerOpen"
+          @click="isCartDrawerOpen = true"
         >
           <i class="fa-solid fa-cart-shopping"></i>
           <span>ดูรายการเบิก</span>
@@ -360,8 +360,8 @@
         </div>
       </div>
 
-      <!-- Drawer Scrollable Content -->
-      <div class="cart-drawer-body p-md flex flex-col gap-md">
+      <!-- Drawer Scrollable Content (Only Items & Notes Scroll!) -->
+      <div class="cart-drawer-scroll-body flex flex-col gap-md">
         <!-- Cart Items List: Spacious 2-Tier Cards -->
         <div class="cart-items-list flex flex-col gap-sm">
           <div 
@@ -410,9 +410,12 @@
             class="form-input text-sm w-full"
           />
         </div>
+      </div>
 
+      <!-- Drawer Fixed Footer (Always visible, perfectly padded, never cut off!) -->
+      <div class="cart-drawer-footer">
         <!-- Unboxed Total Cost -->
-        <div class="cart-total-row flex flex-between align-baseline pt-sm">
+        <div class="cart-total-row flex flex-between align-baseline mb-sm">
           <span class="text-sm font-bold text-secondary">มูลค่าต้นทุนรวม:</span>
           <span class="text-2xl font-bold text-primary">฿{{ formatNumber(totalCartCost) }}</span>
         </div>
@@ -541,7 +544,8 @@
               </span>
             </div>
             
-            <div class="order-items-table-wrapper">
+            <!-- Desktop Table (>= 641px) -->
+            <div class="order-items-table-wrapper desktop-only-orders-table">
               <table class="order-items-table">
                 <thead>
                   <tr>
@@ -556,7 +560,6 @@
                     <td class="col-item">
                       <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
                       <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
-                      <div class="mobile-only-price text-xs text-muted mt-xs">฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}</div>
                     </td>
                     <td class="col-price text-right text-sm text-secondary">
                       ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
@@ -570,6 +573,42 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Mobile Itemized List (< 640px) -->
+            <div class="order-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
+              <div 
+                v-for="it in t.items" 
+                :key="it.id" 
+                class="order-mobile-item-card"
+              >
+                <!-- Row 1: Item Name + Subtotal -->
+                <div class="flex flex-between align-start gap-xs">
+                  <div class="flex-1 min-w-0 pr-xs">
+                    <div class="order-mobile-item-name font-bold text-sm text-primary">
+                      {{ getItemNameParts(it.item_name).main }}
+                    </div>
+                    <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
+                      {{ getItemNameParts(it.item_name).sub }}
+                    </div>
+                  </div>
+                  <div class="text-right flex-shrink-0 pl-xs">
+                    <span class="order-mobile-item-total font-bold text-sm text-primary">
+                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Row 2: Unit Price + Quantity Pill -->
+                <div class="flex flex-between align-center pt-xs mt-xs order-mobile-item-bottom">
+                  <span class="text-xs text-secondary">
+                    ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
+                  </span>
+                  <span class="order-qty-pill font-bold">
+                    {{ it.quantity }} {{ it.unit }}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <!-- Branch Note if any -->
@@ -1601,17 +1640,17 @@ onMounted(() => {
 /* Mobile Slide-up Cart Drawer Panel */
 .cart-detail-panel {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height, 60px) - 10px);
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
   left: 0;
   right: 0;
   margin: 0 auto;
   width: 100%;
   max-width: var(--max-width);
-  max-height: 72vh;
+  max-height: 75vh;
   background: var(--bg-secondary, #fff8ee);
   border: 2px solid var(--primary-light, #ad281e) !important;
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25) !important;
   display: flex !important;
   flex-direction: column !important;
   z-index: 56;
@@ -1634,10 +1673,40 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.cart-drawer-body {
+.cart-drawer-scroll-body {
+  flex: 1 1 auto;
   overflow-y: auto;
-  max-height: calc(72vh - 65px);
   -webkit-overflow-scrolling: touch;
+  padding: 14px 18px;
+  max-height: calc(75vh - 165px);
+}
+
+.cart-drawer-footer {
+  flex-shrink: 0;
+  background: #ffffff;
+  border-top: 1px solid rgba(139, 3, 19, 0.12);
+  padding: 12px 18px 16px 18px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.cart-drawer-footer .cart-total-row {
+  margin-bottom: 10px;
+}
+
+.cart-drawer-footer .btn-submit-requisition {
+  height: 48px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+}
+
+/* Orders Tab: Desktop Table vs Mobile Itemized Cards */
+.desktop-only-orders-table {
+  display: block;
+}
+
+.mobile-only-orders-list {
+  display: none !important;
 }
 
 /* Desktop Defaults for Prefix */
@@ -1666,7 +1735,7 @@ onMounted(() => {
 
   /* Add generous scroll padding at the bottom of catalog so user can scroll completely past everything */
   .catalog-layout {
-    padding-bottom: 95px !important;
+    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height, 60px) + 35px) !important;
   }
 }
 
@@ -1709,7 +1778,8 @@ onMounted(() => {
   }
 
   /* ========================================================== */
-  /* MOBILE 2-COLUMN CARDS - EXACT REPLICA OF POS "หน้าขาย"     */
+  /* MOBILE 2-COLUMN CARDS - RESTORED ORIGINAL CATALOG DESIGN   */
+  /* (Exact design from media_1792071395897.png, without button)*/
   /* ========================================================== */
   .grid-cards {
     grid-template-columns: repeat(2, 1fr) !important;
@@ -1717,19 +1787,20 @@ onMounted(() => {
   }
 
   .item-card {
-    padding: 10px 8px !important;
+    padding: 10px !important;
     border-radius: var(--radius-lg) !important;
     min-height: unset !important;
     position: relative !important;
     overflow: visible !important;
     cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    text-align: left !important;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    transition: transform var(--transition-base), border-color var(--transition-base);
+    transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
   }
 
   .item-card:active {
@@ -1738,108 +1809,164 @@ onMounted(() => {
 
   .item-card.in-cart {
     border-color: var(--primary) !important;
-    background: rgba(139, 3, 19, 0.05) !important;
-    box-shadow: inset 0 0 15px rgba(139, 3, 19, 0.03);
+    background: rgba(139, 3, 19, 0.04) !important;
+    box-shadow: 0 0 0 1.5px var(--primary), var(--shadow-sm) !important;
   }
 
-  /* Hide top category pill on mobile like POS */
+  /* 1. Top Badges: Category Left + Status Right */
   .card-top-badges {
-    display: none !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-bottom: 6px !important;
   }
 
-  /* 95px Photo Container */
+  .card-badge-category {
+    font-size: 10px !important;
+    padding: 2px 7px !important;
+    max-width: 72% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    border-radius: var(--radius-full) !important;
+    background: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  .card-badge-status {
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    font-size: 10px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  /* 2. Soft Cream Image Box */
   .item-img-container {
-    height: 95px !important;
+    height: 105px !important;
     width: 100% !important;
     margin-bottom: 6px !important;
     border-radius: var(--radius-md) !important;
+    background: linear-gradient(180deg, #fff7df 0%, #fceecc 100%) !important;
   }
 
   .item-img-placeholder {
-    font-size: 2rem !important;
+    font-size: 2.2rem !important;
   }
 
-  /* 2-Line Name Block Centered */
+  /* 3. 2-Line Name Block */
   .item-name {
     font-size: 0.85rem !important;
-    line-height: 1.25 !important;
+    line-height: 1.3 !important;
     min-height: 38px !important;
-    margin-bottom: 2px !important;
-    text-align: center !important;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
+    margin-bottom: 4px !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
   }
 
   .item-name-main {
     font-size: 0.85rem !important;
-    font-weight: 700;
-    white-space: normal !important;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.25;
-    text-align: center;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    width: 100% !important;
+    color: var(--text-primary) !important;
   }
 
   .item-name-sub {
-    font-size: 0.75rem !important;
+    display: block !important;
+    font-size: 0.72rem !important;
+    color: var(--text-secondary) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    width: 100% !important;
     margin-top: 1px !important;
-    white-space: normal !important;
-    text-align: center;
-    display: none !important; /* Hide subtext on mobile cards for extreme cleanliness like POS */
   }
 
-  /* Item Meta: Price Centered + Stock Centered below (No Labels) */
+  /* 4. Meta Box: Dashed divider + ราคาเบิก / คงเหลือ rows */
   .item-meta-box {
-    border-top: none !important;
-    padding-top: 0 !important;
+    border-top: 1px dashed var(--border-color) !important;
+    padding-top: 5px !important;
     margin-bottom: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
-    gap: 1px !important;
-    width: 100%;
+    gap: 2px !important;
+    width: 100% !important;
   }
 
   .item-meta-row {
-    padding: 0 !important;
+    padding: 1px 0 !important;
     display: flex !important;
-    justify-content: center !important;
+    justify-content: space-between !important;
     align-items: center !important;
-    width: 100%;
+    width: 100% !important;
   }
 
   .item-meta-label {
-    display: none !important;
-  }
-
-  .item-unit-slash {
-    display: none !important;
-  }
-
-  .item-cost-val {
-    font-size: 1.05rem !important;
-    font-weight: 700 !important;
-    color: var(--primary) !important;
-  }
-
-  .item-stock-val {
-    font-size: 0.72rem !important;
-    color: var(--text-tertiary) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 11px !important;
+    color: var(--text-secondary) !important;
     font-weight: 500 !important;
   }
 
-  .stock-prefix {
+  .item-unit-slash {
     display: inline !important;
+    font-size: 10.5px !important;
   }
 
-  /* Hide card button on mobile because tapping entire card adds to cart */
+  .item-cost-val {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+  }
+
+  .item-stock-val {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+  }
+
+  .stock-prefix {
+    display: none !important;
+  }
+
+  /* 5. Button Removed on Mobile (whole card is tapped to add) */
   .card-footer-actions {
     display: none !important;
+  }
+
+  /* Qty Badge on card */
+  .qty-badge {
+    position: absolute !important;
+    top: -6px !important;
+    right: -6px !important;
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 6px rgba(139, 3, 19, 0.4) !important;
+    border: 2px solid #ffffff !important;
+    z-index: 5 !important;
   }
 
   /* Orders Tab Responsive */
@@ -1869,13 +1996,40 @@ onMounted(() => {
     width: 100%;
     height: 48px;
   }
+}
 
-  .col-price {
+@media (max-width: 640px) {
+  /* Orders Tab Table vs Mobile Itemized Cards */
+  .desktop-only-orders-table {
     display: none !important;
   }
 
-  .mobile-only-price {
-    display: block !important;
+  .mobile-only-orders-list {
+    display: flex !important;
+  }
+
+  .order-mobile-item-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .order-mobile-item-name {
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .order-mobile-item-sub {
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  .order-mobile-item-bottom {
+    border-top: 1px dashed rgba(0, 0, 0, 0.07);
   }
 }
 </style>
