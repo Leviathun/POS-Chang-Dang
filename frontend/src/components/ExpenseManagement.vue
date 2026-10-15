@@ -131,32 +131,52 @@
           </div>
         </div>
 
-        <!-- ── แถวที่ 4: บันทึกช่วยจำ / สถานที่ซื้อ + ปุ่มบันทึกด่วนด้านล่าง ── -->
+        <!-- ── แถวที่ 4: บันทึกช่วยจำ + ปุ่มบันทึกด่วนด้านล่าง ── -->
         <div class="form-step-section mb-xl">
           <label class="form-section-label mb-sm">
-            <span class="step-num">4</span> บันทึกช่วยจำ / สถานที่ซื้อ:
+            <span class="step-num">4</span> บันทึกช่วยจำ:
           </label>
-          <div class="input-with-icon mb-xs">
-            <i class="fa-solid fa-pen-to-square input-icon"></i>
-            <input 
-              type="text" 
-              class="form-input custom-input full-width-input" 
-              v-model="expenseForm.note" 
-              placeholder="เช่น ซื้อไก่สดแม็คโคร, ค่าน้ำมัน..." 
-            />
+          <div class="memo-input-wrapper mb-xs">
+            <div class="input-with-icon flex-1">
+              <i class="fa-solid fa-pen-to-square input-icon"></i>
+              <input 
+                type="text" 
+                class="form-input custom-input full-width-input" 
+                v-model="expenseForm.note" 
+                placeholder="เช่น ซื้อไก่สดแม็คโคร, ซอสเปรี้ยว..." 
+                @keydown.enter.prevent="addCustomPreset"
+              />
+            </div>
+            <button 
+              type="button" 
+              class="btn-add-memo-preset" 
+              :disabled="!expenseForm.note || !expenseForm.note.trim()"
+              @click="addCustomPreset"
+              title="เพิ่มเป็นปุ่มบันทึกช่วยจำ"
+            >
+              <i class="fa-solid fa-plus"></i>
+            </button>
           </div>
           <!-- Quick Notes Grid under input -->
           <div class="quick-notes-grid-6">
             <button 
-              v-for="preset in quickNotePresets" 
+              v-for="preset in allQuickNotePresets" 
               :key="preset.name" 
               type="button" 
               class="quick-note-card-btn"
-              :class="{ 'active': expenseForm.note === preset.name }"
+              :class="{ 'active': expenseForm.note === preset.name, 'is-custom-preset': preset.custom }"
               @click="setQuickNote(preset.name)"
             >
               <i :class="preset.icon" style="margin-right: 6px;"></i>
-              <span>{{ preset.name }}</span>
+              <span class="preset-name">{{ preset.name }}</span>
+              <span 
+                v-if="preset.custom" 
+                class="btn-remove-preset" 
+                @click.stop="removeCustomPreset(preset.name)"
+                title="ลบปุ่มนี้"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </span>
             </button>
           </div>
         </div>
@@ -815,6 +835,68 @@ const quickNotePresets = [
   { name: 'โลตัส / บิ๊กซี', icon: 'fa-solid fa-basket-shopping' },
   { name: 'เลี้ยงลูกน้อง', icon: 'fa-solid fa-users' }
 ];
+
+const STORAGE_KEY_CUSTOM_NOTES = 'pos_expense_custom_notes';
+
+const loadCustomQuickNotes = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_CUSTOM_NOTES);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => {
+          if (typeof item === 'string') {
+            return { name: item, icon: 'fa-solid fa-tag', custom: true };
+          }
+          return { ...item, custom: true, icon: item.icon || 'fa-solid fa-tag' };
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error loading custom quick notes:', err);
+  }
+  return [];
+};
+
+const customQuickNotes = ref(loadCustomQuickNotes());
+
+const saveCustomQuickNotes = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY_CUSTOM_NOTES, JSON.stringify(customQuickNotes.value));
+  } catch (err) {
+    console.error('Error saving custom quick notes:', err);
+  }
+};
+
+const allQuickNotePresets = computed(() => {
+  return [...quickNotePresets, ...customQuickNotes.value];
+});
+
+const addCustomPreset = () => {
+  const noteText = (expenseForm.value.note || '').trim();
+  if (!noteText) return;
+  
+  const existsInDefault = quickNotePresets.some(p => p.name.trim().toLowerCase() === noteText.toLowerCase());
+  const existsInCustom = customQuickNotes.value.some(p => p.name.trim().toLowerCase() === noteText.toLowerCase());
+  
+  if (!existsInDefault && !existsInCustom) {
+    customQuickNotes.value.push({
+      name: noteText,
+      icon: 'fa-solid fa-tag',
+      custom: true
+    });
+    saveCustomQuickNotes();
+    ui.showToast(`เพิ่มปุ่มบันทึกช่วยจำ "${noteText}" แล้ว`, 'success');
+  } else {
+    ui.showToast(`มีปุ่มบันทึกช่วยจำ "${noteText}" อยู่แล้ว`, 'info');
+  }
+};
+
+const removeCustomPreset = (presetName) => {
+  customQuickNotes.value = customQuickNotes.value.filter(p => p.name !== presetName);
+  saveCustomQuickNotes();
+  ui.showToast(`ลบปุ่มบันทึกช่วยจำ "${presetName}" แล้ว`, 'info');
+};
 
 const listFilterCategories = [
   ...categoryList,
@@ -1538,6 +1620,47 @@ onMounted(() => {
 }
 
 /* 5. Inputs & Quick Buttons Full Row */
+.memo-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  width: 100%;
+}
+
+.btn-add-memo-preset {
+  height: 46px;
+  width: 48px;
+  min-width: 48px;
+  background: var(--primary);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-md, 12px);
+  color: #ffffff;
+  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  flex-shrink: 0;
+}
+
+.btn-add-memo-preset:hover:not(:disabled) {
+  background: var(--primary-dark, #6b020f);
+  border-color: var(--primary-dark, #6b020f);
+  box-shadow: 0 3px 10px var(--primary-glow, rgba(139, 3, 19, 0.25));
+  transform: translateY(-1px);
+}
+
+.btn-add-memo-preset:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-add-memo-preset:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .input-with-icon {
   position: relative;
   display: flex;
@@ -1623,6 +1746,46 @@ onMounted(() => {
   cursor: pointer;
   transition: all var(--transition-fast, 0.15s ease);
   user-select: none;
+  min-height: 38px;
+  position: relative;
+}
+
+.quick-note-card-btn .preset-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.btn-remove-preset {
+  margin-left: 6px;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  opacity: 0.55;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-remove-preset:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--danger, #e63946);
+}
+
+.quick-note-card-btn.active .btn-remove-preset {
+  opacity: 0.8;
+  color: #ffffff;
+}
+
+.quick-note-card-btn.active .btn-remove-preset:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 
 .quick-note-card-btn:hover {
