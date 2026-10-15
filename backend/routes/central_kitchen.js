@@ -916,10 +916,11 @@ router.post('/items/:id/waste', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
     const itemId = req.params.id;
-    const { quantity, reason } = req.body;
+    const { quantity, quantity_wasted, reason, note } = req.body;
 
-    const qty = Number(quantity);
-    if (!qty || qty <= 0) {
+    const rawQty = (quantity !== undefined && quantity !== null && quantity !== '') ? quantity : quantity_wasted;
+    const qty = Number(rawQty);
+    if (!qty || isNaN(qty) || qty <= 0) {
       return res.status(400).json({ success: false, error: 'กรุณาระบุจำนวนของเสียที่ถูกต้อง (> 0)' });
     }
 
@@ -932,9 +933,18 @@ router.post('/items/:id/waste', requireManagerOrAdmin, async (req, res) => {
       return res.status(400).json({ success: false, error: `จำนวนของเสียมากกว่าสต็อกที่มีอยู่ในคลัง (สต็อกปัจจุบัน: ${item.quantity} ${item.unit})` });
     }
 
-    const unitCost = Number(item.cost_price);
+    const unitCost = Number(item.cost_price || 0);
     const totalCost = qty * unitCost;
     const nowLocal = getThaiNow();
+
+    const reasonMap = {
+      'expired': 'หมดอายุ / เน่าเสีย',
+      'damaged': 'แตกหัก / ชำรุดเสียหาย',
+      'lost': 'สูญหาย / นับสต็อกไม่ตรง',
+      'other': 'อื่นๆ'
+    };
+    const reasonText = reasonMap[reason] || reason || 'เน่า/เสีย';
+    const finalReason = note && String(note).trim() ? `${reasonText} (${String(note).trim()})` : reasonText;
 
     const statements = [
       {
@@ -944,7 +954,7 @@ router.post('/items/:id/waste', requireManagerOrAdmin, async (req, res) => {
       {
         sql: `INSERT INTO central_kitchen_waste_logs (item_id, quantity, unit_cost, total_cost, reason, created_by_name, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        args: [itemId, qty, unitCost, totalCost, reason || 'เน่า/เสีย', req.user.name, nowLocal]
+        args: [itemId, qty, unitCost, totalCost, finalReason, req.user.name, nowLocal]
       }
     ];
 

@@ -2726,16 +2726,22 @@ const openWasteModal = (item) => {
 };
 
 const submitWaste = async () => {
-  if (!wasteForm.value.quantity_wasted || wasteForm.value.quantity_wasted <= 0) {
-    return ui.error('กรุณาระบุจำนวนที่ตัดของเสีย');
+  const qty = Number(wasteForm.value.quantity_wasted);
+  if (!qty || isNaN(qty) || qty <= 0) {
+    return ui.error('กรุณาระบุจำนวนที่ตัดของเสียที่ถูกต้อง');
   }
-  if (wasteForm.value.quantity_wasted > (activeWasteItem.value?.quantity || 0)) {
+  if (qty > (activeWasteItem.value?.quantity || 0)) {
     return ui.error('จำนวนที่ตัดของเสียมากกว่าสต็อกที่มีในครัวกลาง');
   }
   isSavingWaste.value = true;
   ui.showLoading();
   try {
-    await api.centralKitchen.recordWaste(activeWasteItem.value.id, wasteForm.value);
+    await api.centralKitchen.recordWaste(activeWasteItem.value.id, {
+      quantity: qty,
+      quantity_wasted: qty,
+      reason: wasteForm.value.reason,
+      note: wasteForm.value.note
+    });
     ui.success('บันทึกตัดสต็อกของเสียเรียบร้อยแล้ว');
     showWasteModal.value = false;
     await loadItems();
