@@ -1430,7 +1430,7 @@
         <div class="modal-header">
           <h3>
             <i :class="editingItem ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-plus'" style="margin-right: 6px;"></i>
-            {{ editingItem ? 'แก้ไขรายการของในครัวกลาง' : 'เพิ่มของใหม่ด้วยตนเอง' }}
+            {{ editingItem ? 'แก้ไขรายการ' : 'เพิ่มของใหม่ด้วยตนเอง' }}
           </h3>
           <button class="modal-close" @click="showItemModal = false">✕</button>
         </div>
@@ -1608,7 +1608,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showRestockModal" class="modal-container active">
       <div class="modal-overlay" @click="showRestockModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
             <i class="fa-solid fa-circle-plus text-success" style="margin-right: 6px;"></i>
@@ -1618,9 +1618,17 @@
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md text-sm" style="border: 1px solid var(--border-color); background: var(--bg-secondary);">
-            สินค้า: <strong>{{ activeRestockItem?.name }}</strong><br />
-            <span class="text-xs text-secondary">สต็อกปัจจุบัน: {{ activeRestockItem?.quantity }} {{ activeRestockItem?.unit }}</span>
+          <!-- กล่องข้อมูลสินค้า: โปร่ง สบายตา ไม่ชิดขอบ -->
+          <div class="modal-item-summary-card mb-md">
+            <div class="modal-item-summary-name">
+              <span class="modal-item-summary-label">สินค้า:</span>
+              <span class="modal-item-summary-title">{{ activeRestockItem?.name }}</span>
+            </div>
+            <div class="modal-item-summary-stock">
+              <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
+              <span>สต็อกปัจจุบัน:</span>
+              <strong class="text-main">{{ activeRestockItem?.quantity }} {{ activeRestockItem?.unit }}</strong>
+            </div>
           </div>
 
           <div class="form-group mb-md">
@@ -1657,11 +1665,15 @@
             />
           </div>
 
-          <div class="p-md rounded mb-lg flex flex-between align-center" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-            <span class="text-xs text-secondary font-bold">ยอดเงินรวมที่จ่ายซื้อ:</span>
-            <span class="font-bold text-xl text-primary">
+          <!-- กล่องสรุปยอดเงินรวม: โปร่ง มีพื้นที่หายใจ ตัวเลขและข้อความไม่ชิดขอบ -->
+          <div class="modal-total-summary-box mb-lg">
+            <div class="modal-total-label">
+              <i class="fa-solid fa-receipt mr-1 text-primary"></i>
+              <span>ยอดเงินรวมที่จ่ายซื้อ:</span>
+            </div>
+            <div class="modal-total-amount text-primary">
               ฿{{ formatNumber((restockForm.quantity_added || 0) * (restockForm.unit_cost || 0)) }}
-            </span>
+            </div>
           </div>
 
           <div class="flex gap-md mt-xl">
@@ -1775,7 +1787,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showWasteModal" class="modal-container active">
       <div class="modal-overlay" @click="showWasteModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
             <i class="fa-solid fa-trash-can text-danger" style="margin-right: 6px;"></i>
@@ -1785,9 +1797,17 @@
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md text-sm" style="border: 1px solid var(--border-color); background: var(--bg-secondary);">
-            สินค้า: <strong>{{ activeWasteItem?.name }}</strong><br />
-            <span class="text-xs text-secondary">คงเหลือในครัวกลาง: {{ activeWasteItem?.quantity }} {{ activeWasteItem?.unit }}</span>
+          <!-- กล่องข้อมูลสินค้า: โปร่ง สบายตา ไม่ชิดขอบ -->
+          <div class="modal-item-summary-card mb-md">
+            <div class="modal-item-summary-name">
+              <span class="modal-item-summary-label">สินค้า:</span>
+              <span class="modal-item-summary-title">{{ activeWasteItem?.name }}</span>
+            </div>
+            <div class="modal-item-summary-stock">
+              <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
+              <span>คงเหลือในครัวกลาง:</span>
+              <strong class="text-main">{{ activeWasteItem?.quantity }} {{ activeWasteItem?.unit }}</strong>
+            </div>
           </div>
 
           <div class="form-group mb-md">
@@ -1825,11 +1845,15 @@
             />
           </div>
 
-          <div class="p-md rounded mb-lg flex flex-between align-center" style="background: rgba(173, 40, 30, 0.05); border: 1px solid rgba(173, 40, 30, 0.2); border-radius: var(--radius-md);">
-            <span class="text-xs text-danger font-bold">มูลค่าความเสียหาย:</span>
-            <span class="font-bold text-xl text-danger">
+          <!-- กล่องสรุปมูลค่าความเสียหาย: โปร่ง มีพื้นที่หายใจ ตัวเลขและข้อความไม่ชิดขอบ -->
+          <div class="modal-total-summary-box modal-total-waste mb-lg">
+            <div class="modal-total-label text-danger">
+              <i class="fa-solid fa-triangle-exclamation mr-1 text-danger"></i>
+              <span>มูลค่าความเสียหาย:</span>
+            </div>
+            <div class="modal-total-amount text-danger">
               ฿{{ formatNumber((wasteForm.quantity_wasted || 0) * (activeWasteItem?.cost_price || 0)) }}
-            </span>
+            </div>
           </div>
 
           <div class="flex gap-md mt-xl">
@@ -3716,6 +3740,90 @@ onUnmounted(() => {
   margin-top: 14px;
 }
 
+/* ────────────────────────────────────────────────────────── */
+/* MODAL SUMMARY CARDS (Spacious, Breathing Room, Not Cramped) */
+/* ────────────────────────────────────────────────────────── */
+.modal-item-summary-card {
+  padding: 12px 14px;
+  background: rgba(139, 3, 19, 0.04);
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-item-summary-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.modal-item-summary-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.modal-item-summary-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.modal-item-summary-stock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px dashed rgba(139, 3, 19, 0.12);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+.modal-total-summary-box {
+  padding: 14px 16px !important;
+  background: #ffffff !important;
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  min-height: 52px !important;
+}
+
+.modal-total-waste {
+  background: rgba(173, 40, 30, 0.04) !important;
+  border-color: rgba(173, 40, 30, 0.25) !important;
+}
+
+.modal-total-label {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+
+.modal-total-amount {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+}
+
 @media (max-width: 900px) {
   .financial-summary-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -3736,6 +3844,21 @@ onUnmounted(() => {
   .btn-add-item {
     flex: 1;
     justify-content: center;
+  }
+
+  /* Mobile Modal Comfort (Spacious width, not pinched to screen edge) */
+  .modal-content.modal-center {
+    width: calc(100% - 24px) !important;
+    margin: auto 12px !important;
+    max-width: 480px !important;
+  }
+
+  .modal-header {
+    padding: 14px 16px !important;
+  }
+
+  .modal-body {
+    padding: 16px !important;
   }
 
   /* ========================================================== */
