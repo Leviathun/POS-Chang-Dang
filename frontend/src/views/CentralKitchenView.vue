@@ -734,7 +734,7 @@
         <div>
           <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
             <i class="fa-solid fa-vault text-primary"></i>
-            <span>สมุดบัญชี & กระเป๋าเงินกองกลาง (Central Kitchen Cashbook)</span>
+            <span>สมุดบัญชี & กระเป๋าเงินกองกลาง</span>
           </h3>
           <p class="text-secondary text-xs">
             บันทึกเงินทุนตั้งต้นของเจ้าของร้าน, บันทึกเงินจ่ายซื้อของสดตุนเข้าคลัง, และติดตามเงินที่สาขาโอนคืนค่าของ
@@ -874,7 +874,7 @@
                 @click="financeFilterType = 'capital_in'"
               >
                 <i class="fa-solid fa-circle-plus"></i>
-                <span>เติมทุน (+)</span>
+                <span>เติมทุน +</span>
                 <span class="finance-tab-count">{{ capitalInCount }}</span>
               </button>
               <button 
@@ -883,7 +883,7 @@
                 @click="financeFilterType = 'reimbursement_in'"
               >
                 <i class="fa-solid fa-hand-holding-dollar"></i>
-                <span>สาขาคืนเงิน (+)</span>
+                <span>สาขาคืนเงิน +</span>
                 <span class="finance-tab-count">{{ reimbursementInCount }}</span>
               </button>
               <button 
@@ -892,7 +892,7 @@
                 @click="financeFilterType = 'purchase_out'"
               >
                 <i class="fa-solid fa-cart-shopping"></i>
-                <span>ซื้อของเข้าคลัง (-)</span>
+                <span>ซื้อของเข้าคลัง -</span>
                 <span class="finance-tab-count">{{ purchaseOutCount }}</span>
               </button>
               <button 
@@ -901,7 +901,7 @@
                 @click="financeFilterType = 'operating_expense_out'"
               >
                 <i class="fa-solid fa-circle-minus"></i>
-                <span>รายจ่ายครัวกลาง (-)</span>
+                <span>รายจ่ายครัวกลาง -</span>
                 <span class="finance-tab-count">{{ operatingExpenseOutCount }}</span>
               </button>
             </div>
@@ -918,55 +918,104 @@
             </p>
           </div>
 
-          <!-- Logs Table -->
-          <div v-else class="ledger-table-wrapper">
-            <table class="ledger-table">
-              <thead>
-                <tr>
-                  <th class="col-date text-left">วันที่ & เวลา</th>
-                  <th class="col-type text-center">ประเภทรายการ</th>
-                  <th class="col-note text-left">บันทึกช่วยจำ / รายละเอียด</th>
-                  <th class="col-branch text-center">สาขา</th>
-                  <th class="col-amount text-right">จำนวนเงิน</th>
-                  <th class="col-user text-center">ผู้บันทึก</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="log in filteredFinanceLogs" 
-                  :key="log.id"
-                >
-                  <td class="col-date text-xs text-secondary">
-                    <span class="font-medium text-main">{{ formatDateTime(log.created_at) }}</span>
-                  </td>
-                  <td class="col-type text-center">
-                    <span class="badge font-bold text-xs" :class="getFinanceTypeBadgeClass(log.type)">
-                      <i v-if="log.type === 'capital_in'" class="fa-solid fa-circle-plus"></i>
-                      <i v-else-if="log.type === 'reimbursement_in'" class="fa-solid fa-hand-holding-dollar"></i>
-                      <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
-                      <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
-                      <span>{{ getFinanceTypeLabel(log.type) }}</span>
-                    </span>
-                  </td>
-                  <td class="col-note">
-                    <div class="font-bold text-sm text-main">{{ log.note || '-' }}</div>
-                  </td>
-                  <td class="col-branch text-center">
+          <!-- Logs Container -->
+          <div v-else class="ledger-body-container">
+            <!-- Desktop Table View -->
+            <div class="ledger-table-wrapper desktop-only-ledger-table">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th class="col-date text-left">วันที่ & เวลา</th>
+                    <th class="col-type text-center">ประเภทรายการ</th>
+                    <th class="col-note text-left">บันทึกช่วยจำ / รายละเอียด</th>
+                    <th class="col-branch text-center">สาขา</th>
+                    <th class="col-amount text-right">จำนวนเงิน</th>
+                    <th class="col-user text-center">ผู้บันทึก</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    v-for="log in filteredFinanceLogs" 
+                    :key="log.id"
+                  >
+                    <td class="col-date text-xs text-secondary">
+                      <span class="font-medium text-main">{{ formatDateTime(log.created_at) }}</span>
+                    </td>
+                    <td class="col-type text-center">
+                      <span class="badge font-bold text-xs" :class="getFinanceTypeBadgeClass(log.type)">
+                        <i v-if="log.type === 'capital_in'" class="fa-solid fa-circle-plus"></i>
+                        <i v-else-if="log.type === 'reimbursement_in'" class="fa-solid fa-hand-holding-dollar"></i>
+                        <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
+                        <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
+                        <span>{{ getFinanceTypeLabel(log.type) }}</span>
+                      </span>
+                    </td>
+                    <td class="col-note">
+                      <div class="font-bold text-sm text-main">{{ log.note || '-' }}</div>
+                    </td>
+                    <td class="col-branch text-center">
+                      <span v-if="log.branch_name" class="badge badge-primary font-bold text-xs">
+                        <i class="fa-solid fa-store"></i>
+                        <span>{{ log.branch_name }}</span>
+                      </span>
+                      <span v-else class="text-xs text-muted">-</span>
+                    </td>
+                    <td class="col-amount text-right font-bold text-base" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
+                      {{ isFinanceInflow(log.type) ? '+ ฿' : '- ฿' }}{{ formatNumber(log.amount) }}
+                    </td>
+                    <td class="col-user text-center text-xs text-secondary">
+                      <span class="font-medium">{{ log.created_by_name || '-' }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile Cards View (< 640px) -->
+            <div class="mobile-only-ledger-list flex flex-col gap-sm">
+              <div 
+                v-for="log in filteredFinanceLogs" 
+                :key="log.id" 
+                class="ledger-mobile-card"
+              >
+                <!-- Top Row: Type Badge + Amount -->
+                <div class="flex flex-between align-center gap-xs">
+                  <span class="badge font-bold text-xs" :class="getFinanceTypeBadgeClass(log.type)">
+                    <i v-if="log.type === 'capital_in'" class="fa-solid fa-circle-plus"></i>
+                    <i v-else-if="log.type === 'reimbursement_in'" class="fa-solid fa-hand-holding-dollar"></i>
+                    <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
+                    <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
+                    <span>{{ getFinanceTypeLabel(log.type) }}</span>
+                  </span>
+                  <span class="font-bold text-base" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
+                    {{ isFinanceInflow(log.type) ? '+ ฿' : '- ฿' }}{{ formatNumber(log.amount) }}
+                  </span>
+                </div>
+
+                <!-- Middle Row: Note / Memo -->
+                <div class="ledger-mobile-note font-bold text-sm text-main mt-xs">
+                  {{ log.note || '-' }}
+                </div>
+
+                <!-- Bottom Row: Date/Time + Branch / Created By -->
+                <div class="flex flex-between align-center ledger-mobile-bottom text-xs text-secondary">
+                  <span class="inline-flex align-center gap-xs">
+                    <i class="fa-regular fa-clock text-muted"></i>
+                    <span>{{ formatDateTime(log.created_at) }}</span>
+                  </span>
+                  <div class="inline-flex align-center gap-xs">
                     <span v-if="log.branch_name" class="badge badge-primary font-bold text-xs">
                       <i class="fa-solid fa-store"></i>
                       <span>{{ log.branch_name }}</span>
                     </span>
-                    <span v-else class="text-xs text-muted">-</span>
-                  </td>
-                  <td class="col-amount text-right font-bold text-base" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
-                    {{ isFinanceInflow(log.type) ? '+ ฿' : '- ฿' }}{{ formatNumber(log.amount) }}
-                  </td>
-                  <td class="col-user text-center text-xs text-secondary">
-                    <span class="font-medium">{{ log.created_by_name || '-' }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    <span v-if="log.created_by_name" class="inline-flex align-center gap-xs text-muted">
+                      <i class="fa-regular fa-user"></i>
+                      <span>{{ log.created_by_name }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3594,6 +3643,10 @@ onUnmounted(() => {
   background-color: var(--bg-hover, rgba(0, 0, 0, 0.015));
 }
 
+.mobile-only-ledger-list {
+  display: none;
+}
+
 /* ────────────────────────────────────────────────────────── */
 /* UNIFIED EMPTY STATES (สำหรับทุกส่วน ทุกแท็บ)               */
 /* ────────────────────────────────────────────────────────── */
@@ -4362,6 +4415,37 @@ onUnmounted(() => {
     border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
     margin-top: 12px !important;
     padding-top: 9px !important;
+  }
+
+  /* Finance Ledger Table vs Mobile Cards */
+  .desktop-only-ledger-table {
+    display: none !important;
+  }
+
+  .mobile-only-ledger-list {
+    display: flex !important;
+  }
+
+  .ledger-mobile-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .ledger-mobile-note {
+    line-height: 1.4;
+    word-break: break-word;
+    color: var(--text-primary);
+  }
+
+  .ledger-mobile-bottom {
+    border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
+    margin-top: 10px !important;
+    padding-top: 8px !important;
   }
 }
 
