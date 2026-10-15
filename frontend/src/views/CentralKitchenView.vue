@@ -327,10 +327,35 @@
             <i class="fa-solid fa-store text-primary"></i>
             <span>สาขา:</span>
           </label>
-          <select v-model="orderBranchFilter" class="form-select order-branch-select">
-            <option value="all">ทุกสาขา</option>
-            <option v-for="b in retailBranches" :key="b.id" :value="b.id">{{ b.name }}</option>
-          </select>
+          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 170px;">
+            <div 
+              class="custom-select-trigger order-branch-select" 
+              :class="{ 'active': isOrderBranchDropdownOpen }" 
+              @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen"
+            >
+              <span class="custom-select-text font-bold">
+                {{ selectedOrderBranchName }}
+              </span>
+            </div>
+            <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
+              <div 
+                class="custom-select-option"
+                :class="{ 'selected': orderBranchFilter === 'all' }"
+                @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
+              >
+                ทุกสาขา
+              </div>
+              <div 
+                v-for="b in retailBranches" 
+                :key="b.id" 
+                class="custom-select-option"
+                :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
+                @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
+              >
+                {{ b.name }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1037,17 +1062,30 @@
           </p>
         </div>
 
-        <div class="flex align-center gap-sm" style="flex-shrink: 0;">
+        <div class="flex align-center gap-sm partner-branch-filter-box" style="flex-shrink: 0;">
           <label class="text-sm font-bold text-secondary" style="white-space: nowrap;">เลือกสาขา:</label>
-          <select 
-            v-model="selectedPartnerBranch" 
-            class="form-select font-bold text-base" 
-            style="min-width: 220px; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 8px 14px;"
-          >
-            <option v-for="b in retailBranches" :key="b.id" :value="b.id">
-              {{ b.name }}
-            </option>
-          </select>
+          <div class="custom-select-wrapper partner-branch-select-wrapper" @click.stop style="min-width: 200px;">
+            <div 
+              class="custom-select-trigger partner-branch-select-trigger" 
+              :class="{ 'active': isPartnerBranchDropdownOpen }" 
+              @click="isPartnerBranchDropdownOpen = !isPartnerBranchDropdownOpen"
+            >
+              <span class="custom-select-text font-bold text-base">
+                {{ selectedPartnerBranchName }}
+              </span>
+            </div>
+            <div v-if="isPartnerBranchDropdownOpen" class="custom-select-dropdown">
+              <div 
+                v-for="b in retailBranches" 
+                :key="b.id" 
+                class="custom-select-option"
+                :class="{ 'selected': Number(selectedPartnerBranch) === Number(b.id) }"
+                @click="selectedPartnerBranch = b.id; isPartnerBranchDropdownOpen = false;"
+              >
+                {{ b.name }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1429,7 +1467,7 @@
                 </div>
 
                 <button 
-                  class="btn btn-sm btn-primary"
+                  class="btn btn-primary btn-payout-header"
                   @click="openPayoutModal()"
                 >
                   <i class="fa-solid fa-paper-plane mr-1"></i> จ่ายปันผล
@@ -1973,7 +2011,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showPayoutModal" class="modal-container active">
       <div class="modal-overlay" @click="showPayoutModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
             <i class="fa-solid fa-money-bill-wave text-primary" style="margin-right: 6px;"></i>
@@ -1983,9 +2021,18 @@
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md text-sm" style="border: 1px solid var(--border-color); background: var(--bg-secondary);">
-            สาขา: <strong>{{ settlementData?.branch_name }}</strong><br />
-            ผู้รับปันผล: <strong>{{ payoutForm.partner_name || 'ระบุชื่อด้านล่าง' }}</strong> <span v-if="payoutForm.share_percentage">({{ payoutForm.share_percentage }}%)</span>
+          <div class="modal-partner-summary-card mb-md">
+            <div class="modal-summary-line flex flex-between align-center">
+              <span class="text-xs text-secondary font-medium">สาขา:</span>
+              <span class="font-bold text-sm text-main">{{ settlementData?.branch_name || '-' }}</span>
+            </div>
+            <div class="modal-summary-line modal-summary-divider flex flex-between align-center">
+              <span class="text-xs text-secondary font-medium">ผู้รับปันผล:</span>
+              <div class="text-right">
+                <span class="font-bold text-sm text-primary">{{ payoutForm.partner_name || 'ระบุชื่อด้านล่าง' }}</span>
+                <span v-if="payoutForm.share_percentage" class="badge badge-primary font-bold text-xs ml-xs">{{ payoutForm.share_percentage }}%</span>
+              </div>
+            </div>
           </div>
 
           <div class="form-group mb-md" v-if="!payoutForm.partner_name">
@@ -1998,7 +2045,7 @@
           </div>
 
           <div class="form-group mb-md">
-            <label class="form-label font-bold text-sm">ยอดเงินปันผลที่จ่ายจริง (บาท) *</label>
+            <label class="form-label font-bold text-sm">ยอดเงินปันผลที่จ่ายจริง *</label>
             <input 
               type="number" 
               v-model.number="payoutForm.amount" 
@@ -2023,7 +2070,7 @@
             <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingPayout" @click="submitPayout">
               <i v-if="isSubmittingPayout" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-check"></i>
-              {{ isSubmittingPayout ? 'กำลังบันทึก...' : 'บันทึกจ่ายเงินปันผล' }}
+              {{ isSubmittingPayout ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -2065,6 +2112,29 @@ const searchQuery = ref('');
 const selectedCategory = ref('all');
 const orderFilterStatus = ref('pending');
 const orderBranchFilter = ref('all');
+const isOrderBranchDropdownOpen = ref(false);
+const isPartnerBranchDropdownOpen = ref(false);
+
+const selectedOrderBranchName = computed(() => {
+  if (orderBranchFilter.value === 'all') return 'ทุกสาขา';
+  const found = retailBranches.value.find(b => Number(b.id) === Number(orderBranchFilter.value));
+  return found ? found.name : 'ทุกสาขา';
+});
+
+const selectedPartnerBranchName = computed(() => {
+  if (!selectedPartnerBranch.value) return 'เลือกสาขา';
+  const found = retailBranches.value.find(b => Number(b.id) === Number(selectedPartnerBranch.value));
+  return found ? found.name : 'เลือกสาขา';
+});
+
+const closeOrderBranchDropdown = () => {
+  isOrderBranchDropdownOpen.value = false;
+};
+
+const closePartnerBranchDropdown = () => {
+  isPartnerBranchDropdownOpen.value = false;
+};
+
 const historyFilter = ref('all');
 
 // Categories filter list
@@ -2769,6 +2839,8 @@ onMounted(async () => {
   window.addEventListener('click', closeCategoryModalDropdown);
   window.addEventListener('click', closeUomModalDropdown);
   window.addEventListener('click', closeTransactionTypeDropdown);
+  window.addEventListener('click', closeOrderBranchDropdown);
+  window.addEventListener('click', closePartnerBranchDropdown);
   await loadBranches();
   loadItems();
   loadOrders();
@@ -2780,6 +2852,8 @@ onUnmounted(() => {
   window.removeEventListener('click', closeCategoryModalDropdown);
   window.removeEventListener('click', closeUomModalDropdown);
   window.removeEventListener('click', closeTransactionTypeDropdown);
+  window.removeEventListener('click', closeOrderBranchDropdown);
+  window.removeEventListener('click', closePartnerBranchDropdown);
 });
 </script>
 
@@ -3474,6 +3548,7 @@ onUnmounted(() => {
 .history-qty-value {
   font-size: 1.35rem;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 /* ────────────────────────────────────────────────────────── */
@@ -3930,6 +4005,62 @@ onUnmounted(() => {
   white-space: nowrap !important;
 }
 
+.modal-partner-summary-card {
+  padding: 12px 14px;
+  background: rgba(139, 3, 19, 0.04);
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-summary-line {
+  line-height: 1.45;
+}
+
+.modal-summary-divider {
+  border-top: 1px dashed rgba(139, 3, 19, 0.12);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.btn-payout-header {
+  height: 42px !important;
+  padding: 0 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border-radius: var(--radius-full) !important;
+  box-shadow: 0 2px 6px rgba(139, 3, 19, 0.25) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-payout-header:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.35) !important;
+}
+
+.order-branch-select-wrapper {
+  min-width: 170px;
+}
+
+.partner-branch-select-wrapper {
+  min-width: 200px;
+}
+
+.partner-branch-select-trigger {
+  font-weight: 700;
+  font-size: var(--font-base);
+}
+
 @media (max-width: 900px) {
   .financial-summary-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -4238,9 +4369,14 @@ onUnmounted(() => {
     flex-shrink: 0;
   }
 
+  .order-branch-select-wrapper {
+    flex: 1 !important;
+    width: 100% !important;
+  }
+
   .order-branch-select {
-    flex: 1;
-    height: 42px;
+    width: 100% !important;
+    height: 42px !important;
   }
 
   .order-card-header {
@@ -4333,6 +4469,19 @@ onUnmounted(() => {
     padding-top: var(--space-xs) !important;
     border-top: 1px dashed var(--border-color) !important;
     margin-top: var(--space-xs) !important;
+    gap: 8px !important;
+  }
+
+  .history-qty-value {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 1.2rem !important;
+  }
+
+  .history-sub-cost {
+    text-align: right !important;
+    line-height: 1.35 !important;
+    font-size: 11px !important;
   }
 
   /* Finance Tab Responsive */
@@ -4376,6 +4525,25 @@ onUnmounted(() => {
     height: 34px !important;
     padding: 0 10px !important;
     font-size: 12px !important;
+  }
+
+  /* Partners Tab Responsive */
+  .partner-branch-filter-box {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .partner-branch-select-wrapper {
+    flex: 1 !important;
+    width: 100% !important;
+  }
+
+  .btn-payout-header {
+    height: 40px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
   }
 }
 
