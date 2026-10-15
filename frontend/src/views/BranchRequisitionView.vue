@@ -385,7 +385,7 @@
             </div>
 
             <!-- Tier 2: Unit price + Stepper -->
-            <div class="flex flex-between align-center pt-xs cart-item-bottom">
+            <div class="flex flex-between align-center cart-item-bottom">
               <span class="text-xs text-secondary">
                 ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
               </span>
@@ -600,7 +600,7 @@
                 </div>
 
                 <!-- Row 2: Unit Price + Quantity Pill -->
-                <div class="flex flex-between align-center pt-xs mt-xs order-mobile-item-bottom">
+                <div class="flex flex-between align-center order-mobile-item-bottom">
                   <span class="text-xs text-secondary">
                     ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
                   </span>
@@ -1351,9 +1351,9 @@ onMounted(() => {
 }
 
 .cart-item-bottom {
-  border-top: 1px dashed rgba(0, 0, 0, 0.08);
-  margin-top: 6px;
-  padding-top: 6px;
+  border-top: 1px dashed rgba(139, 3, 19, 0.15);
+  margin-top: 12px;
+  padding-top: 9px;
 }
 
 /* 32px Circle Stepper Buttons */
@@ -1781,17 +1781,39 @@ onMounted(() => {
   /* MOBILE 2-COLUMN CARDS - RESTORED ORIGINAL CATALOG DESIGN   */
   /* (Exact design from media_1792071395897.png, without button)*/
   /* ========================================================== */
+  .catalog-layout {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .catalog-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
   .grid-cards {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .item-card {
-    padding: 10px !important;
+    padding: 8px !important;
     border-radius: var(--radius-lg) !important;
     min-height: unset !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
     position: relative !important;
-    overflow: visible !important;
     cursor: pointer;
     display: flex !important;
     flex-direction: column !important;
@@ -1819,13 +1841,18 @@ onMounted(() => {
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 4px !important;
     margin-bottom: 6px !important;
+    box-sizing: border-box !important;
   }
 
   .card-badge-category {
-    font-size: 10px !important;
-    padding: 2px 7px !important;
-    max-width: 72% !important;
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+    max-width: calc(100% - 26px) !important;
+    min-width: 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -1833,79 +1860,97 @@ onMounted(() => {
     background: var(--bg-secondary) !important;
     color: var(--text-secondary) !important;
     border: 1px solid var(--border-color) !important;
+    box-sizing: border-box !important;
   }
 
   .card-badge-status {
-    width: 22px !important;
-    height: 22px !important;
-    min-width: 22px !important;
-    font-size: 10px !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    font-size: 9.5px !important;
     border-radius: 50% !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     padding: 0 !important;
+    flex-shrink: 0 !important;
   }
 
   /* 2. Soft Cream Image Box */
   .item-img-container {
-    height: 105px !important;
+    height: 95px !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     margin-bottom: 6px !important;
     border-radius: var(--radius-md) !important;
     background: linear-gradient(180deg, #fff7df 0%, #fceecc 100%) !important;
+    box-sizing: border-box !important;
   }
 
   .item-img-placeholder {
-    font-size: 2.2rem !important;
+    font-size: 2rem !important;
   }
 
   /* 3. 2-Line Name Block */
   .item-name {
-    font-size: 0.85rem !important;
+    font-size: 0.82rem !important;
     line-height: 1.3 !important;
-    min-height: 38px !important;
-    margin-bottom: 4px !important;
+    min-height: 36px !important;
+    margin-bottom: 2px !important;
     text-align: left !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
     justify-content: flex-start !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .item-name-main {
-    font-size: 0.85rem !important;
+    font-size: 0.82rem !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     text-align: left !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     color: var(--text-primary) !important;
+    box-sizing: border-box !important;
   }
 
   .item-name-sub {
     display: block !important;
-    font-size: 0.72rem !important;
+    font-size: 0.7rem !important;
     color: var(--text-secondary) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     text-align: left !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     margin-top: 1px !important;
+    box-sizing: border-box !important;
   }
 
-  /* 4. Meta Box: Dashed divider + ราคาเบิก / คงเหลือ rows */
+  /* 4. Meta Box: Dashed divider + ราคาเบิก / คงเหลือ rows (เส้นประมีระยะห่างสบายตา ไม่ชิด) */
   .item-meta-box {
     border-top: 1px dashed var(--border-color) !important;
-    padding-top: 5px !important;
+    margin-top: 10px !important;
+    padding-top: 8px !important;
     margin-bottom: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 2px !important;
+    gap: 3px !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .item-meta-row {
@@ -1914,30 +1959,39 @@ onMounted(() => {
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .item-meta-label {
     display: inline-flex !important;
     align-items: center !important;
-    font-size: 11px !important;
+    font-size: 10.5px !important;
     color: var(--text-secondary) !important;
     font-weight: 500 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .item-unit-slash {
     display: inline !important;
-    font-size: 10.5px !important;
+    font-size: 10px !important;
   }
 
   .item-cost-val {
-    font-size: 0.95rem !important;
+    font-size: 0.88rem !important;
     font-weight: 700 !important;
     color: var(--text-primary) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .item-stock-val {
-    font-size: 0.95rem !important;
+    font-size: 0.88rem !important;
     font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .stock-prefix {
@@ -1952,14 +2006,14 @@ onMounted(() => {
   /* Qty Badge on card */
   .qty-badge {
     position: absolute !important;
-    top: -6px !important;
-    right: -6px !important;
+    top: -5px !important;
+    right: -5px !important;
     background: var(--primary) !important;
     color: #ffffff !important;
-    width: 24px !important;
-    height: 24px !important;
+    width: 22px !important;
+    height: 22px !important;
     border-radius: 50% !important;
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     display: flex !important;
     align-items: center !important;
@@ -2026,10 +2080,14 @@ onMounted(() => {
   .order-mobile-item-sub {
     line-height: 1.3;
     word-break: break-word;
+    margin-top: 3px !important;
   }
 
+  /* เส้นประในรายการขอเบิก มีระยะห่างสบายตา ไม่ชิด */
   .order-mobile-item-bottom {
-    border-top: 1px dashed rgba(0, 0, 0, 0.07);
+    border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
+    margin-top: 12px !important;
+    padding-top: 9px !important;
   }
 }
 </style>
