@@ -20,37 +20,37 @@
         </div>
 
         <!-- Bottom Row: Filter Pills on left, View Toggle & Add Button on right -->
-        <div class="flex flex-between align-center flex-wrap gap-md">
+        <div class="flex flex-between align-center flex-wrap gap-md catalog-toolbar-bottom">
           <!-- Left: Category Pills -->
-          <div class="flex gap-xs flex-wrap align-center">
+          <div class="category-tabs flex gap-xs align-center" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
             <button 
               v-for="cat in categories" 
               :key="cat.id" 
-              class="btn btn-sm"
-              :class="selectedCategory === cat.id ? 'btn-primary' : 'btn-secondary'"
+              class="category-tab"
+              :class="{ 'active': selectedCategory === cat.id }"
               @click="selectedCategory = cat.id"
             >
               <i :class="cat.icon" style="margin-right: 4px;"></i> {{ cat.label }}
-              <span class="category-count-badge" v-if="getCategoryCount(cat.id) > 0">
-                {{ getCategoryCount(cat.id) }}
+              <span v-if="getCategoryCount(cat.id) > 0" class="ml-xs font-normal opacity-90">
+                ({{ getCategoryCount(cat.id) }})
               </span>
             </button>
           </div>
 
-          <!-- Right: View Toggle & Add Button (Single + icon) -->
-          <div class="flex align-center gap-md">
-            <div class="view-mode-toggle flex align-center p-xs" style="background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <!-- Right: View Toggle & Add Button (Matched 48px height) -->
+          <div class="flex align-center gap-md catalog-toolbar-actions">
+            <div class="view-mode-toggle flex align-center">
               <button 
-                class="btn btn-sm btn-icon" 
-                :class="{ 'btn-primary': viewMode === 'grid', 'btn-secondary': viewMode !== 'grid' }"
+                class="view-toggle-btn" 
+                :class="{ 'active': viewMode === 'grid' }"
                 @click="viewMode = 'grid'"
                 title="มุมมองการ์ดรูปภาพ"
               >
                 <i class="fa-solid fa-grip"></i>
               </button>
               <button 
-                class="btn btn-sm btn-icon" 
-                :class="{ 'btn-primary': viewMode === 'table', 'btn-secondary': viewMode !== 'table' }"
+                class="view-toggle-btn" 
+                :class="{ 'active': viewMode === 'table' }"
                 @click="viewMode = 'table'"
                 title="มุมมองตาราง"
               >
@@ -58,29 +58,49 @@
               </button>
             </div>
 
-            <button class="btn btn-primary" @click="openCreateItemModal">
+            <button class="btn btn-primary btn-add-item" @click="openCreateItemModal">
               <i class="fa-solid fa-plus" style="margin-right: 6px;"></i> เพิ่มของใหม่ด้วยตนเอง
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Loading State -->
+      <!-- Loading State: Single Unified Skeleton system -->
       <div v-if="isLoadingItems" class="grid-cards">
-        <div v-for="i in 6" :key="i" class="card p-4 skeleton-pulse" style="height: 240px; border-radius: var(--radius-md);"></div>
+        <div v-for="i in 8" :key="i" class="card item-card" style="pointer-events: none;">
+          <!-- 1. Skeleton Top Badges -->
+          <div class="flex flex-between align-center mb-sm">
+            <div class="skeleton" style="height: 22px; width: 80px; border-radius: var(--radius-full);"></div>
+            <div class="skeleton" style="height: 22px; width: 70px; border-radius: var(--radius-full);"></div>
+          </div>
+          <!-- 2. Skeleton Image (with margin) -->
+          <div class="skeleton" style="height: 135px; width: 100%; border-radius: var(--radius-md); margin-bottom: var(--space-sm);"></div>
+          <!-- 3. Skeleton Title (2 lines) -->
+          <div class="skeleton mb-xs" style="height: 18px; width: 85%;"></div>
+          <div class="skeleton mb-sm" style="height: 14px; width: 55%;"></div>
+          <!-- 4. Skeleton Meta Box -->
+          <div class="skeleton mb-xs" style="height: 14px; width: 70%;"></div>
+          <div class="skeleton mb-sm" style="height: 14px; width: 60%;"></div>
+          <!-- 5. Skeleton Buttons matching image width -->
+          <div class="skeleton mb-xs" style="height: 42px; width: 100%; border-radius: var(--radius-md);"></div>
+          <div class="flex gap-xs w-full">
+            <div class="skeleton flex-1" style="height: 36px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton flex-1" style="height: 36px; border-radius: var(--radius-md);"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredItems.length === 0" class="card p-3xl text-center">
-        <div class="empty-icon-wrap mb-md">
-          <i class="fa-solid fa-boxes-packing" style="font-size: 3rem; color: var(--text-tertiary); opacity: 0.6;"></i>
+      <div v-else-if="filteredItems.length === 0" class="empty-state-box">
+        <div class="empty-state-icon">
+          <i class="fa-solid fa-boxes-packing"></i>
         </div>
-        <h3 class="font-bold text-lg mb-xs">ยังไม่มีรายการของในครัวกลาง</h3>
-        <p class="text-secondary text-sm mb-lg" style="max-width: 420px; margin-left: auto; margin-right: auto;">
+        <h3 class="empty-state-title">ยังไม่มีรายการของในครัวกลาง</h3>
+        <p class="empty-state-desc">
           {{ searchQuery ? 'ไม่พบสินค้าที่ตรงกับคำค้นหา ลองเปลี่ยนคำค้นหรือเลือกหมวดหมู่อื่น' : 'เริ่มต้นลงทะเบียนวัตถุดิบ บรรจุภัณฑ์ หรืออุปกรณ์ เพื่อให้สาขาต่างๆ สามารถเบิกไปใช้งานได้' }}
         </p>
-        <button class="btn btn-primary" @click="openCreateItemModal">
-          <i class="fa-solid fa-plus mr-1"></i> เพิ่มของชิ้นแรกเข้าคลัง
+        <button v-if="!searchQuery" class="btn btn-primary mt-lg" @click="openCreateItemModal" style="height: 44px; display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-plus"></i> เพิ่มของชิ้นแรกเข้าคลัง
         </button>
       </div>
 
@@ -89,76 +109,91 @@
         <div 
           v-for="item in filteredItems" 
           :key="item.id" 
-          class="card item-card flex flex-col justify-between"
+          class="card item-card"
           :class="{ 'low-stock': item.quantity <= item.min_stock_alert }"
         >
-          <div>
-            <!-- Image & Badges Container -->
-            <div class="item-img-container">
-              <img 
-                v-if="item.image_url" 
-                :src="item.image_url" 
-                :alt="item.name" 
-                class="item-img"
-              />
-              <div v-else class="item-img-placeholder">
-                <i :class="getCategoryIcon(item.category)"></i>
-              </div>
+          <!-- 1. TOP: ประเภท กับ พร้อมจ่าย (ใช้เฉพาะไอคอนประหยัดพื้นที่ ไม่เบียด) -->
+          <div class="card-top-badges flex flex-between align-center">
+            <span class="badge badge-neutral card-badge-category">
+              <i :class="getCategoryIcon(item.category)" class="mr-1"></i>
+              {{ getCategoryLabel(item.category) }}
+            </span>
+            <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="ของหมดสต็อก">
+              <i class="fa-solid fa-xmark"></i>
+            </span>
+            <span v-else-if="item.quantity <= item.min_stock_alert" class="badge badge-warning card-badge-status" title="ใกล้หมด">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </span>
+            <span v-else class="badge badge-success card-badge-status" title="พร้อมจ่าย">
+              <i class="fa-solid fa-check"></i>
+            </span>
+          </div>
 
-              <!-- Top Left: Stock Status Badge -->
-              <span 
-                v-if="item.quantity <= 0" 
-                class="status-pill status-out"
-              >
-                <i class="fa-solid fa-circle-xmark mr-1"></i> หมด
-              </span>
-              <span 
-                v-else-if="item.quantity <= item.min_stock_alert" 
-                class="status-pill status-low"
-              >
-                <i class="fa-solid fa-triangle-exclamation mr-1"></i> ใกล้หมด
-              </span>
-
-              <!-- Top Right: Category Tag -->
-              <span class="category-tag">
-                <i :class="getCategoryIcon(item.category)" style="margin-right: 3px;"></i>
-                {{ getCategoryLabel(item.category) }}
-              </span>
-            </div>
-
-            <!-- Item Body Info -->
-            <div class="p-md">
-              <h4 class="item-name font-bold mb-xs" :title="item.name">{{ item.name }}</h4>
-              
-              <div class="flex flex-between align-center text-sm mb-sm">
-                <span class="text-secondary">ราคาทุนเบิก:</span>
-                <span class="font-bold text-primary" style="font-size: 1.05rem;">
-                  ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal">/ {{ item.unit }}</span>
-                </span>
-              </div>
-              
-              <div class="stock-display-pill flex flex-between align-center px-sm py-xs" :class="item.quantity <= item.min_stock_alert ? 'stock-pill-low' : 'stock-pill-ok'">
-                <span class="text-xs text-secondary">
-                  <i class="fa-solid fa-cubes-stacked mr-1"></i> สต็อกคงเหลือ:
-                </span>
-                <span class="font-bold" style="font-size: 0.95rem;">
-                  {{ formatNumber(item.quantity) }} {{ item.unit }}
-                </span>
-              </div>
+          <!-- 2. รูปภาพสินค้า (มี Margin ชัดเจน ไม่ชิดกับองค์ประกอบอื่น) -->
+          <div class="item-img-container">
+            <img 
+              v-if="item.image_url" 
+              :src="item.image_url" 
+              :alt="item.name" 
+              class="item-img"
+            />
+            <div v-else class="item-img-placeholder">
+              <i :class="getCategoryIcon(item.category)"></i>
             </div>
           </div>
 
-          <!-- Bottom Actions -->
-          <div class="card-footer-actions flex gap-xs p-md pt-0">
-            <button class="btn btn-sm btn-secondary flex-1" @click="openEditItemModal(item)">
-              <i class="fa-solid fa-pen"></i> แก้ไข
+          <!-- 3. ชื่อสินค้า (2 บรรทัด โดยบรรทัดล่างเป็นวงเล็บ) -->
+          <h4 class="item-name font-bold" :title="item.name">
+            <div class="item-name-main">{{ getItemNameParts(item.name).main }}</div>
+            <div class="item-name-sub" v-if="getItemNameParts(item.name).sub">
+              {{ getItemNameParts(item.name).sub }}
+            </div>
+          </h4>
+          
+          <!-- 4. ข้อมูลต้นทุนและสต็อก (คำว่า ราคาเบิก / คงเหลือ กระชับ) -->
+          <div class="item-meta-box">
+            <div class="item-meta-row flex flex-between align-center text-xs py-1">
+              <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
+              <span class="font-bold text-primary item-cost-val" style="font-size: 1rem;">
+                ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
+              </span>
+            </div>
+            
+            <div class="item-meta-row flex flex-between align-center text-xs py-1">
+              <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
+                <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
+                <span>คงเหลือ:</span>
+              </span>
+              <span 
+                class="font-bold item-stock-val" 
+                :class="{
+                  'text-danger': item.quantity <= 0,
+                  'text-warning': item.quantity > 0 && item.quantity <= item.min_stock_alert,
+                  'text-success': item.quantity > item.min_stock_alert
+                }"
+                style="font-size: 1rem;"
+              >
+                {{ formatNumber(item.quantity) }} {{ item.unit }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 5. ปุ่มแอ็กชัน (อ้างอิงความกว้างเต็มเท่ารูปภาพ ซ้าย-ขวาเต็ม ไม่โดนบีบ) -->
+          <div class="card-footer-actions">
+            <!-- ปุ่มเติมสต็อกด่วน เต็มความกว้างซ้าย-ขวา -->
+            <button class="btn-action btn-action-primary w-full btn-restock-main" @click="openQuickRestockModal(item)">
+              <i class="fa-solid fa-plus-circle"></i> เติมสต็อกด่วน
             </button>
-            <button class="btn btn-sm btn-primary flex-1" @click="openQuickRestockModal(item)">
-              <i class="fa-solid fa-plus-circle"></i> + เติมด่วน
-            </button>
-            <button class="btn btn-sm btn-icon text-danger" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ" style="border: 1px solid var(--border-color);">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+            
+            <!-- ปุ่มแก้ไข และ ของเสีย 2 ปุ่มในบรรทัดเดียว ขยายซ้าย-ขวาเต็ม -->
+            <div class="card-sub-actions flex gap-xs w-full">
+              <button class="btn-action btn-action-edit flex-1 btn-card-sub" @click="openEditItemModal(item)">
+                <i class="fa-solid fa-pen"></i> แก้ไข
+              </button>
+              <button class="btn-action btn-action-waste flex-1 btn-card-sub" @click="openWasteModal(item)">
+                <i class="fa-solid fa-trash-can"></i> ตัดของเสีย
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -199,8 +234,9 @@
                 </td>
                 <!-- Category -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge badge-secondary" style="font-size: 0.8rem;">
-                    {{ getCategoryLabel(item.category) }}
+                  <span class="text-secondary text-sm flex justify-center align-center gap-xs">
+                    <i :class="getCategoryIcon(item.category)" class="text-muted"></i>
+                    <span>{{ getCategoryLabel(item.category) }}</span>
                   </span>
                 </td>
                 <!-- Cost -->
@@ -213,20 +249,26 @@
                 </td>
                 <!-- Status -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span v-if="item.quantity <= 0" class="badge badge-danger">หมดสต็อก</span>
-                  <span v-else-if="item.quantity <= item.min_stock_alert" class="badge badge-warning">ใกล้หมด</span>
-                  <span v-else class="badge badge-success">พร้อมจ่าย</span>
+                  <span v-if="item.quantity <= 0" class="text-danger font-medium text-sm flex justify-center align-center gap-xs">
+                    <i class="fa-solid fa-circle-xmark"></i> หมดสต็อก
+                  </span>
+                  <span v-else-if="item.quantity <= item.min_stock_alert" class="text-warning font-medium text-sm flex justify-center align-center gap-xs">
+                    <i class="fa-solid fa-triangle-exclamation"></i> ใกล้หมด
+                  </span>
+                  <span v-else class="text-success font-medium text-sm flex justify-center align-center gap-xs">
+                    <i class="fa-solid fa-circle-check"></i> พร้อมจ่าย
+                  </span>
                 </td>
                 <!-- Actions -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="flex justify-center gap-xs">
-                    <button class="btn btn-sm btn-primary" @click="openQuickRestockModal(item)" title="เติมสต็อกด่วน">
+                  <div class="flex justify-center gap-xs align-center">
+                    <button class="btn-action btn-action-primary table-btn-action" @click="openQuickRestockModal(item)" title="เติมสต็อกด่วน">
                       <i class="fa-solid fa-plus"></i> เติมด่วน
                     </button>
-                    <button class="btn btn-sm btn-secondary" @click="openEditItemModal(item)" title="แก้ไข">
+                    <button class="btn-action btn-action-edit table-btn-action table-btn-icon" @click="openEditItemModal(item)" title="แก้ไข">
                       <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button class="btn btn-sm btn-icon text-danger" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ" style="border: 1px solid var(--border-color);">
+                    <button class="btn-action btn-action-waste table-btn-action table-btn-icon" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
                       <i class="fa-solid fa-trash-can"></i>
                     </button>
                   </div>
@@ -243,60 +285,115 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'orders'" class="orders-section">
       <!-- Orders Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <!-- Status Filter Buttons -->
-        <div class="flex gap-xs flex-wrap align-center">
+      <div class="card mb-lg p-md flex flex-between align-center toolbar-card orders-toolbar">
+        <!-- Status Filter Tabs -->
+        <div class="order-status-tabs flex gap-xs align-center">
           <button 
-            class="btn btn-sm" 
-            :class="orderFilterStatus === 'pending' ? 'btn-primary' : 'btn-secondary'"
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'pending' }"
             @click="orderFilterStatus = 'pending'"
           >
-            <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง ({{ pendingOrdersCount }})
+            <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง 
+            <span class="order-tab-count">{{ pendingOrdersCount }}</span>
           </button>
           <button 
-            class="btn btn-sm" 
-            :class="orderFilterStatus === 'dispatched' ? 'btn-primary' : 'btn-secondary'"
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'dispatched' }"
             @click="orderFilterStatus = 'dispatched'"
           >
-            <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง ({{ dispatchedOrdersCount }})
+            <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง 
+            <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
           </button>
           <button 
-            class="btn btn-sm" 
-            :class="orderFilterStatus === 'received' ? 'btn-primary' : 'btn-secondary'"
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'received' }"
             @click="orderFilterStatus = 'received'"
           >
             <i class="fa-solid fa-circle-check mr-1"></i> สาขารับแล้ว
           </button>
           <button 
-            class="btn btn-sm" 
-            :class="orderFilterStatus === 'all' ? 'btn-primary' : 'btn-secondary'"
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'all' }"
             @click="orderFilterStatus = 'all'"
           >
-            ทั้งหมด ({{ orders.length }})
+            ทั้งหมด
+            <span class="order-tab-count">{{ orders.length }}</span>
           </button>
         </div>
 
         <!-- Right: Branch Filter Dropdown -->
-        <div class="flex align-center gap-xs">
-          <span class="text-xs text-secondary font-bold">สาขา:</span>
-          <select v-model="orderBranchFilter" class="form-select" style="min-width: 160px;">
-            <option value="all">ทุกสาขา</option>
-            <option v-for="b in retailBranches" :key="b.id" :value="b.id">{{ b.name }}</option>
-          </select>
+        <div class="order-branch-filter">
+          <label class="order-branch-label">
+            <i class="fa-solid fa-store text-primary"></i>
+            <span>สาขา:</span>
+          </label>
+          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 170px;">
+            <div 
+              class="custom-select-trigger order-branch-select" 
+              :class="{ 'active': isOrderBranchDropdownOpen }" 
+              @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen"
+            >
+              <span class="custom-select-text font-bold">
+                {{ selectedOrderBranchName }}
+              </span>
+            </div>
+            <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
+              <div 
+                class="custom-select-option"
+                :class="{ 'selected': orderBranchFilter === 'all' }"
+                @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
+              >
+                ทุกสาขา
+              </div>
+              <div 
+                v-for="b in retailBranches" 
+                :key="b.id" 
+                class="custom-select-option"
+                :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
+                @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
+              >
+                {{ b.name }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoadingOrders" class="card p-3xl text-center">
-        <div class="spinner mx-auto mb-md"></div>
-        <p class="text-secondary text-sm">กำลังโหลดรายการคำขอเบิกจากสาขา...</p>
+      <!-- Loading Skeleton State -->
+      <div v-if="isLoadingOrders" class="orders-list flex flex-col gap-md">
+        <div v-for="i in 3" :key="i" class="card p-lg order-card-skeleton">
+          <!-- Header skeleton -->
+          <div class="flex flex-between align-center mb-md pb-md" style="border-bottom: 1px solid var(--border-color-light);">
+            <div class="flex align-center gap-sm">
+              <div class="skeleton" style="width: 120px; height: 26px; border-radius: var(--radius-sm);"></div>
+              <div class="skeleton" style="width: 90px; height: 24px; border-radius: var(--radius-full);"></div>
+              <div class="skeleton" style="width: 80px; height: 24px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton" style="width: 110px; height: 32px; border-radius: var(--radius-sm);"></div>
+          </div>
+          <!-- Meta skeleton -->
+          <div class="skeleton mb-md" style="width: 260px; height: 16px; border-radius: var(--radius-xs);"></div>
+          <!-- Items table skeleton -->
+          <div class="order-items-table-wrapper mb-md">
+            <div class="skeleton mb-xs" style="width: 100%; height: 38px;"></div>
+            <div class="skeleton mb-xs" style="width: 100%; height: 44px;"></div>
+            <div class="skeleton" style="width: 100%; height: 44px;"></div>
+          </div>
+          <!-- Footer skeleton -->
+          <div class="flex flex-between align-center pt-xs flex-wrap gap-md">
+            <div class="skeleton" style="width: 220px; height: 18px; border-radius: var(--radius-xs);"></div>
+            <div class="skeleton" style="width: 180px; height: 46px; border-radius: var(--radius-md);"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredOrders.length === 0" class="card p-3xl text-center">
-        <i class="fa-solid fa-clipboard-check mb-md" style="font-size: 3rem; color: var(--text-tertiary); opacity: 0.6;"></i>
-        <h3 class="font-bold text-lg mb-xs">ไม่มีรายการคำขอเบิก</h3>
-        <p class="text-secondary text-sm">
+      <div v-else-if="filteredOrders.length === 0" class="empty-state-box">
+        <div class="empty-state-icon">
+          <i class="fa-solid fa-clipboard-check"></i>
+        </div>
+        <h3 class="empty-state-title">ไม่มีรายการคำขอเบิก</h3>
+        <p class="empty-state-desc">
           {{ orderFilterStatus === 'pending' ? 'ขณะนี้ไม่มีคำขอเบิกที่ค้างรอการจัดส่ง ครัวกลางเคลียร์รายการครบถ้วนแล้ว' : 'ไม่พบรายการคำขอเบิกในเงื่อนไขที่เลือก' }}
         </p>
       </div>
@@ -307,90 +404,155 @@
           v-for="order in filteredOrders" 
           :key="order.id" 
           class="card p-lg order-card"
-          :class="{ 'order-card-pending': order.status === 'pending', 'order-card-dispatched': order.status === 'dispatched' }"
+          :class="{ 
+            'order-card-pending': order.status === 'pending', 
+            'order-card-dispatched': order.status === 'dispatched',
+            'order-card-received': order.status === 'received' 
+          }"
         >
           <!-- Order Card Header -->
-          <div class="flex flex-between align-center flex-wrap gap-md mb-md pb-md" style="border-bottom: 1px solid var(--border-color);">
-            <div class="flex align-center gap-md flex-wrap">
-              <span class="order-no-pill font-bold">
-                <i class="fa-solid fa-receipt mr-1"></i> #{{ order.transfer_no }}
+          <div class="order-card-header flex flex-between align-center flex-wrap gap-md mb-md pb-md">
+            <div class="flex align-center gap-sm flex-wrap">
+              <span class="order-no-title font-bold">
+                <i class="fa-solid fa-receipt text-primary"></i>
+                <span>#{{ order.transfer_no }}</span>
               </span>
-              <span class="badge badge-primary font-bold" style="font-size: 0.85rem;">
-                <i class="fa-solid fa-store mr-1"></i> {{ order.branch_name }}
+              <span class="badge badge-primary font-bold">
+                <i class="fa-solid fa-store"></i>
+                <span>{{ order.branch_name }}</span>
               </span>
-              <span class="badge" :class="getStatusBadgeClass(order.status)">
-                {{ getStatusLabel(order.status) }}
+              <span class="badge font-bold" :class="getStatusBadgeClass(order.status)">
+                <i v-if="order.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
+                <i v-else-if="order.status === 'dispatched'" class="fa-solid fa-truck-fast"></i>
+                <i v-else-if="order.status === 'received'" class="fa-solid fa-circle-check"></i>
+                <span>{{ getStatusLabel(order.status) }}</span>
               </span>
             </div>
 
-            <div class="text-right">
-              <span class="text-xs text-secondary block">ยอดต้นทุนตัดเข้าสาขา:</span>
-              <span class="font-bold text-xl text-primary">฿{{ formatNumber(order.total_cost) }}</span>
+            <div class="order-total-header">
+              <span class="order-total-label">ยอดต้นทุนตัดเข้าสาขา:</span>
+              <span class="order-total-amount font-bold text-primary">฿{{ formatNumber(order.total_cost) }}</span>
             </div>
           </div>
 
           <!-- Order Metadata Info -->
-          <div class="flex flex-between align-center text-xs text-secondary mb-md flex-wrap gap-sm">
-            <span>
-              <i class="fa-solid fa-user mr-1"></i> ผู้ขอเบิก: <strong>{{ order.requested_by_name || 'ไม่ระบุ' }}</strong>
-              &nbsp;|&nbsp;
-              <i class="fa-solid fa-clock mr-1"></i> ยื่นคำขอเมื่อ: {{ formatDateTime(order.created_at) }}
-            </span>
-            <span v-if="order.dispatched_at">
-              <i class="fa-solid fa-truck mr-1"></i> จัดส่งเมื่อ: {{ formatDateTime(order.dispatched_at) }} โดย {{ order.dispatched_by_name || 'ครัวกลาง' }}
-            </span>
+          <div class="order-meta-row flex flex-between align-center text-xs text-secondary mb-md flex-wrap gap-sm">
+            <div class="flex align-center gap-md flex-wrap">
+              <span>
+                <i class="fa-regular fa-user mr-1 text-muted"></i> ผู้ขอเบิก: <strong class="text-main">{{ order.requested_by_name || 'ไม่ระบุ' }}</strong>
+              </span>
+              <span>
+                <i class="fa-regular fa-clock mr-1 text-muted"></i> ยื่นคำขอเมื่อ: <span class="text-main">{{ formatDateTime(order.created_at) }}</span>
+              </span>
+            </div>
+            <div v-if="order.dispatched_at" class="order-meta-dispatched">
+              <i class="fa-solid fa-truck-fast mr-1 text-info"></i> จัดส่งเมื่อ: <span class="text-main">{{ formatDateTime(order.dispatched_at) }}</span> <span class="text-muted">(โดย {{ order.dispatched_by_name || 'ครัวกลาง' }})</span>
+            </div>
           </div>
 
-          <!-- Items Table / Chips Container -->
-          <div class="order-items-container p-md mb-md" style="background: var(--bg-secondary); border-radius: var(--radius-md);">
-            <div class="text-xs font-bold text-secondary mb-sm flex flex-between">
-              <span>รายการของที่ขอเบิก ({{ order.items.length }} รายการ):</span>
-              <span>จำนวน × ราคาทุน</span>
+          <!-- Items Clean Table Container -->
+          <div class="order-items-container mb-md">
+            <div class="order-items-title flex flex-between align-center mb-xs">
+              <span class="text-xs font-bold text-secondary">
+                <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการของที่ขอเบิก ({{ order.items.length }} รายการ)
+              </span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-sm">
+            
+            <!-- Desktop Table (>= 641px) -->
+            <div class="order-items-table-wrapper desktop-only-orders-table">
+              <table class="order-items-table">
+                <thead>
+                  <tr>
+                    <th class="col-item text-left">ชื่อสินค้า</th>
+                    <th class="col-price text-right">ราคาเบิก/หน่วย</th>
+                    <th class="col-qty text-center">จำนวนขอเบิก</th>
+                    <th class="col-total text-right">รวมมูลค่า</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="it in order.items" :key="it.id">
+                    <td class="col-item">
+                      <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
+                      <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
+                    </td>
+                    <td class="col-price text-right text-sm text-secondary">
+                      ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
+                    </td>
+                    <td class="col-qty text-center">
+                      <span class="order-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
+                    </td>
+                    <td class="col-total text-right font-bold text-sm text-primary">
+                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile Itemized List (< 640px) -->
+            <div class="order-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
               <div 
                 v-for="it in order.items" 
                 :key="it.id" 
-                class="flex flex-between align-center p-sm px-md rounded bg-surface border"
-                style="background: var(--card-bg);"
+                class="order-mobile-item-card"
               >
-                <div class="flex-1 pr-sm">
-                  <div class="font-bold text-sm">{{ it.item_name }}</div>
-                  <div class="text-xs text-secondary">@฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}</div>
+                <!-- Row 1: Item Name + Subtotal -->
+                <div class="flex flex-between align-start gap-xs">
+                  <div class="flex-1 min-w-0 pr-xs">
+                    <div class="order-mobile-item-name font-bold text-sm text-primary">
+                      {{ getItemNameParts(it.item_name).main }}
+                    </div>
+                    <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
+                      {{ getItemNameParts(it.item_name).sub }}
+                    </div>
+                  </div>
+                  <div class="text-right flex-shrink-0 pl-xs">
+                    <span class="order-mobile-item-total font-bold text-sm text-primary">
+                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
+                    </span>
+                  </div>
                 </div>
-                <div class="text-right">
-                  <span class="font-bold text-sm text-primary">{{ it.quantity }} {{ it.unit }}</span>
-                  <div class="text-xs text-muted">฿{{ formatNumber(it.quantity * it.cost_price) }}</div>
+
+                <!-- Row 2: Unit Price + Quantity Pill -->
+                <div class="flex flex-between align-center order-mobile-item-bottom">
+                  <span class="text-xs text-secondary">
+                    ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
+                  </span>
+                  <span class="order-qty-pill font-bold">
+                    {{ it.quantity }} {{ it.unit }}
+                  </span>
                 </div>
               </div>
             </div>
-            <div v-if="order.notes" class="mt-sm pt-sm text-xs text-secondary flex align-center gap-xs" style="border-top: 1px dashed var(--border-color);">
+
+            <!-- Branch Note if any -->
+            <div v-if="order.notes" class="order-notes-box mt-sm p-sm rounded flex align-center gap-xs">
               <i class="fa-solid fa-comment-dots text-primary"></i>
-              <span><strong>บันทึกจากสาขา:</strong> {{ order.notes }}</span>
+              <span class="text-xs text-secondary"><strong>บันทึกจากสาขา:</strong> {{ order.notes }}</span>
             </div>
           </div>
 
           <!-- Order Card Footer Action -->
-          <div class="flex flex-between align-center flex-wrap gap-md pt-sm">
-            <div class="text-xs text-secondary">
-              <span v-if="order.status === 'pending'" class="text-warning font-bold">
-                <i class="fa-solid fa-triangle-exclamation mr-1"></i> กรุณาตรวจสอบสต็อกจริงก่อนกดจัดส่ง
+          <div class="order-card-footer flex flex-between align-center flex-wrap gap-md pt-sm">
+            <div class="order-footer-notice text-xs">
+              <span v-if="order.status === 'pending'" class="text-warning font-bold flex align-center gap-xs">
+                <i class="fa-solid fa-triangle-exclamation"></i> กรุณาตรวจสอบสต็อกจริงก่อนกดจัดส่ง
               </span>
-              <span v-else-if="order.status === 'dispatched'" class="text-info font-bold">
-                <i class="fa-solid fa-truck-ramp-box mr-1"></i> ของถูกตัดออกจากสต็อกครัวกลางแล้ว รอสาขากดยืนยันตรวจรับ
+              <span v-else-if="order.status === 'dispatched'" class="text-info font-bold flex align-center gap-xs">
+                <i class="fa-solid fa-truck-ramp-box"></i> ของถูกตัดออกจากสต็อกครัวกลางแล้ว รอสาขากดยืนยันตรวจรับ
               </span>
-              <span v-else-if="order.status === 'received'" class="text-success font-bold">
-                <i class="fa-solid fa-circle-check mr-1"></i> สาขารับของครบถ้วน และบันทึกเป็น Expense สาขาเรียบร้อย
+              <span v-else-if="order.status === 'received'" class="text-success font-bold flex align-center gap-xs">
+                <i class="fa-solid fa-circle-check"></i> สาขารับของครบถ้วน และบันทึกเป็น Expense สาขาเรียบร้อย
               </span>
             </div>
 
-            <div>
+            <div class="order-footer-actions">
               <button 
                 v-if="order.status === 'pending'" 
-                class="btn btn-primary"
+                class="btn btn-primary btn-dispatch-order"
                 @click="dispatchOrder(order)"
               >
-                <i class="fa-solid fa-truck-fast mr-1"></i> ยืนยันจัดส่ง & ตัดสต็อกครัวกลาง
+                <i class="fa-solid fa-truck-fast mr-2"></i> ยืนยันจัดส่ง & ตัดสต็อกครัวกลาง
               </button>
             </div>
           </div>
@@ -403,113 +565,185 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'history'" class="history-section">
       <!-- Filter Bar -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div class="flex gap-xs flex-wrap align-center">
+      <div class="card mb-lg p-md flex flex-between align-center toolbar-card history-toolbar">
+        <div class="history-status-tabs flex gap-xs align-center">
           <button 
-            class="btn btn-sm" 
-            :class="historyFilter === 'all' ? 'btn-primary' : 'btn-secondary'"
+            class="history-tab-btn" 
+            :class="{ active: historyFilter === 'all' }"
             @click="historyFilter = 'all'"
           >
-            ทั้งหมด ({{ history.length }})
+            <span>ทั้งหมด</span>
+            <span class="history-tab-count">{{ history.length }}</span>
           </button>
           <button 
-            class="btn btn-sm" 
-            :class="historyFilter === 'restock' ? 'btn-primary' : 'btn-secondary'"
+            class="history-tab-btn" 
+            :class="{ active: historyFilter === 'restock' }"
             @click="historyFilter = 'restock'"
           >
-            <i class="fa-solid fa-circle-plus text-success mr-1"></i> เติมสต็อกเข้าคลัง ({{ restockHistoryCount }})
+            <i class="fa-solid fa-circle-plus"></i>
+            <span>เติมสต็อกเข้าคลัง</span>
+            <span class="history-tab-count">{{ restockHistoryCount }}</span>
           </button>
           <button 
-            class="btn btn-sm" 
-            :class="historyFilter === 'requisition' ? 'btn-primary' : 'btn-secondary'"
+            class="history-tab-btn" 
+            :class="{ active: historyFilter === 'requisition' }"
             @click="historyFilter = 'requisition'"
           >
-            <i class="fa-solid fa-truck-fast text-primary mr-1"></i> สาขาเบิกของ ({{ transferHistoryCount }})
+            <i class="fa-solid fa-truck-fast"></i>
+            <span>สาขาเบิกของ</span>
+            <span class="history-tab-count">{{ transferHistoryCount }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoadingHistory" class="card p-3xl text-center">
-        <div class="spinner mx-auto mb-md"></div>
-        <p class="text-secondary text-sm">กำลังโหลดประวัติการทำรายการ...</p>
+      <!-- Loading Skeleton State -->
+      <div v-if="isLoadingHistory" class="timeline-container flex flex-col gap-md">
+        <div v-for="i in 3" :key="i" class="card p-lg history-card-skeleton">
+          <div class="flex flex-between align-start flex-wrap gap-md">
+            <div class="flex gap-md align-start flex-1">
+              <div class="skeleton" style="width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;"></div>
+              <div class="flex-1">
+                <div class="flex align-center gap-sm mb-xs">
+                  <div class="skeleton" style="width: 120px; height: 24px; border-radius: var(--radius-full);"></div>
+                  <div class="skeleton" style="width: 140px; height: 24px; border-radius: var(--radius-sm);"></div>
+                </div>
+                <div class="skeleton mb-xs" style="width: 240px; height: 16px; border-radius: var(--radius-xs);"></div>
+                <div class="skeleton" style="width: 180px; height: 20px; border-radius: var(--radius-sm);"></div>
+              </div>
+            </div>
+            <div class="skeleton" style="width: 130px; height: 36px; border-radius: var(--radius-sm);"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredHistory.length === 0" class="card p-3xl text-center">
-        <i class="fa-solid fa-timeline mb-md" style="font-size: 3rem; color: var(--text-tertiary); opacity: 0.6;"></i>
-        <h3 class="font-bold text-lg mb-xs">ยังไม่มีประวัติการทำรายการ</h3>
-        <p class="text-secondary text-sm">เมื่อมีการเติมสต็อกหรือส่งของให้สาขา ข้อมูลจะถูกบันทึกที่นี่โดยละเอียด</p>
+      <div v-else-if="filteredHistory.length === 0" class="empty-state-box">
+        <div class="empty-state-icon">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <h3 class="empty-state-title">ยังไม่มีประวัติการทำรายการ</h3>
+        <p class="empty-state-desc">
+          เมื่อมีการเติมสต็อกหรือส่งของให้สาขา ข้อมูลจะถูกบันทึกที่นี่โดยละเอียด
+        </p>
       </div>
 
-      <!-- Timeline List -->
+      <!-- Timeline Feed Cards -->
       <div v-else class="timeline-container flex flex-col gap-md">
         <div 
           v-for="h in filteredHistory" 
           :key="h.id" 
-          class="card p-md history-feed-card"
+          class="card p-lg history-feed-card"
           :class="h.type === 'restock' ? 'border-restock-feed' : 'border-transfer-feed'"
         >
           <!-- RESTOCK FEED CARD -->
-          <div v-if="h.type === 'restock'" class="flex flex-between align-start flex-wrap gap-md">
-            <div class="flex gap-md align-start">
+          <div v-if="h.type === 'restock'" class="history-card-inner flex flex-between align-start flex-wrap gap-md">
+            <div class="flex gap-md align-start flex-1 min-w-0">
               <div class="feed-icon-circle bg-success-light text-success">
                 <i class="fa-solid fa-circle-plus"></i>
               </div>
-              <div>
+              <div class="flex-1 min-w-0">
                 <div class="flex align-center gap-sm mb-xs flex-wrap">
-                  <span class="badge badge-success font-bold">🟢 เติมสต็อกเข้าคลัง</span>
-                  <span class="font-bold text-base">{{ h.item_name }}</span>
-                </div>
-                <div class="text-xs text-secondary flex align-center gap-md flex-wrap mb-xs">
-                  <span><i class="fa-solid fa-clock mr-1"></i> {{ formatDateTime(h.created_at) }}</span>
-                  <span><i class="fa-solid fa-user mr-1"></i> โดย: {{ h.created_by }}</span>
-                  <span v-if="h.note"><i class="fa-solid fa-tag mr-1"></i> แหล่งซื้อ/หมายเหตุ: {{ h.note }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="text-right">
-              <span class="font-bold text-lg text-success block">+{{ formatNumber(h.quantity) }} {{ h.unit }}</span>
-              <span class="text-xs text-secondary">ยอดเงินที่ซื้อ: <strong>฿{{ formatNumber(h.total_amount) }}</strong> (@฿{{ formatNumber(h.unit_cost) }})</span>
-            </div>
-          </div>
-
-          <!-- TRANSFER FEED CARD -->
-          <div v-else class="flex flex-between align-start flex-wrap gap-md">
-            <div class="flex gap-md align-start">
-              <div class="feed-icon-circle bg-primary-glow text-primary">
-                <i class="fa-solid fa-truck-fast"></i>
-              </div>
-              <div>
-                <div class="flex align-center gap-sm mb-xs flex-wrap">
-                  <span class="badge badge-primary font-bold">📤 ส่งของให้สาขา</span>
-                  <span class="font-bold text-base">{{ h.branch_name }}</span>
-                  <span class="badge badge-secondary text-xs">#{{ h.transfer_no }}</span>
-                  <span class="badge" :class="getStatusBadgeClass(h.status)">{{ getStatusLabel(h.status) }}</span>
-                </div>
-                <div class="text-xs text-secondary flex align-center gap-md flex-wrap mb-sm">
-                  <span><i class="fa-solid fa-clock mr-1"></i> {{ formatDateTime(h.created_at) }}</span>
-                  <span><i class="fa-solid fa-user mr-1"></i> ผู้ขอเบิก: {{ h.created_by }}</span>
+                  <span class="badge badge-success font-bold">
+                    <i class="fa-solid fa-circle-plus"></i>
+                    <span>เติมสต็อกเข้าคลัง</span>
+                  </span>
+                  <span class="font-bold text-base text-main">{{ getItemNameParts(h.item_name).main }}</span>
+                  <span v-if="getItemNameParts(h.item_name).sub" class="text-xs text-secondary font-medium">
+                    {{ getItemNameParts(h.item_name).sub }}
+                  </span>
                 </div>
 
-                <!-- Items mini preview -->
-                <div class="flex flex-wrap gap-xs">
-                  <span 
-                    v-for="it in h.items" 
-                    :key="it.id" 
-                    class="badge badge-sm badge-secondary"
-                    style="border: 1px solid var(--border-color);"
-                  >
-                    {{ it.item_name }} × {{ it.quantity }} {{ it.unit }}
+                <div class="history-meta-row text-xs text-secondary flex align-center gap-md flex-wrap mb-xs">
+                  <span class="inline-flex align-center gap-xs">
+                    <i class="fa-regular fa-clock text-muted"></i>
+                    <span>{{ formatDateTime(h.created_at) }}</span>
+                  </span>
+                  <span class="inline-flex align-center gap-xs">
+                    <i class="fa-regular fa-user text-muted"></i>
+                    <span>โดย: <strong class="text-main">{{ h.created_by }}</strong></span>
+                  </span>
+                  <span v-if="h.note" class="inline-flex align-center gap-xs">
+                    <i class="fa-solid fa-tag text-muted"></i>
+                    <span>แหล่งซื้อ/หมายเหตุ: <span class="text-main">{{ h.note }}</span></span>
                   </span>
                 </div>
               </div>
             </div>
 
-            <div class="text-right">
-              <span class="text-xs text-secondary block">มูลค่าของที่ตัดบัญชี</span>
-              <span class="font-bold text-lg text-primary">฿{{ formatNumber(h.total_cost) }}</span>
+            <!-- Restock Right Details -->
+            <div class="history-amount-box text-right">
+              <div class="history-qty-value font-bold text-lg text-success">
+                +{{ formatNumber(h.quantity) }} {{ h.unit }}
+              </div>
+              <div class="history-sub-cost text-xs text-secondary">
+                <span>ยอดเงินที่ซื้อ: </span>
+                <strong class="text-main">฿{{ formatNumber(h.total_amount) }}</strong> 
+                <span class="text-muted ml-xs font-medium">(ต้นทุน ฿{{ formatNumber(h.unit_cost) }} / {{ h.unit || 'หน่วย' }})</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TRANSFER FEED CARD -->
+          <div v-else class="history-card-inner flex flex-between align-start flex-wrap gap-md">
+            <div class="flex gap-md align-start flex-1 min-w-0">
+              <div class="feed-icon-circle bg-primary-light text-primary">
+                <i class="fa-solid fa-truck-fast"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex align-center gap-sm mb-xs flex-wrap">
+                  <span class="badge badge-primary font-bold">
+                    <i class="fa-solid fa-truck"></i>
+                    <span>ส่งของให้สาขา</span>
+                  </span>
+                  <span class="font-bold text-base text-main">{{ h.branch_name }}</span>
+                  <span class="order-no-title font-bold text-sm">
+                    <i class="fa-solid fa-receipt text-primary"></i>
+                    <span>#{{ h.transfer_no }}</span>
+                  </span>
+                  <span class="badge font-bold" :class="getStatusBadgeClass(h.status)">
+                    <i v-if="h.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
+                    <i v-else-if="h.status === 'dispatched'" class="fa-solid fa-truck-fast"></i>
+                    <i v-else-if="h.status === 'received'" class="fa-solid fa-circle-check"></i>
+                    <span>{{ getStatusLabel(h.status) }}</span>
+                  </span>
+                </div>
+
+                <div class="history-meta-row text-xs text-secondary flex align-center gap-md flex-wrap mb-sm">
+                  <span class="inline-flex align-center gap-xs">
+                    <i class="fa-regular fa-clock text-muted"></i>
+                    <span>{{ formatDateTime(h.created_at) }}</span>
+                  </span>
+                  <span class="inline-flex align-center gap-xs">
+                    <i class="fa-regular fa-user text-muted"></i>
+                    <span>ผู้ขอเบิก: <strong class="text-main">{{ h.created_by }}</strong></span>
+                  </span>
+                </div>
+
+                <!-- Items Mini Preview Chips -->
+                <div v-if="h.items && h.items.length" class="history-items-chips">
+                  <div 
+                    v-for="it in h.items" 
+                    :key="it.id" 
+                    class="history-item-chip"
+                  >
+                    <div class="history-item-chip-name" :title="it.item_name">
+                      {{ it.item_name }}
+                    </div>
+                    <div class="history-item-chip-qty">
+                      <span class="history-item-chip-num">× {{ it.quantity }}</span>
+                      <span class="history-item-chip-unit" :title="it.unit">{{ it.unit }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Transfer Right Details -->
+            <div class="history-amount-box text-right">
+              <div class="history-total-label text-xs text-secondary">มูลค่าของที่ตัดบัญชี:</div>
+              <div class="history-total-amount font-bold text-lg text-primary">
+                ฿{{ formatNumber(h.total_cost) }}
+              </div>
             </div>
           </div>
         </div>
@@ -521,31 +755,53 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'finance'" class="finance-section">
       <!-- Toolbar Header -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card mb-lg p-md flex flex-between align-center toolbar-card finance-toolbar" style="gap: var(--space-md); flex-wrap: wrap;">
         <div>
           <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
             <i class="fa-solid fa-vault text-primary"></i>
-            <span>สมุดบัญชี & กระเป๋าเงินกองกลาง (Central Kitchen Cashbook)</span>
+            <span>สมุดบัญชี & กระเป๋าเงินกองกลาง</span>
           </h3>
           <p class="text-secondary text-xs">
             บันทึกเงินทุนตั้งต้นของเจ้าของร้าน, บันทึกเงินจ่ายซื้อของสดตุนเข้าคลัง, และติดตามเงินที่สาขาโอนคืนค่าของ
           </p>
         </div>
 
-        <div class="menu-action-buttons flex align-center gap-sm flex-wrap">
-          <button class="btn btn-primary" @click="openTransactionModal('capital_in')">
-            <i class="fa-solid fa-plus-circle mr-1"></i> เติมเงินทุนกองกลาง
+        <div class="finance-action-buttons flex align-center gap-sm flex-wrap">
+          <button class="btn btn-primary btn-finance-action" @click="openTransactionModal('capital_in')">
+            <i class="fa-solid fa-circle-plus"></i>
+            <span>เติมเงินทุนกองกลาง</span>
           </button>
-          <button class="btn btn-primary" @click="openTransactionModal('operating_expense_out')">
-            <i class="fa-solid fa-minus-circle mr-1"></i> จ่ายค่าใช้จ่ายครัวกลาง
+          <button class="btn btn-secondary btn-finance-action" @click="openTransactionModal('operating_expense_out')">
+            <i class="fa-solid fa-circle-minus"></i>
+            <span>จ่ายค่าใช้จ่ายครัวกลาง</span>
           </button>
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoadingFinance" class="card text-center p-3xl text-secondary mb-lg">
-        <div class="spinner mx-auto mb-sm"></div>
-        กำลังโหลดข้อมูลการเงินกองกลาง...
+      <!-- Loading Skeleton State -->
+      <div v-if="isLoadingFinance" class="flex flex-col gap-lg">
+        <!-- 4 Summary KPI Cards Skeleton -->
+        <div class="financial-summary-grid">
+          <div v-for="i in 4" :key="i" class="summary-card">
+            <div class="flex flex-between align-center mb-xs">
+              <div class="skeleton" style="width: 120px; height: 18px; border-radius: var(--radius-xs);"></div>
+              <div class="skeleton" style="width: 70px; height: 20px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton my-sm" style="width: 140px; height: 32px; border-radius: var(--radius-sm);"></div>
+            <div class="skeleton" style="width: 180px; height: 14px; border-radius: var(--radius-xs);"></div>
+          </div>
+        </div>
+
+        <!-- Ledger Table Skeleton -->
+        <div class="card p-lg ledger-card">
+          <div class="flex flex-between align-center mb-lg pb-md" style="border-bottom: 1px solid var(--border-color-light);">
+            <div class="skeleton" style="width: 220px; height: 24px; border-radius: var(--radius-xs);"></div>
+            <div class="skeleton" style="width: 320px; height: 42px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div class="skeleton mb-xs" style="width: 100%; height: 42px; border-radius: var(--radius-sm);"></div>
+          <div class="skeleton mb-xs" style="width: 100%; height: 48px; border-radius: var(--radius-sm);"></div>
+          <div class="skeleton" style="width: 100%; height: 48px; border-radius: var(--radius-sm);"></div>
+        </div>
       </div>
 
       <!-- Content when Finance Data Loaded -->
@@ -553,163 +809,238 @@
         <!-- 4 Summary KPI Cards -->
         <div class="financial-summary-grid">
           <!-- Card 1: Cash Balance -->
-          <div class="summary-card net-card profit-positive">
+          <div class="summary-card card-accent-primary">
             <div class="summary-card-header flex flex-between align-center">
               <div class="flex align-center gap-xs">
                 <span class="summary-icon"><i class="fa-solid fa-wallet text-primary"></i></span>
                 <span class="summary-title">เงินสดกองกลางคงเหลือ</span>
               </div>
-              <span class="badge badge-success font-bold text-xs" style="padding: 2px 7px; border-radius: var(--radius-sm);">
-                เงินสดพร้อมใช้
+              <span class="badge badge-success font-bold text-xs">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>เงินสดพร้อมใช้</span>
               </span>
             </div>
             <div class="summary-value" :class="financeSummary.cash_balance >= 0 ? 'text-primary' : 'text-danger'">
               ฿{{ formatNumber(financeSummary.cash_balance) }}
             </div>
-            <div class="summary-formula-caption">ทุนเจ้าของ + สาขาคืนเงิน - ซื้อของ - ค่าใช้จ่าย</div>
+            <div class="summary-caption text-xs text-muted">ทุนเจ้าของ + สาขาคืนเงิน - ซื้อของ - ค่าใช้จ่าย</div>
           </div>
 
           <!-- Card 2: Inventory Stock Value -->
-          <div class="summary-card">
-            <div class="summary-card-header">
-              <span class="summary-icon"><i class="fa-solid fa-boxes-stacked text-warning"></i></span>
-              <span class="summary-title">มูลค่าสต็อกของในโกดัง</span>
+          <div class="summary-card card-accent-warning">
+            <div class="summary-card-header flex flex-between align-center">
+              <div class="flex align-center gap-xs">
+                <span class="summary-icon"><i class="fa-solid fa-boxes-stacked text-warning"></i></span>
+                <span class="summary-title">มูลค่าสต็อกของในโกดัง</span>
+              </div>
+              <span class="badge badge-warning font-bold text-xs">
+                <i class="fa-solid fa-box"></i>
+                <span>พร้อมจ่าย</span>
+              </span>
             </div>
             <div class="summary-value text-warning">฿{{ formatNumber(financeSummary.inventory_value) }}</div>
-            <div class="summary-sub-badges">
-              <span class="sub-badge">สินค้าพร้อมจ่าย</span>
-              <span class="sub-badge">คำนวณจากราคาทุน</span>
-            </div>
+            <div class="summary-caption text-xs text-muted">สินค้าในคลัง คำนวณจากราคาทุนจริง</div>
           </div>
 
           <!-- Card 3: Pending Receivables from Branches -->
-          <div class="summary-card">
-            <div class="summary-card-header">
-              <span class="summary-icon"><i class="fa-solid fa-hourglass-half text-danger"></i></span>
-              <span class="summary-title">ยอดที่สาขายังค้างชำระคืน</span>
+          <div class="summary-card card-accent-danger">
+            <div class="summary-card-header flex flex-between align-center">
+              <div class="flex align-center gap-xs">
+                <span class="summary-icon"><i class="fa-solid fa-hourglass-half text-danger"></i></span>
+                <span class="summary-title">ยอดที่สาขายังค้างชำระคืน</span>
+              </div>
+              <span class="badge badge-danger font-bold text-xs">
+                <i class="fa-solid fa-clock"></i>
+                <span>รอสาขาเคลียร์</span>
+              </span>
             </div>
             <div class="summary-value text-danger">฿{{ formatNumber(financeSummary.pending_receivables) }}</div>
-            <div class="summary-sub-badges">
-              <span class="sub-badge">ของที่สาขารับไปแล้ว</span>
-              <span class="sub-badge">รอสาขาโอนคืน</span>
-            </div>
+            <div class="summary-caption text-xs text-muted">ของที่สาขารับไปแล้ว รอโอนเคลียร์คืนครัวกลาง</div>
           </div>
 
           <!-- Card 4: Total Capital Injected -->
-          <div class="summary-card">
-            <div class="summary-card-header">
-              <span class="summary-icon"><i class="fa-solid fa-landmark text-info"></i></span>
-              <span class="summary-title">เงินทุนเจ้าของที่เติมสะสม</span>
+          <div class="summary-card card-accent-info">
+            <div class="summary-card-header flex flex-between align-center">
+              <div class="flex align-center gap-xs">
+                <span class="summary-icon"><i class="fa-solid fa-landmark text-info"></i></span>
+                <span class="summary-title">เงินทุนเจ้าของที่เติมสะสม</span>
+              </div>
+              <span class="badge badge-info font-bold text-xs">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>ทุนเจ้าของ</span>
+              </span>
             </div>
             <div class="summary-value text-info">฿{{ formatNumber(financeSummary.total_capital) }}</div>
-            <div class="summary-sub-badges">
-              <span class="sub-badge">ทุนส่วนตัวเจ้าของร้าน</span>
-              <span class="sub-badge">เงินตั้งต้นครัวกลาง</span>
-            </div>
+            <div class="summary-caption text-xs text-muted">เงินทุนตั้งต้นกองกลางจากเจ้าของร้าน</div>
           </div>
         </div>
 
         <!-- Transactions Ledger Card -->
-        <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-          <div class="flex flex-between align-center flex-wrap gap-md" style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 24px;">
+        <div class="card p-lg ledger-card">
+          <div class="ledger-header flex flex-between align-center flex-wrap gap-md">
             <div class="flex align-center gap-xs">
-              <i class="fa-solid fa-clock-rotate-left text-primary" style="font-size: 1.1rem;"></i>
-              <span class="font-bold text-base">ประวัติรายการเดินบัญชีกองกลาง</span>
+              <i class="fa-solid fa-clock-rotate-left text-primary" style="font-size: 1.15rem;"></i>
+              <span class="font-bold text-base text-main">ประวัติรายการเดินบัญชีกองกลาง</span>
             </div>
 
             <!-- Filter Pills -->
-            <div class="flex gap-xs flex-wrap align-center">
+            <div class="finance-status-tabs flex gap-xs align-center">
               <button 
-                class="btn btn-sm" 
-                :class="financeFilterType === 'all' ? 'btn-primary' : 'btn-secondary'"
+                class="finance-tab-btn" 
+                :class="{ active: financeFilterType === 'all' }"
                 @click="financeFilterType = 'all'"
               >
-                ทั้งหมด ({{ financeLogs.length }})
+                <span>ทั้งหมด</span>
+                <span class="finance-tab-count">{{ financeLogs.length }}</span>
               </button>
               <button 
-                class="btn btn-sm" 
-                :class="financeFilterType === 'capital_in' ? 'btn-primary' : 'btn-secondary'"
+                class="finance-tab-btn" 
+                :class="{ active: financeFilterType === 'capital_in' }"
                 @click="financeFilterType = 'capital_in'"
               >
-                <i class="fa-solid fa-circle-plus text-success mr-1"></i> เติมทุน (+)
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>เติมทุน +</span>
+                <span class="finance-tab-count">{{ capitalInCount }}</span>
               </button>
               <button 
-                class="btn btn-sm" 
-                :class="financeFilterType === 'reimbursement_in' ? 'btn-primary' : 'btn-secondary'"
+                class="finance-tab-btn" 
+                :class="{ active: financeFilterType === 'reimbursement_in' }"
                 @click="financeFilterType = 'reimbursement_in'"
               >
-                <i class="fa-solid fa-hand-holding-dollar text-primary mr-1"></i> สาขาคืนเงิน (+)
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+                <span>สาขาคืนเงิน +</span>
+                <span class="finance-tab-count">{{ reimbursementInCount }}</span>
               </button>
               <button 
-                class="btn btn-sm" 
-                :class="financeFilterType === 'purchase_out' ? 'btn-primary' : 'btn-secondary'"
+                class="finance-tab-btn" 
+                :class="{ active: financeFilterType === 'purchase_out' }"
                 @click="financeFilterType = 'purchase_out'"
               >
-                <i class="fa-solid fa-cart-shopping text-warning mr-1"></i> ซื้อของเข้าคลัง (-)
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>ซื้อของเข้าคลัง -</span>
+                <span class="finance-tab-count">{{ purchaseOutCount }}</span>
               </button>
               <button 
-                class="btn btn-sm" 
-                :class="financeFilterType === 'operating_expense_out' ? 'btn-primary' : 'btn-secondary'"
+                class="finance-tab-btn" 
+                :class="{ active: financeFilterType === 'operating_expense_out' }"
                 @click="financeFilterType = 'operating_expense_out'"
               >
-                <i class="fa-solid fa-circle-minus text-danger mr-1"></i> รายจ่ายครัวกลาง (-)
+                <i class="fa-solid fa-circle-minus"></i>
+                <span>รายจ่ายครัวกลาง -</span>
+                <span class="finance-tab-count">{{ operatingExpenseOutCount }}</span>
               </button>
             </div>
           </div>
 
           <!-- Empty Logs -->
-          <div v-if="filteredFinanceLogs.length === 0" class="text-center p-3xl text-secondary">
-            <i class="fa-solid fa-receipt mb-md" style="font-size: 3rem; color: var(--text-tertiary); opacity: 0.5;"></i>
-            <h4 class="font-bold text-base mb-xs">ยังไม่มีรายการเดินบัญชี</h4>
-            <p class="text-xs text-secondary">เมื่อมีการเติมทุน ซื้อของเข้าคลัง หรือสาขาโอนเงินคืน จะถูกบันทึกที่นี่โดยละเอียด</p>
+          <div v-if="filteredFinanceLogs.length === 0" class="empty-state-box empty-state-seamless">
+            <div class="empty-state-icon">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <h4 class="empty-state-title">ยังไม่มีรายการเดินบัญชี</h4>
+            <p class="empty-state-desc">
+              เมื่อมีการเติมทุน ซื้อของเข้าคลัง หรือสาขาโอนเงินคืน จะถูกบันทึกที่นี่โดยละเอียด
+            </p>
           </div>
 
-          <!-- Logs Table -->
-          <div v-else style="overflow-x: auto;">
-            <table class="table w-full" style="border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th class="text-left" style="padding: var(--space-md); width: 160px;">วันที่ & เวลา</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 150px;">ประเภท</th>
-                  <th class="text-left" style="padding: var(--space-md);">รายการ / บันทึกช่วยจำ</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 140px;">สาขา</th>
-                  <th class="text-right" style="padding: var(--space-md); width: 150px;">จำนวนเงิน</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 120px;">ผู้บันทึก</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="log in filteredFinanceLogs" 
-                  :key="log.id" 
-                  style="border-bottom: 1px solid var(--border-color);"
-                  class="table-row-hover"
-                >
-                  <td style="padding: var(--space-md); vertical-align: middle;" class="text-xs text-secondary">
-                    {{ formatDateTime(log.created_at) }}
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <span class="badge font-bold text-xs" :class="getFinanceTypeBadgeClass(log.type)">
-                      {{ getFinanceTypeLabel(log.type) }}
+          <!-- Logs Container -->
+          <div v-else class="ledger-body-container">
+            <!-- Desktop Table View -->
+            <div class="ledger-table-wrapper desktop-only-ledger-table">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th class="col-date text-left">วันที่ & เวลา</th>
+                    <th class="col-type text-center">ประเภทรายการ</th>
+                    <th class="col-note text-left">บันทึกช่วยจำ / รายละเอียด</th>
+                    <th class="col-branch text-center">สาขา</th>
+                    <th class="col-amount text-right">จำนวนเงิน</th>
+                    <th class="col-user text-center">ผู้บันทึก</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    v-for="log in filteredFinanceLogs" 
+                    :key="log.id"
+                  >
+                    <td class="col-date text-xs text-secondary">
+                      <span class="font-medium text-main">{{ formatDateTime(log.created_at) }}</span>
+                    </td>
+                    <td class="col-type text-center">
+                      <span class="badge font-bold text-xs" :class="getFinanceTypeBadgeClass(log.type)">
+                        <i v-if="log.type === 'capital_in'" class="fa-solid fa-circle-plus"></i>
+                        <i v-else-if="log.type === 'reimbursement_in'" class="fa-solid fa-hand-holding-dollar"></i>
+                        <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
+                        <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
+                        <span>{{ getFinanceTypeLabel(log.type) }}</span>
+                      </span>
+                    </td>
+                    <td class="col-note">
+                      <div class="font-bold text-sm text-main">{{ log.note || '-' }}</div>
+                    </td>
+                    <td class="col-branch text-center">
+                      <span v-if="log.branch_name" class="badge badge-primary font-bold text-xs">
+                        <i class="fa-solid fa-store"></i>
+                        <span>{{ log.branch_name }}</span>
+                      </span>
+                      <span v-else class="text-xs text-muted">-</span>
+                    </td>
+                    <td class="col-amount text-right font-bold text-base" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
+                      {{ isFinanceInflow(log.type) ? '+ ฿' : '- ฿' }}{{ formatNumber(log.amount) }}
+                    </td>
+                    <td class="col-user text-center text-xs text-secondary">
+                      <span class="font-medium">{{ log.created_by_name || '-' }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile Cards View (< 640px) -->
+            <div class="mobile-only-ledger-list flex flex-col gap-sm">
+              <div 
+                v-for="log in filteredFinanceLogs" 
+                :key="log.id" 
+                class="ledger-mobile-card"
+              >
+                <!-- Top Row: Type Badge + Amount -->
+                <div class="flex flex-between align-center gap-xs">
+                  <span class="badge font-bold text-xs" :class="getFinanceTypeBadgeClass(log.type)">
+                    <i v-if="log.type === 'capital_in'" class="fa-solid fa-circle-plus"></i>
+                    <i v-else-if="log.type === 'reimbursement_in'" class="fa-solid fa-hand-holding-dollar"></i>
+                    <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
+                    <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
+                    <span>{{ getFinanceTypeLabel(log.type) }}</span>
+                  </span>
+                  <span class="font-bold text-base" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
+                    {{ isFinanceInflow(log.type) ? '+ ฿' : '- ฿' }}{{ formatNumber(log.amount) }}
+                  </span>
+                </div>
+
+                <!-- Middle Row: Note / Memo -->
+                <div class="ledger-mobile-note font-bold text-sm text-main mt-xs">
+                  {{ log.note || '-' }}
+                </div>
+
+                <!-- Bottom Row: Date/Time + Branch / Created By -->
+                <div class="flex flex-between align-center ledger-mobile-bottom text-xs text-secondary">
+                  <span class="inline-flex align-center gap-xs">
+                    <i class="fa-regular fa-clock text-muted"></i>
+                    <span>{{ formatDateTime(log.created_at) }}</span>
+                  </span>
+                  <div class="inline-flex align-center gap-xs">
+                    <span v-if="log.branch_name" class="badge badge-primary font-bold text-xs">
+                      <i class="fa-solid fa-store"></i>
+                      <span>{{ log.branch_name }}</span>
                     </span>
-                  </td>
-                  <td style="padding: var(--space-md); vertical-align: middle;">
-                    <div class="font-bold text-sm">{{ log.note || '-' }}</div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <span v-if="log.branch_name" class="badge badge-secondary text-xs">
-                      {{ log.branch_name }}
+                    <span v-if="log.created_by_name" class="inline-flex align-center gap-xs text-muted">
+                      <i class="fa-regular fa-user"></i>
+                      <span>{{ log.created_by_name }}</span>
                     </span>
-                    <span v-else class="text-xs text-tertiary">-</span>
-                  </td>
-                  <td class="text-right" style="padding: var(--space-md); vertical-align: middle; font-weight: bold; font-size: 1.05rem;" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
-                    {{ isFinanceInflow(log.type) ? '+' : '-' }}฿{{ formatNumber(log.amount) }}
-                  </td>
-                  <td class="text-center text-xs text-secondary" style="padding: var(--space-md); vertical-align: middle;">
-                    {{ log.created_by_name || '-' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -731,17 +1062,30 @@
           </p>
         </div>
 
-        <div class="flex align-center gap-sm" style="flex-shrink: 0;">
+        <div class="flex align-center gap-sm partner-branch-filter-box" style="flex-shrink: 0;">
           <label class="text-sm font-bold text-secondary" style="white-space: nowrap;">เลือกสาขา:</label>
-          <select 
-            v-model="selectedPartnerBranch" 
-            class="form-select font-bold text-base" 
-            style="min-width: 220px; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 8px 14px;"
-          >
-            <option v-for="b in retailBranches" :key="b.id" :value="b.id">
-              {{ b.name }}
-            </option>
-          </select>
+          <div class="custom-select-wrapper partner-branch-select-wrapper" @click.stop style="min-width: 200px;">
+            <div 
+              class="custom-select-trigger partner-branch-select-trigger" 
+              :class="{ 'active': isPartnerBranchDropdownOpen }" 
+              @click="isPartnerBranchDropdownOpen = !isPartnerBranchDropdownOpen"
+            >
+              <span class="custom-select-text font-bold text-base">
+                {{ selectedPartnerBranchName }}
+              </span>
+            </div>
+            <div v-if="isPartnerBranchDropdownOpen" class="custom-select-dropdown">
+              <div 
+                v-for="b in retailBranches" 
+                :key="b.id" 
+                class="custom-select-option"
+                :class="{ 'selected': Number(selectedPartnerBranch) === Number(b.id) }"
+                @click="selectedPartnerBranch = b.id; isPartnerBranchDropdownOpen = false;"
+              >
+                {{ b.name }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -952,7 +1296,7 @@
                       </div>
                       <button 
                         v-if="settlementData.net_profit > 0" 
-                        class="btn btn-xs btn-outline-primary mt-xs w-full"
+                        class="btn btn-primary btn-payout-partner w-full"
                         @click="openPayoutModal(p)"
                       >
                         <i class="fa-solid fa-paper-plane mr-1"></i> บันทึกจ่ายปันผล
@@ -1123,7 +1467,7 @@
                 </div>
 
                 <button 
-                  class="btn btn-sm btn-primary"
+                  class="btn btn-primary btn-payout-header"
                   @click="openPayoutModal()"
                 >
                   <i class="fa-solid fa-paper-plane mr-1"></i> จ่ายปันผล
@@ -1131,9 +1475,11 @@
               </div>
 
               <!-- Payouts List: Clean unboxed list -->
-              <div v-if="!settlementData.payouts || settlementData.payouts.length === 0" class="text-center p-xl text-secondary">
-                <i class="fa-solid fa-receipt mb-sm" style="font-size: 2rem; color: var(--text-tertiary); opacity: 0.5;"></i>
-                <div class="text-xs">ยังไม่มีประวัติการจ่ายเงินปันผลของสาขานี้</div>
+              <div v-if="!settlementData.payouts || settlementData.payouts.length === 0" class="empty-state-box empty-state-compact">
+                <div class="empty-state-icon empty-state-icon-sm">
+                  <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div class="empty-state-desc text-xs">ยังไม่มีประวัติการจ่ายเงินปันผลของสาขานี้</div>
               </div>
               <div v-else class="flex flex-col gap-xs" style="max-height: 250px; overflow-y: auto;">
                 <div 
@@ -1176,7 +1522,7 @@
         <div class="modal-header">
           <h3>
             <i :class="editingItem ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-plus'" style="margin-right: 6px;"></i>
-            {{ editingItem ? 'แก้ไขรายการของในครัวกลาง' : 'เพิ่มของใหม่ด้วยตนเอง' }}
+            {{ editingItem ? 'แก้ไขรายการ' : 'เพิ่มของใหม่ด้วยตนเอง' }}
           </h3>
           <button class="modal-close" @click="showItemModal = false">✕</button>
         </div>
@@ -1354,7 +1700,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showRestockModal" class="modal-container active">
       <div class="modal-overlay" @click="showRestockModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
             <i class="fa-solid fa-circle-plus text-success" style="margin-right: 6px;"></i>
@@ -1364,9 +1710,17 @@
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md text-sm" style="border: 1px solid var(--border-color); background: var(--bg-secondary);">
-            สินค้า: <strong>{{ activeRestockItem?.name }}</strong><br />
-            <span class="text-xs text-secondary">สต็อกปัจจุบัน: {{ activeRestockItem?.quantity }} {{ activeRestockItem?.unit }}</span>
+          <!-- กล่องข้อมูลสินค้า: โปร่ง สบายตา ไม่ชิดขอบ -->
+          <div class="modal-item-summary-card mb-md">
+            <div class="modal-item-summary-name">
+              <span class="modal-item-summary-label">สินค้า:</span>
+              <span class="modal-item-summary-title">{{ activeRestockItem?.name }}</span>
+            </div>
+            <div class="modal-item-summary-stock">
+              <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
+              <span>สต็อกปัจจุบัน:</span>
+              <strong class="text-main">{{ activeRestockItem?.quantity }} {{ activeRestockItem?.unit }}</strong>
+            </div>
           </div>
 
           <div class="form-group mb-md">
@@ -1403,11 +1757,15 @@
             />
           </div>
 
-          <div class="p-md rounded mb-lg flex flex-between align-center" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-            <span class="text-xs text-secondary font-bold">ยอดเงินรวมที่จ่ายซื้อ:</span>
-            <span class="font-bold text-xl text-primary">
+          <!-- กล่องสรุปยอดเงินรวม: โปร่ง มีพื้นที่หายใจ ตัวเลขและข้อความไม่ชิดขอบ -->
+          <div class="modal-total-summary-box mb-lg">
+            <div class="modal-total-label">
+              <i class="fa-solid fa-receipt mr-1 text-primary"></i>
+              <span>ยอดเงินรวมที่จ่ายซื้อ:</span>
+            </div>
+            <div class="modal-total-amount text-primary">
               ฿{{ formatNumber((restockForm.quantity_added || 0) * (restockForm.unit_cost || 0)) }}
-            </span>
+            </div>
           </div>
 
           <div class="flex gap-md mt-xl">
@@ -1425,11 +1783,11 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showTransactionModal" class="modal-container active">
       <div class="modal-overlay" @click="showTransactionModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
-            <i :class="transactionForm.type === 'capital_in' ? 'fa-solid fa-circle-plus text-success' : 'fa-solid fa-circle-minus text-danger'" style="margin-right: 6px;"></i>
-            {{ transactionForm.type === 'capital_in' ? 'เติมเงินทุนกองกลาง (ทุนเจ้าของ)' : 'จ่ายค่าใช้จ่ายครัวกลาง' }}
+            <i :class="transactionForm.type === 'capital_in' ? 'fa-solid fa-circle-plus text-success' : 'fa-solid fa-circle-minus text-danger'" style="margin-right: 8px;"></i>
+            {{ transactionForm.type === 'capital_in' ? 'เติมเงินทุนกองกลาง' : 'จ่ายค่าใช้จ่ายครัวกลาง' }}
           </h3>
           <button class="modal-close" @click="showTransactionModal = false">✕</button>
         </div>
@@ -1437,14 +1795,53 @@
         <div class="modal-body">
           <div class="form-group mb-md">
             <label class="form-label font-bold text-sm">ประเภทรายการ *</label>
-            <select v-model="transactionForm.type" class="form-select w-full font-bold">
-              <option value="capital_in">🟢 เติมเงินทุนกองกลาง (เงินเข้ากระเป๋า)</option>
-              <option value="operating_expense_out">🔴 ค่าใช้จ่ายครัวกลาง (เงินออกจากกระเป๋า เช่น ค่าไฟ/ค่าเช่า/ค่าจ้าง)</option>
-            </select>
+            <div class="custom-select-wrapper" @click.stop>
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isTransactionTypeDropdownOpen }" 
+                @click="isTransactionTypeDropdownOpen = !isTransactionTypeDropdownOpen"
+              >
+                <div class="flex align-center gap-xs">
+                  <i :class="transactionForm.type === 'capital_in' ? 'fa-solid fa-circle-plus text-success' : 'fa-solid fa-circle-minus text-danger'" style="width: 16px;"></i>
+                  <span class="custom-select-text font-bold">
+                    {{ transactionForm.type === 'capital_in' ? 'เติมเงินทุนกองกลาง' : 'ค่าใช้จ่ายครัวกลาง' }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="isTransactionTypeDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  class="custom-select-option transaction-dropdown-option"
+                  :class="{ 'selected': transactionForm.type === 'capital_in' }"
+                  @click="transactionForm.type = 'capital_in'; isTransactionTypeDropdownOpen = false;"
+                >
+                  <div class="flex align-center gap-xs font-bold">
+                    <i class="fa-solid fa-circle-plus text-success" :class="{ 'text-white': transactionForm.type === 'capital_in' }" style="width: 16px;"></i>
+                    <span>เติมเงินทุนกองกลาง</span>
+                  </div>
+                  <div class="dropdown-subtext" :class="transactionForm.type === 'capital_in' ? 'text-white opacity-90' : 'text-secondary'">
+                    เงินทุนตั้งต้น / เงินสำรองหมุนเวียนจากเจ้าของร้าน
+                  </div>
+                </div>
+
+                <div 
+                  class="custom-select-option transaction-dropdown-option"
+                  :class="{ 'selected': transactionForm.type === 'operating_expense_out' }"
+                  @click="transactionForm.type = 'operating_expense_out'; isTransactionTypeDropdownOpen = false;"
+                >
+                  <div class="flex align-center gap-xs font-bold">
+                    <i class="fa-solid fa-circle-minus text-danger" :class="{ 'text-white': transactionForm.type === 'operating_expense_out' }" style="width: 16px;"></i>
+                    <span>ค่าใช้จ่ายครัวกลาง</span>
+                  </div>
+                  <div class="dropdown-subtext" :class="transactionForm.type === 'operating_expense_out' ? 'text-white opacity-90' : 'text-secondary'">
+                    จ่ายค่าไฟ, ค่าเช่าโกดัง, ค่าจ้างคนส่งของ หรือค่าซ่อมบำรุง
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="form-group mb-md">
-            <label class="form-label font-bold text-sm">จำนวนเงิน (บาท) *</label>
+            <label class="form-label font-bold text-sm">จำนวนเงิน *</label>
             <input 
               type="number" 
               v-model.number="transactionForm.amount" 
@@ -1482,7 +1879,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showWasteModal" class="modal-container active">
       <div class="modal-overlay" @click="showWasteModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
             <i class="fa-solid fa-trash-can text-danger" style="margin-right: 6px;"></i>
@@ -1492,9 +1889,17 @@
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md text-sm" style="border: 1px solid var(--border-color); background: var(--bg-secondary);">
-            สินค้า: <strong>{{ activeWasteItem?.name }}</strong><br />
-            <span class="text-xs text-secondary">คงเหลือในครัวกลาง: {{ activeWasteItem?.quantity }} {{ activeWasteItem?.unit }}</span>
+          <!-- กล่องข้อมูลสินค้า: โปร่ง สบายตา ไม่ชิดขอบ -->
+          <div class="modal-item-summary-card mb-md">
+            <div class="modal-item-summary-name">
+              <span class="modal-item-summary-label">สินค้า:</span>
+              <span class="modal-item-summary-title">{{ activeWasteItem?.name }}</span>
+            </div>
+            <div class="modal-item-summary-stock">
+              <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
+              <span>คงเหลือในครัวกลาง:</span>
+              <strong class="text-main">{{ activeWasteItem?.quantity }} {{ activeWasteItem?.unit }}</strong>
+            </div>
           </div>
 
           <div class="form-group mb-md">
@@ -1532,11 +1937,15 @@
             />
           </div>
 
-          <div class="p-md rounded mb-lg flex flex-between align-center" style="background: rgba(173, 40, 30, 0.05); border: 1px solid rgba(173, 40, 30, 0.2); border-radius: var(--radius-md);">
-            <span class="text-xs text-danger font-bold">มูลค่าความเสียหาย:</span>
-            <span class="font-bold text-xl text-danger">
+          <!-- กล่องสรุปมูลค่าความเสียหาย: โปร่ง มีพื้นที่หายใจ ตัวเลขและข้อความไม่ชิดขอบ -->
+          <div class="modal-total-summary-box modal-total-waste mb-lg">
+            <div class="modal-total-label text-danger">
+              <i class="fa-solid fa-triangle-exclamation mr-1 text-danger"></i>
+              <span>มูลค่าความเสียหาย:</span>
+            </div>
+            <div class="modal-total-amount text-danger">
               ฿{{ formatNumber((wasteForm.quantity_wasted || 0) * (activeWasteItem?.cost_price || 0)) }}
-            </span>
+            </div>
           </div>
 
           <div class="flex gap-md mt-xl">
@@ -1602,7 +2011,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showPayoutModal" class="modal-container active">
       <div class="modal-overlay" @click="showPayoutModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
             <i class="fa-solid fa-money-bill-wave text-primary" style="margin-right: 6px;"></i>
@@ -1612,9 +2021,18 @@
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md text-sm" style="border: 1px solid var(--border-color); background: var(--bg-secondary);">
-            สาขา: <strong>{{ settlementData?.branch_name }}</strong><br />
-            ผู้รับปันผล: <strong>{{ payoutForm.partner_name || 'ระบุชื่อด้านล่าง' }}</strong> <span v-if="payoutForm.share_percentage">({{ payoutForm.share_percentage }}%)</span>
+          <div class="modal-partner-summary-card mb-md">
+            <div class="modal-summary-line flex flex-between align-center">
+              <span class="text-xs text-secondary font-medium">สาขา:</span>
+              <span class="font-bold text-sm text-main">{{ settlementData?.branch_name || '-' }}</span>
+            </div>
+            <div class="modal-summary-line modal-summary-divider flex flex-between align-center">
+              <span class="text-xs text-secondary font-medium">ผู้รับปันผล:</span>
+              <div class="text-right">
+                <span class="font-bold text-sm text-primary">{{ payoutForm.partner_name || 'ระบุชื่อด้านล่าง' }}</span>
+                <span v-if="payoutForm.share_percentage" class="badge badge-primary font-bold text-xs ml-xs">{{ payoutForm.share_percentage }}%</span>
+              </div>
+            </div>
           </div>
 
           <div class="form-group mb-md" v-if="!payoutForm.partner_name">
@@ -1627,7 +2045,7 @@
           </div>
 
           <div class="form-group mb-md">
-            <label class="form-label font-bold text-sm">ยอดเงินปันผลที่จ่ายจริง (บาท) *</label>
+            <label class="form-label font-bold text-sm">ยอดเงินปันผลที่จ่ายจริง *</label>
             <input 
               type="number" 
               v-model.number="payoutForm.amount" 
@@ -1652,7 +2070,7 @@
             <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingPayout" @click="submitPayout">
               <i v-if="isSubmittingPayout" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-check"></i>
-              {{ isSubmittingPayout ? 'กำลังบันทึก...' : 'บันทึกจ่ายเงินปันผล' }}
+              {{ isSubmittingPayout ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -1694,6 +2112,29 @@ const searchQuery = ref('');
 const selectedCategory = ref('all');
 const orderFilterStatus = ref('pending');
 const orderBranchFilter = ref('all');
+const isOrderBranchDropdownOpen = ref(false);
+const isPartnerBranchDropdownOpen = ref(false);
+
+const selectedOrderBranchName = computed(() => {
+  if (orderBranchFilter.value === 'all') return 'ทุกสาขา';
+  const found = retailBranches.value.find(b => Number(b.id) === Number(orderBranchFilter.value));
+  return found ? found.name : 'ทุกสาขา';
+});
+
+const selectedPartnerBranchName = computed(() => {
+  if (!selectedPartnerBranch.value) return 'เลือกสาขา';
+  const found = retailBranches.value.find(b => Number(b.id) === Number(selectedPartnerBranch.value));
+  return found ? found.name : 'เลือกสาขา';
+});
+
+const closeOrderBranchDropdown = () => {
+  isOrderBranchDropdownOpen.value = false;
+};
+
+const closePartnerBranchDropdown = () => {
+  isPartnerBranchDropdownOpen.value = false;
+};
+
 const historyFilter = ref('all');
 
 // Categories filter list
@@ -1773,14 +2214,24 @@ const filteredFinanceLogs = computed(() => {
   return financeLogs.value.filter(l => l.type === financeFilterType.value);
 });
 
+const capitalInCount = computed(() => financeLogs.value.filter(l => l.type === 'capital_in').length);
+const reimbursementInCount = computed(() => financeLogs.value.filter(l => l.type === 'reimbursement_in').length);
+const purchaseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'purchase_out').length);
+const operatingExpenseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'operating_expense_out').length);
+
 // Modals: Transaction (Finance)
 const showTransactionModal = ref(false);
 const isSavingTransaction = ref(false);
+const isTransactionTypeDropdownOpen = ref(false);
 const transactionForm = ref({
   type: 'capital_in',
   amount: 0,
   note: ''
 });
+
+const closeTransactionTypeDropdown = () => {
+  isTransactionTypeDropdownOpen.value = false;
+};
 
 // Modals: Waste Tracking
 const showWasteModal = ref(false);
@@ -1879,6 +2330,15 @@ const getCategoryLabel = (cat) => {
   return map[cat] || cat;
 };
 
+const getItemNameParts = (name) => {
+  if (!name) return { main: '', sub: '' };
+  const match = name.match(/^(.*?)\s*(\([^(]+\))\s*$/);
+  if (match) {
+    return { main: match[1].trim(), sub: match[2].trim() };
+  }
+  return { main: name, sub: '' };
+};
+
 const getCategoryIcon = (cat) => {
   const map = {
     'raw_material': 'fa-solid fa-drumstick-bite',
@@ -1901,9 +2361,9 @@ const getStatusBadgeClass = (st) => {
 
 const getStatusLabel = (st) => {
   const map = {
-    'pending': '🟡 รอจัดส่ง',
-    'dispatched': '🔵 กำลังจัดส่ง',
-    'received': '🟢 รับของแล้ว',
+    'pending': 'รอจัดส่ง',
+    'dispatched': 'กำลังส่ง',
+    'received': 'สาขารับแล้ว',
     'cancelled': 'ยกเลิก'
   };
   return map[st] || st;
@@ -2202,6 +2662,7 @@ const loadFinances = async () => {
 };
 
 const openTransactionModal = (type = 'capital_in') => {
+  isTransactionTypeDropdownOpen.value = false;
   transactionForm.value = {
     type,
     amount: null,
@@ -2245,10 +2706,10 @@ const getFinanceTypeBadgeClass = (type) => {
 
 const getFinanceTypeLabel = (type) => {
   const map = {
-    'capital_in': '🟢 เติมเงินทุน',
-    'reimbursement_in': '🔵 สาขาคืนเงิน',
-    'purchase_out': '🟠 ซื้อของเข้าคลัง',
-    'operating_expense_out': '🔴 ค่าใช้จ่ายครัวกลาง'
+    'capital_in': 'เติมเงินทุน',
+    'reimbursement_in': 'สาขาคืนเงิน',
+    'purchase_out': 'ซื้อของเข้าคลัง',
+    'operating_expense_out': 'ค่าใช้จ่ายครัวกลาง'
   };
   return map[type] || type;
 };
@@ -2377,6 +2838,9 @@ watch(activeTab, (tab) => {
 onMounted(async () => {
   window.addEventListener('click', closeCategoryModalDropdown);
   window.addEventListener('click', closeUomModalDropdown);
+  window.addEventListener('click', closeTransactionTypeDropdown);
+  window.addEventListener('click', closeOrderBranchDropdown);
+  window.addEventListener('click', closePartnerBranchDropdown);
   await loadBranches();
   loadItems();
   loadOrders();
@@ -2387,6 +2851,9 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('click', closeCategoryModalDropdown);
   window.removeEventListener('click', closeUomModalDropdown);
+  window.removeEventListener('click', closeTransactionTypeDropdown);
+  window.removeEventListener('click', closeOrderBranchDropdown);
+  window.removeEventListener('click', closePartnerBranchDropdown);
 });
 </script>
 
@@ -2397,8 +2864,57 @@ onUnmounted(() => {
 
 .toolbar-card {
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-color);
+  border: none !important;
   background: var(--card-bg);
+}
+
+.category-tabs {
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.category-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  height: 48px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
+}
+
+.view-toggle-btn {
+  height: 38px;
+  width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.view-toggle-btn.active {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.view-toggle-btn:hover:not(.active) {
+  background: rgba(139, 3, 19, 0.05);
+  color: var(--primary);
 }
 
 .search-icon {
@@ -2410,14 +2926,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.category-count-badge {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 999px;
-  font-size: 0.7rem;
-  padding: 1px 5px;
-  margin-left: 4px;
-}
-
 .grid-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -2425,11 +2933,15 @@ onUnmounted(() => {
 }
 
 .item-card {
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  padding: var(--space-md);
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .item-card:hover {
@@ -2438,15 +2950,48 @@ onUnmounted(() => {
   border-color: var(--border-color-focus);
 }
 
+.card-top-badges {
+  margin-bottom: var(--space-sm);
+  width: 100%;
+}
+
+.card-badge-category {
+  font-size: 11.5px !important;
+  padding: 3px 10px !important;
+  border-radius: var(--radius-full) !important;
+  background: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.card-badge-status {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: var(--radius-full) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Image with margin */
 .item-img-container {
-  height: 140px;
-  background: var(--bg-secondary);
+  height: 135px;
+  width: 100%;
+  margin-bottom: var(--space-sm);
+  background: linear-gradient(180deg, #fff7df 0%, #fceecc 100%);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid var(--border-color);
+  box-sizing: border-box;
 }
 
 .item-img {
@@ -2456,97 +3001,416 @@ onUnmounted(() => {
 }
 
 .item-img-placeholder {
-  font-size: 2.8rem;
-  opacity: 0.35;
+  font-size: 2.6rem;
+  opacity: 0.4;
   color: var(--text-tertiary);
 }
 
-.category-tag {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 0.7rem;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  color: white;
-  padding: 2px 7px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-}
-
-.status-pill {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 0.7rem;
-  padding: 2px 7px;
-  border-radius: var(--radius-sm);
-  font-weight: bold;
-}
-
-.status-low {
-  background: #ffab2b;
-  color: #3d1b11;
-}
-
-.status-out {
-  background: #ad281e;
-  color: white;
-}
-
 .item-name {
-  font-size: 1.05rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  min-height: 42px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  width: 100%;
+}
+
+.item-name-main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-primary);
 }
 
-.stock-display-pill {
-  border-radius: var(--radius-sm);
+.item-name-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-meta-box {
+  border-top: 1px dashed var(--border-color);
+  padding-top: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  width: 100%;
+}
+
+/* Catalog Card Footer Action Buttons: Width 100% matching image */
+.card-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+  margin-top: auto;
+}
+
+.btn-restock-main {
+  height: 42px !important;
+  width: 100% !important;
+  font-size: var(--font-sm) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-width: unset !important;
+  box-sizing: border-box !important;
+}
+
+.card-sub-actions {
+  display: flex;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.btn-card-sub {
+  height: 36px !important;
+  flex: 1 !important;
+  font-size: var(--font-xs) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-width: unset !important;
+  box-sizing: border-box !important;
+}
+
+.table-btn-action {
+  height: 36px !important;
+  min-width: unset !important;
+  padding: 0 var(--space-md) !important;
+  font-size: var(--font-xs) !important;
+  border-radius: var(--radius-sm) !important;
+  gap: 6px !important;
+}
+
+.table-btn-icon {
+  width: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+}
+
+/* ============================================================ */
+/* ORDERS TAB STYLING                                           */
+/* ============================================================ */
+.orders-toolbar {
+  box-shadow: var(--shadow-sm);
+  border: none !important;
+  background: var(--card-bg);
+}
+
+.order-status-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.order-tab-btn {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
 }
 
-.stock-pill-ok {
-  background: rgba(42, 157, 143, 0.08);
-  color: var(--success);
+.order-tab-btn:hover:not(.active) {
+  background: var(--bg-secondary);
+  color: var(--primary);
+  border-color: var(--border-color-focus);
 }
 
-.stock-pill-low {
-  background: rgba(173, 40, 30, 0.08);
-  color: var(--danger);
+.order-tab-btn.active {
+  background: var(--gradient-primary);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.order-tab-count {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.order-tab-btn.active .order-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.order-tab-btn:not(.active) .order-tab-count {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+}
+
+.order-branch-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.order-branch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.order-branch-label i {
+  font-size: 0.95rem;
+}
+
+.order-branch-select {
+  height: 44px;
+  min-width: 170px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  padding: 0 12px;
 }
 
 /* Order Cards */
 .order-card {
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: var(--radius-md);
-  transition: box-shadow var(--transition-base);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.order-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .order-card-pending {
-  border-left: 5px solid var(--accent);
+  border-left: 5px solid var(--warning) !important;
 }
 
 .order-card-dispatched {
-  border-left: 5px solid var(--primary);
+  border-left: 5px solid var(--info) !important;
 }
 
-.order-no-pill {
-  font-size: 1.05rem;
+.order-card-received {
+  border-left: 5px solid var(--success) !important;
+}
+
+.order-card-header {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.order-no-title {
+  font-size: 1.15rem;
   color: var(--primary);
-  background: rgba(139, 3, 19, 0.06);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-/* Feed Timeline Cards */
+.order-total-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  text-align: right;
+}
+
+.order-total-label {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.order-total-amount {
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.order-meta-row {
+  line-height: 1.5;
+}
+
+/* Order Items Table */
+.desktop-only-orders-table {
+  display: block;
+}
+
+.mobile-only-orders-list {
+  display: none !important;
+}
+
+.order-items-table-wrapper {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.order-items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.order-items-table th {
+  background: var(--bg-secondary) !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+  padding: 10px 16px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  letter-spacing: 0.02em;
+}
+
+.order-items-table td {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border-color-light) !important;
+  vertical-align: middle;
+}
+
+.order-items-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.order-items-table tbody tr:hover td {
+  background: rgba(139, 3, 19, 0.02);
+}
+
+.order-qty-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(139, 3, 19, 0.07);
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.order-notes-box {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+}
+
+.mobile-only-price {
+  display: none;
+}
+
+.btn-dispatch-order {
+  height: 48px;
+  padding: 0 24px;
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-bold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.btn-dispatch-order:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ============================================================ */
+/* HISTORY TAB STYLING                                          */
+/* ============================================================ */
+.history-toolbar {
+  box-shadow: var(--shadow-sm);
+  border: none !important;
+  background: var(--card-bg);
+}
+
+.history-status-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.history-tab-btn {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.history-tab-btn:hover:not(.active) {
+  background: var(--bg-secondary);
+  color: var(--primary);
+  border-color: var(--border-color-focus);
+}
+
+.history-tab-btn.active {
+  background: var(--gradient-primary);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.history-tab-count {
+  margin-left: 2px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.history-tab-btn.active .history-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.history-tab-btn:not(.active) .history-tab-count {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+}
+
+/* History Feed Cards */
 .history-feed-card {
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-base);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.history-feed-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .border-restock-feed {
@@ -2558,18 +3422,24 @@ onUnmounted(() => {
 }
 
 .feed-icon-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
 }
 
 .bg-success-light {
   background: rgba(42, 157, 143, 0.12);
+  color: #2a9d8f;
+}
+
+.bg-primary-light {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
 }
 
 .bg-danger-light {
@@ -2579,6 +3449,345 @@ onUnmounted(() => {
 .bg-card-alt {
   background: rgba(139, 3, 19, 0.03);
   border: 1px solid var(--border-color);
+}
+
+.history-meta-row {
+  line-height: 1.6;
+}
+
+.history-items-chips {
+  margin-top: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.history-item-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color-light);
+  width: 100%;
+}
+
+.history-item-chip-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.32;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.history-item-chip-qty {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  color: var(--primary);
+  font-weight: var(--font-weight-bold);
+  font-size: 12px;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 80px;
+}
+
+.history-item-chip-num {
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 34px;
+}
+
+.history-item-chip-unit {
+  min-width: 30px;
+  max-width: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  text-align: left;
+}
+
+.history-amount-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.history-total-label {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.history-total-amount {
+  font-size: 1.35rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.history-qty-value {
+  font-size: 1.35rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* TAB 3: CENTRAL KITCHEN FINANCE (สมุดบัญชีกองกลาง)         */
+/* ────────────────────────────────────────────────────────── */
+.finance-toolbar {
+  border-bottom: none !important;
+}
+
+.btn-finance-action {
+  height: 44px;
+  padding: 0 var(--space-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: var(--font-sm);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+
+.card-accent-primary {
+  border-top: 3.5px solid var(--primary) !important;
+}
+
+.card-accent-warning {
+  border-top: 3.5px solid var(--warning) !important;
+}
+
+.card-accent-danger {
+  border-top: 3.5px solid var(--danger) !important;
+}
+
+.card-accent-info {
+  border-top: 3.5px solid var(--info) !important;
+}
+
+.summary-caption {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Ledger Card & Filter Pills */
+.ledger-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.ledger-header {
+  border-bottom: 1px solid var(--border-color-light);
+  padding-bottom: 22px;
+  margin-bottom: 24px;
+}
+
+.transaction-dropdown-option {
+  white-space: normal !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.transaction-dropdown-option:last-child {
+  border-bottom: none !important;
+}
+
+.dropdown-subtext {
+  font-size: 11.5px;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.finance-status-tabs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.finance-tab-btn {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.finance-tab-btn:hover {
+  background: var(--bg-hover, #f8f9fa);
+  color: var(--text-primary);
+  border-color: var(--border-color-dark, #ccc);
+}
+
+.finance-tab-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.2);
+}
+
+.finance-tab-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.finance-tab-btn.active .finance-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* Ledger Table */
+.ledger-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ledger-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+}
+
+.ledger-table th {
+  padding: var(--space-md) var(--space-sm);
+  background: var(--bg-secondary, #fcfcfc);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: var(--font-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.ledger-table td {
+  padding: var(--space-md) var(--space-sm);
+  border-bottom: 1px solid var(--border-color-light);
+  vertical-align: middle;
+}
+
+.ledger-table tbody tr:hover {
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.015));
+}
+
+.mobile-only-ledger-list {
+  display: none;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* UNIFIED EMPTY STATES (สำหรับทุกส่วน ทุกแท็บ)               */
+/* ────────────────────────────────────────────────────────── */
+.empty-state-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  width: 100%;
+}
+
+.empty-state-box.empty-state-seamless {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 44px 20px;
+}
+
+.empty-state-box.empty-state-compact {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 24px 16px;
+}
+
+.empty-state-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(139, 3, 19, 0.05);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 16px auto;
+  flex-shrink: 0;
+}
+
+.empty-state-icon.empty-state-icon-sm {
+  width: 48px;
+  height: 48px;
+  font-size: 1.35rem;
+  margin-bottom: 10px;
+}
+
+.empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.empty-state-desc {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  max-width: 440px;
+  margin: 0 auto;
+  line-height: 1.5;
 }
 
 /* ────────────────────────────────────────────────────────── */
@@ -2700,9 +3909,711 @@ onUnmounted(() => {
   border-radius: var(--radius-md);
 }
 
+.btn-payout-partner {
+  height: 42px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  margin-top: 14px;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* MODAL SUMMARY CARDS (Spacious, Breathing Room, Not Cramped) */
+/* ────────────────────────────────────────────────────────── */
+.modal-item-summary-card {
+  padding: 12px 14px;
+  background: rgba(139, 3, 19, 0.04);
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-item-summary-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.modal-item-summary-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.modal-item-summary-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.modal-item-summary-stock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px dashed rgba(139, 3, 19, 0.12);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+.modal-total-summary-box {
+  padding: 14px 16px !important;
+  background: #ffffff !important;
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  min-height: 52px !important;
+}
+
+.modal-total-waste {
+  background: rgba(173, 40, 30, 0.04) !important;
+  border-color: rgba(173, 40, 30, 0.25) !important;
+}
+
+.modal-total-label {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+
+.modal-total-amount {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+}
+
+.modal-partner-summary-card {
+  padding: 12px 14px;
+  background: rgba(139, 3, 19, 0.04);
+  border: 1px solid rgba(139, 3, 19, 0.12);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-summary-line {
+  line-height: 1.45;
+}
+
+.modal-summary-divider {
+  border-top: 1px dashed rgba(139, 3, 19, 0.12);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.btn-payout-header {
+  height: 42px !important;
+  padding: 0 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border-radius: var(--radius-full) !important;
+  box-shadow: 0 2px 6px rgba(139, 3, 19, 0.25) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-payout-header:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.35) !important;
+}
+
+.order-branch-select-wrapper {
+  min-width: 170px;
+}
+
+.partner-branch-select-wrapper {
+  min-width: 200px;
+}
+
+.partner-branch-select-trigger {
+  font-weight: 700;
+  font-size: var(--font-base);
+}
+
 @media (max-width: 900px) {
   .financial-summary-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .catalog-toolbar-bottom {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .catalog-toolbar-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .btn-add-item {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Mobile Modal Comfort (Spacious width, not pinched to screen edge) */
+  .modal-content.modal-center {
+    width: calc(100% - 24px) !important;
+    margin: auto 12px !important;
+    max-width: 480px !important;
+  }
+
+  .modal-header {
+    padding: 14px 16px !important;
+  }
+
+  .modal-body {
+    padding: 16px !important;
+  }
+
+  /* ========================================================== */
+  /* MOBILE 2-COLUMN CARDS - CENTRAL KITCHEN CATALOG DESIGN     */
+  /* ========================================================== */
+  .catalog-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .grid-cards {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-card {
+    padding: 8px !important;
+    border-radius: var(--radius-lg) !important;
+    min-height: unset !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    text-align: left !important;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  /* 1. Top Badges: Category Left + Compact Circular Status Right */
+  .card-top-badges {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 4px !important;
+    margin-bottom: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .card-badge-category {
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+    max-width: calc(100% - 26px) !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    border-radius: var(--radius-full) !important;
+    background: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-sizing: border-box !important;
+  }
+
+  .card-badge-status {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    font-size: 9.5px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 2. Soft Cream Image Box */
+  .item-img-container {
+    height: 95px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin-bottom: 6px !important;
+    border-radius: var(--radius-md) !important;
+    background: linear-gradient(180deg, #fff7df 0%, #fceecc 100%) !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-img-placeholder {
+    font-size: 2rem !important;
+  }
+
+  /* 3. 2-Line Name Block */
+  .item-name {
+    font-size: 0.82rem !important;
+    line-height: 1.3 !important;
+    min-height: 36px !important;
+    margin-bottom: 2px !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-name-main {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    color: var(--text-primary) !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-name-sub {
+    display: block !important;
+    font-size: 0.7rem !important;
+    color: var(--text-secondary) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin-top: 1px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 4. Meta Box: Dashed divider + ราคาเบิก / คงเหลือ rows */
+  .item-meta-box {
+    border-top: 1px dashed var(--border-color) !important;
+    margin-top: 10px !important;
+    padding-top: 8px !important;
+    margin-bottom: 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-meta-row {
+    padding: 1px 0 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-meta-label {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 10.5px !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .item-unit-slash {
+    display: inline !important;
+    font-size: 10px !important;
+  }
+
+  .item-cost-val {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .item-stock-val {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 5. Scaled 2-column action buttons */
+  .card-footer-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  .btn-restock-main {
+    height: 36px !important;
+    font-size: 11.5px !important;
+    padding: 0 6px !important;
+    border-radius: var(--radius-sm) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .card-sub-actions {
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .btn-card-sub {
+    height: 32px !important;
+    font-size: 11px !important;
+    padding: 0 4px !important;
+    border-radius: var(--radius-sm) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+  }
+
+  /* Orders Tab Responsive */
+  .orders-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+
+  /* Filter Tabs & Order Status Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
+  .category-tabs,
+  .order-status-tabs {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .category-tab,
+  .order-tab-btn {
+    flex-shrink: 0 !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+
+  .order-branch-filter {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .order-branch-label {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .order-branch-select-wrapper {
+    flex: 1 !important;
+    width: 100% !important;
+  }
+
+  .order-branch-select {
+    width: 100% !important;
+    height: 42px !important;
+  }
+
+  .order-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .order-total-header {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+    padding-top: var(--space-xs);
+    border-top: 1px dashed var(--border-color);
+  }
+
+  .order-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-dispatch-order {
+    width: 100%;
+    height: 48px;
+  }
+
+  /* History Tab Responsive */
+  .history-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .history-status-tabs {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .history-tab-btn {
+    flex-shrink: 0 !important;
+    height: 34px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+  }
+
+  .history-card-inner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .history-item-chip {
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding: 4px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .history-item-chip-name {
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .history-item-chip-qty {
+    min-width: 76px !important;
+    font-size: 11.5px !important;
+    gap: 3px !important;
+  }
+
+  .history-item-chip-num {
+    min-width: 32px !important;
+  }
+
+  .history-item-chip-unit {
+    max-width: 40px !important;
+    min-width: 28px !important;
+  }
+
+  .history-amount-box {
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-top: var(--space-xs) !important;
+    border-top: 1px dashed var(--border-color) !important;
+    margin-top: var(--space-xs) !important;
+    gap: 8px !important;
+  }
+
+  .history-qty-value {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 1.2rem !important;
+  }
+
+  .history-sub-cost {
+    text-align: right !important;
+    line-height: 1.35 !important;
+    font-size: 11px !important;
+  }
+
+  /* Finance Tab Responsive */
+  .finance-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .finance-action-buttons {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .btn-finance-action {
+    width: 100% !important;
+    height: 44px !important;
+    justify-content: center !important;
+  }
+
+  .ledger-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding-bottom: 14px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .finance-status-tabs {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .finance-tab-btn {
+    flex-shrink: 0 !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* Partners Tab Responsive */
+  .partner-branch-filter-box {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .partner-branch-select-wrapper {
+    flex: 1 !important;
+    width: 100% !important;
+  }
+
+  .btn-payout-header {
+    height: 40px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Orders Tab Table vs Mobile Itemized Cards */
+  .desktop-only-orders-table {
+    display: none !important;
+  }
+
+  .mobile-only-orders-list {
+    display: flex !important;
+  }
+
+  .order-mobile-item-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .order-mobile-item-name {
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .order-mobile-item-sub {
+    line-height: 1.3;
+    word-break: break-word;
+    margin-top: 3px !important;
+  }
+
+  /* เส้นประในรายการขอเบิก มีระยะห่างสบายตา ไม่ชิด */
+  .order-mobile-item-bottom {
+    border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
+    margin-top: 12px !important;
+    padding-top: 9px !important;
+  }
+
+  /* Finance Ledger Table vs Mobile Cards */
+  .desktop-only-ledger-table {
+    display: none !important;
+  }
+
+  .mobile-only-ledger-list {
+    display: flex !important;
+  }
+
+  .ledger-mobile-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .ledger-mobile-note {
+    line-height: 1.4;
+    word-break: break-word;
+    color: var(--text-primary);
+  }
+
+  .ledger-mobile-bottom {
+    border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
+    margin-top: 10px !important;
+    padding-top: 8px !important;
   }
 }
 
