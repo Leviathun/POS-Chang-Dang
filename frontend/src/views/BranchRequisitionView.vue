@@ -64,7 +64,7 @@
           </div>
 
           <!-- Bottom Row: Filter Pills -->
-          <div class="category-tabs flex gap-xs align-center overflow-x-auto" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
+          <div class="category-tabs flex gap-xs align-center" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
             <button 
               v-for="cat in categories" 
               :key="cat.id" 
@@ -1773,25 +1773,20 @@ onMounted(() => {
     font-size: 13px;
   }
 
-  /* Filter Tabs: Horizontal Smooth Swipe on Mobile */
+  /* Filter Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
   .category-tabs {
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    padding-bottom: 6px !important;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-  }
-
-  .category-tabs::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    gap: 6px !important;
+    width: 100% !important;
   }
 
   .category-tab {
-    flex-shrink: 0;
-    height: 38px;
-    padding: 0 14px;
-    font-size: 12.5px;
+    flex-shrink: 0 !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
   }
 
   /* ========================================================== */

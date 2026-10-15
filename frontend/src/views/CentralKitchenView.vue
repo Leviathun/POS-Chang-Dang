@@ -22,7 +22,7 @@
         <!-- Bottom Row: Filter Pills on left, View Toggle & Add Button on right -->
         <div class="flex flex-between align-center flex-wrap gap-md catalog-toolbar-bottom">
           <!-- Left: Category Pills -->
-          <div class="category-tabs flex gap-xs align-center overflow-x-auto" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
+          <div class="category-tabs flex gap-xs align-center" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
             <button 
               v-for="cat in categories" 
               :key="cat.id" 
@@ -112,20 +112,20 @@
           class="card item-card"
           :class="{ 'low-stock': item.quantity <= item.min_stock_alert }"
         >
-          <!-- 1. TOP: ประเภท กับ พร้อมจ่าย ไว้บนสุดของการ์ด -->
+          <!-- 1. TOP: ประเภท กับ พร้อมจ่าย (ใช้เฉพาะไอคอนประหยัดพื้นที่ ไม่เบียด) -->
           <div class="card-top-badges flex flex-between align-center">
             <span class="badge badge-neutral card-badge-category">
               <i :class="getCategoryIcon(item.category)" class="mr-1"></i>
               {{ getCategoryLabel(item.category) }}
             </span>
-            <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status">
-              <i class="fa-solid fa-circle-xmark mr-1"></i> หมด
+            <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="ของหมดสต็อก">
+              <i class="fa-solid fa-xmark"></i>
             </span>
-            <span v-else-if="item.quantity <= item.min_stock_alert" class="badge badge-warning card-badge-status">
-              <i class="fa-solid fa-triangle-exclamation mr-1"></i> ใกล้หมด
+            <span v-else-if="item.quantity <= item.min_stock_alert" class="badge badge-warning card-badge-status" title="ใกล้หมด">
+              <i class="fa-solid fa-triangle-exclamation"></i>
             </span>
-            <span v-else class="badge badge-success card-badge-status">
-              <i class="fa-solid fa-check mr-1"></i> พร้อมจ่าย
+            <span v-else class="badge badge-success card-badge-status" title="พร้อมจ่าย">
+              <i class="fa-solid fa-check"></i>
             </span>
           </div>
 
@@ -152,20 +152,20 @@
           
           <!-- 4. ข้อมูลต้นทุนและสต็อก (คำว่า ราคาเบิก / คงเหลือ กระชับ) -->
           <div class="item-meta-box">
-            <div class="flex flex-between align-center text-xs py-1">
-              <span class="text-secondary font-medium">ราคาเบิก:</span>
-              <span class="font-bold text-primary" style="font-size: 1rem;">
-                ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal">/ {{ item.unit }}</span>
+            <div class="item-meta-row flex flex-between align-center text-xs py-1">
+              <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
+              <span class="font-bold text-primary item-cost-val" style="font-size: 1rem;">
+                ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
               </span>
             </div>
             
-            <div class="flex flex-between align-center text-xs py-1">
-              <span class="text-secondary font-medium flex align-center gap-xs">
+            <div class="item-meta-row flex flex-between align-center text-xs py-1">
+              <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
                 <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
                 <span>คงเหลือ:</span>
               </span>
               <span 
-                class="font-bold" 
+                class="font-bold item-stock-val" 
                 :class="{
                   'text-danger': item.quantity <= 0,
                   'text-warning': item.quantity > 0 && item.quantity <= item.min_stock_alert,
@@ -433,7 +433,8 @@
               </span>
             </div>
             
-            <div class="order-items-table-wrapper">
+            <!-- Desktop Table (>= 641px) -->
+            <div class="order-items-table-wrapper desktop-only-orders-table">
               <table class="order-items-table">
                 <thead>
                   <tr>
@@ -448,7 +449,6 @@
                     <td class="col-item">
                       <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
                       <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
-                      <div class="mobile-only-price text-xs text-muted mt-xs">฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}</div>
                     </td>
                     <td class="col-price text-right text-sm text-secondary">
                       ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
@@ -462,6 +462,42 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Mobile Itemized List (< 640px) -->
+            <div class="order-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
+              <div 
+                v-for="it in order.items" 
+                :key="it.id" 
+                class="order-mobile-item-card"
+              >
+                <!-- Row 1: Item Name + Subtotal -->
+                <div class="flex flex-between align-start gap-xs">
+                  <div class="flex-1 min-w-0 pr-xs">
+                    <div class="order-mobile-item-name font-bold text-sm text-primary">
+                      {{ getItemNameParts(it.item_name).main }}
+                    </div>
+                    <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
+                      {{ getItemNameParts(it.item_name).sub }}
+                    </div>
+                  </div>
+                  <div class="text-right flex-shrink-0 pl-xs">
+                    <span class="order-mobile-item-total font-bold text-sm text-primary">
+                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Row 2: Unit Price + Quantity Pill -->
+                <div class="flex flex-between align-center order-mobile-item-bottom">
+                  <span class="text-xs text-secondary">
+                    ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
+                  </span>
+                  <span class="order-qty-pill font-bold">
+                    {{ it.quantity }} {{ it.unit }}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <!-- Branch Note if any -->
@@ -2777,9 +2813,17 @@ onUnmounted(() => {
 }
 
 .card-badge-status {
-  font-size: 11.5px !important;
-  padding: 3px 10px !important;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
   border-radius: var(--radius-full) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* Image with margin */
@@ -3057,6 +3101,14 @@ onUnmounted(() => {
 }
 
 /* Order Items Table */
+.desktop-only-orders-table {
+  display: block;
+}
+
+.mobile-only-orders-list {
+  display: none !important;
+}
+
 .order-items-table-wrapper {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -3686,14 +3738,238 @@ onUnmounted(() => {
     justify-content: center;
   }
 
+  /* ========================================================== */
+  /* MOBILE 2-COLUMN CARDS - CENTRAL KITCHEN CATALOG DESIGN     */
+  /* ========================================================== */
+  .catalog-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .grid-cards {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-card {
+    padding: 8px !important;
+    border-radius: var(--radius-lg) !important;
+    min-height: unset !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    text-align: left !important;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  /* 1. Top Badges: Category Left + Compact Circular Status Right */
+  .card-top-badges {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 4px !important;
+    margin-bottom: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .card-badge-category {
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+    max-width: calc(100% - 26px) !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    border-radius: var(--radius-full) !important;
+    background: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-sizing: border-box !important;
+  }
+
+  .card-badge-status {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    font-size: 9.5px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 2. Soft Cream Image Box */
+  .item-img-container {
+    height: 95px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin-bottom: 6px !important;
+    border-radius: var(--radius-md) !important;
+    background: linear-gradient(180deg, #fff7df 0%, #fceecc 100%) !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-img-placeholder {
+    font-size: 2rem !important;
+  }
+
+  /* 3. 2-Line Name Block */
+  .item-name {
+    font-size: 0.82rem !important;
+    line-height: 1.3 !important;
+    min-height: 36px !important;
+    margin-bottom: 2px !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-name-main {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    color: var(--text-primary) !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-name-sub {
+    display: block !important;
+    font-size: 0.7rem !important;
+    color: var(--text-secondary) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin-top: 1px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 4. Meta Box: Dashed divider + ราคาเบิก / คงเหลือ rows */
+  .item-meta-box {
+    border-top: 1px dashed var(--border-color) !important;
+    margin-top: 10px !important;
+    padding-top: 8px !important;
+    margin-bottom: 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-meta-row {
+    padding: 1px 0 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .item-meta-label {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 10.5px !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .item-unit-slash {
+    display: inline !important;
+    font-size: 10px !important;
+  }
+
+  .item-cost-val {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .item-stock-val {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 5. Scaled 2-column action buttons */
+  .card-footer-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
   .btn-restock-main {
-    height: 46px !important;
-    font-size: var(--font-base) !important;
+    height: 36px !important;
+    font-size: 11.5px !important;
+    padding: 0 6px !important;
+    border-radius: var(--radius-sm) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .card-sub-actions {
+    gap: 4px !important;
+    width: 100% !important;
   }
 
   .btn-card-sub {
-    height: 42px !important;
-    font-size: var(--font-sm) !important;
+    height: 32px !important;
+    font-size: 11px !important;
+    padding: 0 4px !important;
+    border-radius: var(--radius-sm) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
   }
 
   /* Orders Tab Responsive */
@@ -3703,22 +3979,22 @@ onUnmounted(() => {
     gap: var(--space-md);
   }
 
+  /* Filter Tabs & Order Status Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
+  .category-tabs,
   .order-status-tabs {
-    overflow-x: auto;
-    padding-bottom: 4px;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    gap: 6px !important;
+    width: 100% !important;
   }
 
-  .order-status-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
+  .category-tab,
   .order-tab-btn {
-    flex-shrink: 0;
-    height: 42px;
-    padding: 0 14px;
-    font-size: 13px;
+    flex-shrink: 0 !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
   }
 
   .order-branch-filter {
@@ -3763,14 +4039,6 @@ onUnmounted(() => {
   .btn-dispatch-order {
     width: 100%;
     height: 48px;
-  }
-
-  .col-price {
-    display: none !important;
-  }
-
-  .mobile-only-price {
-    display: block;
   }
 
   /* History Tab Responsive */
@@ -3846,6 +4114,45 @@ onUnmounted(() => {
     height: 42px;
     padding: 0 14px;
     font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Orders Tab Table vs Mobile Itemized Cards */
+  .desktop-only-orders-table {
+    display: none !important;
+  }
+
+  .mobile-only-orders-list {
+    display: flex !important;
+  }
+
+  .order-mobile-item-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .order-mobile-item-name {
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .order-mobile-item-sub {
+    line-height: 1.3;
+    word-break: break-word;
+    margin-top: 3px !important;
+  }
+
+  /* เส้นประในรายการขอเบิก มีระยะห่างสบายตา ไม่ชิด */
+  .order-mobile-item-bottom {
+    border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
+    margin-top: 12px !important;
+    padding-top: 9px !important;
   }
 }
 
