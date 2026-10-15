@@ -695,15 +695,20 @@
                 </div>
 
                 <!-- Items Mini Preview Chips -->
-                <div v-if="h.items && h.items.length" class="history-items-chips flex flex-wrap gap-xs">
-                  <span 
+                <div v-if="h.items && h.items.length" class="history-items-chips">
+                  <div 
                     v-for="it in h.items" 
                     :key="it.id" 
                     class="history-item-chip"
                   >
-                    <span class="font-medium">{{ it.item_name }}</span>
-                    <span class="history-item-chip-qty">× {{ it.quantity }} {{ it.unit }}</span>
-                  </span>
+                    <div class="history-item-chip-name" :title="it.item_name">
+                      {{ it.item_name }}
+                    </div>
+                    <div class="history-item-chip-qty">
+                      <span class="history-item-chip-num">× {{ it.quantity }}</span>
+                      <span class="history-item-chip-unit" :title="it.unit">{{ it.unit }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3329,24 +3334,72 @@ onUnmounted(() => {
 
 .history-items-chips {
   margin-top: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
 }
 
 .history-item-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  box-sizing: border-box;
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color-light);
-  font-size: 12px;
+  width: 100%;
+}
+
+.history-item-chip-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.32;
   color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .history-item-chip-qty {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
   color: var(--primary);
   font-weight: var(--font-weight-bold);
-  font-size: 11.5px;
+  font-size: 12px;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 80px;
+}
+
+.history-item-chip-num {
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 34px;
+}
+
+.history-item-chip-unit {
+  min-width: 30px;
+  max-width: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  text-align: left;
 }
 
 .history-amount-box {
@@ -4166,77 +4219,110 @@ onUnmounted(() => {
 
   /* History Tab Responsive */
   .history-toolbar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
   }
 
   .history-status-tabs {
-    overflow-x: auto;
-    padding-bottom: 4px;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-  }
-
-  .history-status-tabs::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    gap: 6px !important;
+    width: 100% !important;
   }
 
   .history-tab-btn {
-    flex-shrink: 0;
-    height: 42px;
-    padding: 0 14px;
-    font-size: 13px;
+    flex-shrink: 0 !important;
+    height: 34px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
   }
 
   .history-card-inner {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .history-item-chip {
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding: 4px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .history-item-chip-name {
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .history-item-chip-qty {
+    min-width: 76px !important;
+    font-size: 11.5px !important;
+    gap: 3px !important;
+  }
+
+  .history-item-chip-num {
+    min-width: 32px !important;
+  }
+
+  .history-item-chip-unit {
+    max-width: 40px !important;
+    min-width: 28px !important;
   }
 
   .history-amount-box {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: var(--space-xs);
-    border-top: 1px dashed var(--border-color);
-    margin-top: var(--space-xs);
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-top: var(--space-xs) !important;
+    border-top: 1px dashed var(--border-color) !important;
+    margin-top: var(--space-xs) !important;
   }
 
   /* Finance Tab Responsive */
   .finance-toolbar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
   }
 
   .finance-action-buttons {
-    width: 100%;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
   }
 
   .btn-finance-action {
-    flex: 1;
-    height: 48px;
-    justify-content: center;
+    width: 100% !important;
+    height: 44px !important;
+    justify-content: center !important;
+  }
+
+  .ledger-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding-bottom: 14px !important;
+    margin-bottom: 14px !important;
   }
 
   .finance-status-tabs {
-    overflow-x: auto;
-    padding-bottom: 4px;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-  }
-
-  .finance-status-tabs::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    gap: 6px !important;
+    width: 100% !important;
   }
 
   .finance-tab-btn {
-    flex-shrink: 0;
-    height: 42px;
-    padding: 0 14px;
-    font-size: 13px;
+    flex-shrink: 0 !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
   }
 }
 
