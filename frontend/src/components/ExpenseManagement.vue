@@ -1750,6 +1750,10 @@ onMounted(() => {
   position: relative;
 }
 
+.quick-note-card-btn.is-custom-preset {
+  padding-right: 32px;
+}
+
 .quick-note-card-btn .preset-name {
   white-space: nowrap;
   overflow: hidden;
@@ -1758,33 +1762,40 @@ onMounted(() => {
 }
 
 .btn-remove-preset {
-  margin-left: 6px;
-  width: 18px;
-  height: 18px;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 10px;
-  opacity: 0.55;
+  font-size: 11px;
+  opacity: 0.65;
+  background: rgba(0, 0, 0, 0.06);
   transition: all 0.15s ease;
   flex-shrink: 0;
+  z-index: 2;
 }
 
 .btn-remove-preset:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(173, 40, 30, 0.15);
   color: var(--danger, #e63946);
+  transform: translateY(-50%) scale(1.1);
 }
 
 .quick-note-card-btn.active .btn-remove-preset {
-  opacity: 0.8;
+  opacity: 0.85;
   color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .quick-note-card-btn.active .btn-remove-preset:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.35);
   color: #ffffff;
 }
 
