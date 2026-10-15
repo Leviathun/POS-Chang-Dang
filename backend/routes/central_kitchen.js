@@ -605,6 +605,7 @@ router.get('/profit-settlement', async (req, res) => {
       return res.status(400).json({ success: false, error: 'กรุณาระบุ branch_id' });
     }
 
+    const branch = await db.prepare('SELECT id, name FROM branches WHERE id = ?').get(branch_id);
     const startDate = start_date || `${getThaiToday().substring(0, 7)}-01`;
     const endDate = end_date || getThaiToday();
 
@@ -670,16 +671,19 @@ router.get('/profit-settlement', async (req, res) => {
         AND date(created_at) >= date(?) AND date(created_at) <= date(?)
     `).get(branch_id, startDate, endDate);
 
-    // 7. Check existing dividend payouts for this period
+    // 7. Check existing dividend payouts for this branch
     const existingPayouts = await db.prepare(`
-      SELECT * FROM branch_dividend_payouts
-      WHERE branch_id = ? AND period_start = ? AND period_end = ?
-    `).all(branch_id, startDate, endDate);
+      SELECT *, payout_amount as amount, paid_at as created_at
+      FROM branch_dividend_payouts
+      WHERE branch_id = ?
+      ORDER BY id DESC LIMIT 50
+    `).all(branch_id);
 
     res.json({
       success: true,
       data: {
         branch_id: Number(branch_id),
+        branch_name: branch?.name || '',
         period: { start_date: startDate, end_date: endDate },
         total_sales: totalSales,
         direct_store_expenses: directStoreExpenses,
@@ -1062,18 +1066,57 @@ router.post('/payouts', requireManagerOrAdmin, async (req, res) => {
     const db = getDb();
     const { branch_id, start_date, end_date, distributions, net_profit, note } = req.body;
 
-    if (!branch_id || !Array.isArray(distributions) || distributions.length === 0) {
-      return res.status(400).json({ success: false, error: 'ข้อมูลการจ่ายปันผลไม่ถูกต้อง' });
+    let payoutItems = [];
+    if (Array.isArray(distributions) && distributions.length > 0) {
+      payoutItems = distributions.map(d => ({
+        partner_id: d.id || d.partner_id || null,
+        partner_name: d.name || d.partner_name,
+        share_percentage: Number(d.share_percentage) || 0,
+        payout_amount: Number(d.payout_amount !== undefined ? d.payout_amount : d.amount) || 0
+      }));
+    } else if (req.body.partner_name && (req.body.amount !== undefined || req.body.payout_amount !== undefined)) {
+      payoutItems = [{
+        partner_id: req.body.partner_id || null,
+        partner_name: req.body.partner_name,
+        share_percentage: Number(req.body.share_percentage) || 0,
+        payout_amount: Number(req.body.amount !== undefined ? req.body.amount : req.body.payout_amount) || 0
+      }];
     }
 
+    const bId = Number(branch_id);
+    if (!bId || payoutItems.length === 0 || payoutItems.some(item => !item.partner_name || item.payout_amount <= 0)) {
+      return res.status(400).json({ success: false, error: 'ข้อมูลการจ่ายปันผลไม่ถูกต้อง (กรุณาระบุสาขา ผู้รับ และยอดเงิน)' });
+    }
+
+    const startDate = start_date || `${getThaiToday().substring(0, 7)}-01`;
+    const endDate = end_date || getThaiToday();
+    const netProfitVal = Number(net_profit) || 0;
     const nowLocal = getThaiNow();
+    const paidByName = req.user?.name || 'ผู้จัดการ';
+    const payoutNote = note || req.body.note || 'จ่ายเงินปันผลประจำงวด';
+
     const statements = [];
 
-    for (const d of distributions) {
+    for (const d of payoutItems) {
       statements.push({
-        sql: `INSERT INTO branch_dividend_payouts (branch_id, period_start, period_end, partner_id, partner_name, share_percentage, payout_amount, net_profit, paid_by_name, note, paid_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [branch_id, start_date, end_date, d.id || null, d.name, d.share_percentage, d.payout_amount, net_profit, req.user.name, note || 'จ่ายเงินปันผลประจำงวด', nowLocal]
+        sql: `INSERT INTO branch_dividend_payouts (
+                branch_id, period_start, period_end, partner_id, partner_name, 
+                share_percentage, payout_amount, net_profit, paid_by_name, payment_method, note, paid_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          bId,
+          startDate,
+          endDate,
+          d.partner_id,
+          d.partner_name,
+          d.share_percentage,
+          d.payout_amount,
+          netProfitVal,
+          paidByName,
+          'transfer',
+          payoutNote,
+          nowLocal
+        ]
       });
     }
 

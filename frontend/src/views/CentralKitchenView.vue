@@ -1510,12 +1510,12 @@
                       <span class="badge badge-success text-2xs" style="font-size: 10px; padding: 1px 6px;">ชำระแล้ว</span>
                     </div>
                     <div class="text-xs text-secondary mt-2xs">
-                      {{ formatDateTime(po.payout_date || po.created_at) }}
+                      {{ formatDateTime(po.paid_at || po.payout_date || po.created_at) }}
                       <span v-if="po.note"> • {{ po.note }}</span>
                     </div>
                   </div>
                   <div class="text-right">
-                    <span class="font-bold text-primary text-base">฿{{ formatNumber(po.amount) }}</span>
+                    <span class="font-bold text-primary text-base">฿{{ formatNumber(po.payout_amount || po.amount) }}</span>
                   </div>
                 </div>
               </div>
@@ -2040,7 +2040,7 @@
           <div class="modal-partner-summary-card mb-md">
             <div class="modal-summary-line flex flex-between align-center">
               <span class="text-xs text-secondary font-medium">สาขา:</span>
-              <span class="font-bold text-sm text-main">{{ settlementData?.branch_name || '-' }}</span>
+              <span class="font-bold text-sm text-main">{{ settlementData?.branch_name || selectedPartnerBranchName || '-' }}</span>
             </div>
             <div class="modal-summary-line modal-summary-divider flex flex-between align-center">
               <span class="text-xs text-secondary font-medium">ผู้รับปันผล:</span>
@@ -2053,7 +2053,8 @@
 
           <div class="form-group mb-md" v-if="!payoutForm.partner_name">
             <label class="form-label font-bold text-sm">เลือกหุ้นส่วน *</label>
-            <select v-model="payoutForm.partner_name" class="form-select w-full font-bold">
+            <select v-model="payoutForm.partner_name" class="form-select w-full font-bold" @change="onPayoutPartnerSelect">
+              <option value="" disabled>-- เลือกหุ้นส่วน --</option>
               <option v-for="p in settlementData?.partner_distributions" :key="p.id" :value="p.name">
                 {{ p.name }} ({{ p.share_percentage }}%) - แนะนำ ฿{{ formatNumber(p.payout_amount) }}
               </option>
@@ -2807,6 +2808,7 @@ const submitReimburseBranch = async () => {
 const openPayoutModal = (partner = null) => {
   if (partner) {
     payoutForm.value = {
+      partner_id: partner.id,
       partner_name: partner.name,
       share_percentage: partner.share_percentage,
       amount: partner.payout_amount > 0 ? partner.payout_amount : null,
@@ -2814,6 +2816,7 @@ const openPayoutModal = (partner = null) => {
     };
   } else {
     payoutForm.value = {
+      partner_id: null,
       partner_name: '',
       share_percentage: 0,
       amount: null,
@@ -2823,7 +2826,25 @@ const openPayoutModal = (partner = null) => {
   showPayoutModal.value = true;
 };
 
+const onPayoutPartnerSelect = () => {
+  const found = settlementData.value?.partner_distributions?.find(p => p.name === payoutForm.value.partner_name);
+  if (found) {
+    payoutForm.value.partner_id = found.id;
+    payoutForm.value.share_percentage = found.share_percentage;
+    if (!payoutForm.value.amount) {
+      payoutForm.value.amount = found.payout_amount > 0 ? found.payout_amount : null;
+    }
+    if (!payoutForm.value.note) {
+      payoutForm.value.note = `เงินปันผล (${found.share_percentage}%)`;
+    }
+  }
+};
+
 const submitPayout = async () => {
+  const branchId = selectedPartnerBranch.value || settlementData.value?.branch_id;
+  if (!branchId) {
+    return ui.error('กรุณาเลือกสาขาที่ต้องการบันทึกจ่ายปันผล');
+  }
   if (!payoutForm.value.partner_name?.trim()) {
     return ui.error('กรุณาระบุชื่อผู้รับเงินปันผล');
   }
@@ -2833,10 +2854,16 @@ const submitPayout = async () => {
   isSubmittingPayout.value = true;
   ui.showLoading();
   try {
+    const matchedPartner = settlementData.value?.partner_distributions?.find(p => p.name === payoutForm.value.partner_name);
     await api.centralKitchen.recordPayouts({
-      branch_id: selectedPartnerBranch.value,
+      branch_id: branchId,
+      partner_id: payoutForm.value.partner_id || matchedPartner?.id || null,
       partner_name: payoutForm.value.partner_name,
+      share_percentage: payoutForm.value.share_percentage || matchedPartner?.share_percentage || 0,
       amount: payoutForm.value.amount,
+      start_date: settlementData.value?.period?.start_date,
+      end_date: settlementData.value?.period?.end_date,
+      net_profit: settlementData.value?.net_profit || 0,
       note: payoutForm.value.note
     });
     ui.success('บันทึกการจ่ายเงินปันผลเรียบร้อยแล้ว');
