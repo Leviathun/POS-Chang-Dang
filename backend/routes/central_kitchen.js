@@ -762,6 +762,14 @@ router.get('/finances/summary', async (req, res) => {
     `).get();
     const pendingReceivables = Number(outRes?.pending_receivables || 0);
 
+    // 7. Total waste loss accumulated
+    const wasteRes = await db.prepare(`
+      SELECT COALESCE(SUM(total_cost), 0) as total_waste_cost, COUNT(id) as total_waste_count
+      FROM central_kitchen_waste_logs
+    `).get();
+    const totalWasteCost = Number(wasteRes?.total_waste_cost || 0);
+    const totalWasteCount = Number(wasteRes?.total_waste_count || 0);
+
     res.json({
       success: true,
       data: {
@@ -771,7 +779,9 @@ router.get('/finances/summary', async (req, res) => {
         total_capital: totalCapital,
         total_reimbursed: totalReimbursed,
         total_purchases: totalPurchases,
-        total_operating_expenses: totalOperatingExpenses
+        total_operating_expenses: totalOperatingExpenses,
+        total_waste_cost: totalWasteCost,
+        total_waste_count: totalWasteCount
       }
     });
   } catch (error) {
@@ -780,27 +790,78 @@ router.get('/finances/summary', async (req, res) => {
   }
 });
 
-// GET /api/central-kitchen/finances/logs — ประวัติรายการเดินบัญชีกองกลาง
+// GET /api/central-kitchen/finances/logs — ประวัติรายการเดินบัญชีกองกลาง (รวมบันทึกของเสีย)
 router.get('/finances/logs', async (req, res) => {
   try {
     const db = getDb();
     const { type, limit } = req.query;
 
-    let sql = `
-      SELECT f.*, b.name as branch_name
-      FROM central_kitchen_finances f
-      LEFT JOIN branches b ON f.branch_id = b.id
-      WHERE 1=1
-    `;
+    let sql;
     const params = [];
+    const limitNum = Number(limit) || 100;
 
-    if (type && type !== 'all') {
-      sql += ' AND f.type = ?';
-      params.push(type);
+    if (type === 'waste_loss') {
+      sql = `
+        SELECT 
+          w.id,
+          'waste_loss' as type,
+          w.total_cost as amount,
+          'stock' as payment_method,
+          printf('ตัดของเสีย: %s (%.1f %s) - %s', i.name, w.quantity, i.unit, w.reason) as note,
+          w.created_by_name,
+          w.created_at,
+          NULL as branch_id,
+          'คลังครัวกลาง' as branch_name
+        FROM central_kitchen_waste_logs w
+        JOIN central_kitchen_items i ON w.item_id = i.id
+        ORDER BY w.id DESC LIMIT ?
+      `;
+      params.push(limitNum);
+    } else if (type && type !== 'all') {
+      sql = `
+        SELECT f.*, b.name as branch_name
+        FROM central_kitchen_finances f
+        LEFT JOIN branches b ON f.branch_id = b.id
+        WHERE f.type = ?
+        ORDER BY f.id DESC LIMIT ?
+      `;
+      params.push(type, limitNum);
+    } else {
+      // type === 'all'
+      sql = `
+        SELECT * FROM (
+          SELECT 
+            f.id,
+            f.type,
+            f.amount,
+            f.payment_method,
+            f.note,
+            f.created_by_name,
+            f.created_at,
+            f.branch_id,
+            b.name as branch_name
+          FROM central_kitchen_finances f
+          LEFT JOIN branches b ON f.branch_id = b.id
+
+          UNION ALL
+
+          SELECT 
+            w.id,
+            'waste_loss' as type,
+            w.total_cost as amount,
+            'stock' as payment_method,
+            printf('ตัดของเสีย: %s (%.1f %s) - %s', i.name, w.quantity, i.unit, w.reason) as note,
+            w.created_by_name,
+            w.created_at,
+            NULL as branch_id,
+            'คลังครัวกลาง' as branch_name
+          FROM central_kitchen_waste_logs w
+          JOIN central_kitchen_items i ON w.item_id = i.id
+        ) combined
+        ORDER BY created_at DESC LIMIT ?
+      `;
+      params.push(limitNum);
     }
-
-    sql += ' ORDER BY f.id DESC LIMIT ?';
-    params.push(Number(limit) || 100);
 
     const logs = await db.prepare(sql).all(...params);
 

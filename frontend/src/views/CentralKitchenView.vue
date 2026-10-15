@@ -839,7 +839,12 @@
               </span>
             </div>
             <div class="summary-value text-warning">฿{{ formatNumber(financeSummary.inventory_value) }}</div>
-            <div class="summary-caption text-xs text-muted">สินค้าในคลัง คำนวณจากราคาทุนจริง</div>
+            <div class="summary-sub-badges flex align-center flex-wrap gap-xs mt-xs">
+              <span class="sub-badge">สินค้าในคลัง ทุนจริง</span>
+              <span v-if="(financeSummary.total_waste_cost || 0) > 0" class="sub-badge sub-badge-waste-loss font-bold">
+                <i class="fa-solid fa-trash-can mr-1"></i> เสียสะสม: -฿{{ formatNumber(financeSummary.total_waste_cost) }}
+              </span>
+            </div>
           </div>
 
           <!-- Card 3: Pending Receivables from Branches -->
@@ -929,6 +934,15 @@
                 <span>รายจ่ายครัวกลาง -</span>
                 <span class="finance-tab-count">{{ operatingExpenseOutCount }}</span>
               </button>
+              <button 
+                class="finance-tab-btn" 
+                :class="{ active: financeFilterType === 'waste_loss' }"
+                @click="financeFilterType = 'waste_loss'"
+              >
+                <i class="fa-solid fa-trash-can"></i>
+                <span>ของเสีย/ตัดทิ้ง -</span>
+                <span class="finance-tab-count">{{ wasteLossCount }}</span>
+              </button>
             </div>
           </div>
 
@@ -972,6 +986,7 @@
                         <i v-else-if="log.type === 'reimbursement_in'" class="fa-solid fa-hand-holding-dollar"></i>
                         <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
                         <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
+                        <i v-else-if="log.type === 'waste_loss'" class="fa-solid fa-trash-can"></i>
                         <span>{{ getFinanceTypeLabel(log.type) }}</span>
                       </span>
                     </td>
@@ -1010,6 +1025,7 @@
                     <i v-else-if="log.type === 'reimbursement_in'" class="fa-solid fa-hand-holding-dollar"></i>
                     <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
                     <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
+                    <i v-else-if="log.type === 'waste_loss'" class="fa-solid fa-trash-can"></i>
                     <span>{{ getFinanceTypeLabel(log.type) }}</span>
                   </span>
                   <span class="font-bold text-base" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
@@ -2203,7 +2219,9 @@ const financeSummary = ref({
   total_capital: 0,
   total_purchases: 0,
   total_reimbursements: 0,
-  total_operating_expenses: 0
+  total_operating_expenses: 0,
+  total_waste_cost: 0,
+  total_waste_count: 0
 });
 const financeLogs = ref([]);
 const isLoadingFinance = ref(false);
@@ -2218,6 +2236,7 @@ const capitalInCount = computed(() => financeLogs.value.filter(l => l.type === '
 const reimbursementInCount = computed(() => financeLogs.value.filter(l => l.type === 'reimbursement_in').length);
 const purchaseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'purchase_out').length);
 const operatingExpenseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'operating_expense_out').length);
+const wasteLossCount = computed(() => financeLogs.value.filter(l => l.type === 'waste_loss').length);
 
 // Modals: Transaction (Finance)
 const showTransactionModal = ref(false);
@@ -2699,7 +2718,8 @@ const getFinanceTypeBadgeClass = (type) => {
     'capital_in': 'badge-success',
     'reimbursement_in': 'badge-info',
     'purchase_out': 'badge-warning',
-    'operating_expense_out': 'badge-danger'
+    'operating_expense_out': 'badge-danger',
+    'waste_loss': 'badge-danger badge-cat-waste'
   };
   return map[type] || 'badge-secondary';
 };
@@ -2709,7 +2729,8 @@ const getFinanceTypeLabel = (type) => {
     'capital_in': 'เติมเงินทุน',
     'reimbursement_in': 'สาขาคืนเงิน',
     'purchase_out': 'ซื้อของเข้าคลัง',
-    'operating_expense_out': 'ค่าใช้จ่ายครัวกลาง'
+    'operating_expense_out': 'ค่าใช้จ่ายครัวกลาง',
+    'waste_loss': 'ตัดของเสีย'
   };
   return map[type] || type;
 };
@@ -3857,6 +3878,12 @@ onUnmounted(() => {
   border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
+}
+
+.sub-badge-waste-loss {
+  background: rgba(173, 40, 30, 0.08) !important;
+  color: var(--danger, #ad281e) !important;
+  border: 1px solid rgba(173, 40, 30, 0.2);
 }
 
 .summary-formula-caption {
