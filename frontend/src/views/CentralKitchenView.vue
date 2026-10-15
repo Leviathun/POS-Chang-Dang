@@ -1745,11 +1745,11 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showTransactionModal" class="modal-container active">
       <div class="modal-overlay" @click="showTransactionModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
             <i :class="transactionForm.type === 'capital_in' ? 'fa-solid fa-circle-plus text-success' : 'fa-solid fa-circle-minus text-danger'" style="margin-right: 8px;"></i>
-            {{ transactionForm.type === 'capital_in' ? 'เติมเงินทุนกองกลาง (ทุนเจ้าของ)' : 'จ่ายค่าใช้จ่ายครัวกลาง' }}
+            {{ transactionForm.type === 'capital_in' ? 'เติมเงินทุนกองกลาง' : 'จ่ายค่าใช้จ่ายครัวกลาง' }}
           </h3>
           <button class="modal-close" @click="showTransactionModal = false">✕</button>
         </div>
@@ -1766,7 +1766,7 @@
                 <div class="flex align-center gap-xs">
                   <i :class="transactionForm.type === 'capital_in' ? 'fa-solid fa-circle-plus text-success' : 'fa-solid fa-circle-minus text-danger'" style="width: 16px;"></i>
                   <span class="custom-select-text font-bold">
-                    {{ transactionForm.type === 'capital_in' ? 'เติมเงินทุนกองกลาง (เงินเข้า)' : 'ค่าใช้จ่ายครัวกลาง (เงินออก)' }}
+                    {{ transactionForm.type === 'capital_in' ? 'เติมเงินทุนกองกลาง' : 'ค่าใช้จ่ายครัวกลาง' }}
                   </span>
                 </div>
               </div>
@@ -1778,7 +1778,7 @@
                 >
                   <div class="flex align-center gap-xs font-bold">
                     <i class="fa-solid fa-circle-plus text-success" :class="{ 'text-white': transactionForm.type === 'capital_in' }" style="width: 16px;"></i>
-                    <span>เติมเงินทุนกองกลาง (เงินเข้า)</span>
+                    <span>เติมเงินทุนกองกลาง</span>
                   </div>
                   <div class="dropdown-subtext" :class="transactionForm.type === 'capital_in' ? 'text-white opacity-90' : 'text-secondary'">
                     เงินทุนตั้งต้น / เงินสำรองหมุนเวียนจากเจ้าของร้าน
@@ -1792,7 +1792,7 @@
                 >
                   <div class="flex align-center gap-xs font-bold">
                     <i class="fa-solid fa-circle-minus text-danger" :class="{ 'text-white': transactionForm.type === 'operating_expense_out' }" style="width: 16px;"></i>
-                    <span>ค่าใช้จ่ายครัวกลาง (เงินออก)</span>
+                    <span>ค่าใช้จ่ายครัวกลาง</span>
                   </div>
                   <div class="dropdown-subtext" :class="transactionForm.type === 'operating_expense_out' ? 'text-white opacity-90' : 'text-secondary'">
                     จ่ายค่าไฟ, ค่าเช่าโกดัง, ค่าจ้างคนส่งของ หรือค่าซ่อมบำรุง
@@ -1803,7 +1803,7 @@
           </div>
 
           <div class="form-group mb-md">
-            <label class="form-label font-bold text-sm">จำนวนเงิน (บาท) *</label>
+            <label class="form-label font-bold text-sm">จำนวนเงิน *</label>
             <input 
               type="number" 
               v-model.number="transactionForm.amount" 
