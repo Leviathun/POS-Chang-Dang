@@ -78,6 +78,76 @@
         </div>
       </div>
 
+      <!-- Quick Navigation Cards: Central Kitchen & Requisition (จับส่วนเกินเข้าหน้าตั้งค่าร้าน) -->
+      <div class="settings-extra-modules mb-xl">
+        <!-- 1. Central Kitchen System (Admin / Manager) -->
+        <div v-if="currentUser?.role === 'admin' || currentUser?.role === 'manager'" class="card p-md mb-md border-primary-light" :style="isCentralKitchenSession ? 'background: rgba(139, 3, 19, 0.06); border: 2px solid var(--primary);' : 'background: rgba(139, 3, 19, 0.03); border: 1.5px dashed var(--primary-light);'">
+          <div class="flex flex-between align-center flex-wrap gap-md">
+            <div class="flex align-center gap-md">
+              <div class="p-sm rounded-circle" style="background: rgba(139, 3, 19, 0.1); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i v-if="!isCentralKitchenSession" class="fa-solid fa-warehouse text-primary" style="font-size: 1.25rem;"></i>
+                <i v-else class="fa-solid fa-store text-primary" style="font-size: 1.25rem;"></i>
+              </div>
+              <div>
+                <div class="font-bold text-base" style="color: var(--primary);">
+                  {{ isCentralKitchenSession ? 'กำลังอยู่ในโหมด: ระบบครัวกลาง' : 'ระบบครัวกลาง (Central Kitchen)' }}
+                </div>
+                <div class="text-xs text-secondary">
+                  {{ isCentralKitchenSession ? 'คลิกปุ่มเพื่อสลับกลับไปทำงานที่หน้าเคาน์เตอร์ขายหน้าร้าน POS' : 'บริหารคลังสินค้ากลาง, จ่ายของให้สาขา, อนุมัติคำขอเบิก, สรุปการเงินกองกลาง' }}
+                </div>
+              </div>
+            </div>
+            <div class="flex align-center gap-xs">
+              <button 
+                v-if="!isCentralKitchenSession" 
+                type="button"
+                class="btn btn-primary inline-flex align-center gap-xs"
+                @click="enterCentralKitchenFromSettings"
+                style="padding: 8px 16px; font-size: var(--font-sm);"
+              >
+                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                <span>เข้าสู่ระบบครัวกลาง</span>
+              </button>
+              <button 
+                v-else 
+                type="button" 
+                class="btn btn-primary inline-flex align-center gap-xs"
+                @click="switchToPosBranchFromSettings"
+                style="padding: 8px 18px; font-size: var(--font-sm); font-weight: bold;"
+              >
+                <i class="fa-solid fa-store"></i>
+                <span>สลับกลับไปหน้าร้าน POS</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Requisition System (เบิกของจากครัวกลาง) -->
+        <div class="card p-md mb-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center flex-wrap gap-md">
+            <div class="flex align-center gap-md">
+              <div class="p-sm rounded-circle" style="background: rgba(139, 3, 19, 0.06); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fa-solid fa-boxes-packing text-primary" style="font-size: 1.25rem;"></i>
+              </div>
+              <div>
+                <div class="font-bold text-base text-primary">ระบบเบิกของจากครัวกลาง (Requisition)</div>
+                <div class="text-xs text-secondary">ส่งคำขอเบิกวัตถุดิบและสินค้าจากครัวกลางเข้ามายังสาขา</div>
+              </div>
+            </div>
+            <router-link 
+              to="/requisition" 
+              class="btn btn-secondary inline-flex align-center gap-xs"
+              style="padding: 8px 16px; font-size: var(--font-sm);"
+            >
+              <i class="fa-solid fa-box-open"></i>
+              <span>ไปที่หน้าเบิกของ</span>
+            </router-link>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider mb-lg" style="height: 1px; background: var(--border-color);"></div>
+
       <div class="card-title text-sm"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> การแจ้งเตือนสต็อกวัตถุดิบ</div>
 
 
@@ -1090,6 +1160,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api';
 import { ui, formatDate, getUser, getRoleLabel } from '../helpers';
 import { store } from '../store';
@@ -1105,6 +1176,45 @@ import {
   printReceipt,
   printReceiptSync
 } from '../utils/printer';
+
+const router = useRouter();
+
+const isCentralKitchenSession = computed(() => {
+  if (sessionStorage.getItem('is_central_kitchen') === '1') return true;
+  const branchName = sessionStorage.getItem('selected_branch_name') || '';
+  if (branchName.includes('ครัวกลาง')) return true;
+  const currentBranchId = Number(sessionStorage.getItem('selected_branch_id'));
+  const b = branches.value.find(x => x.id === currentBranchId);
+  return b && (b.is_central_kitchen === 1 || b.name.includes('ครัวกลาง'));
+});
+
+const enterCentralKitchenFromSettings = () => {
+  sessionStorage.setItem('is_central_kitchen', '1');
+  const ckBranch = branches.value.find(b => b.is_central_kitchen === 1 || b.name.includes('ครัวกลาง'));
+  if (ckBranch) {
+    sessionStorage.setItem('selected_branch_id', String(ckBranch.id));
+    sessionStorage.setItem('selected_branch_name', ckBranch.name);
+  }
+  router.push('/central-kitchen/catalog');
+};
+
+const switchToPosBranchFromSettings = () => {
+  sessionStorage.removeItem('is_central_kitchen');
+  const userBranchId = currentUser.value?.branch_id;
+  let retailBranch = branches.value.find(b => b.id === userBranchId && !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1);
+  if (!retailBranch) {
+    const lastPosId = sessionStorage.getItem('last_pos_branch_id') ? Number(sessionStorage.getItem('last_pos_branch_id')) : null;
+    retailBranch = branches.value.find(b => b.id === lastPosId && !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1);
+  }
+  if (!retailBranch) {
+    retailBranch = branches.value.find(b => !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1) || branches.value[0];
+  }
+  if (retailBranch) {
+    sessionStorage.setItem('selected_branch_id', String(retailBranch.id));
+    sessionStorage.setItem('selected_branch_name', retailBranch.name);
+  }
+  router.push('/pos');
+};
 
 // --- Printer & Cash Drawer States & Actions ---
 const printerConnected = ref(false);

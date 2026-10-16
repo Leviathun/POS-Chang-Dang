@@ -251,6 +251,7 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
       SELECT SUM(
         CASE 
           WHEN is_refund = 1 OR status = 'refund' THEN -amount
+          WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
           ELSE amount
         END
       ) as cash_expenses
@@ -367,6 +368,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
         SELECT SUM(
           CASE 
             WHEN is_refund = 1 OR status = 'refund' THEN -amount
+            WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
             ELSE amount
           END
         ) as cash_expenses
@@ -434,6 +436,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
               SELECT SUM(
                 CASE 
                   WHEN is_refund = 1 OR status = 'refund' THEN -amount
+                  WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
                   ELSE amount
                 END
               ) as cash_expenses FROM expenses 
@@ -474,6 +477,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
             SELECT SUM(
               CASE 
                 WHEN is_refund = 1 OR status = 'refund' THEN -amount
+                WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
                 ELSE amount
               END
             ) as cash_expenses FROM expenses 
@@ -509,6 +513,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
             SELECT SUM(
               CASE 
                 WHEN is_refund = 1 OR status = 'refund' THEN -amount
+                WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
                 ELSE amount
               END
             ) as cash_expenses FROM expenses 

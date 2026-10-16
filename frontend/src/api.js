@@ -378,6 +378,9 @@ const employees = {
 };
 
 export const centralKitchen = {
+  async getPosMenus() {
+    return request('GET', '/api/central-kitchen/pos-menus');
+  },
   async getItems(params = {}) {
     const query = new URLSearchParams(params).toString();
     return request('GET', `/api/central-kitchen/items?${query}`);
@@ -387,6 +390,9 @@ export const centralKitchen = {
   },
   async updateItem(id, data) {
     return request('PUT', `/api/central-kitchen/items/${id}`, data);
+  },
+  async deleteItem(id) {
+    return request('DELETE', `/api/central-kitchen/items/${id}`);
   },
   async quickRestock(id, data) {
     return request('POST', `/api/central-kitchen/items/${id}/restock`, data);
@@ -400,6 +406,15 @@ export const centralKitchen = {
   },
   async dispatchTransfer(id) {
     return request('PUT', `/api/central-kitchen/transfers/${id}/dispatch`);
+  },
+  async directDispatch(data) {
+    return request('POST', '/api/central-kitchen/transfers/direct-dispatch', data);
+  },
+  async adjustTransferItem(transferId, itemId, data) {
+    return request('PUT', `/api/central-kitchen/transfers/${transferId}/items/${itemId}/adjust`, data);
+  },
+  async cancelTransfer(transferId) {
+    return request('PUT', `/api/central-kitchen/transfers/${transferId}/cancel`);
   },
   async receiveTransfer(id) {
     return request('PUT', `/api/central-kitchen/transfers/${id}/receive`);
@@ -420,6 +435,9 @@ export const centralKitchen = {
   },
   async getFinancesSummary() {
     return request('GET', '/api/central-kitchen/finances/summary');
+  },
+  async getReceivablesBreakdown() {
+    return request('GET', '/api/central-kitchen/finances/receivables-breakdown');
   },
   async getFinancesLogs(params = {}) {
     const query = new URLSearchParams(params).toString();
