@@ -24,7 +24,10 @@
       <div class="stock-page-title">
         ระบบจัดการสต็อกสินค้า
       </div>
-      <div>
+      <div class="flex align-center gap-xs flex-wrap">
+        <router-link to="/requisition" class="btn btn-secondary">
+          <i class="fa-solid fa-boxes-packing"></i> เบิกของจากครัวกลาง
+        </router-link>
         <router-link v-if="isManagerOrAdminUser" to="/stock/bulk" class="btn btn-primary">
           <i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน
         </router-link>

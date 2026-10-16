@@ -225,39 +225,28 @@
       <div class="main-layout">
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
-          <span class="header-title flex align-center gap-xs">
-            <img v-if="route.path === '/pos'" src="@/assets/image/Logo POS.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;" />
-            <i v-else-if="route.path.startsWith('/central-kitchen')" class="fa-solid fa-warehouse text-primary"></i>
-            <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary"></i>
-            <i v-else-if="route.path.startsWith('/management')" class="fa-solid fa-briefcase"></i>
-            <i v-else-if="route.path === '/menu'" class="fa-solid fa-utensils"></i>
-            <i v-else-if="route.path.startsWith('/stock')" class="fa-solid fa-boxes-stacked"></i>
-            <i v-else-if="route.path === '/reports'" class="fa-solid fa-chart-line"></i>
-            <i v-else-if="route.path === '/settings'" class="fa-solid fa-gear"></i>
-            <span>{{ activeTitle }}</span>
-          </span>
+          <div class="header-left flex align-center gap-xs">
+            <img src="@/assets/image/Logo POS.png" alt="Logo" class="header-logo" style="width: 26px; height: 26px; object-fit: contain; flex-shrink: 0;" />
+            <div class="header-branch-badge inline-flex align-center gap-2xs">
+              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse text-primary"></i>
+              <i v-else class="fa-solid fa-store text-primary"></i>
+              <span class="header-branch-name">{{ currentBranchDisplay }}</span>
+            </div>
+          </div>
           <div class="header-right flex align-center gap-xs">
-            <router-link 
-              v-if="isManagerOrAdminUser && !isCentralKitchenSessionActive" 
-              to="/central-kitchen/catalog" 
-              class="header-switch-btn inline-flex align-center gap-2xs"
-              title="เข้าระบบครัวกลาง"
-            >
-              <i class="fa-solid fa-warehouse"></i>
-              <span>ครัวกลาง</span>
-              <span v-if="pendingOrdersCount > 0" class="badge-mini-dot"></span>
-            </router-link>
+            <!-- When in Central Kitchen mode: show quick switch back to Retail Store in the corner! -->
             <button 
-              v-else-if="isCentralKitchenSessionActive" 
-              type="button"
-              class="header-switch-btn inline-flex align-center gap-2xs"
+              v-if="isCentralKitchenSessionActive" 
+              type="button" 
+              class="header-btn inline-flex align-center gap-2xs" 
               @click="switchToPosBranch"
-              title="สลับไปหน้าร้าน POS"
+              title="สลับกลับไปหน้าร้าน POS"
+              style="background: rgba(139, 3, 19, 0.08) !important; color: var(--primary) !important; border: 1.5px solid var(--primary-light) !important;"
             >
-              <i class="fa-solid fa-store"></i>
-              <span>หน้าร้าน</span>
+              <i class="fa-solid fa-store" style="font-size: var(--font-xs);"></i>
+              <span style="font-size: var(--font-xs); font-weight: bold;">หน้าร้าน</span>
             </button>
-            <button class="header-btn inline-flex align-center gap-xs" id="btn-logout" @click="handleLogout">
+            <button class="header-btn inline-flex align-center gap-xs" id="btn-logout" @click="handleLogout" title="ออกจากระบบ">
               <i class="fa-solid fa-right-from-bracket" style="font-size: var(--font-sm);"></i>
               <span style="font-size: var(--font-xs); font-weight: bold;">ออก</span>
             </button>
@@ -288,6 +277,7 @@
 
         <!-- Bottom Navigation (Visible on Mobile) -->
         <nav id="bottom-nav">
+          <!-- Mode 1: Central Kitchen (5 clean tabs) -->
           <template v-if="isCentralKitchenSessionActive">
             <router-link to="/central-kitchen/catalog" class="nav-item" active-class="active">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
@@ -304,59 +294,45 @@
               </span>
               <span class="nav-label">คำขอเบิก</span>
             </router-link>
-            <router-link to="/central-kitchen/history" class="nav-item" active-class="active">
-              <span class="nav-icon flex justify-center"><i class="fa-solid fa-clock-rotate-left"></i></span>
-              <span class="nav-label">ประวัติ</span>
-            </router-link>
             <router-link to="/central-kitchen/finance" class="nav-item" active-class="active">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-vault"></i></span>
               <span class="nav-label">การเงิน</span>
             </router-link>
-            <router-link to="/central-kitchen/partners" class="nav-item" active-class="active">
-              <span class="nav-icon flex justify-center"><i class="fa-solid fa-handshake"></i></span>
-              <span class="nav-label">หุ้นส่วน</span>
-            </router-link>
-            <button type="button" class="nav-item border-0 bg-transparent cursor-pointer" @click="switchToPosBranch" title="สลับไปหน้าร้าน POS">
-              <span class="nav-icon flex justify-center"><i class="fa-solid fa-store"></i></span>
-              <span class="nav-label">หน้าร้าน</span>
-            </button>
             <router-link to="/settings" class="nav-item" active-class="active">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
               <span class="nav-label">ตั้งค่า</span>
             </router-link>
           </template>
+
+          <!-- Mode 2: Retail Branch POS (5 clean tabs as requested) -->
           <template v-else>
+            <!-- 1. ขาย -->
             <router-link to="/pos" class="nav-item" active-class="active" data-page="pos">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-house"></i></span>
               <span class="nav-label">ขาย</span>
             </router-link>
-            <router-link to="/requisition" class="nav-item" active-class="active" data-page="requisition">
-              <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-packing"></i></span>
-              <span class="nav-label">เบิกของ</span>
-            </router-link>
-            <router-link v-if="isManagerOrAdminUser" to="/menu" class="nav-item" active-class="active" data-page="menu">
+            <!-- 2. เมนู -->
+            <router-link to="/menu" class="nav-item" active-class="active" data-page="menu">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-utensils"></i></span>
               <span class="nav-label">เมนู</span>
             </router-link>
+            <!-- 3. สต็อก -->
             <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
               <span class="nav-label">สต็อก</span>
             </router-link>
-            <router-link to="/reports" class="nav-item" active-class="active" data-page="reports">
-              <span class="nav-icon flex justify-center"><i class="fa-solid fa-chart-line"></i></span>
-              <span class="nav-label">รายงาน</span>
-            </router-link>
-            <router-link v-if="isManagerOrAdminUser" to="/management" class="nav-item" active-class="active" data-page="management">
+            <!-- 4. จัดการร้าน (เลือกเข้า จัดการร้าน หรือ รายงาน) -->
+            <button 
+              type="button" 
+              class="nav-item border-0 bg-transparent cursor-pointer" 
+              :class="{ 'active': route.path.startsWith('/management') || route.path.startsWith('/reports') }"
+              @click="openManageChoiceSheet" 
+              data-page="management"
+            >
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-briefcase"></i></span>
               <span class="nav-label">จัดการร้าน</span>
-            </router-link>
-            <router-link v-if="isManagerOrAdminUser" to="/central-kitchen/catalog" class="nav-item" active-class="active" data-page="central-kitchen">
-              <span class="nav-icon flex justify-center relative">
-                <i class="fa-solid fa-warehouse"></i>
-                <span v-if="pendingOrdersCount > 0" class="badge-mini-dot"></span>
-              </span>
-              <span class="nav-label">ครัวกลาง</span>
-            </router-link>
+            </button>
+            <!-- 5. ตั้งค่า -->
             <router-link to="/settings" class="nav-item" active-class="active" data-page="settings">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
               <span class="nav-label">ตั้งค่า</span>
@@ -365,6 +341,56 @@
         </nav>
       </div>
     </div>
+
+    <!-- Mobile Action Sheet: Management or Reports Selector -->
+    <transition name="fade">
+      <div v-if="isManageChoiceSheetOpen" class="mobile-action-sheet-overlay" @click="closeManageChoiceSheet">
+        <div class="mobile-action-sheet-content" @click.stop>
+          <div class="sheet-handle-bar"></div>
+          <div class="sheet-header">
+            <div class="sheet-title flex align-center gap-xs">
+              <i class="fa-solid fa-briefcase text-primary"></i>
+              <span>เลือกระบบที่ต้องการเข้าใช้งาน</span>
+            </div>
+            <button type="button" class="sheet-close-btn" @click="closeManageChoiceSheet">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          
+          <div class="sheet-options-list">
+            <div 
+              class="sheet-option-card" 
+              :class="{ 'current': route.path.startsWith('/management') }"
+              @click="navigateToManage('/management')"
+            >
+              <div class="option-icon-wrap management-icon">
+                <i class="fa-solid fa-briefcase"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">บริหารจัดการร้าน</div>
+                <div class="option-desc">บันทึกค่าใช้จ่าย, ตรวจสอบบิล, หุ้นส่วน & ปันผล</div>
+              </div>
+              <i class="fa-solid fa-chevron-right option-arrow"></i>
+            </div>
+
+            <div 
+              class="sheet-option-card" 
+              :class="{ 'current': route.path.startsWith('/reports') }"
+              @click="navigateToManage('/reports')"
+            >
+              <div class="option-icon-wrap reports-icon">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">รายงานยอดขาย</div>
+                <div class="option-desc">สรุปยอดขายรายวัน, กราฟสถิติ, ยอดขายสินค้า</div>
+              </div>
+              <i class="fa-solid fa-chevron-right option-arrow"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Reactive Toast Containers -->
     <div id="toast-container">
@@ -490,8 +516,23 @@ const isManagerOrAdminUser = computed(() => {
   return user.value && ['admin', 'manager'].includes(user.value.role);
 });
 
+// Active session mode tracking (Central Kitchen vs Retail POS)
+const isCentralKitchenMode = ref(sessionStorage.getItem('is_central_kitchen') === '1');
+
+// Watch route to automatically track CK mode and clear when navigating back to POS/store pages
+watch(() => route.path, (newPath) => {
+  if (newPath.startsWith('/central-kitchen')) {
+    isCentralKitchenMode.value = true;
+    sessionStorage.setItem('is_central_kitchen', '1');
+  } else if (newPath === '/pos' || newPath === '/menu' || newPath === '/management' || newPath === '/reports' || newPath === '/requisition') {
+    isCentralKitchenMode.value = false;
+    sessionStorage.removeItem('is_central_kitchen');
+  }
+}, { immediate: true });
+
 const isCentralKitchenSessionActive = computed(() => {
   if (route.path.startsWith('/central-kitchen')) return true;
+  if (isCentralKitchenMode.value || sessionStorage.getItem('is_central_kitchen') === '1') return true;
   const branchName = selectedBranchName.value || sessionStorage.getItem('selected_branch_name') || '';
   if (branchName.includes('ครัวกลาง')) return true;
   const b = branches.value.find(x => x.id === selectedBranch.value || (user.value && x.id === user.value.branch_id));
@@ -500,6 +541,9 @@ const isCentralKitchenSessionActive = computed(() => {
 });
 
 const switchToPosBranch = () => {
+  isCentralKitchenMode.value = false;
+  sessionStorage.removeItem('is_central_kitchen');
+
   // 1. Look for logged-in user branch first if it is a retail branch
   const userBranchId = user.value?.branch_id || (getUser() ? getUser().branch_id : null);
   let retailBranch = branches.value.find(b => b.id === userBranchId && !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1);
@@ -539,6 +583,32 @@ watch(() => [route.path, isCentralKitchenSessionActive.value], () => {
     loadPendingOrdersCount();
   }
 }, { immediate: true });
+
+// Mobile Action Sheet & Branch Display Handlers
+const isManageChoiceSheetOpen = ref(false);
+const openManageChoiceSheet = () => {
+  isManageChoiceSheetOpen.value = true;
+};
+const closeManageChoiceSheet = () => {
+  isManageChoiceSheetOpen.value = false;
+};
+const navigateToManage = (path) => {
+  isManageChoiceSheetOpen.value = false;
+  router.push(path);
+};
+
+const currentBranchDisplay = computed(() => {
+  if (isCentralKitchenSessionActive.value) {
+    return 'ครัวกลาง';
+  }
+  const b = branches.value.find(x => x.id === selectedBranch.value || (user.value && x.id === user.value.branch_id));
+  if (b) {
+    return b.name;
+  }
+  const savedName = sessionStorage.getItem('selected_branch_name');
+  if (savedName) return savedName;
+  return shopSettings.value?.shop_name || 'ร้านไก่ทอดช้างแดง';
+});
 
 const activeTitle = computed(() => {
   if (route.path.startsWith('/central-kitchen')) {
@@ -939,14 +1009,14 @@ onUnmounted(() => {
   width: 100%;
   max-width: var(--max-width);
   height: var(--header-height);
-  background: rgba(255, 247, 223, 0.92);
+  background: rgba(255, 247, 223, 0.94);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 2px solid var(--primary-light);
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 var(--space-lg);
+  justify-content: space-between;
+  padding: 0 var(--space-md);
   z-index: 100;
 }
 /* Retro Checkered strip under header */
@@ -967,24 +1037,41 @@ onUnmounted(() => {
   background-color: var(--bg-primary);
 }
 
-#app-header .header-title {
-  font-size: var(--font-lg);
-  font-weight: var(--font-weight-semibold);
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+#app-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  flex: 1;
 }
 
-#app-header .header-left,
 #app-header .header-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
 }
 
-#app-header .header-left { left: var(--space-lg); }
-#app-header .header-right { right: var(--space-lg); }
+.header-branch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1.5px solid var(--primary-light);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  max-width: calc(100vw - 110px);
+}
+
+.header-branch-name {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 #app-header .header-btn {
   height: 32px;
@@ -997,7 +1084,7 @@ onUnmounted(() => {
   color: var(--primary) !important;
   font-size: var(--font-sm);
   font-weight: var(--font-weight-bold);
-  padding: 0 8px !important;
+  padding: 0 10px !important;
   gap: 4px;
   width: auto !important;
   cursor: pointer;
@@ -1025,40 +1112,11 @@ onUnmounted(() => {
   border-top: 2px solid var(--primary-light);
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-evenly;
   z-index: 100;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-#bottom-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.header-switch-btn {
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  background: rgba(139, 3, 19, 0.08) !important;
-  border: 1.5px solid rgba(139, 3, 19, 0.2) !important;
-  color: var(--primary) !important;
-  font-size: var(--font-xs);
-  font-weight: var(--font-weight-bold);
-  padding: 0 10px !important;
-  gap: 5px;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  text-decoration: none;
-}
-.header-switch-btn:active {
-  transform: scale(0.94);
-  background: var(--primary) !important;
-  color: #ffffff !important;
-}
-.header-switch-btn:active i {
-  color: #ffffff !important;
+  padding-left: var(--space-2xs);
+  padding-right: var(--space-2xs);
+  overflow-x: hidden;
 }
 
 /* Retro Checkered strip above bottom navigation */
@@ -1080,25 +1138,168 @@ onUnmounted(() => {
 }
 
 .nav-item {
-  flex: 1 0 auto;
-  max-width: 75px;
-  min-width: 44px;
+  flex: 1 1 0;
+  max-width: 76px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 5px 2px; /* Premium uniform size */
+  padding: 6px 2px;
   color: var(--text-tertiary);
   font-size: var(--font-xs);
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-base);
   position: relative;
   -webkit-tap-highlight-color: transparent;
-  border-radius: var(--radius-lg); /* Rounded pill active background shape */
+  border-radius: var(--radius-lg);
   border: none;
   background: transparent;
   cursor: pointer;
   text-decoration: none;
+}
+
+/* Mobile Action Sheet (Slide up modal for จัดการร้าน) */
+.mobile-action-sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.mobile-action-sheet-content {
+  background: #ffffff;
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  padding: var(--space-md) var(--space-lg) calc(var(--space-xl) + var(--safe-bottom));
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  max-width: var(--max-width);
+  margin: 0 auto;
+  width: 100%;
+  animation: slideUpActionSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpActionSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-handle-bar {
+  width: 38px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: #e2e8f0;
+  margin: 0 auto var(--space-md);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sheet-title {
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.sheet-close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.sheet-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sheet-option-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: #f8fafc;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.sheet-option-card:active {
+  transform: scale(0.98);
+  background: rgba(139, 3, 19, 0.05);
+  border-color: var(--primary-light);
+}
+
+.sheet-option-card.current {
+  background: rgba(139, 3, 19, 0.06);
+  border-color: var(--primary);
+}
+
+.sheet-option-card .option-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.sheet-option-card .option-icon-wrap.management-icon {
+  background: rgba(139, 3, 19, 0.1);
+  color: var(--primary);
+}
+
+.sheet-option-card .option-icon-wrap.reports-icon {
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+}
+
+.sheet-option-card .option-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-option-card .option-title {
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.sheet-option-card .option-desc {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.sheet-option-card .option-arrow {
+  color: var(--text-tertiary);
+  font-size: var(--font-sm);
 }
 
 .nav-item .nav-label {
