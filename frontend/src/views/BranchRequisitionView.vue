@@ -126,7 +126,7 @@
             }"
             @click="addToCart(item)"
           >
-            <!-- Floating Quantity Badge (เหมือนหน้าขาย POS บนมือถือ) -->
+            <!-- Floating Quantity Badge (Desktop & Mobile) -->
             <span v-if="getCartQty(item.id) > 0" class="qty-badge">
               {{ getCartQty(item.id) }}
             </span>
@@ -507,17 +507,35 @@
                 <i class="fa-solid fa-store"></i>
                 <span>{{ t.branch_name }}</span>
               </span>
+              <!-- Dispatch Type Badge -->
+              <span v-if="t.dispatch_type === 'push'" class="badge badge-info font-bold" title="ครัวกลางจัดส่งให้โดยตรง">
+                <i class="fa-solid fa-truck-arrow-right"></i> ครัวกลางจ่ายให้
+              </span>
+              <span v-else class="badge badge-neutral font-bold" title="สาขาเป็นผู้กดขอเบิก">
+                <i class="fa-solid fa-hand-holding-hand"></i> สาขาขอเบิก
+              </span>
               <span class="badge font-bold" :class="getStatusBadgeClass(t.status)">
                 <i v-if="t.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
                 <i v-else-if="t.status === 'dispatched'" class="fa-solid fa-truck-fast"></i>
                 <i v-else-if="t.status === 'received'" class="fa-solid fa-circle-check"></i>
+                <i v-else-if="t.status === 'cancelled'" class="fa-solid fa-ban"></i>
                 <span>{{ getStatusLabel(t.status) }}</span>
+              </span>
+              <span v-if="t.status === 'cancelled'" class="badge badge-success font-bold">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>คืนแล้ว</span>
               </span>
             </div>
 
             <div class="order-total-header">
               <span class="order-total-label">ยอดต้นทุนตัดเข้าสาขา:</span>
-              <span class="order-total-amount font-bold text-primary">฿{{ formatNumber(t.total_cost) }}</span>
+              <span 
+                class="order-total-amount font-bold"
+                :class="t.status === 'cancelled' ? 'text-muted' : 'text-primary'"
+                :style="t.status === 'cancelled' ? 'text-decoration: line-through; opacity: 0.65;' : ''"
+              >
+                ฿{{ formatNumber(t.total_cost) }}
+              </span>
             </div>
           </div>
 
@@ -622,13 +640,16 @@
           <div class="order-card-footer flex flex-between align-center flex-wrap gap-md pt-sm">
             <div class="order-footer-notice text-xs">
               <span v-if="t.status === 'pending'" class="text-warning font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-hourglass-start"></i> รอครัวกลางจัดเตรียมของและกดส่ง
+                <i class="fa-solid fa-hourglass-start"></i> รอครัวกลางอนุมัติและจัดส่ง
               </span>
               <span v-else-if="t.status === 'dispatched'" class="text-info font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-truck-fast"></i> ของส่งออกจากครัวกลางแล้ว กรุณาตรวจนับของจริงก่อนกดยืนยันรับ
+                <i class="fa-solid fa-truck-fast"></i> ของส่งออกจากครัวกลางแล้ว
               </span>
               <span v-else-if="t.status === 'received'" class="text-success font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-circle-check"></i> รับของเรียบร้อย (บันทึกเป็น Expense สาขาแล้ว)
+                <i class="fa-solid fa-circle-check"></i> อนุมัติและบันทึกต้นทุนเข้าสาขาเรียบร้อย (เติมสต็อก POS แล้ว)
+              </span>
+              <span v-else-if="t.status === 'cancelled'" class="text-danger font-bold flex align-center gap-xs">
+                <i class="fa-solid fa-ban"></i> ใบเบิกถูกยกเลิก (คืนต้นทุนและสต็อกเรียบร้อย)
               </span>
             </div>
 
@@ -1149,6 +1170,7 @@ onMounted(() => {
 
 /* Item Card - Exact Central Kitchen Catalog Card Design */
 .item-card {
+  position: relative;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -1158,6 +1180,36 @@ onMounted(() => {
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
   cursor: pointer;
+}
+
+.item-card {
+  position: relative !important;
+}
+
+.item-card.in-cart {
+  /* No dimming / tinting when selected; card remains crisp with normal background */
+  background: var(--card-bg, #ffffff) !important;
+  border-color: var(--border-color) !important;
+}
+
+.qty-badge {
+  display: flex !important;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 26px;
+  height: 26px;
+  background: var(--primary, #8b0313);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(139, 3, 19, 0.45);
+  border: 2px solid #ffffff;
+  z-index: 10;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .item-card:hover {
@@ -1842,9 +1894,9 @@ onMounted(() => {
   }
 
   .item-card.in-cart {
-    border-color: var(--primary) !important;
-    background: rgba(139, 3, 19, 0.04) !important;
-    box-shadow: 0 0 0 1.5px var(--primary), var(--shadow-sm) !important;
+    background: var(--card-bg, #ffffff) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
   }
 
   /* 1. Top Badges: Category Left + Status Right */
