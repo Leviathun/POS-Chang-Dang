@@ -236,7 +236,27 @@
             <i v-else-if="route.path === '/settings'" class="fa-solid fa-gear"></i>
             <span>{{ activeTitle }}</span>
           </span>
-          <div class="header-right">
+          <div class="header-right flex align-center gap-xs">
+            <router-link 
+              v-if="isManagerOrAdminUser && !isCentralKitchenSessionActive" 
+              to="/central-kitchen/catalog" 
+              class="header-switch-btn inline-flex align-center gap-2xs"
+              title="เข้าระบบครัวกลาง"
+            >
+              <i class="fa-solid fa-warehouse"></i>
+              <span>ครัวกลาง</span>
+              <span v-if="pendingOrdersCount > 0" class="badge-mini-dot"></span>
+            </router-link>
+            <button 
+              v-else-if="isCentralKitchenSessionActive" 
+              type="button"
+              class="header-switch-btn inline-flex align-center gap-2xs"
+              @click="switchToPosBranch"
+              title="สลับไปหน้าร้าน POS"
+            >
+              <i class="fa-solid fa-store"></i>
+              <span>หน้าร้าน</span>
+            </button>
             <button class="header-btn inline-flex align-center gap-xs" id="btn-logout" @click="handleLogout">
               <i class="fa-solid fa-right-from-bracket" style="font-size: var(--font-sm);"></i>
               <span style="font-size: var(--font-xs); font-weight: bold;">ออก</span>
@@ -296,6 +316,10 @@
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-handshake"></i></span>
               <span class="nav-label">หุ้นส่วน</span>
             </router-link>
+            <button type="button" class="nav-item border-0 bg-transparent cursor-pointer" @click="switchToPosBranch" title="สลับไปหน้าร้าน POS">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-store"></i></span>
+              <span class="nav-label">หน้าร้าน</span>
+            </button>
             <router-link to="/settings" class="nav-item" active-class="active">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
               <span class="nav-label">ตั้งค่า</span>
@@ -325,6 +349,13 @@
             <router-link v-if="isManagerOrAdminUser" to="/management" class="nav-item" active-class="active" data-page="management">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-briefcase"></i></span>
               <span class="nav-label">จัดการร้าน</span>
+            </router-link>
+            <router-link v-if="isManagerOrAdminUser" to="/central-kitchen/catalog" class="nav-item" active-class="active" data-page="central-kitchen">
+              <span class="nav-icon flex justify-center relative">
+                <i class="fa-solid fa-warehouse"></i>
+                <span v-if="pendingOrdersCount > 0" class="badge-mini-dot"></span>
+              </span>
+              <span class="nav-label">ครัวกลาง</span>
             </router-link>
             <router-link to="/settings" class="nav-item" active-class="active" data-page="settings">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
@@ -996,7 +1027,40 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-around;
   z-index: 100;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+#bottom-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.header-switch-btn {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: rgba(139, 3, 19, 0.08) !important;
+  border: 1.5px solid rgba(139, 3, 19, 0.2) !important;
+  color: var(--primary) !important;
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 0 10px !important;
+  gap: 5px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+}
+.header-switch-btn:active {
+  transform: scale(0.94);
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+.header-switch-btn:active i {
+  color: #ffffff !important;
+}
+
 /* Retro Checkered strip above bottom navigation */
 #bottom-nav::before {
   content: '';
@@ -1016,9 +1080,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-  flex: 1;
+  flex: 1 0 auto;
   max-width: 75px;
-  min-width: 0;
+  min-width: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1031,6 +1095,10 @@ onUnmounted(() => {
   position: relative;
   -webkit-tap-highlight-color: transparent;
   border-radius: var(--radius-lg); /* Rounded pill active background shape */
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .nav-item .nav-label {
