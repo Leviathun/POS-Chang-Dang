@@ -18,9 +18,106 @@ function getThaiToday() {
   return new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
 
+/**
+ * Auto-sync restock to branch POS menu items
+ * If ckItem has linked_menu_item_name, or if category === 'raw_material' and matches menu_items.name
+ */
+async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, userName, isReverse = false) {
+  try {
+    if (!branchId || !ckItem || !qty || qty <= 0) return { synced: false };
+
+    // 1. Determine target menu item name (Explicit link only)
+    let targetName = ckItem.linked_menu_item_name ? ckItem.linked_menu_item_name.trim() : null;
+
+    // If not linked explicitly, do NOT auto-restock branch POS menu (เว้นว่าง = ไม่เติมสต็อก POS)
+    if (!targetName) {
+      return { synced: false, reason: 'not_linked' };
+    }
+
+    let menuItem = await db.prepare('SELECT * FROM menu_items WHERE branch_id = ? AND name = ? LIMIT 1').get(branchId, targetName);
+
+    if (!menuItem) {
+      return { synced: false, reason: 'no_matching_menu_item' };
+    }
+
+    const stockField = (ckItem.target_stock_type === 'ready' || menuItem.raw_quantity === null) ? 'quantity' : 'raw_quantity';
+    const currentStock = Number(menuItem[stockField] || 0);
+    const changeQty = isReverse ? -Number(qty) : Number(qty);
+    const newStock = Math.max(0, currentStock + changeQty);
+    const nowLocal = getThaiNow();
+
+    // Update menu_items stock
+    await db.prepare(`
+      UPDATE menu_items 
+      SET ${stockField} = ?, updated_at = ?
+      WHERE id = ?
+    `).run(newStock, nowLocal, menuItem.id);
+
+    // Insert stock_logs
+    const logReason = isReverse ? 'adjustment' : 'restock';
+    const logNote = isReverse 
+      ? `ปรับลดคืนวัตถุดิบครัวกลาง ใบเบิก #${transferNo} (${ckItem.name}) โดย ${userName}`
+      : `เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง ใบเบิก #${transferNo} (${ckItem.name}) โดย ${userName}`;
+
+    await db.prepare(`
+      INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, note, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(branchId, menuItem.id, changeQty, currentStock, newStock, logReason, logNote, nowLocal);
+
+    return {
+      synced: true,
+      menuItemId: menuItem.id,
+      menuItemName: menuItem.name,
+      stockField,
+      changeQty,
+      newStock
+    };
+  } catch (err) {
+    console.warn(`⚠️ syncRestockToBranchMenu error for item ${ckItem?.name}:`, err.message);
+    return { synced: false, error: err.message };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
-// 1. ITEMS (สินค้า/วัตถุดิบ/บรรจุภัณฑ์/อุปกรณ์ในครัวกลาง)
+// 1. ITEMS & POS MENUS (สินค้า/วัตถุดิบ/บรรจุภัณฑ์/อุปกรณ์ในครัวกลาง)
 // ─────────────────────────────────────────────────────────────
+
+// GET /api/central-kitchen/pos-menus — ดึงรายชื่อเมนู POS ทั้งหมดที่เปิดใช้งาน สำหรับผูกเติมสต็อก
+router.get('/pos-menus', async (req, res) => {
+  try {
+    const db = getDb();
+    const items = await db.prepare(`
+      SELECT 
+        mi.id, mi.name, 
+        COALESCE(c.name, 'ทั่วไป') as category_name,
+        mi.raw_quantity, mi.quantity
+      FROM menu_items mi
+      LEFT JOIN categories c ON c.id = mi.category_id
+      WHERE mi.active = 1
+      ORDER BY c.sort_order ASC, c.name ASC, mi.sort_order ASC, mi.name ASC
+    `).all();
+
+    const distinctMap = new Map();
+    for (const item of items) {
+      if (!distinctMap.has(item.name)) {
+        distinctMap.set(item.name, {
+          name: item.name,
+          category_name: item.category_name,
+          has_raw_stock: item.raw_quantity !== null,
+          has_ready_stock: item.quantity !== null
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: Array.from(distinctMap.values())
+    });
+  } catch (error) {
+    console.error('❌ Error fetching POS menu items:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // GET /api/central-kitchen/items — ดึงรายการสินค้าทั้งหมดในครัวกลาง
 router.get('/items', async (req, res) => {
@@ -60,7 +157,7 @@ router.get('/items', async (req, res) => {
 router.post('/items', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
-    const { name, category, unit, cost_price, quantity, min_stock_alert, image_url } = req.body;
+    const { name, category, unit, cost_price, quantity, min_stock_alert, image_url, linked_menu_item_name, target_stock_type } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, error: 'กรุณาระบุชื่อสินค้า/วัตถุดิบ' });
@@ -71,12 +168,14 @@ router.post('/items', requireManagerOrAdmin, async (req, res) => {
     const minAlert = Number(min_stock_alert) || 10;
     const itemUnit = unit ? unit.trim() : 'ชิ้น';
     const itemCat = category || 'general';
+    const linkedMenu = linked_menu_item_name && linked_menu_item_name.trim() ? linked_menu_item_name.trim() : null;
+    const stockType = target_stock_type === 'ready' ? 'ready' : 'raw';
     const nowLocal = getThaiNow();
 
     const insertResult = await db.prepare(`
-      INSERT INTO central_kitchen_items (name, category, unit, cost_price, quantity, min_stock_alert, image_url, active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-    `).run(name.trim(), itemCat, itemUnit, price, initialQty, minAlert, image_url || null, nowLocal, nowLocal);
+      INSERT INTO central_kitchen_items (name, category, unit, cost_price, quantity, min_stock_alert, image_url, linked_menu_item_name, target_stock_type, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    `).run(name.trim(), itemCat, itemUnit, price, initialQty, minAlert, image_url || null, linkedMenu, stockType, nowLocal, nowLocal);
 
     const insertedId = insertResult.lastInsertRowid;
 
@@ -104,12 +203,17 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
     const itemId = req.params.id;
-    const { name, category, unit, cost_price, min_stock_alert, image_url, active } = req.body;
+    const { name, category, unit, cost_price, min_stock_alert, image_url, active, linked_menu_item_name, target_stock_type } = req.body;
 
     const existing = await db.prepare('SELECT id FROM central_kitchen_items WHERE id = ?').get(itemId);
     if (!existing) {
       return res.status(404).json({ success: false, error: 'ไม่พบสินค้านี้ในครัวกลาง' });
     }
+
+    const hasLinkedMenuParam = linked_menu_item_name !== undefined;
+    const cleanLinkedMenu = hasLinkedMenuParam 
+      ? (linked_menu_item_name && linked_menu_item_name.trim() ? linked_menu_item_name.trim() : null)
+      : null;
 
     const nowLocal = getThaiNow();
     await db.prepare(`
@@ -120,6 +224,8 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
           cost_price = COALESCE(?, cost_price),
           min_stock_alert = COALESCE(?, min_stock_alert),
           image_url = COALESCE(?, image_url),
+          linked_menu_item_name = CASE WHEN ? = 1 THEN ? ELSE linked_menu_item_name END,
+          target_stock_type = COALESCE(?, target_stock_type),
           active = COALESCE(?, active),
           updated_at = ?
       WHERE id = ?
@@ -130,6 +236,9 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
       cost_price !== undefined ? Number(cost_price) : null,
       min_stock_alert !== undefined ? Number(min_stock_alert) : null,
       image_url !== undefined ? image_url : null,
+      hasLinkedMenuParam ? 1 : 0,
+      cleanLinkedMenu,
+      target_stock_type !== undefined ? (target_stock_type === 'ready' ? 'ready' : 'raw') : null,
       active !== undefined ? Number(active) : null,
       nowLocal,
       itemId
@@ -138,6 +247,45 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
     res.json({ success: true, message: 'อัปเดตข้อมูลสินค้าเรียบร้อยแล้ว' });
   } catch (error) {
     console.error('❌ Error updating central kitchen item:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE /api/central-kitchen/items/:id — ลบสินค้าออกจากแคตตาล็อกครัวกลาง
+router.delete('/items/:id', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const itemId = req.params.id;
+
+    const existing = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(itemId);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'ไม่พบสินค้านี้ในครัวกลาง' });
+    }
+
+    // Check if referenced in transfers
+    const transferRef = await db.prepare('SELECT COUNT(*) as count FROM central_kitchen_transfer_items WHERE item_id = ?').get(itemId);
+
+    if (transferRef && transferRef.count > 0) {
+      // Soft-delete to preserve transfer history
+      const nowLocal = getThaiNow();
+      await db.prepare('UPDATE central_kitchen_items SET active = 0, updated_at = ? WHERE id = ?').run(nowLocal, itemId);
+      return res.json({
+        success: true,
+        message: `ลบสินค้า "${existing.name}" ออกจากแคตตาล็อกเรียบร้อยแล้ว (ซ่อนจากระบบเนื่องจากมีประวัติการเบิก)`
+      });
+    }
+
+    // No transfer history: clean up item restock/waste logs and delete the item
+    await db.prepare('DELETE FROM central_kitchen_restock_logs WHERE item_id = ?').run(itemId);
+    await db.prepare('DELETE FROM central_kitchen_waste_logs WHERE item_id = ?').run(itemId);
+    await db.prepare('DELETE FROM central_kitchen_items WHERE id = ?').run(itemId);
+
+    res.json({
+      success: true,
+      message: `ลบสินค้า "${existing.name}" ออกจากแคตตาล็อกเรียบร้อยแล้ว`
+    });
+  } catch (error) {
+    console.error('❌ Error deleting central kitchen item:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -333,7 +481,7 @@ router.post('/transfers', async (req, res) => {
   }
 });
 
-// PUT /api/central-kitchen/transfers/:id/dispatch — ครัวกลางกดส่งของ (ตัดสต็อกครัวกลาง)
+// PUT /api/central-kitchen/transfers/:id/dispatch — ครัวกลางกดยืนยันจ่ายของ (ตัดสต็อกครัวกลาง + หัก Expense สาขาทันที + เติมสต็อก POS สาขาอัตโนมัติ)
 router.put('/transfers/:id/dispatch', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
@@ -344,32 +492,67 @@ router.put('/transfers/:id/dispatch', requireManagerOrAdmin, async (req, res) =>
       return res.status(404).json({ success: false, error: 'ไม่พบใบเบิกนี้' });
     }
     if (transfer.status !== 'pending') {
-      return res.status(400).json({ success: false, error: `สถานะใบเบิกคือ ${transfer.status} ไม่สามารถกดจัดส่งได้` });
+      return res.status(400).json({ success: false, error: `สถานะใบเบิกคือ ${transfer.status} ไม่สามารถกดอนุมัติได้` });
     }
 
     const transferItems = await db.prepare('SELECT * FROM central_kitchen_transfer_items WHERE transfer_id = ?').all(transferId);
-
-    // Check and deduct stock in central kitchen
     const nowLocal = getThaiNow();
-    const statements = [
-      {
-        sql: `UPDATE central_kitchen_transfers SET status = 'dispatched', dispatched_by_name = ?, dispatched_at = ? WHERE id = ?`,
-        args: [req.user.name, nowLocal, transferId]
-      }
-    ];
+    const todayDate = getThaiToday();
 
+    // 1. Deduct stock in central kitchen & save original_quantity
+    const statements = [];
     for (const item of transferItems) {
       statements.push({
         sql: `UPDATE central_kitchen_items SET quantity = MAX(0, quantity - ?), updated_at = ? WHERE id = ?`,
         args: [item.quantity, nowLocal, item.item_id]
       });
+      statements.push({
+        sql: `UPDATE central_kitchen_transfer_items SET original_quantity = COALESCE(original_quantity, quantity) WHERE id = ?`,
+        args: [item.id]
+      });
+    }
+    await db.batch(statements);
+
+    // 2. Create Auto Expense for the receiving branch immediately
+    let insertedExpenseId = null;
+    if (transfer.total_cost > 0) {
+      const typeLabel = transfer.dispatch_type === 'push' ? 'ครัวกลางจ่ายให้' : 'สาขาขอเบิก';
+      const expenseNote = `เบิกของจากครัวกลาง [${typeLabel}] ใบเบิก #${transfer.transfer_no}${transfer.notes ? ` (${transfer.notes})` : ''}`;
+      
+      const insertExpenseRes = await db.prepare(`
+        INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, payment_method, status, created_at)
+        VALUES (?, ?, ?, 'raw_materials', ?, ?, 'transfer', 'completed', ?)
+      `).run(transfer.branch_id, req.user.id, transfer.total_cost, expenseNote, todayDate, nowLocal);
+
+      insertedExpenseId = insertExpenseRes.lastInsertRowid;
     }
 
-    await db.batch(statements);
+    // 3. Auto-sync restock to branch POS menu items (for raw materials or linked items)
+    const restockedItems = [];
+    for (const item of transferItems) {
+      const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
+      if (ckItem) {
+        const syncRes = await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name);
+        if (syncRes.synced) {
+          restockedItems.push(syncRes);
+        }
+      }
+    }
+
+    // 4. Update transfer status directly to received (completed!)
+    await db.prepare(`
+      UPDATE central_kitchen_transfers 
+      SET status = 'received', dispatched_by_name = ?, dispatched_at = ?, received_at = ?, expense_id = ?
+      WHERE id = ?
+    `).run(req.user.name, nowLocal, nowLocal, insertedExpenseId, transferId);
 
     res.json({
       success: true,
-      message: `จัดส่งใบเบิก ${transfer.transfer_no} และตัดสต็อกครัวกลางเรียบร้อยแล้ว`
+      message: `อนุมัติคำขอเบิก #${transfer.transfer_no} เรียบร้อยแล้ว (ตัดสต็อกครัวกลาง, บันทึกต้นทุนเข้าสาขา ฿${transfer.total_cost.toLocaleString()} และเติมสต็อก POS สำเร็จ)`,
+      data: {
+        expense_id: insertedExpenseId,
+        restocked_items: restockedItems
+      }
     });
   } catch (error) {
     console.error('❌ Error dispatching transfer:', error);
@@ -377,7 +560,279 @@ router.put('/transfers/:id/dispatch', requireManagerOrAdmin, async (req, res) =>
   }
 });
 
-// PUT /api/central-kitchen/transfers/:id/receive — สาขากดยืนยันรับของ (บันทึก Auto Expense เข้าบัญชีสาขา)
+// POST /api/central-kitchen/transfers/direct-dispatch — ครัวกลางจ่ายของให้สาขาโดยตรง (Push Model: 1 คลิกจบ)
+router.post('/transfers/direct-dispatch', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const { branch_id, items, notes } = req.body;
+
+    const targetBranchId = Number(branch_id);
+    if (!targetBranchId) {
+      return res.status(400).json({ success: false, error: 'กรุณาระบุสาขาปลายทางที่ต้องการจ่ายของให้' });
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'กรุณาเลือกรายการสินค้าที่ต้องการจ่ายให้สาขา' });
+    }
+
+    // Generate Transfer Number: REQ-YYYYMMDD-XXXX
+    const dateStr = getThaiToday().replace(/-/g, '');
+    const randNum = Math.floor(1000 + Math.random() * 9000);
+    const transferNo = `REQ-${dateStr}-${randNum}`;
+
+    let totalCost = 0;
+    const itemsToInsert = [];
+
+    // Verify stock and calculate costs
+    for (const it of items) {
+      const dbItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(it.item_id);
+      if (!dbItem) continue;
+
+      const qty = Number(it.quantity) || 0;
+      if (qty <= 0) continue;
+
+      const cost = Number(dbItem.cost_price) || 0;
+      totalCost += qty * cost;
+
+      itemsToInsert.push({
+        item_id: dbItem.id,
+        item_name: dbItem.name,
+        unit: dbItem.unit,
+        cost_price: cost,
+        quantity: qty
+      });
+    }
+
+    if (itemsToInsert.length === 0) {
+      return res.status(400).json({ success: false, error: 'ไม่พบรายการสินค้าหรือจำนวนที่ถูกต้อง (> 0)' });
+    }
+
+    const nowLocal = getThaiNow();
+    const todayDate = getThaiToday();
+
+    // 1. Create Auto Expense for branch
+    let insertedExpenseId = null;
+    if (totalCost > 0) {
+      const expenseNote = `เบิกของจากครัวกลาง [ครัวกลางจ่ายให้ โดย ${req.user.name}] ใบเบิก #${transferNo}${notes ? ` (${notes})` : ''}`;
+      const insertExpenseRes = await db.prepare(`
+        INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, payment_method, status, created_at)
+        VALUES (?, ?, ?, 'raw_materials', ?, ?, 'transfer', 'completed', ?)
+      `).run(targetBranchId, req.user.id, totalCost, expenseNote, todayDate, nowLocal);
+      insertedExpenseId = insertExpenseRes.lastInsertRowid;
+    }
+
+    // 2. Insert master transfer record with dispatch_type = 'push' and status = 'received'
+    const insertTransfer = await db.prepare(`
+      INSERT INTO central_kitchen_transfers (
+        transfer_no, branch_id, requested_by_user_id, requested_by_name,
+        dispatch_type, status, total_cost, expense_id, notes,
+        dispatched_by_name, created_at, dispatched_at, received_at
+      ) VALUES (?, ?, ?, ?, 'push', 'received', ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      transferNo, targetBranchId, req.user.id, req.user.name,
+      totalCost, insertedExpenseId, notes || null,
+      req.user.name, nowLocal, nowLocal, nowLocal
+    );
+
+    const transferId = insertTransfer.lastInsertRowid;
+
+    // 3. Deduct stock in central kitchen & insert transfer items
+    const restockedItems = [];
+    for (const item of itemsToInsert) {
+      // Insert item record
+      await db.prepare(`
+        INSERT INTO central_kitchen_transfer_items (transfer_id, item_id, item_name, unit, cost_price, quantity, original_quantity)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(transferId, item.item_id, item.item_name, item.unit, item.cost_price, item.quantity, item.quantity);
+
+      // Deduct CK stock
+      await db.prepare(`
+        UPDATE central_kitchen_items SET quantity = MAX(0, quantity - ?), updated_at = ? WHERE id = ?
+      `).run(item.quantity, nowLocal, item.item_id);
+
+      // Auto-sync to branch POS menu items
+      const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
+      if (ckItem) {
+        const syncRes = await syncRestockToBranchMenu(db, targetBranchId, ckItem, item.quantity, transferNo, req.user.name);
+        if (syncRes.synced) restockedItems.push(syncRes);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `บันทึกจ่ายของให้สาขาเรียบร้อยแล้ว (ใบเบิก #${transferNo}, หักต้นทุนสาขา ฿${totalCost.toLocaleString()})`,
+      data: {
+        id: transferId,
+        transfer_no: transferNo,
+        total_cost: totalCost,
+        expense_id: insertedExpenseId,
+        restocked_items: restockedItems
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error creating direct dispatch:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /api/central-kitchen/transfers/:id/items/:item_id/adjust — ปรับยอดยกเลิกสินค้าบางรายการ / แจ้งของชำรุด (Partial Adjustment)
+router.put('/transfers/:id/items/:item_id/adjust', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const transferId = Number(req.params.id);
+    const transferItemId = Number(req.params.item_id);
+    const { new_quantity, waste_action, waste_note } = req.body;
+
+    const transfer = await db.prepare('SELECT * FROM central_kitchen_transfers WHERE id = ?').get(transferId);
+    if (!transfer) {
+      return res.status(404).json({ success: false, error: 'ไม่พบใบเบิกนี้' });
+    }
+    if (transfer.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'ใบเบิกนี้ถูกยกเลิกไปแล้ว ไม่สามารถปรับปรุงยอดได้' });
+    }
+
+    const tItem = await db.prepare('SELECT * FROM central_kitchen_transfer_items WHERE id = ? AND transfer_id = ?').get(transferItemId, transferId);
+    if (!tItem) {
+      return res.status(404).json({ success: false, error: 'ไม่พบรายการสินค้านี้ในใบเบิก' });
+    }
+
+    const newQty = Number(new_quantity);
+    if (isNaN(newQty) || newQty < 0) {
+      return res.status(400).json({ success: false, error: 'กรุณาระบุจำนวนใหม่ที่ถูกต้อง (>= 0)' });
+    }
+
+    if (newQty >= Number(tItem.quantity)) {
+      return res.status(400).json({ success: false, error: `จำนวนใหม่ (${newQty}) ต้องน้อยกว่าจำนวนปัจจุบัน (${tItem.quantity})` });
+    }
+
+    const diffQty = Number(tItem.quantity) - newQty;
+    const unitPrice = Number(tItem.cost_price) || 0;
+    const refundCost = diffQty * unitPrice;
+    const nowLocal = getThaiNow();
+
+    // 1. Update transfer item quantity & retain original_quantity
+    await db.prepare(`
+      UPDATE central_kitchen_transfer_items 
+      SET original_quantity = COALESCE(original_quantity, quantity),
+          quantity = ?
+      WHERE id = ?
+    `).run(newQty, transferItemId);
+
+    // 2. Update transfer total_cost
+    const newTransferTotalCost = Math.max(0, Number(transfer.total_cost) - refundCost);
+    await db.prepare(`
+      UPDATE central_kitchen_transfers 
+      SET total_cost = ?
+      WHERE id = ?
+    `).run(newTransferTotalCost, transferId);
+
+    // 3. Update branch Expense if linked
+    if (transfer.expense_id && refundCost > 0) {
+      const adjNote = ` [ปรับลดยอดของชำรุด/คืนของ: ${tItem.item_name} -${diffQty} ${tItem.unit}]`;
+      await db.prepare(`
+        UPDATE expenses 
+        SET amount = MAX(0, amount - ?),
+            note = COALESCE(note, '') || ?
+        WHERE id = ?
+      `).run(refundCost, adjNote, transfer.expense_id);
+    }
+
+    // 4. Handle stock difference (return to CK stock or record as waste)
+    if (waste_action === 'log_as_waste') {
+      const reasonText = waste_note && waste_note.trim() ? waste_note.trim() : 'ของชำรุด/ส่งคืนจากสาขา';
+      await db.prepare(`
+        INSERT INTO central_kitchen_waste_logs (item_id, quantity, unit_cost, total_cost, reason, created_by_name, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(tItem.item_id, diffQty, unitPrice, refundCost, reasonText, req.user.name, nowLocal);
+    } else {
+      // Default: Return to central kitchen stock
+      await db.prepare(`
+        UPDATE central_kitchen_items SET quantity = quantity + ?, updated_at = ? WHERE id = ?
+      `).run(diffQty, nowLocal, tItem.item_id);
+    }
+
+    // 5. Reverse branch POS restock if linked
+    const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(tItem.item_id);
+    if (ckItem) {
+      await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, diffQty, transfer.transfer_no, req.user.name, true);
+    }
+
+    res.json({
+      success: true,
+      message: `ปรับยอดยกเลิก ${tItem.item_name} จำนวน ${diffQty} ${tItem.unit} เรียบร้อยแล้ว (ลดต้นทุนสาขา ฿${refundCost.toLocaleString()})`,
+      data: {
+        item_id: transferItemId,
+        previous_quantity: tItem.quantity,
+        new_quantity: newQty,
+        refund_amount: refundCost,
+        new_transfer_total_cost: newTransferTotalCost
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error adjusting transfer item:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /api/central-kitchen/transfers/:id/cancel — ยกเลิกใบเบิกทั้งใบ (Rollback ทุกอย่าง: สต็อกครัวกลาง, Expense สาขา, สต็อก POS สาขา)
+router.put('/transfers/:id/cancel', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const transferId = req.params.id;
+
+    const transfer = await db.prepare('SELECT * FROM central_kitchen_transfers WHERE id = ?').get(transferId);
+    if (!transfer) {
+      return res.status(404).json({ success: false, error: 'ไม่พบใบเบิกนี้' });
+    }
+    if (transfer.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'ใบเบิกนี้ถูกยกเลิกไปแล้ว' });
+    }
+
+    const transferItems = await db.prepare('SELECT * FROM central_kitchen_transfer_items WHERE transfer_id = ?').all(transferId);
+    const nowLocal = getThaiNow();
+
+    // 1. If items were already deducted (dispatched or received), restore stock to CK
+    if (transfer.status === 'dispatched' || transfer.status === 'received') {
+      for (const item of transferItems) {
+        await db.prepare(`
+          UPDATE central_kitchen_items SET quantity = quantity + ?, updated_at = ? WHERE id = ?
+        `).run(item.quantity, nowLocal, item.item_id);
+
+        // Reverse branch POS restock
+        const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
+        if (ckItem) {
+          await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name, true);
+        }
+      }
+    }
+
+    // 2. Cancel linked Expense if any
+    if (transfer.expense_id) {
+      await db.prepare(`
+        UPDATE expenses 
+        SET status = 'cancelled', note = COALESCE(note, '') || ' [ยกเลิกตามใบเบิกครัวกลาง]'
+        WHERE id = ?
+      `).run(transfer.expense_id);
+    }
+
+    // 3. Mark transfer as cancelled
+    await db.prepare(`
+      UPDATE central_kitchen_transfers 
+      SET status = 'cancelled', notes = COALESCE(notes, '') || ?
+      WHERE id = ?
+    `).run(` [ยกเลิกใบเบิกโดย ${req.user.name}]`, transferId);
+
+    res.json({
+      success: true,
+      message: `ยกเลิกใบเบิก #${transfer.transfer_no} และคืนสต็อกทั้งหมดเรียบร้อยแล้ว`
+    });
+  } catch (error) {
+    console.error('❌ Error cancelling transfer:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /api/central-kitchen/transfers/:id/receive — สาขากดยืนยันรับของ (Fallback รองรับกรณีใบเบิกเก่าที่ยังค้าง dispatched)
 router.put('/transfers/:id/receive', async (req, res) => {
   try {
     const db = getDb();
@@ -388,7 +843,7 @@ router.put('/transfers/:id/receive', async (req, res) => {
       return res.status(404).json({ success: false, error: 'ไม่พบใบเบิกนี้' });
     }
     if (transfer.status !== 'dispatched') {
-      return res.status(400).json({ success: false, error: 'ใบเบิกนี้ยังไม่ได้รับการจัดส่งจากครัวกลาง' });
+      return res.status(400).json({ success: false, error: 'ใบเบิกนี้ไม่ได้อยู่ในสถานะกำลังส่ง' });
     }
 
     const nowLocal = getThaiNow();
@@ -397,7 +852,8 @@ router.put('/transfers/:id/receive', async (req, res) => {
     // 1. Create Auto Expense for the receiving branch
     let insertedExpenseId = null;
     if (transfer.total_cost > 0) {
-      const expenseNote = `เบิกของจากครัวกลาง ใบเบิก #${transfer.transfer_no}${transfer.notes ? ` (${transfer.notes})` : ''}`;
+      const typeLabel = transfer.dispatch_type === 'push' ? 'ครัวกลางจ่ายให้' : 'สาขาขอเบิก';
+      const expenseNote = `เบิกของจากครัวกลาง [${typeLabel}] ใบเบิก #${transfer.transfer_no}${transfer.notes ? ` (${transfer.notes})` : ''}`;
       
       const insertExpenseRes = await db.prepare(`
         INSERT INTO expenses (branch_id, staff_id, amount, category, note, expense_date, payment_method, status, created_at)
@@ -407,7 +863,16 @@ router.put('/transfers/:id/receive', async (req, res) => {
       insertedExpenseId = insertExpenseRes.lastInsertRowid;
     }
 
-    // 2. Update transfer status to received
+    // 2. Sync restock to branch
+    const transferItems = await db.prepare('SELECT * FROM central_kitchen_transfer_items WHERE transfer_id = ?').all(transferId);
+    for (const item of transferItems) {
+      const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
+      if (ckItem) {
+        await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name);
+      }
+    }
+
+    // 3. Update transfer status to received
     await db.prepare(`
       UPDATE central_kitchen_transfers 
       SET status = 'received', received_at = ?, expense_id = ?
@@ -790,6 +1255,132 @@ router.get('/finances/summary', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error fetching central kitchen finances summary:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/central-kitchen/finances/receivables-breakdown — รายละเอียดของที่สาขาเบิกและยอดค้างชำระคืนแยกตามสาขา
+router.get('/finances/receivables-breakdown', async (req, res) => {
+  try {
+    const db = getDb();
+    
+    // 1. ดึงใบเบิกทั้งหมดที่สถานะ received (รับของแล้ว) และยังไม่เคลียร์เงิน (is_reimbursed = 0)
+    const transfers = await db.prepare(`
+      SELECT 
+        t.id,
+        t.transfer_no,
+        t.branch_id,
+        b.name as branch_name,
+        t.total_cost,
+        t.notes,
+        t.status,
+        t.created_at,
+        t.dispatched_at,
+        t.received_at,
+        t.dispatched_by_name,
+        t.requested_by_name
+      FROM central_kitchen_transfers t
+      JOIN branches b ON t.branch_id = b.id
+      WHERE t.status = 'received' AND (t.is_reimbursed = 0 OR t.is_reimbursed IS NULL)
+      ORDER BY t.received_at DESC, t.id DESC
+    `).all();
+
+    if (transfers.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          total_pending_amount: 0,
+          total_transfers_count: 0,
+          branches: []
+        }
+      });
+    }
+
+    // 2. ดึงรายการสินค้าทั้งหมดของใบเบิกเหล่านี้
+    const transferIds = transfers.map(t => t.id);
+    const placeholders = transferIds.map(() => '?').join(',');
+    const items = await db.prepare(`
+      SELECT 
+        id,
+        transfer_id,
+        item_id,
+        item_name,
+        unit,
+        cost_price,
+        quantity,
+        (quantity * cost_price) as subtotal
+      FROM central_kitchen_transfer_items
+      WHERE transfer_id IN (${placeholders})
+      ORDER BY id ASC
+    `).all(...transferIds);
+
+    const itemsByTransfer = {};
+    for (const item of items) {
+      if (!itemsByTransfer[item.transfer_id]) itemsByTransfer[item.transfer_id] = [];
+      itemsByTransfer[item.transfer_id].push(item);
+    }
+
+    for (const t of transfers) {
+      t.items = itemsByTransfer[t.id] || [];
+    }
+
+    // 3. จัดกลุ่มตามสาขา และสรุปยอดของที่สาขาเบิกไป
+    const branchMap = {};
+    let totalPendingAll = 0;
+
+    for (const t of transfers) {
+      totalPendingAll += Number(t.total_cost || 0);
+      if (!branchMap[t.branch_id]) {
+        branchMap[t.branch_id] = {
+          branch_id: t.branch_id,
+          branch_name: t.branch_name,
+          total_pending_amount: 0,
+          transfers_count: 0,
+          transfers: [],
+          consolidated_items_map: {}
+        };
+      }
+      const bObj = branchMap[t.branch_id];
+      bObj.total_pending_amount += Number(t.total_cost || 0);
+      bObj.transfers_count += 1;
+      bObj.transfers.push(t);
+
+      for (const it of t.items) {
+        const key = `${it.item_id}_${it.unit}`;
+        if (!bObj.consolidated_items_map[key]) {
+          bObj.consolidated_items_map[key] = {
+            item_id: it.item_id,
+            item_name: it.item_name,
+            unit: it.unit,
+            cost_price: it.cost_price,
+            total_quantity: 0,
+            total_cost: 0
+          };
+        }
+        bObj.consolidated_items_map[key].total_quantity += Number(it.quantity || 0);
+        bObj.consolidated_items_map[key].total_cost += Number(it.subtotal || 0);
+      }
+    }
+
+    const branches = Object.values(branchMap).map(b => ({
+      branch_id: b.branch_id,
+      branch_name: b.branch_name,
+      total_pending_amount: Number(b.total_pending_amount.toFixed(2)),
+      transfers_count: b.transfers_count,
+      consolidated_items: Object.values(b.consolidated_items_map).sort((a, b) => b.total_cost - a.total_cost),
+      transfers: b.transfers
+    })).sort((a, b) => b.total_pending_amount - a.total_pending_amount);
+
+    res.json({
+      success: true,
+      data: {
+        total_pending_amount: Number(totalPendingAll.toFixed(2)),
+        total_transfers_count: transfers.length,
+        branches
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error fetching receivables breakdown:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

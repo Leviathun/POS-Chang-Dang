@@ -109,6 +109,15 @@
           </router-link>
 
           <router-link 
+            to="/central-kitchen/dispatch" 
+            class="sidebar-item" 
+            active-class="active"
+          >
+            <span class="sidebar-icon"><i class="fa-solid fa-truck-arrow-right"></i></span>
+            <span class="sidebar-label">จ่ายของให้สาขา</span>
+          </router-link>
+
+          <router-link 
             to="/central-kitchen/orders" 
             class="sidebar-item" 
             active-class="active"
@@ -264,6 +273,10 @@
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
               <span class="nav-label">คลัง</span>
             </router-link>
+            <router-link to="/central-kitchen/dispatch" class="nav-item" active-class="active">
+              <span class="nav-icon flex justify-center"><i class="fa-solid fa-truck-arrow-right"></i></span>
+              <span class="nav-label">จ่ายของ</span>
+            </router-link>
             <router-link to="/central-kitchen/orders" class="nav-item" active-class="active">
               <span class="nav-icon flex justify-center relative">
                 <i class="fa-solid fa-truck-ramp-box"></i>
@@ -388,6 +401,11 @@ const selectBranch = (id) => {
   isBranchDropdownOpen.value = false;
   sessionStorage.setItem('selected_branch_id', String(id));
   
+  const b = branches.value.find(x => x.id === id);
+  if (b && !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1) {
+    sessionStorage.setItem('last_pos_branch_id', String(id));
+  }
+  
   // Clear cache and pre-warm/pre-fetch for the newly selected branch
   store.clearAllCache();
   store.fetchMenu(true).catch(() => {});
@@ -451,8 +469,21 @@ const isCentralKitchenSessionActive = computed(() => {
 });
 
 const switchToPosBranch = () => {
-  // Find first retail branch (is_central_kitchen !== 1)
-  const retailBranch = branches.value.find(b => !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1) || branches.value[0];
+  // 1. Look for logged-in user branch first if it is a retail branch
+  const userBranchId = user.value?.branch_id || (getUser() ? getUser().branch_id : null);
+  let retailBranch = branches.value.find(b => b.id === userBranchId && !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1);
+
+  // 2. If user branch is central kitchen or not found, check last used POS branch
+  if (!retailBranch) {
+    const lastPosId = sessionStorage.getItem('last_pos_branch_id') ? Number(sessionStorage.getItem('last_pos_branch_id')) : null;
+    retailBranch = branches.value.find(b => b.id === lastPosId && !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1);
+  }
+
+  // 3. Fallback to first available retail branch
+  if (!retailBranch) {
+    retailBranch = branches.value.find(b => !b.name.includes('ครัวกลาง') && b.is_central_kitchen !== 1) || branches.value[0];
+  }
+
   if (retailBranch) {
     selectBranch(retailBranch.id);
   }
@@ -483,6 +514,7 @@ const activeTitle = computed(() => {
     const tab = route.params.tab || 'catalog';
     const tabTitles = {
       catalog: 'แคตตาล็อก',
+      dispatch: 'จ่ายของให้สาขา',
       orders: 'คำขอเบิกจากสาขา',
       history: 'ประวัติเติม & เบิก',
       finance: 'การเงินกองกลาง',
@@ -533,6 +565,9 @@ const submitPin = async () => {
       if (branchName) {
         sessionStorage.setItem('selected_branch_name', branchName);
       }
+      if (res.data.user?.branch_id && !branchName.includes('ครัวกลาง')) {
+        sessionStorage.setItem('last_pos_branch_id', String(res.data.user.branch_id));
+      }
       ui.showToast(`ยินดีต้อนรับคุณ ${user.value.name} 🎉${branchName ? ' (สาขา: ' + branchName + ')' : ''}`, 'success');
       enteredPin.value = '';
       if (branchName.includes('ครัวกลาง')) {
@@ -560,6 +595,7 @@ const handleLogout = async () => {
   const confirm = await ui.showConfirm('ออกจากระบบ', 'คุณต้องการออกจากระบบ POS ใช่หรือไม่?');
   if (confirm) {
     sessionStorage.removeItem('pos_user');
+    sessionStorage.removeItem('last_pos_branch_id');
     user.value = null;
     store.clearAllCache(); // Clear store cache on logout
     enteredPin.value = '';

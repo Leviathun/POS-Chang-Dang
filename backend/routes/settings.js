@@ -366,6 +366,7 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
       SELECT COALESCE(SUM(
         CASE 
           WHEN is_refund = 1 OR status = 'refund' THEN -amount
+          WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
           ELSE amount
         END
       ), 0) as total_expenses FROM expenses ${whereExpenses}
@@ -555,6 +556,7 @@ router.get('/backup/csv-summary', requireAdmin, async (req, res) => {
         COALESCE(SUM(
           CASE 
             WHEN is_refund = 1 OR status = 'refund' THEN -amount
+            WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
             ELSE amount
           END
         ), 0) as month_expenses

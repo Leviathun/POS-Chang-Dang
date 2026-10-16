@@ -424,7 +424,7 @@
                 <!-- Case 2: Cancelled Expense -->
                 <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'">
                   <i :class="item.category === 'salary' ? 'fa-solid fa-user-clock' : 'fa-solid fa-ban'"></i>
-                  {{ item.category === 'salary' ? 'คืนบัญชีพนักงาน' : 'ยกเลิก & คืนเงิน' }}
+                  {{ item.category === 'salary' ? 'คืนบัญชีพนักงาน' : (item.isCKTransfer ? 'ยกเลิกรายการเบิก' : 'ยกเลิก & คืนเงิน') }}
                 </span>
                 <!-- Case 3: Cancelled Stock Log -->
                 <span v-else-if="item.isCancelled && (item.type === 'waste_loss' || item.type === 'credit_loss')" class="badge-status-pill badge-stock-cancelled">
@@ -436,11 +436,11 @@
                   class="btn-action btn-action-primary table-action-btn"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
-                  title="ยกเลิกและคืนยอด"
+                  :title="item.isCKTransfer ? 'ยกเลิกรายการเบิกของจากครัวกลาง' : 'ยกเลิกและคืนยอด'"
                 >
                   <i v-if="reversingEntryId === item.entryKey" class="fa-solid fa-spinner fa-spin"></i>
                   <i v-else class="fa-solid fa-rotate-left"></i>
-                  <span>{{ reversingEntryId === item.entryKey ? ' กำลังยกเลิก...' : ' ยกเลิก/คืน' }}</span>
+                  <span>{{ reversingEntryId === item.entryKey ? ' กำลังยกเลิก...' : (item.isCKTransfer ? ' ยกเลิกเบิก' : ' ยกเลิก/คืน') }}</span>
                 </button>
                 <!-- Case 5: Active Stock Waste/Credit -->
                 <button 
@@ -987,6 +987,10 @@ const allLedgerEntries = computed(() => {
   expenses.value.forEach(e => {
     const isRefund = Boolean(e.is_refund === 1 || e.status === 'refund');
     const isCancelled = e.status === 'cancelled';
+    const isCKTransfer = Boolean(
+      (e.note && (e.note.includes('เบิกของจากครัวกลาง') || e.note.includes('ครัวกลาง'))) ||
+      (e.category === 'raw_materials' && e.payment_method === 'transfer')
+    );
     const catLabel = isRefund ? 'คืนเงิน/ยกเลิก' : getCategoryLabel(e.category);
     const catIcon = isRefund ? 'fa-solid fa-rotate-left' : getExpenseCategoryIcon(e.category);
     const badgeCls = isRefund ? 'badge-cat-refund' : ('badge-cat-' + e.category);
@@ -1001,6 +1005,7 @@ const allLedgerEntries = computed(() => {
       status: e.status || (isRefund ? 'refund' : 'completed'),
       isRefund,
       isCancelled,
+      isCKTransfer,
       cancelReason: e.cancel_reason || '',
       cancelledAt: e.cancelled_at || null,
       category: e.category,
@@ -1083,10 +1088,23 @@ const filteredLedgerEntries = computed(() => {
   return list;
 });
 
+const refundedOriginalIds = computed(() => {
+  return new Set(
+    expenses.value
+      .filter(e => (e.is_refund === 1 || e.status === 'refund') && e.refund_ref_id)
+      .map(e => Number(e.refund_ref_id))
+  );
+});
+
 const filteredLedgerTotal = computed(() => {
   return filteredLedgerEntries.value.reduce((sum, item) => {
-    if (item.type !== 'expense' && item.isCancelled) return sum;
     if (item.isRefund) return sum - (Number(item.amount) || 0);
+    if (item.isCancelled) {
+      if (item.type === 'expense' && refundedOriginalIds.value.has(Number(item.id))) {
+        return sum + (Number(item.amount) || 0);
+      }
+      return sum;
+    }
     return sum + (Number(item.amount) || 0);
   }, 0);
 });
@@ -1132,6 +1150,10 @@ const revenueBreakdown = computed(() => {
 const totalExpenses = computed(() => {
   return expenses.value.reduce((sum, e) => {
     if (e.is_refund === 1 || e.status === 'refund') return sum - (Number(e.amount) || 0);
+    if (e.status === 'cancelled') {
+      if (refundedOriginalIds.value.has(Number(e.id))) return sum + (Number(e.amount) || 0);
+      return sum;
+    }
     return sum + (Number(e.amount) || 0);
   }, 0);
 });
@@ -1140,6 +1162,7 @@ const expenseBreakdown = computed(() => {
   let cash = 0;
   let transfer = 0;
   expenses.value.forEach(e => {
+    if (e.status === 'cancelled' && !refundedOriginalIds.value.has(Number(e.id))) return;
     const amt = Number(e.amount) || 0;
     const mult = (e.is_refund === 1 || e.status === 'refund') ? -1 : 1;
     if (e.payment_method === 'cash') cash += (amt * mult);
@@ -1243,6 +1266,7 @@ const allCostBreakdownStats = computed(() => {
   map['credit_loss'] = { id: 'credit_loss', name: 'เครดิตพนักงาน', icon: 'fa-solid fa-user-check', color: 'var(--accent, #ffab2b)', total: staffCreditCost.value };
 
   expenses.value.forEach(e => {
+    if (e.status === 'cancelled' && !refundedOriginalIds.value.has(Number(e.id))) return;
     const amt = Number(e.amount) || 0;
     const key = (e.category === 'fuel_oil') ? 'cooking_oil' : (map[e.category] ? e.category : 'other');
     if (map[key]) {
@@ -1352,9 +1376,14 @@ const handleReverseEntry = async (item) => {
     const isSalary = item.category === 'salary';
     const isAdvance = isSalary && (item.name && item.name.includes('เบิกเงินล่วงหน้า'));
     const isPayroll = isSalary && !isAdvance;
+    const isCK = Boolean(item.isCKTransfer || (item.name && item.name.includes('เบิกของจากครัวกลาง')));
 
+    let title = 'ยืนยันยกเลิก & คืนยอด';
     let msg = '';
-    if (isAdvance) {
+    if (isCK) {
+      title = 'ยืนยันยกเลิกรายการเบิกครัวกลาง';
+      msg = `ต้องการยกเลิกการเบิกของจากครัวกลาง "${item.name}" (${formatCurrency(item.amount)}) ใช่หรือไม่?\n\nเมื่อยกเลิก ระบบจะ:\n1. ขีดฆ่ายกเลิกยอดรายจ่ายนี้ (ไม่นับเป็นค่าใช้จ่ายของสาขา)\n2. คืนสต็อกสินค้ากลับเข้าครัวกลาง และปรับสต็อกของสาขากลับอัตโนมัติ`;
+    } else if (isAdvance) {
       msg = `ต้องการยกเลิกรายการ "${item.name}" (${formatCurrency(item.amount)}) ใช่หรือไม่?\n\nเมื่อยกเลิก ระบบจะ:\n1. บันทึกคืนเงิน (+${formatCurrency(item.amount)}) เพื่อหักล้างรายจ่ายและปรับยอดเงินสดในลิ้นชักกลับมาถูกต้อง\n2. ยกเลิกรายการเบิกเงินล่วงหน้า (จะไม่นำไปหักค่าแรงพนักงานตอนสิ้นเดือน)`;
     } else if (isPayroll) {
       msg = `ต้องการยกเลิกและคืนยอดค่าใช้จ่ายค่าแรง "${item.name}" (${formatCurrency(item.amount)}) ใช่หรือไม่?\n\nเมื่อยกเลิก ระบบจะ:\n1. บันทึกคืนเงิน (+${formatCurrency(item.amount)}) เพื่อหักล้างรายจ่ายและปรับยอดเงินสดในลิ้นชักกลับมาถูกต้อง\n2. ปลดล็อกวันทำงาน/OT ให้กลับสู่สถานะรอคำนวณเงินเดือนใหม่`;
@@ -1362,14 +1391,14 @@ const handleReverseEntry = async (item) => {
       msg = `ต้องการยกเลิกและคืนยอดรายจ่าย "${item.name}" (${formatCurrency(item.amount)}) ใช่หรือไม่?\n\nระบบจะบันทึกแถวคืนเงิน (+${formatCurrency(item.amount)}) เพื่อหักล้างรายจ่ายและปรับยอดเงินสดในลิ้นชักกลับมาถูกต้อง`;
     }
 
-    const confirmed = await ui.showConfirm('ยืนยันยกเลิก & คืนยอด', msg);
+    const confirmed = await ui.showConfirm(title, msg);
     if (!confirmed) return;
 
     reversingEntryId.value = item.entryKey;
     try {
       const res = await api.expenses.reverse(item.id);
       if (res.success) {
-        ui.showToast('ยกเลิกรายการและคืนยอดสำเร็จ', 'success');
+        ui.showToast(res.message || (isCK ? 'ยกเลิกรายการเบิกครัวกลางสำเร็จ' : 'ยกเลิกรายการและคืนยอดสำเร็จ'), 'success');
         await loadData();
       }
     } catch (err) {
@@ -1405,9 +1434,9 @@ const exportLedgerCSV = () => {
   filteredLedgerEntries.value.forEach(item => {
     const time = `"${formatDate(item.date)} ${formatTime(item.created_at)}"`;
     const cat = `"${item.categoryLabel}"`;
-    const note = `"${(item.name || '').replace(/"/g, '""')}"`;
+    const note = `"${(item.name || '').replace(/"/g, '""')}${item.isCancelled ? ' [ยกเลิก]' : ''}"`;
     const pm = `"${item.paymentLabel}"`;
-    const amt = item.amount || 0;
+    const amt = item.isCancelled ? 0 : (item.isRefund ? -item.amount : (item.amount || 0));
     const staff = `"${(item.staffName || '').replace(/"/g, '""')}"`;
     csvContent += `${time},${cat},${note},${pm},${amt},${staff}\n`;
   });

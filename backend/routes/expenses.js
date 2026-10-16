@@ -308,38 +308,139 @@ router.post('/:id/reverse', async (req, res) => {
       console.warn('⚠️ Cancel linked advance warning:', advErr.message);
     }
 
-    // 4. สร้างแถวคู่ตรงข้าม (Contra / Refund Entry)
-    const refundNote = expense.note ? `คืน: ${expense.note}` : `คืน: ${getCategoryLabel(expense.category)}`;
-    const refundRes = await db.prepare(`
-      INSERT INTO expenses (
-        branch_id, staff_id, amount, category, note,
-        expense_date, session_id, payment_method, status,
-        is_refund, refund_ref_id, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'refund', 1, ?, ?)
-    `).run(
-      expense.branch_id || branchId,
-      userId,
-      Number(expense.amount),
-      expense.category,
-      refundNote,
-      todayDate,
-      expense.session_id || null,
-      expense.payment_method || 'cash',
-      Number(id),
-      nowLocal
-    );
-
-    const refundId = refundRes.lastInsertRowid;
-
-    // 5. บันทึก Activity Log
+    // 4. ถ้าเป็นค่าใช้จ่ายที่มาจากการเบิกของครัวกลาง (central_kitchen_transfers)
+    // Auto-Sync: ดึงสต็อกสินค้าคืนเข้าครัวกลาง และปรับสถานะใบเบิกเป็น cancelled (ไม่สร้างแถวคืนเงิน)
+    let isCKTransfer = false;
+    let ckTransferRestored = false;
+    let ckTransferNo = '';
+    let ckItemsRestoredCount = 0;
     try {
+      let linkedTransfer = await db.prepare('SELECT * FROM central_kitchen_transfers WHERE expense_id = ?').get(Number(id));
+      
+      // ค้นหาเพิ่มเติมจาก transfer_no ใน note เผื่อกรณี expense_id ไม่ตรง
+      if (!linkedTransfer && expense.note && (expense.note.includes('เบิกของจากครัวกลาง') || expense.note.includes('ครัวกลาง'))) {
+        const matchNo = expense.note.match(/#(REQ-[\w-]+)/);
+        if (matchNo && matchNo[1]) {
+          linkedTransfer = await db.prepare('SELECT * FROM central_kitchen_transfers WHERE transfer_no = ?').get(matchNo[1]);
+        }
+      }
+
+      if (linkedTransfer || (expense.note && (expense.note.includes('เบิกของจากครัวกลาง') || expense.note.includes('ครัวกลาง')))) {
+        isCKTransfer = true;
+      }
+
+      if (linkedTransfer && linkedTransfer.status !== 'cancelled') {
+        ckTransferNo = linkedTransfer.transfer_no;
+        const transferItems = await db.prepare('SELECT * FROM central_kitchen_transfer_items WHERE transfer_id = ?').all(linkedTransfer.id);
+        
+        // คืนสต็อกสินค้ากลับเข้าครัวกลาง (central_kitchen_items) และดึงสต็อก POS สาขาคืน
+        for (const item of transferItems) {
+          await db.prepare(`
+            UPDATE central_kitchen_items 
+            SET quantity = quantity + ?, updated_at = ?
+            WHERE id = ?
+          `).run(Number(item.quantity), nowLocal, item.item_id);
+          ckItemsRestoredCount += Number(item.quantity);
+
+          // Reverse branch POS restock if linked/raw_material
+          try {
+            const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
+            if (ckItem) {
+              const targetName = ckItem.linked_menu_item_name ? ckItem.linked_menu_item_name.trim() : null;
+              let menuItem = null;
+              if (targetName) {
+                menuItem = await db.prepare('SELECT * FROM menu_items WHERE branch_id = ? AND name = ? LIMIT 1').get(linkedTransfer.branch_id, targetName);
+              }
+              if (menuItem) {
+                const stockField = (ckItem.target_stock_type === 'ready' || menuItem.raw_quantity === null) ? 'quantity' : 'raw_quantity';
+                const curStock = Number(menuItem[stockField] || 0);
+                const newStock = Math.max(0, curStock - Number(item.quantity));
+                await db.prepare(`UPDATE menu_items SET ${stockField} = ?, updated_at = ? WHERE id = ?`).run(newStock, nowLocal, menuItem.id);
+                await db.prepare(`
+                  INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, note, created_at)
+                  VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?)
+                `).run(linkedTransfer.branch_id, menuItem.id, -Number(item.quantity), curStock, newStock, `ปรับลดคืนวัตถุดิบจากการยกเลิกรายจ่าย #${id} (ใบเบิก #${linkedTransfer.transfer_no})`, nowLocal);
+              }
+            }
+          } catch (menuRollErr) {
+            console.warn('⚠️ Menu item rollback error on expense cancel:', menuRollErr.message);
+          }
+        }
+
+        // อัปเดตสถานะใบเบิกในครัวกลางเป็น 'cancelled'
+        await db.prepare(`
+          UPDATE central_kitchen_transfers 
+          SET status = 'cancelled', 
+              notes = COALESCE(notes, '') || ?
+          WHERE id = ?
+        `).run(` [ยกเลิกและคืนของเข้าคลังครัวกลางตามการยกเลิกรายจ่าย #${id}]`, linkedTransfer.id);
+
+        // ถ้าใบเบิกนี้เคยเคลียร์เงินคืนครัวกลางไปแล้ว (is_reimbursed = 1) ให้บันทึกคืนเงินในกองกลางด้วย
+        if (linkedTransfer.is_reimbursed === 1 && linkedTransfer.total_cost > 0) {
+          try {
+            await db.prepare(`
+              INSERT INTO central_kitchen_finances (branch_id, type, amount, payment_method, note, created_by_name, created_at)
+              VALUES (?, 'other_out', ?, 'transfer', ?, ?, ?)
+            `).run(
+              linkedTransfer.branch_id,
+              linkedTransfer.total_cost,
+              `คืนเงินค่าของให้สาขาตามการยกเลิกใบเบิก #${linkedTransfer.transfer_no}`,
+              req.user?.name || 'ผู้จัดการ',
+              nowLocal
+            );
+            await db.prepare('UPDATE central_kitchen_transfers SET is_reimbursed = 0 WHERE id = ?').run(linkedTransfer.id);
+          } catch (fErr) {
+            console.warn('⚠️ Central kitchen finance refund warning:', fErr.message);
+          }
+        }
+
+        ckTransferRestored = true;
+      }
+    } catch (ckErr) {
+      console.warn('⚠️ Central kitchen transfer auto-revert warning:', ckErr.message);
+    }
+
+    // 5. สร้างแถวคู่ตรงข้าม (Contra / Refund Entry) เฉพาะกรณีที่ไม่ใช่การเบิกของครัวกลาง
+    let refundId = null;
+    let refundExpense = null;
+    if (!isCKTransfer) {
+      const refundNote = expense.note ? `คืน: ${expense.note}` : `คืน: ${getCategoryLabel(expense.category)}`;
+      const refundRes = await db.prepare(`
+        INSERT INTO expenses (
+          branch_id, staff_id, amount, category, note,
+          expense_date, session_id, payment_method, status,
+          is_refund, refund_ref_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'refund', 1, ?, ?)
+      `).run(
+        expense.branch_id || branchId,
+        userId,
+        Number(expense.amount),
+        expense.category,
+        refundNote,
+        todayDate,
+        expense.session_id || null,
+        expense.payment_method || 'cash',
+        Number(id),
+        nowLocal
+      );
+
+      refundId = refundRes.lastInsertRowid;
+      refundExpense = await db.prepare('SELECT e.*, u.name as staff_name FROM expenses e LEFT JOIN users u ON u.id = e.staff_id WHERE e.id = ?').get(Number(refundId));
+    }
+
+    // 6. บันทึก Activity Log
+    try {
+      const logDetails = isCKTransfer
+        ? `ยกเลิกรายการเบิกของจากครัวกลาง #${id} (${expense.note || getCategoryLabel(expense.category)}) จำนวน ${expense.amount} บาท [ขีดฆ่ายกเลิกยอด และดึงสต็อกสินค้าคืนครัวกลาง]${ckTransferNo ? ` (ใบเบิก #${ckTransferNo})` : ''}`
+        : `ยกเลิกและคืนยอดค่าใช้จ่าย #${id} (${getCategoryLabel(expense.category)}) จำนวน ${expense.amount} บาท (คืนในแถว #${refundId})${payrollUnlocked ? ' [ปลดล็อกสลิปและวันทำงานพนักงานกลับสู่สถานะรอจ่าย]' : ''}`;
+
       await db.prepare(`
         INSERT INTO activity_logs (branch_id, user_id, action, details, created_at)
         VALUES (?, ?, 'reverse_expense', ?, ?)
       `).run(
         expense.branch_id || branchId,
         userId,
-        `ยกเลิกและคืนยอดค่าใช้จ่าย #${id} (${getCategoryLabel(expense.category)}) จำนวน ${expense.amount} บาท (คืนในแถว #${refundId})${payrollUnlocked ? ' [ปลดล็อกสลิปและวันทำงานพนักงานกลับสู่สถานะรอจ่าย]' : ''}`,
+        logDetails,
         nowLocal
       );
     } catch (logErr) {
@@ -347,15 +448,23 @@ router.post('/:id/reverse', async (req, res) => {
     }
 
     const updatedExpense = await db.prepare('SELECT e.*, u.name as staff_name FROM expenses e LEFT JOIN users u ON u.id = e.staff_id WHERE e.id = ?').get(Number(id));
-    const refundExpense = await db.prepare('SELECT e.*, u.name as staff_name FROM expenses e LEFT JOIN users u ON u.id = e.staff_id WHERE e.id = ?').get(Number(refundId));
+
+    const successMsg = isCKTransfer
+      ? `ยกเลิกรายการเบิกของจากครัวกลางเรียบร้อยแล้ว (ขีดฆ่ายกเลิกยอดเดิม${ckTransferNo ? ` ใบเบิก #${ckTransferNo}` : ''} และคืนสต็อกเข้าครัวกลาง)`
+      : (ckTransferRestored 
+          ? `ยกเลิกรายการและคืนยอดเรียบร้อยแล้ว (คืนสต็อกสินค้าใบเบิก #${ckTransferNo} กลับเข้าครัวกลางเรียบร้อย)` 
+          : 'ยกเลิกรายการและคืนยอดเรียบร้อยแล้ว');
 
     res.json({
       success: true,
-      message: 'ยกเลิกรายการและคืนยอดเรียบร้อยแล้ว',
+      message: successMsg,
       data: {
         original: updatedExpense,
         refund: refundExpense,
-        payroll_unlocked: payrollUnlocked
+        payroll_unlocked: payrollUnlocked,
+        ck_transfer_restored: ckTransferRestored,
+        ck_transfer_no: ckTransferNo,
+        is_ck_transfer: isCKTransfer
       }
     });
   } catch (error) {

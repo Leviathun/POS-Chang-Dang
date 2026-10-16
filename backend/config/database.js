@@ -427,6 +427,8 @@ async function initDatabase() {
       quantity REAL NOT NULL DEFAULT 0,
       min_stock_alert REAL DEFAULT 10,
       image_url TEXT,
+      linked_menu_item_name TEXT DEFAULT NULL,
+      target_stock_type TEXT DEFAULT 'raw',
       active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
@@ -437,6 +439,7 @@ async function initDatabase() {
       branch_id INTEGER NOT NULL REFERENCES branches(id),
       requested_by_user_id INTEGER REFERENCES users(id),
       requested_by_name TEXT,
+      dispatch_type TEXT DEFAULT 'pull',
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'dispatched', 'received', 'cancelled')),
       total_cost REAL NOT NULL DEFAULT 0,
       expense_id INTEGER REFERENCES expenses(id),
@@ -453,7 +456,8 @@ async function initDatabase() {
       item_name TEXT NOT NULL,
       unit TEXT NOT NULL,
       cost_price REAL NOT NULL DEFAULT 0,
-      quantity REAL NOT NULL DEFAULT 1
+      quantity REAL NOT NULL DEFAULT 1,
+      original_quantity REAL
     )`,
     `CREATE TABLE IF NOT EXISTS central_kitchen_restock_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -815,8 +819,47 @@ async function initDatabase() {
     if (!transferCols.some(c => c.name === 'reimbursed_by_name')) {
       await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN reimbursed_by_name TEXT");
     }
+    if (!transferCols.some(c => c.name === 'dispatch_type')) {
+      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN dispatch_type TEXT DEFAULT 'pull'");
+    }
   } catch (e) {
-    console.warn('⚠️ Migration central_kitchen_transfers reimbursement columns failed:', e.message);
+    console.warn('⚠️ Migration central_kitchen_transfers columns failed:', e.message);
+  }
+
+  // Migration: Add linking columns to central_kitchen_items
+  try {
+    const itemCols = await db.prepare("PRAGMA table_info(central_kitchen_items)").all();
+    if (!itemCols.some(c => c.name === 'linked_menu_item_name')) {
+      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN linked_menu_item_name TEXT DEFAULT NULL");
+    }
+    if (!itemCols.some(c => c.name === 'target_stock_type')) {
+      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN target_stock_type TEXT DEFAULT 'raw'");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration central_kitchen_items columns failed:', e.message);
+  }
+
+  // Migration: Add original_quantity column to central_kitchen_transfer_items
+  try {
+    const transferItemCols = await db.prepare("PRAGMA table_info(central_kitchen_transfer_items)").all();
+    if (!transferItemCols.some(c => c.name === 'original_quantity')) {
+      await db.exec("ALTER TABLE central_kitchen_transfer_items ADD COLUMN original_quantity REAL");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration central_kitchen_transfer_items columns failed:', e.message);
+  }
+
+  // Migration: Add quantity & raw_quantity columns to menu_items if not exists
+  try {
+    const menuCols = await db.prepare("PRAGMA table_info(menu_items)").all();
+    if (!menuCols.some(c => c.name === 'quantity')) {
+      await db.exec("ALTER TABLE menu_items ADD COLUMN quantity INTEGER DEFAULT NULL");
+    }
+    if (!menuCols.some(c => c.name === 'raw_quantity')) {
+      await db.exec("ALTER TABLE menu_items ADD COLUMN raw_quantity INTEGER DEFAULT NULL");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration menu_items stock columns failed:', e.message);
   }
 
   // ─── Create Indexes ───────────────────────────────────────

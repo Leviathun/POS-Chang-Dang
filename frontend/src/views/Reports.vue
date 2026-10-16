@@ -2566,7 +2566,21 @@ const expenseForm = ref({
   payment_method: 'transfer'
 });
 
-const totalExpenses = computed(() => expenses.value.reduce((sum, e) => sum + (e.amount || 0), 0));
+const totalExpenses = computed(() => {
+  const refundedIds = new Set(
+    expenses.value
+      .filter(e => (e.is_refund === 1 || e.status === 'refund') && e.refund_ref_id)
+      .map(e => Number(e.refund_ref_id))
+  );
+  return expenses.value.reduce((sum, e) => {
+    if (e.is_refund === 1 || e.status === 'refund') return sum - (Number(e.amount) || 0);
+    if (e.status === 'cancelled') {
+      if (refundedIds.has(Number(e.id))) return sum + (Number(e.amount) || 0);
+      return sum;
+    }
+    return sum + (Number(e.amount) || 0);
+  }, 0);
+});
 
 // Ledger States
 const ledgerTransactions = ref([]);
@@ -3234,16 +3248,25 @@ const computeLedgerTransactions = () => {
     });
   });
 
+  const refundedIds = new Set(
+    expenses.value
+      .filter(e => (e.is_refund === 1 || e.status === 'refund') && e.refund_ref_id)
+      .map(e => Number(e.refund_ref_id))
+  );
+
   expenses.value.forEach(e => {
+    if (e.status === 'cancelled' && !refundedIds.has(Number(e.id))) return;
+    const isRefund = Boolean(e.is_refund === 1 || e.status === 'refund');
+    const isCancelled = e.status === 'cancelled';
     const pmLabel = e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
     list.push({
       id: e.id,
       created_at: e.created_at,
       timestamp: new Date(e.created_at).getTime(),
-      name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})`,
-      income: 0,
-      expense: e.amount || 0,
-      type: 'expense'
+      name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})${isCancelled ? ' [ยกเลิก]' : ''}`,
+      income: isRefund ? (Number(e.amount) || 0) : 0,
+      expense: isRefund ? 0 : (Number(e.amount) || 0),
+      type: isRefund ? 'refund' : 'expense'
     });
   });
 
