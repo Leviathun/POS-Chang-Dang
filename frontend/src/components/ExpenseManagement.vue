@@ -254,7 +254,7 @@
           <div class="summary-value" :class="netProfit >= 0 ? 'text-primary' : 'text-danger'">
             {{ formatCurrency(netProfit) }}
           </div>
-          <div class="summary-formula-caption">รายรับ - รายจ่าย - ของเสีย/เครดิต</div>
+          <div class="summary-formula-caption">รายรับ - รายจ่ายรวม</div>
         </div>
       </div>
 
@@ -1234,9 +1234,9 @@ const activeHeldGuaranteesCount = computed(() => {
   return guarantees.value.filter(g => g.status === 'held').length;
 });
 
-// คงเหลือสุทธิ = รายรับรวม - รายจ่ายรวม - ของเสีย/เครดิต
+// คงเหลือสุทธิ = รายรับรวม - รายจ่ายรวม (ของเสียสะท้อนในยอดขายที่ลดลงอยู่แล้ว ไม่หักซ้ำซ้อน)
 const netProfit = computed(() => {
-  return totalRevenue.value - totalExpenses.value - totalWasteAndCreditCost.value;
+  return totalRevenue.value - totalExpenses.value;
 });
 
 // การจัดสรรส่วนแบ่งกำไร (60% ร้าน/บริหาร, 40% ผู้ร่วมทุน)
