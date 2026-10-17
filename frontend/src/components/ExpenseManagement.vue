@@ -353,12 +353,12 @@
         <table class="table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-              <th class="text-center" style="width: 12%; padding: 14px var(--space-xs); white-space:nowrap;">วัน-เวลา</th>
-              <th class="text-center" style="width: 16%; padding: 14px var(--space-xs); white-space:nowrap;">ประเภท / หมวดหมู่</th>
-              <th class="text-left" style="width: 29%; padding: 14px var(--space-md);">ชื่อรายการ / รายละเอียด</th>
-              <th class="text-center" style="width: 12%; padding: 14px var(--space-xs); white-space:nowrap;">ช่องทาง</th>
+              <th class="text-center" style="width: 11%; padding: 14px var(--space-xs); white-space:nowrap;">วัน-เวลา</th>
+              <th class="text-center" style="width: 15%; padding: 14px var(--space-xs); white-space:nowrap;">ประเภท / หมวดหมู่</th>
+              <th class="text-left" style="width: 33%; padding: 14px var(--space-md);">ชื่อรายการ / รายละเอียด</th>
+              <th class="text-center" style="width: 13%; padding: 14px var(--space-xs); white-space:nowrap;">ช่องทาง</th>
               <th class="text-center" style="width: 14%; padding: 14px var(--space-xs); white-space:nowrap;">จำนวนเงิน (บาท)</th>
-              <th class="text-center" style="width: 17%; padding: 14px var(--space-xs); white-space:nowrap;">จัดการ</th>
+              <th class="text-center" style="width: 14%; padding: 14px var(--space-xs); white-space:nowrap;">จัดการ</th>
             </tr>
           </thead>
           <tbody>
@@ -398,21 +398,22 @@
                 <div v-if="item.staffName" class="text-xs text-secondary mt-xxs">
                   <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
                 </div>
+                <div v-if="item.isCKTransfer" class="ck-expense-note">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)</span>
+                </div>
                 <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mt-xxs font-semibold">
                   <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
                 </div>
               </td>
-              <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle;">
-                <span class="payment-method-badge" :class="item.paymentClass">
+              <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; white-space: nowrap;">
+                <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
                   <i v-if="item.isCKTransfer" class="fa-solid fa-building-circle-arrow-right"></i>
                   <i v-else-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
                   <i v-else-if="item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
                   <i v-else class="fa-solid fa-box"></i>
                   <span>{{ item.paymentLabel }}</span>
                 </span>
-                <div v-if="item.isCKTransfer" class="text-2xs text-secondary mt-xxs" style="font-size: 10px; line-height: 1.2; margin-top: 3px;">
-                  ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)
-                </div>
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; font-weight:bold; font-size: var(--font-base);">
                 <span v-if="item.isRefund" class="text-success font-bold">+{{ formatCurrency(item.amount) }}</span>
@@ -488,21 +489,24 @@
             <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word; font-size: 14px; line-height: 1.4;">
               {{ item.name }}
             </div>
+            <div v-if="item.staffName" class="text-xs text-secondary mb-xs">
+              <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
+            </div>
+            <!-- CK Note banner in mobile card body -->
+            <div v-if="item.isCKTransfer" class="ck-expense-note mb-xs" style="margin-bottom: 6px;">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)</span>
+            </div>
             <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mb-xs font-semibold" style="margin-top: 4px;">
               <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
             </div>
-            <div class="flex flex-between align-center text-xs text-secondary" style="border-top: 1px dashed var(--border-color); padding-top: 12px; margin-top: 6px;">
-              <span>{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
-              <div class="flex align-center gap-xs">
-                <div class="flex flex-col align-end">
-                  <span class="payment-method-badge" :class="item.paymentClass">
-                    <i v-if="item.isCKTransfer" class="fa-solid fa-building-circle-arrow-right"></i>
-                    <span>{{ item.paymentLabel }}</span>
-                  </span>
-                  <span v-if="item.isCKTransfer" class="text-2xs text-secondary mt-xxs" style="font-size: 10px; line-height: 1.2; margin-top: 2px;">
-                    ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)
-                  </span>
-                </div>
+            <div class="flex flex-between align-center text-xs text-secondary" style="border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: 6px; gap: 8px;">
+              <span style="white-space: nowrap; flex-shrink: 0; font-size: 11px;">{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
+              <div class="flex align-center gap-xs" style="flex-shrink: 0;">
+                <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
+                  <i v-if="item.isCKTransfer" class="fa-solid fa-building-circle-arrow-right"></i>
+                  <span>{{ item.paymentLabel }}</span>
+                </span>
                 <!-- Reversal Badges / Buttons for Mobile -->
                 <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 4px 10px; font-size: 11px;">
                   <i class="fa-solid fa-circle-check"></i> คืนเงินแล้ว
@@ -1026,7 +1030,7 @@ const allLedgerEntries = computed(() => {
       badgeClass: badgeCls,
       name: displayName,
       amount: Number(e.amount) || 0,
-      paymentLabel: isCKTransfer ? 'เบิกครัวกลาง (รอเคลียร์)' : (e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด'),
+      paymentLabel: isCKTransfer ? 'เบิกครัวกลาง' : (e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด'),
       paymentClass: isCKTransfer ? 'badge-ck-transfer' : (e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash'),
       date: e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : ''),
       created_at: e.created_at,
@@ -2129,17 +2133,38 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: var(--font-weight-bold, 700);
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
 .payment-method-badge i {
-  font-size: 12px;
+  font-size: 11px;
+}
+
+.ck-expense-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 3px 9px;
+  background: rgba(139, 3, 19, 0.04);
+  color: #7f1d1d;
+  border: 1px solid rgba(139, 3, 19, 0.16);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.ck-expense-note i {
+  color: var(--primary, #8b0313);
+  font-size: 10.5px;
+  flex-shrink: 0;
 }
 
 /* Action Reverse Button */
@@ -2323,6 +2348,12 @@ onMounted(() => {
   font-size: 11px;
   border-radius: 6px;
   gap: 4px;
+}
+
+.expense-mobile-card .ck-expense-note {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 10.5px;
 }
 
 /* Responsive Grids */
