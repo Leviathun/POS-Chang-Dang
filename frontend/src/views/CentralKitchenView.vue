@@ -175,6 +175,16 @@
                 {{ formatNumber(item.quantity) }} {{ item.unit }}
               </span>
             </div>
+
+            <div v-if="item.pack_size > 1" class="item-meta-row flex flex-between align-center text-xs py-1">
+              <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
+                <i class="fa-solid fa-arrows-rotate text-primary"></i>
+                <span>แปลงหน่วย:</span>
+              </span>
+              <span class="font-bold text-primary" style="font-size: 0.85rem;">
+                1 {{ item.unit }} = {{ item.pack_size }} ชิ้น
+              </span>
+            </div>
           </div>
 
           <!-- 5. ปุ่มแอ็กชัน (อ้างอิงความกว้างเต็มเท่ารูปภาพ ซ้าย-ขวาเต็ม ไม่โดนบีบ) -->
@@ -232,7 +242,10 @@
                 <!-- Name -->
                 <td style="padding: var(--space-md); vertical-align: middle;">
                   <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-xs text-secondary">หน่วยนับ: {{ item.unit }}</div>
+                  <div class="text-xs text-secondary">
+                    หน่วยนับ: {{ item.unit }}
+                    <span v-if="item.pack_size > 1" class="text-primary font-bold ml-1">(1 {{ item.unit }} = {{ item.pack_size }} ชิ้น)</span>
+                  </div>
                 </td>
                 <!-- Category -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
@@ -557,6 +570,9 @@
                     <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
                       {{ getItemNameParts(c.item_name).sub }}
                     </div>
+                    <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
+                      <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
+                    </div>
                   </div>
                   <div class="text-right flex-shrink-0 pl-xs">
                     <span class="font-bold text-sm text-primary">฿{{ formatNumber(c.quantity * c.cost_price) }}</span>
@@ -697,6 +713,9 @@
                   </div>
                   <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
                     {{ getItemNameParts(c.item_name).sub }}
+                  </div>
+                  <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
                   </div>
                 </div>
                 <div class="text-right flex-shrink-0 pl-xs">
@@ -972,6 +991,7 @@
                     </td>
                     <td class="col-qty text-center">
                       <span class="order-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
+                      <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold ml-1">({{ it.quantity * it.pack_size }} ชิ้น)</span>
                       <div v-if="it.original_quantity && it.quantity < it.original_quantity" class="text-2xs text-warning mt-1" title="ปรับลดจากยอดเดิม">
                         (เดิม {{ it.original_quantity }})
                       </div>
@@ -1028,6 +1048,9 @@
                   <div class="flex align-center gap-xs">
                     <span class="order-qty-pill font-bold">
                       {{ it.quantity }} {{ it.unit }}
+                    </span>
+                    <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold">
+                      ({{ it.quantity * it.pack_size }} ชิ้น)
                     </span>
                     <span v-if="it.original_quantity && it.quantity < it.original_quantity" class="badge badge-warning text-2xs">
                       (เดิม {{ it.original_quantity }})
@@ -2753,10 +2776,43 @@
                 </button>
               </div>
 
+              <!-- 3. อัตราแปลงหน่วยเข้าสต็อกหน้าร้าน (Unit Conversion) -->
+              <div class="conversion-rate-box mt-sm p-sm rounded" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
+                <label class="text-xs font-bold text-secondary block mb-xs">
+                  <i class="fa-solid fa-arrows-rotate text-primary mr-1"></i>
+                  อัตราแปลงหน่วยเข้าสต็อกหน้าร้าน (1 {{ itemForm.unit || 'หน่วย' }} = กี่ชิ้น):
+                </label>
+                <div class="flex align-center gap-xs flex-wrap">
+                  <span class="font-bold text-sm">1 {{ itemForm.unit || 'หน่วย' }}</span>
+                  <span class="text-xs text-muted font-bold">=</span>
+                  <div style="width: 100px;">
+                    <input 
+                      type="number" 
+                      v-model.number="itemForm.pack_size" 
+                      min="1" 
+                      step="any"
+                      class="form-input text-center font-bold text-sm" 
+                      style="height: 36px; padding: 4px;"
+                      placeholder="1"
+                    />
+                  </div>
+                  <span class="font-bold text-sm text-primary">ชิ้น (เข้าหน้าร้าน)</span>
+                </div>
+                <div class="text-2xs text-secondary mt-xs flex align-center gap-xs">
+                  <i class="fa-solid fa-lightbulb text-warning flex-shrink-0"></i>
+                  <span>
+                    ตัวอย่าง: เบิก 1 {{ itemForm.unit || 'หน่วย' }} = เพิ่มสต็อกหน้าร้าน <strong>{{ Number(itemForm.pack_size || 1) }}</strong> ชิ้น
+                    <template v-if="Number(itemForm.pack_size || 1) > 1">
+                      (เช่น เบิก 6 {{ itemForm.unit || 'หน่วย' }} = เติมสต็อก {{ Number(itemForm.pack_size || 1) * 6 }} ชิ้น)
+                    </template>
+                  </span>
+                </div>
+              </div>
+
               <div class="stock-sync-alert mt-xs">
                 <i class="fa-solid fa-circle-info text-info flex-shrink-0"></i>
-                <span class="desktop-only">เมื่อครัวกลางจ่ายของให้สาขา ระบบจะวิ่งไปเติมสต็อกเมนูนี้ที่สาขาปลายทางให้อัตโนมัติ</span>
-                <span class="mobile-only">เมื่อจ่ายของ จะเติมสต็อกเมนูนี้ให้สาขาอัตโนมัติ</span>
+                <span class="desktop-only">เมื่อครัวกลางจ่ายของให้สาขา ระบบจะคำนวณตามอัตราแปลงหน่วยและเติมสต็อกเมนูนี้ที่สาขาให้อัตโนมัติ</span>
+                <span class="mobile-only">เมื่อจ่ายของ จะคำนวณแปลงหน่วยและเติมสต็อกเมนูนี้ให้สาขาอัตโนมัติ</span>
               </div>
             </div>
 
@@ -3789,7 +3845,8 @@ const openCreateItemModal = () => {
     min_stock_alert: 10,
     image_url: '',
     linked_menu_item_name: '',
-    target_stock_type: 'raw'
+    target_stock_type: 'raw',
+    pack_size: 1
   };
   isCategoryModalDropdownOpen.value = false;
   isUomModalDropdownOpen.value = false;
@@ -3809,7 +3866,8 @@ const openEditItemModal = (item) => {
     min_stock_alert: item.min_stock_alert,
     image_url: item.image_url || '',
     linked_menu_item_name: item.linked_menu_item_name || '',
-    target_stock_type: item.target_stock_type || 'raw'
+    target_stock_type: item.target_stock_type || 'raw',
+    pack_size: item.pack_size || 1
   };
   isCategoryModalDropdownOpen.value = false;
   isUomModalDropdownOpen.value = false;
@@ -4018,6 +4076,8 @@ const addDispatchItem = (item) => {
       unit: item.unit,
       cost_price: item.cost_price,
       max_quantity: item.quantity,
+      pack_size: item.pack_size || 1,
+      linked_menu_item_name: item.linked_menu_item_name || '',
       quantity: 1
     });
   }

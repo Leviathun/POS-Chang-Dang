@@ -22,7 +22,7 @@ function getThaiToday() {
  * Auto-sync restock to branch POS menu items
  * If ckItem has linked_menu_item_name, or if category === 'raw_material' and matches menu_items.name
  */
-async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, userName, isReverse = false) {
+async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, userName, isReverse = false, packSize = null) {
   try {
     if (!branchId || !ckItem || !qty || qty <= 0) return { synced: false };
 
@@ -40,9 +40,13 @@ async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, us
       return { synced: false, reason: 'no_matching_menu_item' };
     }
 
+    // 2. Unit conversion multiplier: check packSize snapshot, then ckItem.pack_size, fallback to 1
+    const multiplier = Number((packSize && packSize > 0) ? packSize : (ckItem.pack_size && ckItem.pack_size > 0 ? ckItem.pack_size : 1));
+    const convertedQty = Number(qty) * multiplier;
+
     const stockField = (ckItem.target_stock_type === 'ready' || menuItem.raw_quantity === null) ? 'quantity' : 'raw_quantity';
     const currentStock = Number(menuItem[stockField] || 0);
-    const changeQty = isReverse ? -Number(qty) : Number(qty);
+    const changeQty = isReverse ? -convertedQty : convertedQty;
     const newStock = Math.max(0, currentStock + changeQty);
     const nowLocal = getThaiNow();
 
@@ -53,11 +57,12 @@ async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, us
       WHERE id = ?
     `).run(newStock, nowLocal, menuItem.id);
 
-    // Insert stock_logs
+    // Insert stock_logs with clear unit conversion info
     const logReason = isReverse ? 'adjustment' : 'restock';
+    const formulaStr = multiplier > 1 ? ` (${qty} ${ckItem.unit || 'หน่วย'} x ${multiplier} = ${convertedQty} ${menuItem.unit || 'ชิ้น'})` : '';
     const logNote = isReverse 
-      ? `ปรับลดคืนวัตถุดิบครัวกลาง ใบเบิก #${transferNo} (${ckItem.name}) โดย ${userName}`
-      : `เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง ใบเบิก #${transferNo} (${ckItem.name}) โดย ${userName}`;
+      ? `ปรับลดคืนวัตถุดิบครัวกลาง ใบเบิก #${transferNo} (${ckItem.name})${formulaStr} โดย ${userName}`
+      : `เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง ใบเบิก #${transferNo} (${ckItem.name})${formulaStr} โดย ${userName}`;
 
     await db.prepare(`
       INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, note, created_at)
@@ -70,7 +75,9 @@ async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, us
       menuItemName: menuItem.name,
       stockField,
       changeQty,
-      newStock
+      newStock,
+      multiplier,
+      convertedQty
     };
   } catch (err) {
     console.warn(`⚠️ syncRestockToBranchMenu error for item ${ckItem?.name}:`, err.message);
@@ -157,7 +164,7 @@ router.get('/items', async (req, res) => {
 router.post('/items', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
-    const { name, category, unit, cost_price, quantity, min_stock_alert, image_url, linked_menu_item_name, target_stock_type } = req.body;
+    const { name, category, unit, cost_price, quantity, min_stock_alert, image_url, linked_menu_item_name, target_stock_type, pack_size } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, error: 'กรุณาระบุชื่อสินค้า/วัตถุดิบ' });
@@ -170,12 +177,13 @@ router.post('/items', requireManagerOrAdmin, async (req, res) => {
     const itemCat = category || 'general';
     const linkedMenu = linked_menu_item_name && linked_menu_item_name.trim() ? linked_menu_item_name.trim() : null;
     const stockType = target_stock_type === 'ready' ? 'ready' : 'raw';
+    const packMultiplier = Number(pack_size) > 0 ? Number(pack_size) : 1;
     const nowLocal = getThaiNow();
 
     const insertResult = await db.prepare(`
-      INSERT INTO central_kitchen_items (name, category, unit, cost_price, quantity, min_stock_alert, image_url, linked_menu_item_name, target_stock_type, active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-    `).run(name.trim(), itemCat, itemUnit, price, initialQty, minAlert, image_url || null, linkedMenu, stockType, nowLocal, nowLocal);
+      INSERT INTO central_kitchen_items (name, category, unit, cost_price, quantity, min_stock_alert, image_url, linked_menu_item_name, target_stock_type, pack_size, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    `).run(name.trim(), itemCat, itemUnit, price, initialQty, minAlert, image_url || null, linkedMenu, stockType, packMultiplier, nowLocal, nowLocal);
 
     const insertedId = insertResult.lastInsertRowid;
 
@@ -203,7 +211,7 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const db = getDb();
     const itemId = req.params.id;
-    const { name, category, unit, cost_price, min_stock_alert, image_url, active, linked_menu_item_name, target_stock_type } = req.body;
+    const { name, category, unit, cost_price, min_stock_alert, image_url, active, linked_menu_item_name, target_stock_type, pack_size } = req.body;
 
     const existing = await db.prepare('SELECT id FROM central_kitchen_items WHERE id = ?').get(itemId);
     if (!existing) {
@@ -226,6 +234,7 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
           image_url = COALESCE(?, image_url),
           linked_menu_item_name = CASE WHEN ? = 1 THEN ? ELSE linked_menu_item_name END,
           target_stock_type = COALESCE(?, target_stock_type),
+          pack_size = COALESCE(?, pack_size),
           active = COALESCE(?, active),
           updated_at = ?
       WHERE id = ?
@@ -239,6 +248,7 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
       hasLinkedMenuParam ? 1 : 0,
       cleanLinkedMenu,
       target_stock_type !== undefined ? (target_stock_type === 'ready' ? 'ready' : 'raw') : null,
+      pack_size !== undefined ? (Number(pack_size) > 0 ? Number(pack_size) : 1) : null,
       active !== undefined ? Number(active) : null,
       nowLocal,
       itemId
@@ -440,7 +450,8 @@ router.post('/transfers', async (req, res) => {
         item_name: dbItem.name,
         unit: dbItem.unit,
         cost_price: cost,
-        quantity: qty
+        quantity: qty,
+        pack_size: dbItem.pack_size || 1
       });
     }
 
@@ -458,12 +469,12 @@ router.post('/transfers', async (req, res) => {
 
     const transferId = insertTransfer.lastInsertRowid;
 
-    // 2. Insert items
+    // 2. Insert items with pack_size snapshot
     for (const item of itemsToInsert) {
       await db.prepare(`
-        INSERT INTO central_kitchen_transfer_items (transfer_id, item_id, item_name, unit, cost_price, quantity)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(transferId, item.item_id, item.item_name, item.unit, item.cost_price, item.quantity);
+        INSERT INTO central_kitchen_transfer_items (transfer_id, item_id, item_name, unit, cost_price, quantity, pack_size)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(transferId, item.item_id, item.item_name, item.unit, item.cost_price, item.quantity, item.pack_size);
     }
 
     res.status(201).json({
@@ -532,7 +543,7 @@ router.put('/transfers/:id/dispatch', requireManagerOrAdmin, async (req, res) =>
     for (const item of transferItems) {
       const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
       if (ckItem) {
-        const syncRes = await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name);
+        const syncRes = await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name, false, item.pack_size);
         if (syncRes.synced) {
           restockedItems.push(syncRes);
         }
@@ -599,7 +610,8 @@ router.post('/transfers/direct-dispatch', requireManagerOrAdmin, async (req, res
         item_name: dbItem.name,
         unit: dbItem.unit,
         cost_price: cost,
-        quantity: qty
+        quantity: qty,
+        pack_size: dbItem.pack_size || 1
       });
     }
 
@@ -641,9 +653,9 @@ router.post('/transfers/direct-dispatch', requireManagerOrAdmin, async (req, res
     for (const item of itemsToInsert) {
       // Insert item record
       await db.prepare(`
-        INSERT INTO central_kitchen_transfer_items (transfer_id, item_id, item_name, unit, cost_price, quantity, original_quantity)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(transferId, item.item_id, item.item_name, item.unit, item.cost_price, item.quantity, item.quantity);
+        INSERT INTO central_kitchen_transfer_items (transfer_id, item_id, item_name, unit, cost_price, quantity, original_quantity, pack_size)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(transferId, item.item_id, item.item_name, item.unit, item.cost_price, item.quantity, item.quantity, item.pack_size);
 
       // Deduct CK stock
       await db.prepare(`
@@ -653,7 +665,7 @@ router.post('/transfers/direct-dispatch', requireManagerOrAdmin, async (req, res
       // Auto-sync to branch POS menu items
       const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
       if (ckItem) {
-        const syncRes = await syncRestockToBranchMenu(db, targetBranchId, ckItem, item.quantity, transferNo, req.user.name);
+        const syncRes = await syncRestockToBranchMenu(db, targetBranchId, ckItem, item.quantity, transferNo, req.user.name, false, item.pack_size);
         if (syncRes.synced) restockedItems.push(syncRes);
       }
     }
@@ -754,7 +766,7 @@ router.put('/transfers/:id/items/:item_id/adjust', requireManagerOrAdmin, async 
     // 5. Reverse branch POS restock if linked
     const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(tItem.item_id);
     if (ckItem) {
-      await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, diffQty, transfer.transfer_no, req.user.name, true);
+      await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, diffQty, transfer.transfer_no, req.user.name, true, tItem.pack_size);
     }
 
     res.json({
@@ -801,7 +813,7 @@ router.put('/transfers/:id/cancel', requireManagerOrAdmin, async (req, res) => {
         // Reverse branch POS restock
         const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
         if (ckItem) {
-          await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name, true);
+          await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name, true, item.pack_size);
         }
       }
     }
@@ -868,7 +880,7 @@ router.put('/transfers/:id/receive', async (req, res) => {
     for (const item of transferItems) {
       const ckItem = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(item.item_id);
       if (ckItem) {
-        await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name);
+        await syncRestockToBranchMenu(db, transfer.branch_id, ckItem, item.quantity, transfer.transfer_no, req.user.name, false, item.pack_size);
       }
     }
 
