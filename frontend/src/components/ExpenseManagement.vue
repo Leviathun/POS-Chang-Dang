@@ -408,10 +408,9 @@
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; white-space: nowrap;">
                 <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
-                  <i v-if="item.isCKTransfer" class="fa-solid fa-building-circle-arrow-right"></i>
-                  <i v-else-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
-                  <i v-else-if="item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
-                  <i v-else class="fa-solid fa-box"></i>
+                  <i v-if="!item.isCKTransfer && item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
+                  <i v-else-if="!item.isCKTransfer && item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
+                  <i v-else-if="!item.isCKTransfer" class="fa-solid fa-box"></i>
                   <span>{{ item.paymentLabel }}</span>
                 </span>
               </td>
@@ -504,7 +503,6 @@
               <span style="white-space: nowrap; flex-shrink: 0; font-size: 11px;">{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
               <div class="flex align-center gap-xs" style="flex-shrink: 0;">
                 <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
-                  <i v-if="item.isCKTransfer" class="fa-solid fa-building-circle-arrow-right"></i>
                   <span>{{ item.paymentLabel }}</span>
                 </span>
                 <!-- Reversal Badges / Buttons for Mobile -->
@@ -1030,7 +1028,7 @@ const allLedgerEntries = computed(() => {
       badgeClass: badgeCls,
       name: displayName,
       amount: Number(e.amount) || 0,
-      paymentLabel: isCKTransfer ? 'เบิกครัวกลาง' : (e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด'),
+      paymentLabel: isCKTransfer ? 'ครัวกลาง' : (e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด'),
       paymentClass: isCKTransfer ? 'badge-ck-transfer' : (e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash'),
       date: e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : ''),
       created_at: e.created_at,
