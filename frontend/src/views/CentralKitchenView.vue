@@ -2777,12 +2777,12 @@
               </div>
 
               <!-- 3. อัตราแปลงหน่วยเข้าสต็อกหน้าร้าน (Unit Conversion) -->
-              <div class="conversion-rate-box mt-sm p-sm rounded" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
-                <label class="text-xs font-bold text-secondary block mb-xs">
-                  <i class="fa-solid fa-arrows-rotate text-primary mr-1"></i>
-                  อัตราแปลงหน่วยเข้าสต็อกหน้าร้าน (1 {{ itemForm.unit || 'หน่วย' }} = กี่ชิ้น):
+              <div class="conversion-rate-box">
+                <label class="conversion-rate-title">
+                  <i class="fa-solid fa-arrows-rotate text-primary"></i>
+                  <span>อัตราแปลงหน่วยเข้าสต็อกหน้าร้าน (1 {{ itemForm.unit || 'หน่วย' }} = กี่ชิ้น):</span>
                 </label>
-                <div class="flex align-center gap-xs flex-wrap">
+                <div class="conversion-rate-input-row">
                   <span class="font-bold text-sm">1 {{ itemForm.unit || 'หน่วย' }}</span>
                   <span class="text-xs text-muted font-bold">=</span>
                   <div style="width: 100px;">
@@ -2791,14 +2791,13 @@
                       v-model.number="itemForm.pack_size" 
                       min="1" 
                       step="any"
-                      class="form-input text-center font-bold text-sm" 
-                      style="height: 36px; padding: 4px;"
+                      class="form-input text-center font-bold text-sm conversion-rate-input" 
                       placeholder="1"
                     />
                   </div>
                   <span class="font-bold text-sm text-primary">ชิ้น (เข้าหน้าร้าน)</span>
                 </div>
-                <div class="text-2xs text-secondary mt-xs flex align-center gap-xs">
+                <div class="conversion-rate-example">
                   <i class="fa-solid fa-lightbulb text-warning flex-shrink-0"></i>
                   <span>
                     ตัวอย่าง: เบิก 1 {{ itemForm.unit || 'หน่วย' }} = เพิ่มสต็อกหน้าร้าน <strong>{{ Number(itemForm.pack_size || 1) }}</strong> ชิ้น
@@ -2809,7 +2808,7 @@
                 </div>
               </div>
 
-              <div class="stock-sync-alert mt-xs">
+              <div class="stock-sync-alert">
                 <i class="fa-solid fa-circle-info text-info flex-shrink-0"></i>
                 <span class="desktop-only">เมื่อครัวกลางจ่ายของให้สาขา ระบบจะคำนวณตามอัตราแปลงหน่วยและเติมสต็อกเมนูนี้ที่สาขาให้อัตโนมัติ</span>
                 <span class="mobile-only">เมื่อจ่ายของ จะคำนวณแปลงหน่วยและเติมสต็อกเมนูนี้ให้สาขาอัตโนมัติ</span>
@@ -4622,21 +4621,72 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.stock-sync-alert {
+.conversion-rate-box {
+  padding: 14px 16px;
+  background: rgba(139, 3, 19, 0.035);
+  border: 1px solid rgba(139, 3, 19, 0.16);
+  border-radius: 10px;
+  margin-top: 12px;
+  box-sizing: border-box;
+}
+
+.conversion-rate-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+  margin-bottom: 10px;
+}
+
+.conversion-rate-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.conversion-rate-input {
+  height: 38px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--primary, #8b0313);
+  background: #ffffff;
+  color: var(--text-primary, #111827);
+  box-sizing: border-box;
+}
+
+.conversion-rate-example {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.stock-sync-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
   background: rgba(30, 144, 255, 0.08);
   border: 1px solid rgba(30, 144, 255, 0.2);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   color: #1e5bb8;
-  font-size: 11.5px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 10px;
 }
 
 .stock-sync-empty-note {
-  padding: 10px 14px;
+  padding: 12px 14px;
   background: rgba(0, 0, 0, 0.025);
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-md);
