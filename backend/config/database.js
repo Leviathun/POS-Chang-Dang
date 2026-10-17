@@ -429,6 +429,7 @@ async function initDatabase() {
       image_url TEXT,
       linked_menu_item_name TEXT DEFAULT NULL,
       target_stock_type TEXT DEFAULT 'raw',
+      pack_size REAL NOT NULL DEFAULT 1,
       active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
@@ -457,7 +458,8 @@ async function initDatabase() {
       unit TEXT NOT NULL,
       cost_price REAL NOT NULL DEFAULT 0,
       quantity REAL NOT NULL DEFAULT 1,
-      original_quantity REAL
+      original_quantity REAL,
+      pack_size REAL NOT NULL DEFAULT 1
     )`,
     `CREATE TABLE IF NOT EXISTS central_kitchen_restock_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -826,7 +828,7 @@ async function initDatabase() {
     console.warn('⚠️ Migration central_kitchen_transfers columns failed:', e.message);
   }
 
-  // Migration: Add linking columns to central_kitchen_items
+  // Migration: Add linking columns & pack_size to central_kitchen_items
   try {
     const itemCols = await db.prepare("PRAGMA table_info(central_kitchen_items)").all();
     if (!itemCols.some(c => c.name === 'linked_menu_item_name')) {
@@ -835,15 +837,21 @@ async function initDatabase() {
     if (!itemCols.some(c => c.name === 'target_stock_type')) {
       await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN target_stock_type TEXT DEFAULT 'raw'");
     }
+    if (!itemCols.some(c => c.name === 'pack_size')) {
+      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN pack_size REAL DEFAULT 1");
+    }
   } catch (e) {
     console.warn('⚠️ Migration central_kitchen_items columns failed:', e.message);
   }
 
-  // Migration: Add original_quantity column to central_kitchen_transfer_items
+  // Migration: Add original_quantity and pack_size column to central_kitchen_transfer_items
   try {
     const transferItemCols = await db.prepare("PRAGMA table_info(central_kitchen_transfer_items)").all();
     if (!transferItemCols.some(c => c.name === 'original_quantity')) {
       await db.exec("ALTER TABLE central_kitchen_transfer_items ADD COLUMN original_quantity REAL");
+    }
+    if (!transferItemCols.some(c => c.name === 'pack_size')) {
+      await db.exec("ALTER TABLE central_kitchen_transfer_items ADD COLUMN pack_size REAL DEFAULT 1");
     }
   } catch (e) {
     console.warn('⚠️ Migration central_kitchen_transfer_items columns failed:', e.message);

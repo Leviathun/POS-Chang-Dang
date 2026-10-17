@@ -350,16 +350,45 @@ router.post('/:id/reverse', async (req, res) => {
               let menuItem = null;
               if (targetName) {
                 menuItem = await db.prepare('SELECT * FROM menu_items WHERE branch_id = ? AND name = ? LIMIT 1').get(linkedTransfer.branch_id, targetName);
+                if (!menuItem) {
+                  // Smart alias fallback
+                  if (targetName.includes('น่อง') && targetName.includes('เล็ก')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%น่อง%เล็ก%' LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName.includes('น่อง') && targetName.includes('ใหญ่')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%น่อง%ใหญ่%' LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName.startsWith('ปีก')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE 'ปีก%' LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName.includes('สะโพก') && targetName.includes('ไร้')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%สะโพก%ไร้%' LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName.includes('สะโพก') && targetName.includes('น่อง')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name LIKE '%สะโพก%น่อง%' OR name LIKE '%น่อง%สะโพก%') LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName === 'สะโพก' || targetName === 'สะโพกไก่') {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name = 'สะโพก' OR name = 'สะโพกไก่') LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName.includes('อกไก่') && targetName.includes('สไป')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%อกไก่%สไป%' LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if ((targetName.includes('ชีส') || targetName.includes('ซีส')) && targetName.includes('บอล')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name LIKE '%ชีสบอล%' OR name LIKE '%ซีสบอล%') LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if ((targetName.includes('ชีส') || targetName.includes('ซีส')) && (targetName.includes('สติ๊ก') || targetName.includes('สตริก'))) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name LIKE '%ชีส%สติ๊ก%' OR name LIKE '%ซีส%สติ๊ก%') LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName.includes('นักเก็ต') && targetName.includes('ลาวา')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%นักเก็ต%ลาวา%' LIMIT 1").get(linkedTransfer.branch_id);
+                  } else if (targetName.includes('นักเก็ต')) {
+                    menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%นักเก็ต%' AND name NOT LIKE '%ลาวา%' LIMIT 1").get(linkedTransfer.branch_id);
+                  }
+                }
               }
               if (menuItem) {
+                const multiplier = Number((item.pack_size && item.pack_size > 0) ? item.pack_size : (ckItem.pack_size && ckItem.pack_size > 0 ? ckItem.pack_size : 1));
+                const convertedQty = Number(item.quantity) * multiplier;
                 const stockField = (ckItem.target_stock_type === 'ready' || menuItem.raw_quantity === null) ? 'quantity' : 'raw_quantity';
                 const curStock = Number(menuItem[stockField] || 0);
-                const newStock = Math.max(0, curStock - Number(item.quantity));
+                const newStock = Math.max(0, curStock - convertedQty);
                 await db.prepare(`UPDATE menu_items SET ${stockField} = ?, updated_at = ? WHERE id = ?`).run(newStock, nowLocal, menuItem.id);
+                const formulaStr = multiplier > 1 ? ` (${item.quantity} ${item.unit || 'หน่วย'} x ${multiplier} = ${convertedQty} ชิ้น)` : '';
                 await db.prepare(`
                   INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, note, created_at)
                   VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?)
-                `).run(linkedTransfer.branch_id, menuItem.id, -Number(item.quantity), curStock, newStock, `ปรับลดคืนวัตถุดิบจากการยกเลิกรายจ่าย #${id} (ใบเบิก #${linkedTransfer.transfer_no})`, nowLocal);
+                `).run(linkedTransfer.branch_id, menuItem.id, -convertedQty, curStock, newStock, `ปรับลดคืนวัตถุดิบจากการยกเลิกรายจ่าย #${id} (ใบเบิก #${linkedTransfer.transfer_no})${formulaStr}`, nowLocal);
               }
             }
           } catch (menuRollErr) {
