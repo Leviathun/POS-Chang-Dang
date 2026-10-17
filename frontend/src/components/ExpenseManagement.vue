@@ -404,11 +404,15 @@
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle;">
                 <span class="payment-method-badge" :class="item.paymentClass">
-                  <i v-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
+                  <i v-if="item.isCKTransfer" class="fa-solid fa-building-circle-arrow-right"></i>
+                  <i v-else-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
                   <i v-else-if="item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
                   <i v-else class="fa-solid fa-box"></i>
                   <span>{{ item.paymentLabel }}</span>
                 </span>
+                <div v-if="item.isCKTransfer" class="text-2xs text-secondary mt-xxs" style="font-size: 10px; line-height: 1.2; margin-top: 3px;">
+                  ต้นทุนค่าของ (ยังไม่ตัดเงินสด)
+                </div>
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; font-weight:bold; font-size: var(--font-base);">
                 <span v-if="item.isRefund" class="text-success font-bold">+{{ formatCurrency(item.amount) }}</span>
@@ -490,7 +494,15 @@
             <div class="flex flex-between align-center text-xs text-secondary" style="border-top: 1px dashed var(--border-color); padding-top: 12px; margin-top: 6px;">
               <span>{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
               <div class="flex align-center gap-xs">
-                <span class="payment-method-badge" :class="item.paymentClass">{{ item.paymentLabel }}</span>
+                <div class="flex flex-col align-end">
+                  <span class="payment-method-badge" :class="item.paymentClass">
+                    <i v-if="item.isCKTransfer" class="fa-solid fa-building-circle-arrow-right"></i>
+                    <span>{{ item.paymentLabel }}</span>
+                  </span>
+                  <span v-if="item.isCKTransfer" class="text-2xs text-secondary mt-xxs" style="font-size: 10px; line-height: 1.2; margin-top: 2px;">
+                    ต้นทุนค่าของ (ยังไม่ตัดเงินสด)
+                  </span>
+                </div>
                 <!-- Reversal Badges / Buttons for Mobile -->
                 <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 4px 10px; font-size: 11px;">
                   <i class="fa-solid fa-circle-check"></i> คืนเงินแล้ว
@@ -1014,8 +1026,8 @@ const allLedgerEntries = computed(() => {
       badgeClass: badgeCls,
       name: displayName,
       amount: Number(e.amount) || 0,
-      paymentLabel: e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด',
-      paymentClass: e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash',
+      paymentLabel: isCKTransfer ? 'เบิกครัวกลาง (รอเคลียร์)' : (e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด'),
+      paymentClass: isCKTransfer ? 'badge-ck-transfer' : (e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash'),
       date: e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : ''),
       created_at: e.created_at,
       timestamp: new Date((e.created_at || '').replace(' ', 'T')).getTime(),
@@ -2166,7 +2178,8 @@ onMounted(() => {
 }
 
 .badge-cash { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
-.badge-transfer { background: rgba(139, 3, 19, 0.1); color: var(--primary); border: 1px solid rgba(139, 3, 19, 0.2); }
+.badge-transfer { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; border: 1px solid rgba(59, 130, 246, 0.25); }
+.badge-ck-transfer { background: rgba(139, 3, 19, 0.08); color: var(--primary, #8b0313); border: 1px solid rgba(139, 3, 19, 0.22); }
 .badge-stock { background: rgba(108, 117, 125, 0.12); color: #495057; border: 1px solid rgba(108, 117, 125, 0.2); }
 
 /* 10. Analytics & Charts */
