@@ -196,6 +196,16 @@
                   <span class="stock-prefix">เหลือ </span>{{ formatNumber(item.quantity) }} {{ item.unit }}
                 </span>
               </div>
+
+              <div v-if="item.pack_size > 1" class="item-meta-row flex flex-between align-center text-xs py-1">
+                <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
+                  <i class="fa-solid fa-arrows-rotate text-primary"></i>
+                  <span>แปลงหน่วย:</span>
+                </span>
+                <span class="font-bold text-primary" style="font-size: 0.85rem;">
+                  1 {{ item.unit }} = {{ item.pack_size }} ชิ้น
+                </span>
+              </div>
             </div>
 
             <!-- 5. ปุ่มแอ็กชัน (เต็มความกว้างซ้าย-ขวา เท่ารูปภาพ) -->
@@ -257,6 +267,9 @@
                   </div>
                   <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
                     {{ getItemNameParts(c.item_name).sub }}
+                  </div>
+                  <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
                   </div>
                 </div>
                 <!-- Subtotal on top right (bold, prominent) -->
@@ -377,6 +390,9 @@
                 </div>
                 <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
                   {{ getItemNameParts(c.item_name).sub }}
+                </div>
+                <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
+                  <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
                 </div>
               </div>
               <div class="text-right flex-shrink-0 pl-xs">
@@ -584,6 +600,7 @@
                     </td>
                     <td class="col-qty text-center">
                       <span class="order-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
+                      <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold ml-1">({{ it.quantity * it.pack_size }} ชิ้น)</span>
                     </td>
                     <td class="col-total text-right font-bold text-sm text-primary">
                       ฿{{ formatNumber(it.quantity * it.cost_price) }}
@@ -622,9 +639,14 @@
                   <span class="text-xs text-secondary">
                     ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
                   </span>
-                  <span class="order-qty-pill font-bold">
-                    {{ it.quantity }} {{ it.unit }}
-                  </span>
+                  <div class="flex align-center gap-xs">
+                    <span class="order-qty-pill font-bold">
+                      {{ it.quantity }} {{ it.unit }}
+                    </span>
+                    <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold">
+                      ({{ it.quantity * it.pack_size }} ชิ้น)
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -839,6 +861,8 @@ const addToCart = (item) => {
       unit: item.unit,
       cost_price: item.cost_price,
       max_quantity: item.quantity,
+      pack_size: item.pack_size || 1,
+      linked_menu_item_name: item.linked_menu_item_name || '',
       quantity: 1
     });
   }
