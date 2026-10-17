@@ -37,6 +37,33 @@ async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, us
     let menuItem = await db.prepare('SELECT * FROM menu_items WHERE branch_id = ? AND name = ? LIMIT 1').get(branchId, targetName);
 
     if (!menuItem) {
+      // Smart alias fallback for common branch menu naming differences across branches
+      if (targetName.includes('น่อง') && targetName.includes('เล็ก')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%น่อง%เล็ก%' LIMIT 1").get(branchId);
+      } else if (targetName.includes('น่อง') && targetName.includes('ใหญ่')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%น่อง%ใหญ่%' LIMIT 1").get(branchId);
+      } else if (targetName.startsWith('ปีก')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE 'ปีก%' LIMIT 1").get(branchId);
+      } else if (targetName.includes('สะโพก') && targetName.includes('ไร้')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%สะโพก%ไร้%' LIMIT 1").get(branchId);
+      } else if (targetName.includes('สะโพก') && targetName.includes('น่อง')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name LIKE '%สะโพก%น่อง%' OR name LIKE '%น่อง%สะโพก%') LIMIT 1").get(branchId);
+      } else if (targetName === 'สะโพก' || targetName === 'สะโพกไก่') {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name = 'สะโพก' OR name = 'สะโพกไก่') LIMIT 1").get(branchId);
+      } else if (targetName.includes('อกไก่') && targetName.includes('สไป')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%อกไก่%สไป%' LIMIT 1").get(branchId);
+      } else if ((targetName.includes('ชีส') || targetName.includes('ซีส')) && targetName.includes('บอล')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name LIKE '%ชีสบอล%' OR name LIKE '%ซีสบอล%') LIMIT 1").get(branchId);
+      } else if ((targetName.includes('ชีส') || targetName.includes('ซีส')) && (targetName.includes('สติ๊ก') || targetName.includes('สตริก'))) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name LIKE '%ชีส%สติ๊ก%' OR name LIKE '%ซีส%สติ๊ก%') LIMIT 1").get(branchId);
+      } else if (targetName.includes('นักเก็ต') && targetName.includes('ลาวา')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%นักเก็ต%ลาวา%' LIMIT 1").get(branchId);
+      } else if (targetName.includes('นักเก็ต')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%นักเก็ต%' AND name NOT LIKE '%ลาวา%' LIMIT 1").get(branchId);
+      }
+    }
+
+    if (!menuItem) {
       return { synced: false, reason: 'no_matching_menu_item' };
     }
 

@@ -411,7 +411,7 @@
                   <span>{{ item.paymentLabel }}</span>
                 </span>
                 <div v-if="item.isCKTransfer" class="text-2xs text-secondary mt-xxs" style="font-size: 10px; line-height: 1.2; margin-top: 3px;">
-                  ต้นทุนค่าของ (ยังไม่ตัดเงินสด)
+                  ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)
                 </div>
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; font-weight:bold; font-size: var(--font-base);">
@@ -500,7 +500,7 @@
                     <span>{{ item.paymentLabel }}</span>
                   </span>
                   <span v-if="item.isCKTransfer" class="text-2xs text-secondary mt-xxs" style="font-size: 10px; line-height: 1.2; margin-top: 2px;">
-                    ต้นทุนค่าของ (ยังไม่ตัดเงินสด)
+                    ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)
                   </span>
                 </div>
                 <!-- Reversal Badges / Buttons for Mobile -->
