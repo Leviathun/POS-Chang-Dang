@@ -672,12 +672,11 @@ const triggerAutoPrinterAndDrawer = async (orderData) => {
   if (isPrinterConnected()) {
     if (config.autoPrint) {
       try {
-        // If it's cash payment and auto-kick is enabled, it was already kicked optimistically
-        const wasAlreadyKicked = config.autoKick && orderData && orderData.payment_method === 'cash';
+        // In autoPrint, the receipt job itself handles kicking the drawer at completion
         if (config.connectionType === 'rawbt') {
-          handlePrintReceipt(orderData, wasAlreadyKicked);
+          handlePrintReceipt(orderData, false);
         } else {
-          await handlePrintReceipt(orderData, wasAlreadyKicked);
+          await handlePrintReceipt(orderData, false);
         }
       } catch (e) {
         ui.showToast('พิมพ์ใบเสร็จอัตโนมัติล้มเหลว: ' + e.message, 'error');
@@ -691,10 +690,12 @@ const submitCheckout = (paymentMethodType, cashReceivedVal) => {
   success.value = true;
   showConfetti();
   
-  // 🟢 Optimistic Cash Drawer Kick (Open immediately for cash payments)
+  // 🟢 Optimistic Cash Drawer Kick (Open immediately for cash payments if not printing receipt)
   if (paymentMethodType === 'cash') {
     const config = getSavedPrinterConfig();
-    if (config.autoKick && isPrinterConnected()) {
+    // If autoPrint is enabled, the receipt job itself kicks the drawer at completion in ONE unified job.
+    // Only kick standalone here if autoPrint is disabled.
+    if (config.autoKick && !config.autoPrint && isPrinterConnected()) {
       try {
         if (config.connectionType === 'rawbt') {
           kickDrawerSync();
