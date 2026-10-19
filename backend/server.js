@@ -24,7 +24,15 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Static files (PWA) - served from root dist/ folder
-app.use(express.static(path.join(__dirname, '..', 'dist')));
+app.use(express.static(path.join(__dirname, '..', 'dist'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('index.html')) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+    }
+  }
+}));
 
 // ─── API Routes ───────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
@@ -42,6 +50,11 @@ app.use('/api/central-kitchen', require('./routes/central_kitchen'));
 
 // ─── SPA Fallback ─────────────────────────────────────────
 app.get('*', (req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 

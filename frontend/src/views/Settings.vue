@@ -999,12 +999,12 @@
           <button class="btn btn-secondary" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingPrint" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-file-invoice"></i>
-            {{ isTestingPrint ? 'กำลังทดสอบ...' : 'ทดสอบพิมพ์ใบเสร็จทดลอง' }}
+            {{ isTestingPrint ? 'กำลังทดสอบ...' : 'ทดสอบพิมพ์ใบเสร็จ' }}
           </button>
           <button class="btn btn-secondary" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingKick" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-key"></i>
-            {{ isTestingKick ? 'กำลังทดสอบ...' : 'ทดสอบเปิดลิ้นชักเก็บเงิน' }}
+            {{ isTestingKick ? 'กำลังทดสอบ...' : 'ทดสอบเปิดลิ้นชัก' }}
           </button>
         </div>
       </div>

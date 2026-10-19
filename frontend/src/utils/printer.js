@@ -18,14 +18,9 @@ const CMD = {
   FONT_BOLD_OFF: [ESC, 69, 0],    // Turn bold off
   CUT: [GS, 86, 66, 0],           // Feed and cut paper
   KICK_DRAWER: [
-    ESC, 112, 0, 25, 250,         // ESC p 0 25 250 (Epson Pin 2, 50ms pulse)
-    ESC, 112, 1, 25, 250,         // ESC p 1 25 250 (Epson Pin 5, 50ms pulse)
-    ESC, 112, 0, 50, 250,         // ESC p 0 50 250 (Pin 2, 100ms pulse for heavy solenoids)
-    ESC, 112, 1, 50, 250,         // ESC p 1 50 250 (Pin 5, 100ms pulse for heavy solenoids)
-    16, 20, 1, 0, 2,              // DLE DC4 1 0 2 (Real-time pulse Pin 2, 200ms)
-    16, 20, 1, 1, 2,              // DLE DC4 1 1 2 (Real-time pulse Pin 5, 200ms)
-    27, 7,                        // ESC BEL (Star Micronics pulse)
-    10                            // Line feed
+    ESC, 112, 0, 50, 250,         // ESC p 0 50 250 (Pin 2 standard Epson pulse, 100ms)
+    ESC, 112, 1, 50, 250,         // ESC p 1 50 250 (Pin 5 standard Epson pulse, 100ms)
+    10                            // Line feed to flush buffer
   ],
 };
 
@@ -97,8 +92,7 @@ class EscPosBuilder {
   }
 
   init() { 
-    return this.add(CMD.INIT)
-               .add([27, 116, 26]);   // Select standard Epson Thai Codepage (CP874) for all modes so RawBT decodes it correctly
+    return this.add(CMD.INIT);
   }
   left() { return this.add(CMD.ALIGN_LEFT); }
   center() { return this.add(CMD.ALIGN_CENTER); }
@@ -365,31 +359,20 @@ export async function sendRawToPrinter(bytes) {
   }
 }
 
-// Open cash drawer only (Async WebUSB path with RawBT sync fallback)
+// Open cash drawer only (Async WebUSB path with RawBT sync fallback - Silent Kick: Zero ink, Zero text)
 export async function kickDrawer() {
   const config = getSavedPrinterConfig();
   if (config.connectionType === 'rawbt') {
     kickDrawerSync();
     return;
   }
-  const bytes = new EscPosBuilder().init().feed(1).kick().cut().build();
+  const bytes = buildSilentKickBytes();
   await sendRawToPrinter(bytes);
 }
 
-// Open cash drawer only (Sync Chrome Intent path)
+// Open cash drawer only (Sync Chrome Intent path - Silent Kick: Zero ink, Zero text)
 export function kickDrawerSync() {
-  const config = getSavedPrinterConfig();
-  if (config.connectionType === 'rawbt') {
-    const bytes = buildKickSlipBytes('เปิดลิ้นชักเก็บเงิน');
-    sendRawToPrinterSync(bytes);
-    return;
-  }
-  const builder = new EscPosBuilder();
-  builder.init();
-  builder.feed(1);
-  builder.kick();
-  builder.cut();
-  const bytes = builder.build();
+  const bytes = buildSilentKickBytes();
   sendRawToPrinterSync(bytes);
 }
 
@@ -422,14 +405,23 @@ function formatLine(leftText, rightText, width = 28) {
 // Helper to navigate to RawBT across Samsung Internet and Chrome
 export function triggerRawBtNavigation(rawbtUrl, intentUrl) {
   const isSamsung = typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('SamsungBrowser');
-  // Samsung Internet prefers direct 'rawbt:' custom scheme; Chrome prefers explicit 'intent:...'
-  const targetUrl = isSamsung ? rawbtUrl : (intentUrl || rawbtUrl);
-  
-  // Directly navigate to target scheme - modern Chrome and Samsung Internet handle this reliably on user gesture
+  // Samsung Internet supports direct 'rawbt:' custom scheme.
+  // Google Chrome and standard Chromium Android browsers strictly require 'intent:...'.
+  const targetUrl = isSamsung ? (rawbtUrl || intentUrl) : (intentUrl || rawbtUrl);
+
   try {
-    window.location.href = targetUrl;
+    const link = document.createElement('a');
+    link.href = targetUrl;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   } catch (e) {
-    console.error('RawBT navigation error:', e);
+    try {
+      window.location.href = targetUrl;
+    } catch (err) {
+      console.error('RawBT navigation error:', err);
+    }
   }
 }
 
@@ -452,7 +444,6 @@ export function sendRawToPrinterSync(bytes) {
 }
 
 // Render receipt onto a canvas using high quality layout for raster graphics printing
-// Render receipt onto a canvas using high quality layout for raster graphics printing
 function renderReceiptToCanvas(order, cartItems, options) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -460,7 +451,7 @@ function renderReceiptToCanvas(order, cartItems, options) {
   const width = 384; // 58mm (standard thermal printer width)
   // We will dynamically measure height
   const drawOps = [];
-  let currentY = 15;
+  let currentY = 12;
   
   // Helper to wrap Thai text
   function wrapText(text, maxWidth, fontSize, style = 'normal') {
@@ -665,12 +656,12 @@ function renderReceiptToCanvas(order, cartItems, options) {
   return canvas;
 }
 
-// Render a short, compact ~1.5cm "No Sale / เปิดลิ้นชัก" slip to canvas
+// Render an ultra-compact ~5mm "No Sale / เปิดลิ้นชัก" slip to canvas
 export function renderNoSaleSlipToCanvas(title = 'เปิดลิ้นชักเก็บเงิน') {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const width = 384;
-  const height = 120; // compact slip (~1.5 cm)
+  const height = 48; // Ultra compact (~5mm) to save paper and drive printer motor
   canvas.width = width;
   canvas.height = height;
 
@@ -678,26 +669,12 @@ export function renderNoSaleSlipToCanvas(title = 'เปิดลิ้นชั
   ctx.fillRect(0, 0, width, height);
 
   ctx.fillStyle = '#000000';
-  ctx.textBaseline = 'top';
+  ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
 
   const fontName = 'Sarabun, system-ui, -apple-system, sans-serif';
   ctx.font = `bold 22px ${fontName}`;
-  ctx.fillText('--- ' + title + ' ---', width / 2, 15);
-
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' +
-                  now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  ctx.font = `normal 18px ${fontName}`;
-  ctx.fillText('วัน-เวลา: ' + dateStr, width / 2, 50);
-
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.setLineDash([4, 4]);
-  ctx.moveTo(10, 85);
-  ctx.lineTo(width - 10, 85);
-  ctx.stroke();
+  ctx.fillText('--- ' + title + ' ---', width / 2, height / 2);
 
   return canvas;
 }
@@ -712,7 +689,7 @@ function convertCanvasToEscPosRaster(canvas) {
   const widthBytes = Math.ceil(width / 8);
   const buffer = [];
 
-  const CHUNK_HEIGHT = 128; // Safe chunk height prevents RAM buffer overflow on thermal printers
+  const CHUNK_HEIGHT = 32; // Safe 32-row chunk height (1.5KB) prevents buffer overflow on portable thermal printers
 
   for (let yStart = 0; yStart < height; yStart += CHUNK_HEIGHT) {
     const chunkHeight = Math.min(CHUNK_HEIGHT, height - yStart);
@@ -754,53 +731,82 @@ function convertCanvasToEscPosRaster(canvas) {
 // Format and build receipt ESC/POS byte array
 function buildReceiptBytes(order, cartItems = [], options = {}) {
   const config = getSavedPrinterConfig();
-  const builder = new EscPosBuilder();
-  
-  // 1. Initialize printer only (DO NOT kick before image to prevent brownout during raster printing)
-  builder.init();
-  const builderBytes = builder.build();
 
-  // 2. Generate raster bytes
+  // 1. Generate raster image bytes
   const canvas = renderReceiptToCanvas(order, cartItems, options);
   const rasterBytes = convertCanvasToEscPosRaster(canvas);
 
-  // 3. Feed, Kick & Cut paper (clean sequence verified 100% working in Branch 1 layout)
+  // 2. Feed paper and kick cash drawer (DO NOT send CUT command for portable manual-tear printers)
   const cutBuilder = new EscPosBuilder();
   cutBuilder.feed(2);
   const isCash = order && (order.payment_method === 'cash' || !order.payment_method);
   if (((config.autoKick && isCash) || options.forceKick) && !options.skipKick) {
     cutBuilder.kick();
   }
-  cutBuilder.cut();
+  cutBuilder.feed(3); // Feed past the manual tear bar
   const cutBytes = cutBuilder.build();
 
-  // Combine [init] + [raster image] + [feed & cut]
-  const combined = new Uint8Array(builderBytes.length + rasterBytes.length + cutBytes.length);
-  combined.set(builderBytes, 0);
-  combined.set(rasterBytes, builderBytes.length);
-  combined.set(cutBytes, builderBytes.length + rasterBytes.length);
+  // 3. Prepend safe wake-up buffer [10, 10] before raster bytes:
+  // When RawBT connects to the USB printer, the USB handshake or printer wake-up may drop
+  // the first 1-2 bytes. Absorbing those into benign line feeds guarantees that Chunk 0's
+  // 'GS v 0 0' header is received intact and never parsed as text/garbage.
+  const wakeUpBytes = new Uint8Array([10, 10]);
+
+  // Combine [wake-up feed] + [raster image] + [feed & kick]
+  const combined = new Uint8Array(wakeUpBytes.length + rasterBytes.length + cutBytes.length);
+  combined.set(wakeUpBytes, 0);
+  combined.set(rasterBytes, wakeUpBytes.length);
+  combined.set(cutBytes, wakeUpBytes.length + rasterBytes.length);
   return combined;
+}
+
+// Build a silent ~1mm blank raster job specifically for RawBT to kick drawer without printing any text
+export function buildSilentKickBytes() {
+  const widthBytes = 48; // 384 dots width
+  const height = 8;      // 1mm blank white advance to satisfy RawBT spooler & energize solenoid
+  const buffer = [];
+
+  // 1. Wake up line feed
+  buffer.push(10);
+
+  // 2. GS v 0 0 widthBytesL widthBytesH chunkHeightL chunkHeightH
+  buffer.push(29, 118, 48, 0);
+  buffer.push(widthBytes & 0xFF, (widthBytes >> 8) & 0xFF);
+  buffer.push(height & 0xFF, (height >> 8) & 0xFF);
+
+  // 3. 8 rows of pure white (all 0s, absolutely ZERO ink printed)
+  for (let i = 0; i < widthBytes * height; i++) {
+    buffer.push(0);
+  }
+
+  // 4. Standard Epson Pin 2 & Pin 5 drawer kick pulses
+  buffer.push(ESC, 112, 0, 50, 100);
+  buffer.push(ESC, 112, 1, 50, 100);
+  buffer.push(10);
+
+  return new Uint8Array(buffer);
 }
 
 // Format and build compact ESC/POS byte array specifically for RawBT kick drawer
 export function buildKickSlipBytes(title = 'เปิดลิ้นชักเก็บเงิน') {
-  const builder = new EscPosBuilder();
-  builder.init();
-  const builderBytes = builder.build();
+  // 1. Prepend wake up line feed
+  const wakeUpBytes = new Uint8Array([10]);
 
+  // 2. Render tiny 5mm canvas slip so printer motor spins, powering the solenoid circuit
   const canvas = renderNoSaleSlipToCanvas(title);
   const rasterBytes = convertCanvasToEscPosRaster(canvas);
 
+  // 3. Fire standard Epson Pin 2 & Pin 5 kick pulses and feed paper
   const cutBuilder = new EscPosBuilder();
-  cutBuilder.feed(2);
+  cutBuilder.feed(1);
   cutBuilder.kick();
-  cutBuilder.cut();
+  cutBuilder.feed(2);
   const cutBytes = cutBuilder.build();
 
-  const combined = new Uint8Array(builderBytes.length + rasterBytes.length + cutBytes.length);
-  combined.set(builderBytes, 0);
-  combined.set(rasterBytes, builderBytes.length);
-  combined.set(cutBytes, builderBytes.length + rasterBytes.length);
+  const combined = new Uint8Array(wakeUpBytes.length + rasterBytes.length + cutBytes.length);
+  combined.set(wakeUpBytes, 0);
+  combined.set(rasterBytes, wakeUpBytes.length);
+  combined.set(cutBytes, wakeUpBytes.length + rasterBytes.length);
   return combined;
 }
 
@@ -1014,16 +1020,6 @@ export async function printReceipt(order, cartItems = [], options = {}) {
 
 // Print Receipt (Sync Chrome Intent path)
 export function printReceiptSync(order, cartItems = [], options = {}) {
-  const config = getSavedPrinterConfig();
-  if (config.connectionType === 'rawbt') {
-    // Strictly use image mode for RawBT to ensure 100% Branch 1 visual fidelity
-    const bytes = buildReceiptBytes(order, cartItems, options);
-    const base64Data = uint8ArrayToBase64(bytes);
-    const rawbtUrl = 'rawbt:base64,' + base64Data;
-    const intentUrl = 'intent:base64,' + base64Data + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    triggerRawBtNavigation(rawbtUrl, intentUrl);
-    return;
-  }
   const bytes = buildReceiptBytes(order, cartItems, options);
   sendRawToPrinterSync(bytes);
 }
