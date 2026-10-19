@@ -397,6 +397,9 @@ export const centralKitchen = {
   async quickRestock(id, data) {
     return request('POST', `/api/central-kitchen/items/${id}/restock`, data);
   },
+  async adjustStock(id, data) {
+    return request('POST', `/api/central-kitchen/items/${id}/adjust`, data);
+  },
   async getTransfers(params = {}) {
     const query = new URLSearchParams(params).toString();
     return request('GET', `/api/central-kitchen/transfers?${query}`);
