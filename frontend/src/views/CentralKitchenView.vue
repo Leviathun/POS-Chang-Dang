@@ -194,6 +194,11 @@
               <i class="fa-solid fa-plus-circle"></i> เติมสต็อกด่วน
             </button>
             
+            <!-- ปุ่มปรับปรุงสต็อก ยาวสีแดง คล้ายเติมสต็อกด่วน เอาไว้ใต้ เติมสต็อกด่วน -->
+            <button class="btn-action btn-action-adjust w-full btn-adjust-main" @click="openAdjustStockModal(item)">
+              <i class="fa-solid fa-sliders"></i> ปรับปรุงสต็อก
+            </button>
+            
             <!-- ปุ่มแก้ไข, ของเสีย, และลบสินค้า ขยายซ้าย-ขวาเต็ม -->
             <div class="card-sub-actions flex gap-xs w-full">
               <button class="btn-action btn-action-edit flex-1 btn-card-sub" @click="openEditItemModal(item)" title="แก้ไขข้อมูลสินค้า">
@@ -222,7 +227,7 @@
                 <th class="text-right" style="padding: var(--space-md); width: 140px;">ราคาทุนต่อหน่วย</th>
                 <th class="text-center" style="padding: var(--space-md); width: 150px;">สต็อกในครัวกลาง</th>
                 <th class="text-center" style="padding: var(--space-md); width: 130px;">สถานะ</th>
-                <th class="text-center" style="padding: var(--space-md); width: 180px;">จัดการ</th>
+                <th class="text-center" style="padding: var(--space-md); width: 230px;">จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -279,6 +284,9 @@
                   <div class="flex justify-center gap-xs align-center">
                     <button class="btn-action btn-action-primary table-btn-action" @click="openQuickRestockModal(item)" title="เติมสต็อกด่วน">
                       <i class="fa-solid fa-plus"></i> เติมด่วน
+                    </button>
+                    <button class="btn-action btn-action-adjust table-btn-action" @click="openAdjustStockModal(item)" title="ปรับปรุงสต็อก">
+                      <i class="fa-solid fa-sliders"></i> ปรับปรุง
                     </button>
                     <button class="btn-action btn-action-edit table-btn-action table-btn-icon" @click="openEditItemModal(item)" title="แก้ไข">
                       <i class="fa-solid fa-pen"></i>
@@ -1199,17 +1207,17 @@
           class="card p-lg history-feed-card"
           :class="h.type === 'restock' ? 'border-restock-feed' : 'border-transfer-feed'"
         >
-          <!-- RESTOCK FEED CARD -->
+          <!-- RESTOCK & ADJUSTMENT FEED CARD -->
           <div v-if="h.type === 'restock'" class="history-card-inner flex flex-between align-start flex-wrap gap-md">
             <div class="flex gap-md align-start flex-1 min-w-0">
-              <div class="feed-icon-circle bg-success-light text-success">
-                <i class="fa-solid fa-circle-plus"></i>
+              <div class="feed-icon-circle" :class="h.quantity < 0 ? 'bg-warning-light text-warning' : 'bg-success-light text-success'">
+                <i :class="h.quantity < 0 ? 'fa-solid fa-sliders' : 'fa-solid fa-circle-plus'"></i>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex align-center gap-sm mb-xs flex-wrap">
-                  <span class="badge badge-success font-bold">
-                    <i class="fa-solid fa-circle-plus"></i>
-                    <span>เติมสต็อกเข้าคลัง</span>
+                  <span class="badge font-bold" :class="h.quantity < 0 ? 'badge-warning' : 'badge-success'">
+                    <i :class="h.quantity < 0 ? 'fa-solid fa-sliders' : 'fa-solid fa-circle-plus'"></i>
+                    <span>{{ h.quantity < 0 ? 'ปรับปรุงสต็อก' : 'เติมสต็อกเข้าคลัง' }}</span>
                   </span>
                   <span class="font-bold text-base text-main">{{ getItemNameParts(h.item_name).main }}</span>
                   <span v-if="getItemNameParts(h.item_name).sub" class="text-xs text-secondary font-medium">
@@ -1236,12 +1244,12 @@
 
             <!-- Restock Right Details -->
             <div class="history-amount-box text-right">
-              <div class="history-qty-value font-bold text-lg text-success">
-                +{{ formatNumber(h.quantity) }} {{ h.unit }}
+              <div class="history-qty-value font-bold text-lg" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit }}
               </div>
               <div class="history-sub-cost text-xs text-secondary">
-                <span>ยอดเงินที่ซื้อ: </span>
-                <strong class="text-main">฿{{ formatNumber(h.total_amount) }}</strong> 
+                <span>{{ h.quantity < 0 ? 'มูลค่าผลต่าง: ' : 'ยอดเงินที่ซื้อ: ' }}</span>
+                <strong class="text-main">฿{{ formatNumber(Math.abs(h.total_amount)) }}</strong> 
                 <span class="text-muted ml-xs font-medium">(ต้นทุน ฿{{ formatNumber(h.unit_cost) }} / {{ h.unit || 'หน่วย' }})</span>
               </div>
             </div>
@@ -2923,7 +2931,136 @@
           <div class="flex gap-md mt-xl">
             <button class="btn-modal btn-modal-secondary flex-1" @click="showRestockModal = false">ยกเลิก</button>
             <button class="btn-modal btn-modal-primary flex-1" @click="submitQuickRestock">
-              <i class="fa-solid fa-check"></i> ยืนยันการเติมสต็อก
+              <i class="fa-solid fa-check"></i> ยืนยัน
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
+    <!-- MODAL: ปรับปรุงสต็อก (Stock Adjustment) -->
+    <!-- ────────────────────────────────────────────────────────── -->
+    <div v-if="showAdjustModal" class="modal-container active">
+      <div class="modal-overlay" @click="showAdjustModal = false"></div>
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+        <div class="modal-header">
+          <h3>
+            <i class="fa-solid fa-sliders text-primary" style="margin-right: 6px;"></i>
+            ปรับปรุงสต็อก
+          </h3>
+          <button class="modal-close" @click="showAdjustModal = false">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- กล่องข้อมูลสินค้า: โปร่ง สบายตา ไม่ชิดขอบ -->
+          <div class="modal-item-summary-card mb-md">
+            <div class="modal-item-summary-name">
+              <span class="modal-item-summary-label">สินค้า:</span>
+              <span class="modal-item-summary-title">{{ activeAdjustItem?.name }}</span>
+            </div>
+            <div class="modal-item-summary-stock">
+              <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
+              <span>สต็อกปัจจุบันในระบบ:</span>
+              <strong class="text-main">{{ activeAdjustItem?.quantity }} {{ activeAdjustItem?.unit }}</strong>
+            </div>
+          </div>
+
+          <!-- ช่องกรอก: ยอดที่นับได้จริง -->
+          <div class="form-group mb-md">
+            <label class="form-label font-bold text-sm">ยอดที่นับได้จริง (สต็อกจริงล่าสุด) *</label>
+            <div class="flex align-center gap-xs">
+              <input 
+                type="number" 
+                v-model.number="adjustForm.actual_quantity" 
+                placeholder="ระบุยอดที่นับได้จริง..." 
+                class="form-input font-bold text-lg text-primary flex-1" 
+                min="0"
+                step="any"
+                @input="onActualQuantityInput"
+              />
+              <span class="font-bold text-sm text-secondary">{{ activeAdjustItem?.unit }}</span>
+            </div>
+          </div>
+
+          <!-- กล่องสรุปผลต่างคำนวณอัตโนมัติ -->
+          <div class="modal-item-summary-card mb-md" style="background: rgba(0, 0, 0, 0.02); border: 1px dashed var(--border-color); padding: 12px 14px;">
+            <div class="flex flex-between align-center mb-xs">
+              <span class="text-xs text-secondary font-medium">
+                <i class="fa-solid fa-calculator text-muted mr-1"></i>ผลต่างสต็อก (คำนวณอัตโนมัติ):
+              </span>
+              <span class="font-bold text-base" :class="diffQuantity < 0 ? 'text-danger' : (diffQuantity > 0 ? 'text-success' : 'text-muted')">
+                {{ diffQuantity > 0 ? '+' : '' }}{{ formatNumber(diffQuantity) }} {{ activeAdjustItem?.unit }}
+              </span>
+            </div>
+            <div class="flex flex-between align-center text-xs text-muted">
+              <span>มูลค่าผลต่าง (ต้นทุน ฿{{ formatNumber(activeAdjustItem?.cost_price) }}/{{ activeAdjustItem?.unit }}):</span>
+              <strong :class="diffQuantity < 0 ? 'text-danger' : (diffQuantity > 0 ? 'text-success' : 'text-muted')">
+                {{ diffQuantity < 0 ? '- ฿' : (diffQuantity > 0 ? '+ ฿' : '฿') }}{{ formatNumber(Math.abs(diffQuantity * (activeAdjustItem?.cost_price || 0))) }}
+              </strong>
+            </div>
+          </div>
+
+          <!-- ติ๊กเลือก คืนเงินเข้าบัญชีกองกลาง (ติ๊กเลือกอัตโนมัติเมื่อสต็อกลดลง) -->
+          <div v-if="diffQuantity < 0" class="modal-finance-adjust-card mb-md refund-mode">
+            <label class="modal-finance-adjust-label cursor-pointer">
+              <input 
+                type="checkbox" 
+                v-model="adjustForm.refund_to_finance" 
+                class="modal-finance-checkbox"
+              />
+              <div class="modal-finance-adjust-content">
+                <span class="text-sm font-bold text-success flex align-center gap-xs">
+                  <i class="fa-solid fa-hand-holding-dollar"></i>
+                  คืนเงิน ฿{{ formatNumber(Math.abs(diffQuantity * (activeAdjustItem?.cost_price || 0))) }} เข้าบัญชีกองกลางอัตโนมัติ
+                </span>
+                <p class="text-2xs text-muted mb-0 mt-xs leading-normal">
+                  (ระบบจะบันทึกเงินปรับปรุงเข้ากองกลาง เพื่อหักล้างยอดที่เคยหักซื้อเกินไป ทำให้ยอดเงินคงเหลือถูกต้อง 100%)
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- กรณีสต็อกเพิ่มขึ้น (ถ้าต้องการตัดเงินซื้อกองกลาง) -->
+          <div v-else-if="diffQuantity > 0" class="modal-finance-adjust-card mb-md charge-mode">
+            <label class="modal-finance-adjust-label cursor-pointer">
+              <input 
+                type="checkbox" 
+                v-model="adjustForm.charge_to_finance" 
+                class="modal-finance-checkbox"
+              />
+              <div class="modal-finance-adjust-content">
+                <span class="text-sm font-bold text-danger flex align-center gap-xs">
+                  <i class="fa-solid fa-cart-shopping"></i>
+                  ตัดเงินซื้อ ฿{{ formatNumber(diffQuantity * (activeAdjustItem?.cost_price || 0)) }} ออกจากบัญชีกองกลาง
+                </span>
+                <p class="text-2xs text-muted mb-0 mt-xs leading-normal">
+                  (หากเป็นการนับพบของเดิม ไม่ต้องการตัดเงินเพิ่ม สามารถนำติ๊กถูกออกได้)
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- ช่องสาเหตุ / หมายเหตุ -->
+          <div class="form-group mb-md">
+            <label class="form-label font-bold text-sm">สาเหตุ / บันทึกช่วยจำ</label>
+            <input 
+              type="text" 
+              v-model="adjustForm.reason" 
+              placeholder="เช่น เติมสต็อกเกิน 1 ชิ้น, ตรวจนับสต็อกจริง" 
+              class="form-input w-full" 
+            />
+          </div>
+
+          <!-- ปุ่มกดยืนยัน / ยกเลิก -->
+          <div class="flex gap-md mt-xl">
+            <button class="btn-modal btn-modal-secondary flex-1" @click="showAdjustModal = false">ยกเลิก</button>
+            <button 
+              class="btn-modal btn-modal-primary flex-1" 
+              :disabled="adjustForm.actual_quantity === null || adjustForm.actual_quantity === undefined || adjustForm.actual_quantity < 0 || diffQuantity === 0"
+              @click="submitAdjustStock"
+            >
+              <i class="fa-solid fa-check"></i> ยืนยัน
             </button>
           </div>
         </div>
@@ -3543,6 +3680,31 @@ const restockForm = ref({
   supplier_note: ''
 });
 
+// Stock Adjustment State
+const showAdjustModal = ref(false);
+const activeAdjustItem = ref(null);
+const adjustForm = ref({
+  actual_quantity: 0,
+  refund_to_finance: true,
+  charge_to_finance: false,
+  reason: ''
+});
+
+const diffQuantity = computed(() => {
+  if (!activeAdjustItem.value || adjustForm.value.actual_quantity === null || adjustForm.value.actual_quantity === undefined || adjustForm.value.actual_quantity === '') {
+    return 0;
+  }
+  return Number(adjustForm.value.actual_quantity) - Number(activeAdjustItem.value.quantity || 0);
+});
+
+const onActualQuantityInput = () => {
+  if (diffQuantity.value < 0) {
+    adjustForm.value.refund_to_finance = true;
+  } else {
+    adjustForm.value.refund_to_finance = false;
+  }
+};
+
 // Finance State
 const financeSummary = ref({
   cash_balance: 0,
@@ -4004,6 +4166,46 @@ const submitQuickRestock = async () => {
     loadHistory();
   } catch (err) {
     ui.error(err.message);
+  } finally {
+    ui.hideLoading();
+  }
+};
+
+// Stock Adjustment
+const openAdjustStockModal = (item) => {
+  activeAdjustItem.value = item;
+  adjustForm.value = {
+    actual_quantity: item.quantity,
+    refund_to_finance: true,
+    charge_to_finance: false,
+    reason: ''
+  };
+  showAdjustModal.value = true;
+};
+
+const submitAdjustStock = async () => {
+  if (adjustForm.value.actual_quantity === null || adjustForm.value.actual_quantity === undefined || adjustForm.value.actual_quantity < 0) {
+    return ui.error('กรุณาระบุยอดที่นับได้จริงให้ถูกต้อง (>= 0)');
+  }
+  if (diffQuantity.value === 0) {
+    return ui.warning('ยอดที่นับได้จริงเท่ากับสต็อกปัจจุบัน ไม่มีการเปลี่ยนแปลง');
+  }
+
+  ui.showLoading();
+  try {
+    const res = await api.centralKitchen.adjustStock(activeAdjustItem.value.id, {
+      actual_quantity: adjustForm.value.actual_quantity,
+      refund_to_finance: adjustForm.value.refund_to_finance,
+      charge_to_finance: adjustForm.value.charge_to_finance,
+      reason: adjustForm.value.reason
+    });
+    ui.success(res.message || 'ปรับปรุงสต็อกเรียบร้อยแล้ว');
+    showAdjustModal.value = false;
+    loadItems();
+    loadHistory();
+    if (typeof loadFinances === 'function') loadFinances();
+  } catch (err) {
+    ui.error(err.message || 'เกิดข้อผิดพลาดในการปรับปรุงสต็อก');
   } finally {
     ui.hideLoading();
   }
@@ -4902,7 +5104,8 @@ onUnmounted(() => {
   margin-top: auto;
 }
 
-.btn-restock-main {
+.btn-restock-main,
+.btn-adjust-main {
   height: 42px !important;
   width: 100% !important;
   font-size: var(--font-sm) !important;
@@ -4913,6 +5116,62 @@ onUnmounted(() => {
   gap: 8px !important;
   min-width: unset !important;
   box-sizing: border-box !important;
+}
+
+.btn-action-adjust {
+  background: var(--primary) !important;
+  color: white !important;
+  border: none !important;
+  font-weight: bold;
+}
+
+.btn-action-adjust:hover {
+  background: var(--primary-dark) !important;
+}
+
+.btn-action-adjust:active {
+  background: #6b020e !important;
+}
+
+/* Modal Stock Adjustment Finance Card */
+.modal-finance-adjust-card {
+  padding: 14px 18px !important;
+  border-radius: var(--radius-md) !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.modal-finance-adjust-card.refund-mode {
+  background: rgba(46, 125, 50, 0.08) !important;
+  border: 1px solid rgba(46, 125, 50, 0.25) !important;
+}
+
+.modal-finance-adjust-card.charge-mode {
+  background: rgba(139, 3, 19, 0.06) !important;
+  border: 1px solid rgba(139, 3, 19, 0.2) !important;
+}
+
+.modal-finance-adjust-label {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  cursor: pointer !important;
+}
+
+.modal-finance-checkbox {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 2px 0 0 0 !important;
+  accent-color: var(--primary) !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+}
+
+.modal-finance-adjust-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .card-sub-actions {
@@ -6166,7 +6425,8 @@ onUnmounted(() => {
     margin-top: 8px !important;
   }
 
-  .btn-restock-main {
+  .btn-restock-main,
+  .btn-adjust-main {
     height: 36px !important;
     font-size: 11.5px !important;
     padding: 0 6px !important;
@@ -6181,6 +6441,25 @@ onUnmounted(() => {
   .card-sub-actions {
     gap: 4px !important;
     width: 100% !important;
+  }
+
+  .modal-finance-adjust-card {
+    padding: 12px 14px !important;
+  }
+
+  .modal-finance-adjust-label {
+    gap: 10px !important;
+  }
+
+  .modal-finance-checkbox {
+    width: 18px !important;
+    height: 18px !important;
+    margin-top: 2px !important;
+  }
+
+  .btn-modal {
+    white-space: nowrap !important;
+    padding: 0 16px !important;
   }
 
   .btn-card-sub {
@@ -7442,7 +7721,8 @@ onUnmounted(() => {
     margin-top: 6px !important;
   }
 
-  .btn-restock-main {
+  .btn-restock-main,
+  .btn-adjust-main {
     height: 34px !important;
     min-height: 34px !important;
     font-size: 11px !important;
