@@ -384,6 +384,92 @@ router.post('/items/:id/restock', requireManagerOrAdmin, async (req, res) => {
   }
 });
 
+// POST /api/central-kitchen/items/:id/adjust — ปรับปรุงยอดสต็อก (Stock Adjustment)
+router.post('/items/:id/adjust', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const itemId = req.params.id;
+    const { actual_quantity, refund_to_finance, charge_to_finance, reason } = req.body;
+
+    const actualQty = Number(actual_quantity);
+    if (actual_quantity === undefined || actual_quantity === null || isNaN(actualQty) || actualQty < 0) {
+      return res.status(400).json({ success: false, error: 'กรุณาระบุยอดที่นับได้จริงให้ถูกต้อง (>= 0)' });
+    }
+
+    const item = await db.prepare('SELECT * FROM central_kitchen_items WHERE id = ?').get(itemId);
+    if (!item) {
+      return res.status(404).json({ success: false, error: 'ไม่พบสินค้า' });
+    }
+
+    const currentQty = Number(item.quantity || 0);
+    const diff = actualQty - currentQty;
+    if (diff === 0) {
+      return res.status(400).json({ success: false, error: 'ยอดที่นับได้จริงตรงกับสต็อกปัจจุบัน ไม่มีการเปลี่ยนแปลง' });
+    }
+
+    const unitCost = Number(item.cost_price || 0);
+    const nowLocal = getThaiNow();
+    const diffAbs = Math.abs(diff);
+    const diffAmount = diffAbs * unitCost;
+
+    const reasonNote = reason && reason.trim() ? reason.trim() : (diff < 0 ? 'ปรับลดยอดสต็อก' : 'ปรับเพิ่มยอดสต็อก');
+    const logNote = `ปรับปรุงสต็อก (${diff > 0 ? '+' : ''}${diff} ${item.unit}): ${reasonNote}`;
+
+    const statements = [
+      {
+        sql: `UPDATE central_kitchen_items SET quantity = ?, updated_at = ? WHERE id = ?`,
+        args: [actualQty, nowLocal, itemId]
+      },
+      {
+        sql: `INSERT INTO central_kitchen_restock_logs (item_id, quantity_added, unit_cost, total_amount, supplier_note, created_by_name, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [itemId, diff, unitCost, diff * unitCost, logNote, req.user.name, nowLocal]
+      }
+    ];
+
+    // Handle finance adjustments
+    if (diff < 0 && refund_to_finance && diffAmount > 0) {
+      statements.push({
+        sql: `INSERT INTO central_kitchen_finances (type, amount, note, created_by_name, created_at)
+              VALUES ('capital_in', ?, ?, ?, ?)`,
+        args: [
+          diffAmount,
+          `ปรับปรุงสต็อก (คืนเงินเข้ากองกลาง): ${item.name} (-${diffAbs} ${item.unit}) - ${reasonNote}`,
+          req.user.name,
+          nowLocal
+        ]
+      });
+    } else if (diff > 0 && charge_to_finance && diffAmount > 0) {
+      statements.push({
+        sql: `INSERT INTO central_kitchen_finances (type, amount, note, created_by_name, created_at)
+              VALUES ('purchase_out', ?, ?, ?, ?)`,
+        args: [
+          diffAmount,
+          `ปรับปรุงสต็อก (ตัดเงินซื้อเข้าคลัง): ${item.name} (+${diff} ${item.unit}) - ${reasonNote}`,
+          req.user.name,
+          nowLocal
+        ]
+      });
+    }
+
+    await db.batch(statements);
+
+    res.json({
+      success: true,
+      message: `ปรับปรุงสต็อก ${item.name} เป็น ${actualQty} ${item.unit} สำเร็จ (ผลต่าง: ${diff > 0 ? '+' : ''}${diff} ${item.unit})`,
+      data: {
+        previous_quantity: currentQty,
+        new_quantity: actualQty,
+        diff: diff,
+        refunded_amount: (diff < 0 && refund_to_finance) ? diffAmount : 0
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error adjusting central kitchen stock:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────
 // 2. REQUISITIONS & TRANSFERS (การเบิกของระหว่างสาขา & ครัวกลาง)
 // ─────────────────────────────────────────────────────────────
@@ -956,7 +1042,7 @@ router.get('/history', async (req, res) => {
         timeline.push({
           id: `restock-${log.id}`,
           type: 'restock',
-          title: 'เติมสต็อกเข้าครัวกลาง',
+          title: Number(log.quantity_added) < 0 ? 'ปรับปรุงสต็อกครัวกลาง' : 'เติมสต็อกเข้าครัวกลาง',
           item_name: log.item_name,
           unit: log.unit,
           quantity: log.quantity_added,
