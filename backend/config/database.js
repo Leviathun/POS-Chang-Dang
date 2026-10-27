@@ -418,15 +418,25 @@ async function initDatabase() {
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
+    `CREATE TABLE IF NOT EXISTS central_kitchen_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      code TEXT NOT NULL UNIQUE,
+      icon TEXT DEFAULT 'fa-solid fa-tag',
+      sort_order INTEGER DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )`,
     `CREATE TABLE IF NOT EXISTS central_kitchen_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      category TEXT NOT NULL DEFAULT 'packaging' CHECK(category IN ('raw_material', 'packaging', 'equipment', 'general')),
+      category TEXT NOT NULL DEFAULT 'general',
       unit TEXT NOT NULL DEFAULT 'ชิ้น',
       cost_price REAL NOT NULL DEFAULT 0,
       quantity REAL NOT NULL DEFAULT 0,
       min_stock_alert REAL DEFAULT 10,
       image_url TEXT,
+      sort_order INTEGER DEFAULT 0,
       linked_menu_item_name TEXT DEFAULT NULL,
       target_stock_type TEXT DEFAULT 'raw',
       pack_size REAL NOT NULL DEFAULT 1,
@@ -840,8 +850,33 @@ async function initDatabase() {
     if (!itemCols.some(c => c.name === 'pack_size')) {
       await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN pack_size REAL DEFAULT 1");
     }
+    if (!itemCols.some(c => c.name === 'sort_order')) {
+      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN sort_order INTEGER DEFAULT 0");
+    }
   } catch (e) {
     console.warn('⚠️ Migration central_kitchen_items columns failed:', e.message);
+  }
+
+  // Migration: Seed default central_kitchen_categories if empty
+  try {
+    const ckCatCount = await db.prepare('SELECT COUNT(*) as count FROM central_kitchen_categories').get();
+    if (ckCatCount && ckCatCount.count === 0) {
+      const defaultCkCats = [
+        { name: 'วัตถุดิบ/อาหาร', code: 'raw_material', icon: 'fa-solid fa-drumstick-bite', sort_order: 1 },
+        { name: 'ซอส/น้ำจิ้ม', code: 'sauce', icon: 'fa-solid fa-bottle-droplet', sort_order: 2 },
+        { name: 'ผง/เครื่องปรุง', code: 'powder', icon: 'fa-solid fa-mortar-pestle', sort_order: 3 },
+        { name: 'แป้งและน้ำมัน', code: 'oil_flour', icon: 'fa-solid fa-wheat-awn', sort_order: 4 },
+        { name: 'บรรจุภัณฑ์', code: 'packaging', icon: 'fa-solid fa-box-open', sort_order: 5 },
+        { name: 'อุปกรณ์/ของใช้', code: 'equipment', icon: 'fa-solid fa-kitchen-set', sort_order: 6 },
+        { name: 'ทั่วไป/อื่นๆ', code: 'general', icon: 'fa-solid fa-tag', sort_order: 7 }
+      ];
+      for (const cat of defaultCkCats) {
+        await db.prepare('INSERT OR IGNORE INTO central_kitchen_categories (name, code, icon, sort_order, active) VALUES (?, ?, ?, ?, 1)')
+          .run(cat.name, cat.code, cat.icon, cat.sort_order);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration central_kitchen_categories failed:', e.message);
   }
 
   // Migration: Add original_quantity and pack_size column to central_kitchen_transfer_items

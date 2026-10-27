@@ -258,6 +258,7 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
       FROM expenses
       WHERE (session_id = ? OR (branch_id = ? AND expense_date = ?))
         AND (payment_method = 'cash' OR payment_method IS NULL)
+        AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
     `).get(sessionId, targetBranchId, targetDate);
     const cashExpenses = Math.max(0, expensesResult ? (expensesResult.cash_expenses || 0) : 0);
 
@@ -440,7 +441,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
                   ELSE amount
                 END
               ) as cash_expenses FROM expenses 
-              WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+              WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL) AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
             `).get(targetBranch.id, dStr);
 
             const cashSales = dSales ? (dSales.cash_sales || 0) : 0;
@@ -481,7 +482,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
                 ELSE amount
               END
             ) as cash_expenses FROM expenses 
-            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL) AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
           `).get(targetBranch.id, yesterdayStr);
           
           const yCashSales = ySales ? (ySales.cash_sales || 0) : 0;
@@ -517,7 +518,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
                 ELSE amount
               END
             ) as cash_expenses FROM expenses 
-            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL)
+            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL) AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
           `).get(targetBranch.id, todayStr);
           
           const tCashSales = tSales ? (tSales.cash_sales || 0) : 0;

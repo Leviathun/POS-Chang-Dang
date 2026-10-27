@@ -378,6 +378,21 @@ const employees = {
 };
 
 export const centralKitchen = {
+  async getCategories() {
+    return request('GET', '/api/central-kitchen/categories');
+  },
+  async createCategory(data) {
+    return request('POST', '/api/central-kitchen/categories', data);
+  },
+  async updateCategory(id, data) {
+    return request('PUT', `/api/central-kitchen/categories/${id}`, data);
+  },
+  async deleteCategory(id) {
+    return request('DELETE', `/api/central-kitchen/categories/${id}`);
+  },
+  async reorderItems(itemIds) {
+    return request('PUT', '/api/central-kitchen/items/reorder', { item_ids: itemIds });
+  },
   async getPosMenus() {
     return request('GET', '/api/central-kitchen/pos-menus');
   },

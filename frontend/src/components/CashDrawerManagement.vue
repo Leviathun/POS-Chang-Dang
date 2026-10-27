@@ -16,6 +16,7 @@
           <li><strong>เปิดร้าน:</strong> กรอกเงินทอนตั้งต้น (หรือ ฿0 หากไม่มี)</li>
           <li><strong>ปิดร้าน:</strong> นับเงินสดแล้วกด "ปิดยอดประจำวัน" เพื่อตรวจผลต่างเงินขาด/เกิน</li>
           <li><strong>ตัดรอบวัน:</strong> ตัดรอบอัตโนมัติเวลา <strong>04:00 น. (ตี 4)</strong> (ยอดหลังเที่ยงคืนถึงตี 4 รวมในวันเดียวกัน)</li>
+          <li><strong>ยอดจ่ายเงินสดในลิ้นชัก:</strong> นับเฉพาะเงินสดหน้าร้านจริง <span class="text-primary font-bold">ไม่รวมต้นทุนค่าของจากครัวกลาง</span> (ครัวกลางบันทึกเป็นเงินโอน ไม่ได้หักเงินสดในลิ้นชัก)</li>
         </ul>
       </div>
     </div>
@@ -210,6 +211,9 @@
               <div class="flex flex-between align-center text-danger">
                 <span class="text-secondary">ยอดจ่ายเงินสดสะสม:</span>
                 <span class="font-bold text-danger">-{{ formatCurrency(activeAuditSession?.cash_expenses) }}</span>
+              </div>
+              <div class="text-xs text-secondary" style="font-size: 11px; background: rgba(139, 3, 19, 0.04); padding: 4px 8px; border-radius: 6px;">
+                <i class="fa-solid fa-circle-info text-primary" style="margin-right: 4px;"></i> นับเฉพาะเงินสดที่จ่ายออกจากลิ้นชักจริง (ไม่รวมยอดเบิกจากครัวกลาง / เงินโอน)
               </div>
               <div class="flex flex-between align-center font-bold text-base text-primary" style="border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: 2px;">
                 <span>เงินสดที่ควรมีในลิ้นชัก:</span>
