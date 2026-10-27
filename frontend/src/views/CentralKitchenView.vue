@@ -5,6 +5,139 @@
     <!-- TAB 1: CATALOG (แคตตาล็อกสินค้า + เติมสต็อกด่วน) -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'catalog'" class="catalog-section">
+      <!-- ────────────────────────────────────────────────────────── -->
+      <!-- REORDER MODE: แบบเดียวกับหน้าจัดการเมนู POS (Menu.vue)      -->
+      <!-- ────────────────────────────────────────────────────────── -->
+      <div v-if="isReorderMode">
+        <!-- Reorder Top Action Card -->
+        <div class="card mb-lg menu-top-action-card">
+          <div class="menu-total-count">
+            จัดเรียงลำดับสินค้า: <strong>{{ reorderItems.length }}</strong> รายการ
+          </div>
+          <div class="menu-action-buttons">
+            <button class="btn btn-secondary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode">
+              <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
+            </button>
+            <button class="btn btn-primary btn-bulk-header-save" :disabled="isSavingReorder" @click="handleSaveReorder">
+              <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingReorder ? 'กำลังบันทึก...' : 'บันทึก' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Desktop Reorder Table (Visible on desktop only) -->
+        <div class="card p-0 overflow-hidden desktop-menu-table-container">
+          <div style="overflow-x: auto;">
+            <table class="table w-full" style="border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+                  <th class="text-center" style="padding: var(--space-md); width: 60px;">ลาก</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
+                  <th class="text-left" style="padding: var(--space-md);">สินค้าในครัวกลาง</th>
+                  <th class="text-right" style="padding: var(--space-md); width: 150px;">ราคา</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="(item, index) in reorderItems" 
+                  :key="item.id" 
+                  style="border-bottom: 1px solid var(--border-color);"
+                  class="table-row-hover desktop-reorder-row"
+                  :class="{ 'dragging': dragIndex === index }"
+                  :data-index="index"
+                  draggable="true"
+                  @dragstart="handleDragStart(index, $event)"
+                  @dragover="handleDragOver"
+                  @dragenter="handleDragEnter(index)"
+                  @dragend="handleDragEnd"
+                >
+                  <!-- Drag Handle -->
+                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                    <div 
+                      class="drag-handle" 
+                      style="cursor: grab;"
+                      @touchstart="handleTouchStart(index, $event)"
+                      @touchmove.prevent="handleTouchMove"
+                      @touchend="handleTouchEnd"
+                    >
+                      <i class="fa-solid fa-bars"></i>
+                    </div>
+                  </td>
+                  <!-- Image Preview -->
+                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
+                    <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                      <img v-if="item.image_url" :src="item.image_url" :alt="item.name" style="width: 100%; height: 100%; object-fit: cover;" />
+                      <i v-else :class="getCategoryIcon(item.category)" class="text-base text-muted"></i>
+                    </div>
+                  </td>
+                  <!-- Name & Category -->
+                  <td style="padding: var(--space-md); vertical-align: middle;">
+                    <div class="font-bold text-base">{{ item.name }}</div>
+                    <div class="text-sm text-muted">
+                      {{ getCategoryLabel(item.category) }}
+                    </div>
+                  </td>
+                  <!-- Price -->
+                  <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
+                    ฿{{ formatNumber(item.cost_price) }} / {{ item.unit }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile Reorder Cards (Visible on mobile only) -->
+        <div class="mobile-menu-list-container">
+          <div class="mobile-menu-list">
+            <div 
+              v-for="(item, index) in reorderItems" 
+              :key="item.id" 
+              class="mobile-menu-card mobile-reorder-card"
+              :class="{ 'dragging': dragIndex === index }"
+              :data-index="index"
+            >
+              <div class="mobile-menu-card-body" style="align-items: center; display: flex; flex-direction: row; width: 100%; padding: var(--space-sm) var(--space-md);">
+                <!-- Drag Handle -->
+                <div 
+                  class="drag-handle" 
+                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: 1.2rem; color: var(--text-tertiary);"
+                  @touchstart="handleTouchStart(index, $event)"
+                  @touchmove.prevent="handleTouchMove"
+                  @touchend="handleTouchEnd"
+                >
+                  <i class="fa-solid fa-bars"></i>
+                </div>
+
+                <!-- Product Image -->
+                <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
+                  <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="mobile-menu-card-img" />
+                  <div v-else class="mobile-menu-card-placeholder">
+                    <i :class="getCategoryIcon(item.category)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i>
+                  </div>
+                </div>
+                
+                <!-- Middle: Name & Category -->
+                <div class="mobile-menu-card-details" style="flex: 1; min-width: 0;">
+                  <div class="mobile-menu-card-name truncate">{{ item.name }}</div>
+                  <div class="mobile-menu-card-category">{{ getCategoryLabel(item.category) }}</div>
+                </div>
+                
+                <!-- Price -->
+                <div class="mobile-menu-card-meta" style="text-align: right; justify-content: center; width: auto; margin-left: auto; flex-shrink: 0;">
+                  <div class="mobile-menu-card-price">฿{{ formatNumber(item.cost_price) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ────────────────────────────────────────────────────────── -->
+      <!-- NORMAL CATALOG VIEW (เมื่อไม่ได้อยู่ในโหมดจัดเรียง)           -->
+      <!-- ────────────────────────────────────────────────────────── -->
+      <div v-else>
       <!-- Action & Filter Bar (Requirement 2 & 3) -->
       <div class="card mb-lg p-md toolbar-card">
         <!-- Top Row: Full Width Search Input (100%) -->
@@ -38,28 +171,41 @@
           </div>
 
           <!-- Right: View Toggle & Add Button (Matched 48px height) -->
-          <div class="flex align-center gap-md catalog-toolbar-actions">
-            <div class="view-mode-toggle flex align-center">
-              <button 
-                class="view-toggle-btn" 
-                :class="{ 'active': viewMode === 'grid' }"
-                @click="viewMode = 'grid'"
-                title="มุมมองการ์ดรูปภาพ"
-              >
-                <i class="fa-solid fa-grip"></i>
-              </button>
-              <button 
-                class="view-toggle-btn" 
-                :class="{ 'active': viewMode === 'table' }"
-                @click="viewMode = 'table'"
-                title="มุมมองตาราง"
-              >
-                <i class="fa-solid fa-table-list"></i>
+          <div class="catalog-toolbar-actions">
+            <!-- Row Top: Toggle View (Left) & จัดการหมวด (Right) -->
+            <div class="catalog-toolbar-row-top">
+              <div class="view-mode-toggle flex align-center">
+                <button 
+                  class="view-toggle-btn" 
+                  :class="{ 'active': viewMode === 'grid' }"
+                  @click="viewMode = 'grid'"
+                  title="มุมมองการ์ดรูปภาพ"
+                >
+                  <i class="fa-solid fa-grip"></i>
+                </button>
+                <button 
+                  class="view-toggle-btn" 
+                  :class="{ 'active': viewMode === 'table' }"
+                  @click="viewMode = 'table'"
+                  title="มุมมองตาราง"
+                >
+                  <i class="fa-solid fa-table-list"></i>
+                </button>
+              </div>
+              <button class="btn btn-secondary toolbar-btn" @click="openCategoryModal" title="จัดการหมวดหมู่สินค้าในครัวกลาง">
+                <i class="fa-solid fa-folder-open"></i> <span>จัดการหมวด</span>
               </button>
             </div>
-            <button class="btn btn-primary btn-add-item" @click="openCreateItemModal">
-              <i class="fa-solid fa-plus" style="margin-right: 6px;"></i> เพิ่มของใหม่ด้วยตนเอง
-            </button>
+
+            <!-- Row Bottom: เรียงลำดับ (Left) & สร้างใหม่ (Right) -->
+            <div class="catalog-toolbar-row-bottom">
+              <button class="btn btn-secondary toolbar-btn" @click="openReorderMode" title="จัดเรียงลำดับการแสดงแคตตาล็อก">
+                <i class="fa-solid fa-sort"></i> <span>เรียงลำดับ</span>
+              </button>
+              <button class="btn btn-primary btn-add-item toolbar-btn" @click="openCreateItemModal">
+                <i class="fa-solid fa-plus"></i> <span>สร้างใหม่</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -304,6 +450,7 @@
           </table>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- ────────────────────────────────────────────────────────── -->
@@ -505,9 +652,26 @@
                 </div>
               </div>
 
-              <!-- Action Button -->
+              <!-- Action Button (Direct Quantity Stepper & Input) -->
               <div class="card-footer-actions">
+                <div v-if="getDispatchCartQty(item.id) > 0" class="flex align-center gap-xs w-full" @click.stop>
+                  <button class="btn-qty" @click="decreaseDispatchQty(getDispatchCartItem(item.id))" title="ลดจำนวน">-</button>
+                  <input 
+                    type="number" 
+                    inputmode="numeric" 
+                    min="1" 
+                    :max="item.quantity" 
+                    :value="getDispatchCartQty(item.id)" 
+                    @change="setDispatchCartQty(item, $event.target.value)"
+                    @focus="$event.target.select()" 
+                    class="form-input text-center font-bold qty-card-input" 
+                    style="flex: 1; height: 36px; padding: 2px; font-size: 0.95rem; border-radius: var(--radius-sm);" 
+                    title="พิมพ์จำนวนที่ต้องการจ่ายได้ทันที"
+                  />
+                  <button class="btn-qty" :disabled="getDispatchCartQty(item.id) >= item.quantity" @click="increaseDispatchQty(getDispatchCartItem(item.id))" title="เพิ่มจำนวน">+</button>
+                </div>
                 <button 
+                  v-else
                   class="btn-action btn-action-primary w-full btn-restock-main" 
                   :disabled="item.quantity <= 0"
                   @click.stop="addDispatchItem(item)"
@@ -597,12 +761,14 @@
                     <button class="btn-qty" @click="decreaseDispatchQty(c)">-</button>
                     <input 
                       type="number" 
+                      inputmode="numeric" 
                       v-model.number="c.quantity" 
                       min="1" 
                       :max="c.max_quantity" 
                       class="form-input text-center text-sm font-bold" 
-                      style="width: 50px; height: 32px; padding: 2px;"
+                      style="width: 56px; height: 32px; padding: 2px;"
                       @change="validateDispatchQty(c)"
+                      @focus="$event.target.select()"
                     />
                     <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)">+</button>
                     <button class="btn btn-ghost btn-xs text-danger ml-xs" @click="removeDispatchItem(c.item_id)">✕</button>
@@ -738,8 +904,18 @@
                 </span>
                 <div class="flex align-center gap-xs flex-shrink-0">
                   <button class="btn-qty" @click="decreaseDispatchQty(c)" title="ลดจำนวน">-</button>
-                  <span class="font-bold text-sm text-center qty-display">{{ c.quantity }}</span>
-                  <button class="btn-qty" @click="increaseDispatchQty(c)" title="เพิ่มจำนวน">+</button>
+                  <input 
+                    type="number" 
+                    inputmode="numeric" 
+                    v-model.number="c.quantity" 
+                    min="1" 
+                    :max="c.max_quantity" 
+                    class="form-input text-center text-sm font-bold" 
+                    style="width: 56px; height: 32px; padding: 2px;"
+                    @change="validateDispatchQty(c)"
+                    @focus="$event.target.select()"
+                  />
+                  <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)" title="เพิ่มจำนวน">+</button>
                 </div>
               </div>
             </div>
@@ -2526,6 +2702,136 @@
     </div>
 
     <!-- ────────────────────────────────────────────────────────── -->
+    <!-- MODAL: จัดการหมวดหมู่ครัวกลาง -->
+    <!-- ────────────────────────────────────────────────────────── -->
+    <div v-if="showCategoryModal" class="modal-container active">
+      <div class="modal-overlay" @click="showCategoryModal = false"></div>
+      <div class="modal-content modal-center w-full max-w-lg" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+        <div class="modal-header">
+          <h3>
+            <i class="fa-solid fa-folder-open" style="margin-right: 6px;"></i>
+            จัดการหมวดหมู่ครัวกลาง
+          </h3>
+          <button class="modal-close" @click="showCategoryModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- Form: Add or Edit Category -->
+          <div class="card p-md mb-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
+            <div class="font-bold text-sm mb-sm text-primary flex align-center gap-xs">
+              <i :class="editingCat ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-plus-circle'"></i>
+              <span>{{ editingCat ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่' }}</span>
+            </div>
+            
+            <div class="form-group mb-sm">
+              <label class="form-label text-xs font-bold">ชื่อหมวดหมู่ *</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                v-model="catForm.name" 
+                placeholder="เช่น ซอส, ผงปรุงรส, แป้งและน้ำมัน"
+                style="width: 100%;"
+              />
+            </div>
+
+            <div class="form-group mb-sm">
+              <label class="form-label text-xs font-bold">รหัสหมวดหมู่ (เว้นว่างได้ ระบบจะสร้างให้อัตโนมัติ)</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                v-model="catForm.code" 
+                :disabled="!!editingCat"
+                placeholder="เช่น sauce, powder, oil_flour" 
+                style="width: 100%;"
+              />
+            </div>
+
+            <!-- Icon Picker -->
+            <div class="form-group mb-md">
+              <label class="form-label text-xs font-bold mb-xs block">เลือกไอคอนสัญลักษณ์</label>
+              <div class="grid gap-xs" style="grid-template-columns: repeat(6, 1fr);">
+                <button 
+                  v-for="ico in availableCategoryIcons" 
+                  :key="ico.icon" 
+                  type="button"
+                  class="btn"
+                  :class="catForm.icon === ico.icon ? 'btn-primary' : 'btn-secondary'"
+                  :title="ico.title"
+                  style="height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 0;"
+                  @click="catForm.icon = ico.icon"
+                >
+                  <i :class="ico.icon"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex gap-sm justify-end">
+              <button 
+                v-if="editingCat" 
+                class="btn btn-secondary text-xs" 
+                @click="handleCancelEditCat"
+              >
+                ยกเลิกแก้ไข
+              </button>
+              <button 
+                class="btn btn-primary text-xs" 
+                :disabled="!catForm.name || isSavingCat" 
+                @click="handleSaveCategory"
+              >
+                <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                <i v-else class="fa-solid fa-floppy-disk mr-1"></i>
+                {{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'อัปเดตหมวดหมู่' : 'เพิ่มหมวดหมู่') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing Categories List -->
+          <div>
+            <div class="font-bold text-sm mb-sm text-secondary flex flex-between align-center">
+              <span>หมวดหมู่ทั้งหมด ({{ kitchenCategories.length }} หมวดหมู่)</span>
+              <span class="text-xs text-muted">คลิกแก้ไขหรือลบหมวดหมู่ที่ไม่ได้ใช้งาน</span>
+            </div>
+
+            <div class="flex flex-col gap-xs" style="max-height: 240px; overflow-y: auto;">
+              <div 
+                v-for="cat in kitchenCategories" 
+                :key="cat.id" 
+                class="flex flex-between align-center p-sm" 
+                style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);"
+              >
+                <div class="flex align-center gap-sm">
+                  <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color);">
+                    <i :class="cat.icon || 'fa-solid fa-tag'" class="text-primary"></i>
+                  </div>
+                  <div>
+                    <div class="font-bold text-sm">{{ cat.name }}</div>
+                    <div class="text-2xs text-secondary font-mono">{{ cat.code }} • {{ getCategoryCount(cat.code) }} สินค้า</div>
+                  </div>
+                </div>
+
+                <div class="flex align-center gap-xs">
+                  <button 
+                    class="btn btn-ghost btn-xs text-primary" 
+                    title="แก้ไขหมวดหมู่"
+                    @click="handleEditCat(cat)"
+                  >
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button 
+                    class="btn btn-ghost btn-xs text-danger" 
+                    title="ลบหมวดหมู่"
+                    @click="handleDeleteCat(cat)"
+                  >
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────── -->
     <!-- MODAL: สร้าง / แก้ไข สินค้าในครัวกลาง -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showItemModal" class="modal-container active">
@@ -3589,14 +3895,40 @@ const closePartnerBranchDropdown = () => {
 
 const historyFilter = ref('all');
 
-// Categories filter list
-const categories = [
-  { id: 'all', label: 'ทั้งหมด', icon: 'fa-solid fa-boxes-stacked' },
-  { id: 'raw_material', label: 'วัตถุดิบ/อาหาร', icon: 'fa-solid fa-drumstick-bite' },
-  { id: 'packaging', label: 'บรรจุภัณฑ์', icon: 'fa-solid fa-box-open' },
-  { id: 'equipment', label: 'อุปกรณ์', icon: 'fa-solid fa-kitchen-set' },
-  { id: 'general', label: 'ทั่วไป', icon: 'fa-solid fa-tag' }
+// Categories filter list & Management
+const defaultKitchenCategories = [
+  { id: 1, code: 'raw_material', name: 'วัตถุดิบ/อาหาร', icon: 'fa-solid fa-drumstick-bite' },
+  { id: 2, code: 'sauce', name: 'ซอส/น้ำจิ้ม', icon: 'fa-solid fa-bottle-droplet' },
+  { id: 3, code: 'powder', name: 'ผง/เครื่องปรุง', icon: 'fa-solid fa-mortar-pestle' },
+  { id: 4, code: 'oil_flour', name: 'แป้งและน้ำมัน', icon: 'fa-solid fa-wheat-awn' },
+  { id: 5, code: 'packaging', name: 'บรรจุภัณฑ์', icon: 'fa-solid fa-box-open' },
+  { id: 6, code: 'equipment', name: 'อุปกรณ์/ของใช้', icon: 'fa-solid fa-kitchen-set' },
+  { id: 7, code: 'general', name: 'ทั่วไป/อื่นๆ', icon: 'fa-solid fa-tag' }
 ];
+
+const kitchenCategories = ref([...defaultKitchenCategories]);
+
+const loadCategories = async () => {
+  try {
+    const res = await api.centralKitchen.getCategories();
+    const list = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+    if (Array.isArray(list) && list.length > 0) {
+      kitchenCategories.value = list;
+    }
+  } catch (err) {
+    console.error('Failed to load kitchen categories:', err);
+  }
+};
+
+const categories = computed(() => {
+  const base = [{ id: 'all', label: 'ทั้งหมด', icon: 'fa-solid fa-boxes-stacked' }];
+  const dynamic = kitchenCategories.value.map(c => ({
+    id: c.code,
+    label: c.name,
+    icon: c.icon || 'fa-solid fa-tag'
+  }));
+  return [...base, ...dynamic];
+});
 
 // Item Modal Options & Dropdowns
 const isCategoryModalDropdownOpen = ref(false);
@@ -3605,19 +3937,224 @@ const isPosMenuModalDropdownOpen = ref(false);
 const isSavingItem = ref(false);
 const fileInputRef = ref(null);
 
-const itemModalCategories = [
-  { id: 'raw_material', label: 'วัตถุดิบ/อาหาร', icon: 'fa-solid fa-drumstick-bite' },
-  { id: 'packaging', label: 'บรรจุภัณฑ์/สิ้นเปลือง', icon: 'fa-solid fa-box-open' },
-  { id: 'equipment', label: 'อุปกรณ์/เครื่องครัว', icon: 'fa-solid fa-kitchen-set' },
-  { id: 'general', label: 'ทั่วไป', icon: 'fa-solid fa-tag' }
-];
+const itemModalCategories = computed(() => {
+  return kitchenCategories.value.map(c => ({
+    id: c.code,
+    label: c.name,
+    icon: c.icon || 'fa-solid fa-tag'
+  }));
+});
 
-const kitchenUnits = ['ชิ้น', 'กิโลกรัม', 'กรัม', 'แพ็ค', 'ถุง', 'ขวด', 'ลัง', 'กระป๋อง', 'ม้วน', 'อัน', 'กล่อง', 'ลิตร'];
+const kitchenUnits = ['ชิ้น', 'กิโลกรัม', 'กรัม', 'แพ็ค', 'ถุง', 'ขวด', 'ลัง', 'กระป๋อง', 'ม้วน', 'อัน', 'กล่อง', 'ลิตร', 'ถัง'];
 
 const itemModalCategoryLabel = computed(() => {
-  const cat = itemModalCategories.find(c => c.id === itemForm.value.category);
+  const cat = itemModalCategories.value.find(c => c.id === itemForm.value.category);
   return cat ? cat.label : 'เลือกหมวดหมู่...';
 });
+
+// Category Management Modal State
+const showCategoryModal = ref(false);
+const isSavingCat = ref(false);
+const editingCat = ref(null);
+const catForm = ref({ name: '', code: '', icon: 'fa-solid fa-tag' });
+
+const availableCategoryIcons = [
+  { icon: 'fa-solid fa-drumstick-bite', title: 'วัตถุดิบ/อาหาร' },
+  { icon: 'fa-solid fa-bottle-droplet', title: 'ซอส/น้ำจิ้ม' },
+  { icon: 'fa-solid fa-mortar-pestle', title: 'ผง/เครื่องปรุง' },
+  { icon: 'fa-solid fa-wheat-awn', title: 'แป้ง/น้ำมัน' },
+  { icon: 'fa-solid fa-box-open', title: 'บรรจุภัณฑ์' },
+  { icon: 'fa-solid fa-kitchen-set', title: 'อุปกรณ์/ของใช้' },
+  { icon: 'fa-solid fa-snowflake', title: 'อาหารแช่แข็ง' },
+  { icon: 'fa-solid fa-cubes', title: 'วัตถุดิบแปรรูป' },
+  { icon: 'fa-solid fa-bowl-food', title: 'อาหารปรุงสำเร็จ' },
+  { icon: 'fa-solid fa-wine-bottle', title: 'เครื่องดื่ม/ไซรัป' },
+  { icon: 'fa-solid fa-spray-can-sparkles', title: 'ของใช้ทำความสะอาด' },
+  { icon: 'fa-solid fa-tag', title: 'ทั่วไป/อื่นๆ' }
+];
+
+const openCategoryModal = () => {
+  editingCat.value = null;
+  catForm.value = { name: '', code: '', icon: 'fa-solid fa-tag' };
+  showCategoryModal.value = true;
+};
+
+const handleEditCat = (cat) => {
+  editingCat.value = cat;
+  catForm.value = { name: cat.name, code: cat.code, icon: cat.icon || 'fa-solid fa-tag' };
+};
+
+const handleCancelEditCat = () => {
+  editingCat.value = null;
+  catForm.value = { name: '', code: '', icon: 'fa-solid fa-tag' };
+};
+
+const handleSaveCategory = async () => {
+  if (!catForm.value.name.trim()) {
+    ui.showToast('กรุณาระบุชื่อหมวดหมู่', 'warning');
+    return;
+  }
+  isSavingCat.value = true;
+  try {
+    let code = (catForm.value.code || '').trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '_').replace(/^_+|_+$/g, '');
+    if (!code) {
+      code = `cat_${Date.now()}`;
+    }
+    if (editingCat.value) {
+      await api.centralKitchen.updateCategory(editingCat.value.id, {
+        name: catForm.value.name.trim(),
+        icon: catForm.value.icon
+      });
+      ui.showToast(`แก้ไขหมวดหมู่ "${catForm.value.name}" เรียบร้อยแล้ว`, 'success');
+    } else {
+      await api.centralKitchen.createCategory({
+        name: catForm.value.name.trim(),
+        code: code,
+        icon: catForm.value.icon
+      });
+      ui.showToast(`เพิ่มหมวดหมู่ "${catForm.value.name}" สำเร็จ`, 'success');
+    }
+    await loadCategories();
+    handleCancelEditCat();
+  } catch (err) {
+    console.error('Error saving category:', err);
+    ui.showToast(err.message || 'บันทึกหมวดหมู่ไม่สำเร็จ', 'danger');
+  } finally {
+    isSavingCat.value = false;
+  }
+};
+
+const handleDeleteCat = async (cat) => {
+  const count = getCategoryCount(cat.code);
+  if (count > 0) {
+    ui.showToast(`ไม่สามารถลบหมวดหมู่ "${cat.name}" ได้เนื่องจากมีสินค้าใช้งานอยู่ ${count} รายการ`, 'warning');
+    return;
+  }
+  const ok = await ui.showConfirm('ยืนยันการลบหมวดหมู่', `คุณต้องการลบหมวดหมู่ "${cat.name}" ใช่หรือไม่?`);
+  if (!ok) return;
+  try {
+    await api.centralKitchen.deleteCategory(cat.id);
+    ui.showToast(`ลบหมวดหมู่ "${cat.name}" สำเร็จ`, 'success');
+    await loadCategories();
+  } catch (err) {
+    console.error('Error deleting category:', err);
+    ui.showToast(err.response?.data?.error || err.message || 'ลบหมวดหมู่ไม่สำเร็จ', 'danger');
+  }
+};
+
+// Reorder Mode State & Drag-and-Drop Methods (Like Menu.vue)
+const isReorderMode = ref(false);
+const reorderItems = ref([]);
+const dragIndex = ref(null);
+const isSavingReorder = ref(false);
+
+const openReorderMode = () => {
+  reorderItems.value = [...items.value];
+  isReorderMode.value = true;
+};
+
+const closeReorderMode = () => {
+  isReorderMode.value = false;
+};
+
+const handleSaveReorder = async () => {
+  if (isSavingReorder.value) return;
+  isSavingReorder.value = true;
+  ui.showLoading();
+  try {
+    const ids = reorderItems.value.map(item => item.id);
+    const res = await api.centralKitchen.reorderItems(ids);
+    if (res && res.success) {
+      ui.showToast('เปลี่ยนลำดับสินค้าเรียบร้อยแล้ว', 'success');
+      isReorderMode.value = false;
+      await loadItems();
+    } else {
+      ui.showToast('เปลี่ยนลำดับสินค้าไม่สำเร็จ: ' + ((res && res.error) || 'ข้อผิดพลาดระบบ'), 'danger');
+    }
+  } catch (err) {
+    console.error(err);
+    ui.showToast('เปลี่ยนลำดับสินค้าไม่สำเร็จ: ' + (err.response?.data?.error || err.message), 'danger');
+  } finally {
+    ui.hideLoading();
+    isSavingReorder.value = false;
+  }
+};
+
+const handleDragStart = (index, event) => {
+  dragIndex.value = index;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+};
+
+const handleDragOver = (event) => {
+  event.preventDefault();
+  const clientY = event.clientY;
+  const threshold = 120;
+  const scrollSpeed = 15;
+  if (clientY < threshold) {
+    window.scrollBy(0, -scrollSpeed);
+  } else if (clientY > window.innerHeight - threshold) {
+    window.scrollBy(0, scrollSpeed);
+  }
+};
+
+const handleDragEnter = (index) => {
+  if (dragIndex.value !== null && dragIndex.value !== index) {
+    const item = reorderItems.value[dragIndex.value];
+    reorderItems.value.splice(dragIndex.value, 1);
+    reorderItems.value.splice(index, 0, item);
+    dragIndex.value = index;
+  }
+};
+
+const handleDragEnd = () => {
+  dragIndex.value = null;
+};
+
+const handleTouchStart = (index, event) => {
+  dragIndex.value = index;
+  const element = event.target.closest('.mobile-reorder-card, .desktop-reorder-row');
+  if (element) {
+    element.classList.add('dragging');
+  }
+};
+
+const handleTouchMove = (event) => {
+  if (dragIndex.value === null) return;
+  const touch = event.touches[0];
+  const clientY = touch.clientY;
+
+  const threshold = 120;
+  const scrollSpeed = 15;
+  if (clientY < threshold) {
+    window.scrollBy(0, -scrollSpeed);
+  } else if (clientY > window.innerHeight - threshold) {
+    window.scrollBy(0, scrollSpeed);
+  }
+
+  const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (targetElement) {
+    const element = targetElement.closest('.mobile-reorder-card, .desktop-reorder-row');
+    if (element) {
+      const targetIndex = Number(element.dataset.index);
+      if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
+        const item = reorderItems.value[dragIndex.value];
+        reorderItems.value.splice(dragIndex.value, 1);
+        reorderItems.value.splice(targetIndex, 0, item);
+        dragIndex.value = targetIndex;
+      }
+    }
+  }
+};
+
+const handleTouchEnd = () => {
+  dragIndex.value = null;
+  const draggingEl = document.querySelector('.mobile-reorder-card.dragging, .desktop-reorder-row.dragging');
+  if (draggingEl) {
+    draggingEl.classList.remove('dragging');
+  }
+};
 
 const closeCategoryModalDropdown = () => {
   isCategoryModalDropdownOpen.value = false;
@@ -3884,8 +4421,13 @@ const formatDateTime = (str) => {
 };
 
 const getCategoryLabel = (cat) => {
+  const found = kitchenCategories.value.find(c => c.code === cat);
+  if (found) return found.name;
   const map = {
     'raw_material': 'วัตถุดิบ/อาหาร',
+    'sauce': 'ซอส/น้ำจิ้ม',
+    'powder': 'ผง/เครื่องปรุง',
+    'oil_flour': 'แป้งและน้ำมัน',
     'packaging': 'บรรจุภัณฑ์',
     'equipment': 'อุปกรณ์',
     'general': 'ทั่วไป'
@@ -3903,8 +4445,13 @@ const getItemNameParts = (name) => {
 };
 
 const getCategoryIcon = (cat) => {
+  const found = kitchenCategories.value.find(c => c.code === cat);
+  if (found && found.icon) return found.icon;
   const map = {
     'raw_material': 'fa-solid fa-drumstick-bite',
+    'sauce': 'fa-solid fa-bottle-droplet',
+    'powder': 'fa-solid fa-mortar-pestle',
+    'oil_flour': 'fa-solid fa-wheat-awn',
     'packaging': 'fa-solid fa-box-open',
     'equipment': 'fa-solid fa-kitchen-set',
     'general': 'fa-solid fa-tag'
@@ -4258,6 +4805,35 @@ const cancelTransferOrder = async (order) => {
 };
 
 // Dedicated Dispatch Methods (Push Model)
+const getDispatchCartItem = (itemId) => {
+  return dispatchCart.value.find(c => c.item_id === itemId);
+};
+
+const setDispatchCartQty = (item, val) => {
+  let num = parseInt(val, 10);
+  if (isNaN(num) || num <= 0) num = 1;
+  const max = Number(item.quantity) || 0;
+  if (max > 0 && num > max) {
+    num = max;
+    ui.showToast(`สามารถจ่ายได้สูงสุด ${formatNumber(max)} ${item.unit} ตามสต็อกในคลัง`, 'warning');
+  }
+  const existing = dispatchCart.value.find(c => c.item_id === item.id);
+  if (existing) {
+    existing.quantity = num;
+  } else {
+    dispatchCart.value.push({
+      item_id: item.id,
+      item_name: item.name,
+      unit: item.unit,
+      cost_price: item.cost_price,
+      max_quantity: item.quantity,
+      pack_size: item.pack_size || 1,
+      linked_menu_item_name: item.linked_menu_item_name || '',
+      quantity: num
+    });
+  }
+};
+
 const addDispatchItem = (item) => {
   if (item.quantity <= 0) {
     ui.showToast('สินค้ารายการนี้หมดสต็อกในครัวกลาง', 'warning');
@@ -4735,6 +5311,7 @@ onMounted(async () => {
   window.addEventListener('click', closePartnerBranchDropdown);
   window.addEventListener('click', closeReceivablesBranchDropdown);
   window.addEventListener('click', closeDispatchBranchDropdown);
+  await loadCategories();
   await loadBranches();
   loadItems();
   loadPosMenuItems();
@@ -4756,6 +5333,141 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ────────────────────────────────────────────────────────── */
+/* REORDER MODE & TOOLBAR STYLES (Menu.vue POS Style)         */
+/* ────────────────────────────────────────────────────────── */
+.catalog-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.catalog-toolbar-row-top,
+.catalog-toolbar-row-bottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.toolbar-btn {
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 16px;
+  font-size: var(--font-base);
+  font-weight: bold;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+.menu-top-action-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.menu-total-count {
+  font-size: var(--font-lg);
+  font-weight: bold;
+  color: var(--text-secondary);
+}
+
+.menu-action-buttons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.desktop-menu-table-container {
+  display: block;
+}
+
+.mobile-menu-list-container {
+  display: none;
+}
+
+.desktop-reorder-row.dragging,
+.mobile-reorder-card.dragging {
+  opacity: 0.5;
+  background-color: var(--primary-glow, rgba(139, 3, 19, 0.08)) !important;
+  border: 2px dashed var(--primary) !important;
+}
+
+.drag-handle {
+  cursor: grab;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 1.25rem;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.mobile-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-bottom: var(--space-2xl);
+}
+
+.mobile-menu-card {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.mobile-menu-card-img-container {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-menu-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-menu-card-placeholder {
+  font-size: var(--font-lg);
+}
+
+.mobile-menu-card-name {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.mobile-menu-card-category {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.mobile-menu-card-price {
+  font-size: var(--font-base);
+  font-weight: bold;
+  color: var(--primary);
+}
+
 /* POS Menu Stock Linking Styles */
 .custom-select-group-header {
   padding: 6px 14px;
@@ -6194,14 +6906,83 @@ onUnmounted(() => {
     align-items: stretch;
   }
 
+  /* Toolbar: Row Top (Toggle + จัดการหมวด) & Row Bottom (เรียงลำดับ + สร้างใหม่) */
   .catalog-toolbar-actions {
-    justify-content: space-between;
-    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .catalog-toolbar-row-top,
+  .catalog-toolbar-row-bottom {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .catalog-toolbar-row-top .view-mode-toggle {
+    width: 100% !important;
+    height: 44px !important;
+    display: flex !important;
+    box-sizing: border-box !important;
+  }
+
+  .catalog-toolbar-row-top .view-mode-toggle .view-toggle-btn {
+    flex: 1 !important;
+    height: 34px !important;
+  }
+
+  .toolbar-btn {
+    width: 100% !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-size: 0.95rem !important;
+    font-weight: bold !important;
+    padding: 0 8px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    border-radius: var(--radius-md) !important;
   }
 
   .btn-add-item {
-    flex: 1;
-    justify-content: center;
+    flex: unset !important;
+    width: 100% !important;
+  }
+
+  /* Reorder View on Mobile */
+  .menu-top-action-card {
+    flex-direction: column !important;
+    gap: var(--space-md) !important;
+    align-items: stretch !important;
+    text-align: center !important;
+    padding: var(--space-md) !important;
+  }
+
+  .menu-action-buttons {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--space-sm) !important;
+    width: 100% !important;
+  }
+
+  .menu-action-buttons button {
+    width: 100% !important;
+    justify-content: center !important;
+    height: 44px !important;
+  }
+
+  .desktop-menu-table-container {
+    display: none !important;
+  }
+
+  .mobile-menu-list-container {
+    display: block !important;
+    width: 100% !important;
   }
 
   /* Mobile Modal Comfort (Spacious width, not pinched to screen edge) */

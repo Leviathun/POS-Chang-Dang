@@ -112,6 +112,140 @@ async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, us
   }
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// 0. CATEGORIES MANAGEMENT (จัดการหมวดหมู่ในครัวกลาง)
+// ─────────────────────────────────────────────────────────────
+
+// GET /api/central-kitchen/categories — ดึงรายชื่อหมวดหมู่ทั้งหมดในครัวกลาง
+router.get('/categories', async (req, res) => {
+  try {
+    const db = getDb();
+    const categories = await db.prepare('SELECT * FROM central_kitchen_categories WHERE active = 1 ORDER BY sort_order ASC, id ASC').all();
+    res.json({ success: true, data: categories || [] });
+  } catch (error) {
+    console.error('❌ Error fetching central kitchen categories:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/central-kitchen/categories — เพิ่มหมวดหมู่ใหม่ในครัวกลาง
+router.post('/categories', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const { name, icon, sort_order } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'กรุณาระบุชื่อหมวดหมู่' });
+    }
+    const cleanName = name.trim();
+    // Generate code from english letters or timestamp
+    let code = cleanName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '_').replace(/^_+|_+$/g, '');
+    if (!code) code = `cat_${Date.now()}`;
+    const cleanIcon = icon && icon.trim() ? icon.trim() : 'fa-solid fa-tag';
+    const maxOrderRes = await db.prepare('SELECT MAX(sort_order) as max_order FROM central_kitchen_categories').get();
+    const nextOrder = (maxOrderRes && maxOrderRes.max_order ? maxOrderRes.max_order : 0) + 1;
+    const order = Number(sort_order) > 0 ? Number(sort_order) : nextOrder;
+
+    const existing = await db.prepare('SELECT id FROM central_kitchen_categories WHERE name = ? OR code = ?').get(cleanName, code);
+    if (existing) {
+      return res.status(400).json({ success: false, error: 'มีชื่อหรือรหัสหมวดหมู่นี้อยู่แล้ว' });
+    }
+
+    const result = await db.prepare(`
+      INSERT INTO central_kitchen_categories (name, code, icon, sort_order, active)
+      VALUES (?, ?, ?, ?, 1)
+    `).run(cleanName, code, cleanIcon, order);
+
+    res.status(201).json({
+      success: true,
+      message: 'เพิ่มหมวดหมู่สำเร็จ',
+      data: { id: result.lastInsertRowid, name: cleanName, code, icon: cleanIcon, sort_order: order }
+    });
+  } catch (error) {
+    console.error('❌ Error creating central kitchen category:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /api/central-kitchen/categories/:id — แก้ไขหมวดหมู่ในครัวกลาง
+router.put('/categories/:id', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const catId = req.params.id;
+    const { name, icon, sort_order } = req.body;
+
+    const existing = await db.prepare('SELECT * FROM central_kitchen_categories WHERE id = ?').get(catId);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'ไม่พบหมวดหมู่นี้' });
+    }
+
+    const cleanName = name ? name.trim() : existing.name;
+    const cleanIcon = icon !== undefined ? icon.trim() : existing.icon;
+    const order = sort_order !== undefined ? Number(sort_order) : existing.sort_order;
+
+    await db.prepare(`
+      UPDATE central_kitchen_categories
+      SET name = ?, icon = ?, sort_order = ?
+      WHERE id = ?
+    `).run(cleanName, cleanIcon, order, catId);
+
+    res.json({ success: true, message: 'อัปเดตหมวดหมู่สำเร็จ' });
+  } catch (error) {
+    console.error('❌ Error updating central kitchen category:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE /api/central-kitchen/categories/:id — ลบหมวดหมู่ในครัวกลาง
+router.delete('/categories/:id', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const catId = req.params.id;
+
+    const existing = await db.prepare('SELECT * FROM central_kitchen_categories WHERE id = ?').get(catId);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'ไม่พบหมวดหมู่นี้' });
+    }
+
+    // Check if any active items are in this category
+    const itemCount = await db.prepare('SELECT COUNT(*) as count FROM central_kitchen_items WHERE (category = ? OR category = ?) AND active = 1')
+      .get(existing.code, existing.name);
+
+    if (itemCount && itemCount.count > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `ไม่สามารถลบหมวดหมู่ "${existing.name}" ได้เนื่องจากมีสินค้า ${itemCount.count} รายการอยู่ในหมวดหมู่นี้ กรุณาย้ายหมวดหมู่สินค้าออกก่อน`
+      });
+    }
+
+    await db.prepare('DELETE FROM central_kitchen_categories WHERE id = ?').run(catId);
+    res.json({ success: true, message: `ลบหมวดหมู่ "${existing.name}" เรียบร้อยแล้ว` });
+  } catch (error) {
+    console.error('❌ Error deleting central kitchen category:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /api/central-kitchen/items/reorder — บันทึกลำดับแคตตาล็อกสินค้า
+router.put('/items/reorder', requireManagerOrAdmin, async (req, res) => {
+  try {
+    const db = getDb();
+    const { item_ids } = req.body;
+    if (!Array.isArray(item_ids) || item_ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'กรุณาระบุรายการสินค้าที่ต้องการจัดลำดับ' });
+    }
+
+    for (let i = 0; i < item_ids.length; i++) {
+      await db.prepare('UPDATE central_kitchen_items SET sort_order = ? WHERE id = ?').run(i + 1, item_ids[i]);
+    }
+
+    res.json({ success: true, message: 'บันทึกลำดับสินค้าเรียบร้อยแล้ว' });
+  } catch (error) {
+    console.error('❌ Error reordering central kitchen items:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────
 // 1. ITEMS & POS MENUS (สินค้า/วัตถุดิบ/บรรจุภัณฑ์/อุปกรณ์ในครัวกลาง)
 // ─────────────────────────────────────────────────────────────
@@ -174,7 +308,7 @@ router.get('/items', async (req, res) => {
       params.push(`%${search.trim()}%`);
     }
 
-    sql += ' ORDER BY id DESC';
+    sql += ' ORDER BY sort_order ASC, id ASC';
     const items = await db.prepare(sql).all(...params);
 
     res.json({
@@ -207,10 +341,11 @@ router.post('/items', requireManagerOrAdmin, async (req, res) => {
     const packMultiplier = Number(pack_size) > 0 ? Number(pack_size) : 1;
     const nowLocal = getThaiNow();
 
+    const itemOrder = Number(req.body.sort_order) || 0;
     const insertResult = await db.prepare(`
-      INSERT INTO central_kitchen_items (name, category, unit, cost_price, quantity, min_stock_alert, image_url, linked_menu_item_name, target_stock_type, pack_size, active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-    `).run(name.trim(), itemCat, itemUnit, price, initialQty, minAlert, image_url || null, linkedMenu, stockType, packMultiplier, nowLocal, nowLocal);
+      INSERT INTO central_kitchen_items (name, category, unit, cost_price, quantity, min_stock_alert, image_url, sort_order, linked_menu_item_name, target_stock_type, pack_size, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    `).run(name.trim(), itemCat, itemUnit, price, initialQty, minAlert, image_url || null, itemOrder, linkedMenu, stockType, packMultiplier, nowLocal, nowLocal);
 
     const insertedId = insertResult.lastInsertRowid;
 
@@ -259,6 +394,7 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
           cost_price = COALESCE(?, cost_price),
           min_stock_alert = COALESCE(?, min_stock_alert),
           image_url = COALESCE(?, image_url),
+          sort_order = COALESCE(?, sort_order),
           linked_menu_item_name = CASE WHEN ? = 1 THEN ? ELSE linked_menu_item_name END,
           target_stock_type = COALESCE(?, target_stock_type),
           pack_size = COALESCE(?, pack_size),
@@ -272,6 +408,7 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
       cost_price !== undefined ? Number(cost_price) : null,
       min_stock_alert !== undefined ? Number(min_stock_alert) : null,
       image_url !== undefined ? image_url : null,
+      req.body.sort_order !== undefined ? Number(req.body.sort_order) : null,
       hasLinkedMenuParam ? 1 : 0,
       cleanLinkedMenu,
       target_stock_type !== undefined ? (target_stock_type === 'ready' ? 'ready' : 'raw') : null,

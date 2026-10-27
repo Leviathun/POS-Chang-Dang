@@ -208,9 +208,26 @@
               </div>
             </div>
 
-            <!-- 5. ปุ่มแอ็กชัน (เต็มความกว้างซ้าย-ขวา เท่ารูปภาพ) -->
+            <!-- 5. ปุ่มแอ็กชัน (รองรับพิมพ์จำนวนโดยตรง และปุ่มเพิ่ม) -->
             <div class="card-footer-actions">
+              <div v-if="getCartQty(item.id) > 0" class="flex align-center gap-xs w-full" @click.stop>
+                <button class="btn-qty" @click="decreaseQty(getCartItem(item.id))" title="ลด">-</button>
+                <input 
+                  type="number" 
+                  inputmode="numeric" 
+                  min="1" 
+                  :max="item.quantity" 
+                  :value="getCartQty(item.id)" 
+                  @change="setCartQty(item, $event.target.value)"
+                  @focus="$event.target.select()" 
+                  class="form-input text-center font-bold qty-card-input" 
+                  style="flex: 1; height: 36px; padding: 2px; font-size: 0.95rem; border-radius: var(--radius-sm);" 
+                  title="พิมพ์จำนวนที่ต้องการเบิกได้ทันที"
+                />
+                <button class="btn-qty" :disabled="getCartQty(item.id) >= item.quantity" @click="increaseQty(getCartItem(item.id))" title="เพิ่ม">+</button>
+              </div>
               <button 
+                v-else
                 class="btn-action btn-action-primary w-full btn-restock-main" 
                 :disabled="item.quantity <= 0"
                 @click.stop="addToCart(item)"
@@ -284,11 +301,22 @@
                   ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
                 </span>
 
-                <!-- Qty Stepper (32px Circle Buttons) -->
+                <!-- Qty Stepper with direct typing input -->
                 <div class="flex align-center gap-xs flex-shrink-0">
                   <button class="btn-qty" @click="decreaseQty(c)" title="ลดจำนวน">-</button>
-                  <span class="font-bold text-sm text-center qty-display">{{ c.quantity }}</span>
-                  <button class="btn-qty" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
+                  <input 
+                    type="number" 
+                    inputmode="numeric" 
+                    min="1" 
+                    :max="c.max_quantity" 
+                    v-model.number="c.quantity" 
+                    class="form-input text-center text-sm font-bold qty-input-field" 
+                    style="width: 62px; height: 32px; padding: 2px; border-radius: var(--radius-sm);" 
+                    @focus="$event.target.select()" 
+                    @change="validateCartQty(c)"
+                    title="คลิกเพื่อพิมพ์จำนวนได้โดยตรง"
+                  />
+                  <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
                 </div>
               </div>
             </div>
@@ -400,15 +428,26 @@
               </div>
             </div>
 
-            <!-- Tier 2: Unit price + Stepper -->
+            <!-- Tier 2: Unit price + Stepper with direct typing input -->
             <div class="flex flex-between align-center cart-item-bottom">
               <span class="text-xs text-secondary">
                 ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
               </span>
               <div class="flex align-center gap-xs flex-shrink-0">
                 <button class="btn-qty" @click="decreaseQty(c)" title="ลดจำนวน">-</button>
-                <span class="font-bold text-sm text-center qty-display">{{ c.quantity }}</span>
-                <button class="btn-qty" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
+                <input 
+                  type="number" 
+                  inputmode="numeric" 
+                  min="1" 
+                  :max="c.max_quantity" 
+                  v-model.number="c.quantity" 
+                  class="form-input text-center text-sm font-bold qty-input-field" 
+                  style="width: 62px; height: 32px; padding: 2px; border-radius: var(--radius-sm);" 
+                  @focus="$event.target.select()" 
+                  @change="validateCartQty(c)"
+                  title="คลิกเพื่อพิมพ์จำนวนได้โดยตรง"
+                />
+                <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
               </div>
             </div>
           </div>
@@ -765,6 +804,45 @@ const isCartDrawerOpen = ref(false);
 const getCartQty = (itemId) => {
   const found = cart.value.find(c => c.item_id === itemId);
   return found ? found.quantity : 0;
+};
+
+const getCartItem = (itemId) => {
+  return cart.value.find(c => c.item_id === itemId);
+};
+
+const setCartQty = (item, val) => {
+  let num = parseInt(val, 10);
+  if (isNaN(num) || num <= 0) num = 1;
+  const max = Number(item.quantity) || 0;
+  if (max > 0 && num > max) {
+    num = max;
+    ui.showToast(`สามารถเบิกได้สูงสุด ${formatNumber(max)} ${item.unit} ตามสต็อกครัวกลาง`, 'warning');
+  }
+  const existing = cart.value.find(c => c.item_id === item.id);
+  if (existing) {
+    existing.quantity = num;
+  } else {
+    cart.value.push({
+      item_id: item.id,
+      item_name: item.name,
+      unit: item.unit,
+      cost_price: item.cost_price,
+      max_quantity: item.quantity,
+      pack_size: item.pack_size || 1,
+      linked_menu_item_name: item.linked_menu_item_name || '',
+      quantity: num
+    });
+  }
+};
+
+const validateCartQty = (c) => {
+  if (!c.quantity || c.quantity < 1) c.quantity = 1;
+  const originalItem = items.value.find(i => i.id === c.item_id);
+  const maxQty = originalItem ? originalItem.quantity : c.max_quantity;
+  if (maxQty && c.quantity > maxQty) {
+    c.quantity = maxQty;
+    ui.showToast(`ปรับเป็นจำนวนสูงสุดที่มีในคลัง (${maxQty} ${c.unit})`, 'warning');
+  }
 };
 
 watch(cart, (newCart) => {
