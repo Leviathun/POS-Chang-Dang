@@ -6,7 +6,7 @@ const { getOrCreateSession } = require('./cash_drawers');
 
 const getCategoryLabel = (cat) => {
   const map = {
-    'raw_materials': 'วัตถุดิบและของสดทั่วไป',
+    'raw_materials': 'ครัวกลาง',
     'gas_fuel': 'แก๊สและเชื้อเพลิง',
     'packaging': 'บรรจุภัณฑ์/แพ็คเกจ',
     'raw_chicken': 'ของสด: ไก่ดิบ',

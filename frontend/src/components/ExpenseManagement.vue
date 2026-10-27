@@ -408,9 +408,9 @@
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; white-space: nowrap;">
                 <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
-                  <i v-if="!item.isCKTransfer && item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
-                  <i v-else-if="!item.isCKTransfer && item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
-                  <i v-else-if="!item.isCKTransfer" class="fa-solid fa-box"></i>
+                  <i v-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button"></i>
+                  <i v-else-if="item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave"></i>
+                  <i v-else class="fa-solid fa-box"></i>
                   <span>{{ item.paymentLabel }}</span>
                 </span>
               </td>
@@ -503,6 +503,8 @@
               <span style="white-space: nowrap; flex-shrink: 0; font-size: 11px;">{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
               <div class="flex align-center gap-xs" style="flex-shrink: 0;">
                 <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
+                  <i v-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button mr-1"></i>
+                  <i v-else-if="item.paymentClass === 'badge-cash'" class="fa-solid fa-money-bill-wave mr-1"></i>
                   <span>{{ item.paymentLabel }}</span>
                 </span>
                 <!-- Reversal Badges / Buttons for Mobile -->
@@ -914,6 +916,7 @@ const removeCustomPreset = (presetName) => {
 
 const listFilterCategories = [
   ...categoryList,
+  { id: 'raw_materials', name: 'ครัวกลาง', icon: 'fa-solid fa-kitchen-set' },
   { id: 'waste_loss', name: 'ของเสีย/ทิ้ง', icon: 'fa-solid fa-trash-can' },
   { id: 'credit_loss', name: 'เครดิตพนักงาน', icon: 'fa-solid fa-user-check' }
 ];
@@ -1005,12 +1008,17 @@ const allLedgerEntries = computed(() => {
       (e.note && (e.note.includes('เบิกของจากครัวกลาง') || e.note.includes('ครัวกลาง'))) ||
       (e.category === 'raw_materials' && e.payment_method === 'transfer')
     );
-    const catLabel = isRefund ? 'คืนเงิน/ยกเลิก' : getCategoryLabel(e.category);
-    const catIcon = isRefund ? 'fa-solid fa-rotate-left' : getExpenseCategoryIcon(e.category);
-    const badgeCls = isRefund ? 'badge-cat-refund' : ('badge-cat-' + e.category);
+    const catLabel = isRefund ? 'คืนเงิน/ยกเลิก' : ((isCKTransfer || e.category === 'raw_materials') ? 'ครัวกลาง' : getCategoryLabel(e.category));
+    const catIcon = isRefund ? 'fa-solid fa-rotate-left' : ((isCKTransfer || e.category === 'raw_materials') ? 'fa-solid fa-kitchen-set' : getExpenseCategoryIcon(e.category));
+    const badgeCls = isRefund ? 'badge-cat-refund' : ((isCKTransfer || e.category === 'raw_materials') ? 'badge-cat-central-kitchen' : ('badge-cat-' + e.category));
     const displayName = isRefund
-      ? (e.note || `คืน: ${getCategoryLabel(e.category)}`)
-      : (e.note || getCategoryLabel(e.category));
+      ? (e.note || `คืน: ${catLabel}`)
+      : (e.note || catLabel);
+
+    const expDate = e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : '');
+    const timePart = e.created_at ? e.created_at.substring(11, 19) : '00:00:00';
+    const effectiveDateTime = `${expDate} ${timePart}`;
+    const effectiveTimestamp = new Date(effectiveDateTime.replace(' ', 'T')).getTime() || 0;
 
     list.push({
       entryKey: 'exp-' + e.id,
@@ -1028,11 +1036,11 @@ const allLedgerEntries = computed(() => {
       badgeClass: badgeCls,
       name: displayName,
       amount: Number(e.amount) || 0,
-      paymentLabel: isCKTransfer ? 'ครัวกลาง' : (e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด'),
-      paymentClass: isCKTransfer ? 'badge-ck-transfer' : (e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash'),
-      date: e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : ''),
+      paymentLabel: e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด',
+      paymentClass: e.payment_method === 'transfer' ? 'badge-transfer' : 'badge-cash',
+      date: expDate,
       created_at: e.created_at,
-      timestamp: new Date((e.created_at || '').replace(' ', 'T')).getTime(),
+      timestamp: effectiveTimestamp,
       staffName: e.staff_name
     });
   });
@@ -1076,8 +1084,13 @@ const allLedgerEntries = computed(() => {
     });
   });
 
-  // Sort descending by created_at / timestamp
-  return list.sort((a, b) => b.timestamp - a.timestamp);
+  // Sort descending: by date first (YYYY-MM-DD), then by time / timestamp
+  return list.sort((a, b) => {
+    if (b.date !== a.date) {
+      return (b.date || '').localeCompare(a.date || '');
+    }
+    return b.timestamp - a.timestamp;
+  });
 });
 
 const filteredLedgerEntries = computed(() => {
@@ -1276,6 +1289,7 @@ const allCostBreakdownStats = computed(() => {
   map['fuel_transport'].color = 'var(--accent-dark, #cc8000)';
   map['gas_lpg'].color = 'var(--primary, #8b0313)';
   map['salary'].color = 'var(--success, #2a9d8f)';
+  map['raw_materials'] = { id: 'raw_materials', name: 'ครัวกลาง', icon: 'fa-solid fa-kitchen-set', color: 'var(--primary, #8b0313)', total: 0 };
   map['waste_loss'] = { id: 'waste_loss', name: 'ของเสีย/ทิ้ง', icon: 'fa-solid fa-trash-can', color: 'var(--danger, #ad281e)', total: wasteCost.value };
   map['credit_loss'] = { id: 'credit_loss', name: 'เครดิตพนักงาน', icon: 'fa-solid fa-user-check', color: 'var(--accent, #ffab2b)', total: staffCreditCost.value };
 
@@ -1478,6 +1492,8 @@ const getCategoryLabel = (cat) => {
     'salary': 'เงินเดือน/ค่าแรง',
     'utility_bills': 'ค่าน้ำ/ไฟ/เน็ต',
     'debt': 'หนี้/ยอดค้าง',
+    'raw_materials': 'ครัวกลาง',
+    'central_kitchen': 'ครัวกลาง',
     'other': 'อื่นๆ'
   };
   return map[cat] || cat;
@@ -1486,6 +1502,7 @@ const getCategoryLabel = (cat) => {
 const getFilterCategoryLabel = (cat) => {
   if (cat === 'waste_loss') return 'ของเสีย/ทิ้ง';
   if (cat === 'credit_loss') return 'เครดิตพนักงาน';
+  if (cat === 'raw_materials' || cat === 'central_kitchen') return 'ครัวกลาง';
   return getCategoryLabel(cat);
 };
 
@@ -1504,6 +1521,8 @@ const getExpenseCategoryIcon = (cat) => {
     'salary': 'fa-solid fa-hand-holding-dollar',
     'utility_bills': 'fa-solid fa-bolt',
     'debt': 'fa-solid fa-file-invoice-dollar',
+    'raw_materials': 'fa-solid fa-kitchen-set',
+    'central_kitchen': 'fa-solid fa-kitchen-set',
     'other': 'fa-solid fa-paperclip'
   };
   return map[cat] || 'fa-solid fa-wallet';
@@ -2064,6 +2083,7 @@ onMounted(() => {
   font-size: 11px !important;
 }
 
+.badge-cat-central-kitchen, .badge-cat-raw_materials { background: rgba(139, 3, 19, 0.12); color: var(--primary, #8b0313); border: 1px solid rgba(139, 3, 19, 0.25); }
 .badge-cat-raw_chicken { background: rgba(173, 40, 30, 0.12); color: #a81c1c; border: 1px solid rgba(173, 40, 30, 0.2); }
 .badge-cat-ice { background: rgba(56, 189, 248, 0.14); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.25); }
 .badge-cat-cooking_oil, .badge-cat-fuel_oil { background: rgba(255, 153, 0, 0.14); color: #b26a00; border: 1px solid rgba(255, 153, 0, 0.25); }

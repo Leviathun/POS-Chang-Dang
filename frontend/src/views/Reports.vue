@@ -2349,10 +2349,14 @@ const applyDataFromStore = () => {
   });
 
   ledgerExpenses.forEach(e => {
+    const expDate = e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : '');
+    const timePart = e.created_at ? e.created_at.substring(11, 19) : '00:00:00';
+    const effectiveDateTime = `${expDate} ${timePart}`;
     list.push({
       id: e.id,
+      date: expDate,
       created_at: e.created_at,
-      timestamp: new Date(e.created_at).getTime(),
+      timestamp: new Date(effectiveDateTime.replace(' ', 'T')).getTime() || 0,
       name: e.note || getCategoryLabel(e.category),
       income: 0,
       expense: e.amount || 0,
@@ -2360,7 +2364,14 @@ const applyDataFromStore = () => {
     });
   });
 
-  list.sort((a, b) => a.timestamp - b.timestamp);
+  list.sort((a, b) => {
+    const dateA = a.date || (a.created_at ? a.created_at.substring(0, 10) : '');
+    const dateB = b.date || (b.created_at ? b.created_at.substring(0, 10) : '');
+    if (dateA !== dateB) {
+      return (dateA || '').localeCompare(dateB || '');
+    }
+    return a.timestamp - b.timestamp;
+  });
 
   let running = 0;
   const computedList = list.map(item => {
@@ -2487,7 +2498,7 @@ const getExpenseCategoryLabel = (cat) => {
     packaging: 'บรรจุภัณฑ์/ถุง',
     debt: 'หนี้',
     other: 'อื่นๆ',
-    raw_materials: 'วัตถุดิบ (เดิม)',
+    raw_materials: 'ครัวกลาง',
     gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
   };
   return map[cat] || cat;
@@ -2941,7 +2952,7 @@ const selectedExpenseCategoryLabel = computed(() => {
     packaging: 'บรรจุภัณฑ์/ถุง',
     debt: 'หนี้',
     other: 'อื่นๆ',
-    raw_materials: 'วัตถุดิบ (เดิม)',
+    raw_materials: 'ครัวกลาง',
     gas_fuel: 'แก๊ส/น้ำมัน (เดิม)'
   };
   return categoryLabels[expenseForm.value.category] || 'เลือกหมวดหมู่...';
@@ -2959,7 +2970,7 @@ const getExpenseCategoryIcon = (cat) => {
     packaging: 'fa-solid fa-box',
     debt: 'fa-solid fa-file-invoice-dollar',
     other: 'fa-solid fa-paperclip',
-    raw_materials: 'fa-solid fa-drumstick-bite',
+    raw_materials: 'fa-solid fa-kitchen-set',
     gas_fuel: 'fa-solid fa-gas-pump'
   };
   return map[cat] || 'fa-solid fa-folder';
@@ -3259,10 +3270,15 @@ const computeLedgerTransactions = () => {
     const isRefund = Boolean(e.is_refund === 1 || e.status === 'refund');
     const isCancelled = e.status === 'cancelled';
     const pmLabel = e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
+    const expDate = e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : '');
+    const timePart = e.created_at ? e.created_at.substring(11, 19) : '00:00:00';
+    const effectiveDateTime = `${expDate} ${timePart}`;
+
     list.push({
       id: e.id,
+      date: expDate,
       created_at: e.created_at,
-      timestamp: new Date(e.created_at).getTime(),
+      timestamp: new Date(effectiveDateTime.replace(' ', 'T')).getTime() || 0,
       name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})${isCancelled ? ' [ยกเลิก]' : ''}`,
       income: isRefund ? (Number(e.amount) || 0) : 0,
       expense: isRefund ? 0 : (Number(e.amount) || 0),
@@ -3270,7 +3286,14 @@ const computeLedgerTransactions = () => {
     });
   });
 
-  list.sort((a, b) => a.timestamp - b.timestamp);
+  list.sort((a, b) => {
+    const dateA = a.date || (a.created_at ? a.created_at.substring(0, 10) : '');
+    const dateB = b.date || (b.created_at ? b.created_at.substring(0, 10) : '');
+    if (dateA !== dateB) {
+      return (dateA || '').localeCompare(dateB || '');
+    }
+    return a.timestamp - b.timestamp;
+  });
 
   let running = 0;
   const computedList = list.map(item => {
@@ -3278,7 +3301,7 @@ const computeLedgerTransactions = () => {
     return {
       ...item,
       runningBalance: running,
-      formattedDate: formatDate(item.created_at),
+      formattedDate: formatDate(item.date || item.created_at),
       formattedTime: formatTime(item.created_at)
     };
   });
@@ -3731,7 +3754,7 @@ const getCategoryLabel = (cat) => {
     'packaging': 'บรรจุภัณฑ์',
     'debt': 'หนี้',
     'other': 'อื่นๆ',
-    'raw_materials': 'วัตถุดิบ',
+    'raw_materials': 'ครัวกลาง',
     'gas_fuel': 'แก๊ส/น้ำมัน'
   };
   return map[cat] || cat;
