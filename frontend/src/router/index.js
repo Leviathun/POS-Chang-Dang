@@ -1,14 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Pos from '../views/Pos.vue'
-import Menu from '../views/Menu.vue'
-import Stock from '../views/Stock.vue'
-import StockBulk from '../views/StockBulk.vue'
-import Reports from '../views/Reports.vue'
-import Settings from '../views/Settings.vue'
-import Management from '../views/Management.vue'
-import CentralKitchenView from '../views/CentralKitchenView.vue'
-import BranchRequisitionView from '../views/BranchRequisitionView.vue'
 import { getUser, isManagerOrAdmin } from '../helpers'
+
+const requireLogin = (to, from, next) => (getUser() ? next() : next('/pos'))
+const requireManager = (to, from, next) => (isManagerOrAdmin() ? next() : next('/pos'))
 
 const routes = [
   {
@@ -23,67 +18,37 @@ const routes = [
   {
     path: '/management',
     name: 'Management',
-    component: Management,
-    beforeEnter: (to, from, next) => {
-      if (isManagerOrAdmin()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: () => import('../views/Management.vue'),
+    beforeEnter: requireManager
   },
   {
     path: '/menu',
     name: 'Menu',
-    component: Menu,
-    beforeEnter: (to, from, next) => {
-      if (isManagerOrAdmin()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: () => import('../views/Menu.vue'),
+    beforeEnter: requireManager
   },
   {
     path: '/stock',
     name: 'Stock',
-    component: Stock
+    component: () => import('../views/Stock.vue')
   },
   {
     path: '/stock/bulk',
     name: 'StockBulk',
-    component: StockBulk,
-    beforeEnter: (to, from, next) => {
-      if (isManagerOrAdmin()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: () => import('../views/StockBulk.vue'),
+    beforeEnter: requireManager
   },
   {
     path: '/reports',
     name: 'Reports',
-    component: Reports,
-    beforeEnter: (to, from, next) => {
-      if (getUser()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: () => import('../views/Reports.vue'),
+    beforeEnter: requireLogin
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: Settings,
-    beforeEnter: (to, from, next) => {
-      if (getUser()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: () => import('../views/Settings.vue'),
+    beforeEnter: requireLogin
   },
   {
     path: '/central-kitchen',
@@ -92,26 +57,14 @@ const routes = [
   {
     path: '/central-kitchen/:tab',
     name: 'CentralKitchen',
-    component: CentralKitchenView,
-    beforeEnter: (to, from, next) => {
-      if (isManagerOrAdmin()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: () => import('../views/CentralKitchenView.vue'),
+    beforeEnter: requireManager
   },
   {
     path: '/requisition',
     name: 'BranchRequisition',
-    component: BranchRequisitionView,
-    beforeEnter: (to, from, next) => {
-      if (getUser()) {
-        next()
-      } else {
-        next('/pos')
-      }
-    }
+    component: () => import('../views/BranchRequisitionView.vue'),
+    beforeEnter: requireLogin
   },
   {
     path: '/:pathMatch(.*)*',
