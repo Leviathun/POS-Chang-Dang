@@ -1,23 +1,11 @@
 <template>
-  <div
-    :class="inline ? 'flex flex-wrap gap-md align-center pt-md mt-xs' : 'card mb-lg p-md'"
-    :style="inline ? 'border-top: 1px solid var(--border-color);' : 'background: #ffffff;'"
-  >
-    <div :class="inline ? 'flex flex-wrap gap-md align-center w-full' : 'flex flex-col gap-md'">
+  <div class="card mb-lg p-md" style="background: #ffffff;">
+    <div class="flex flex-col gap-md">
       <!-- Period Mode Tabs -->
       <div
         class="flex gap-xs period-tabs flex-wrap"
-        :style="inline ? '' : 'border-bottom: 1px solid var(--border-color); padding-bottom: 8px;'"
+        style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;"
       >
-        <button
-          v-if="showAll"
-          type="button"
-          class="btn btn-secondary btn-sm"
-          :class="{ active: periodMode === 'all' }"
-          @click="selectMode('all')"
-        >
-          <i class="fa-solid fa-layer-group"></i> ทุกช่วงเวลา
-        </button>
         <button
           type="button"
           class="btn btn-secondary btn-sm"
@@ -45,14 +33,14 @@
       </div>
 
       <!-- Date/Month/Year Picker + Page-Specific Extra Filters Slot -->
-      <div class="flex flex-wrap gap-md align-center" :style="inline ? '' : 'width: 100%;'">
-        <div v-if="periodMode !== 'all'" class="flex gap-sm align-center">
+      <div class="flex flex-wrap gap-md align-center" style="width: 100%;">
+        <div class="flex gap-sm align-center" style="flex-wrap: nowrap;">
           <div style="font-size: var(--font-sm); white-space: nowrap;" class="font-bold">
             {{ periodMode === 'daily' ? 'เลือกวัน:' : periodMode === 'monthly' ? 'เลือกเดือน:' : 'เลือกปี:' }}
           </div>
 
           <!-- Daily Calendar Picker -->
-          <div v-if="periodMode === 'daily'" class="custom-select-wrapper" style="min-width: 190px; max-width: 220px; position: relative;" @click.stop>
+          <div v-if="periodMode === 'daily'" class="custom-select-wrapper" style="width: auto; min-width: 190px; max-width: 220px; position: relative;" @click.stop>
             <div
               class="custom-select-trigger reports-filter-control"
               :class="{ active: isDateDropdownOpen }"
@@ -95,7 +83,7 @@
           </div>
 
           <!-- Monthly Picker -->
-          <div v-if="periodMode === 'monthly'" class="custom-select-wrapper" style="min-width: 190px; max-width: 220px; position: relative;" @click.stop>
+          <div v-if="periodMode === 'monthly'" class="custom-select-wrapper" style="width: auto; min-width: 190px; max-width: 220px; position: relative;" @click.stop>
             <div
               class="custom-select-trigger reports-filter-control"
               :class="{ active: isMonthDropdownOpen }"
@@ -134,7 +122,7 @@
           </div>
 
           <!-- Yearly Picker -->
-          <div v-if="periodMode === 'yearly'" class="custom-select-wrapper" style="min-width: 150px; max-width: 200px;" @click.stop>
+          <div v-if="periodMode === 'yearly'" class="custom-select-wrapper" style="width: auto; min-width: 150px; max-width: 200px; position: relative;" @click.stop>
             <div
               class="custom-select-trigger reports-filter-control"
               :class="{ active: isYearDropdownOpen }"
@@ -155,29 +143,29 @@
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Daily Time Range Filter (ชิดติดกับเลือกวัน) -->
-          <div v-if="periodMode === 'daily' && showTimeFilter" class="flex gap-sm align-center">
-            <div style="font-size: var(--font-sm); white-space: nowrap;" class="font-bold">ช่วงเวลา:</div>
-            <div class="flex align-center gap-xs">
-              <input
-                type="text"
-                :value="startTime"
-                @input="emit('update:startTime', $event.target.value)"
-                placeholder="00.00"
-                class="form-input reports-filter-control"
-                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
-              />
-              <span style="font-size: var(--font-sm); color: var(--text-secondary);">ถึง</span>
-              <input
-                type="text"
-                :value="endTime"
-                @input="emit('update:endTime', $event.target.value)"
-                placeholder="23.59"
-                class="form-input reports-filter-control"
-                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
-              />
-            </div>
+        <!-- Daily Time Range Filter (ชิดติดกับเลือกวัน ในบรรทัดเดียวกัน) -->
+        <div v-if="periodMode === 'daily' && showTimeFilter" class="flex gap-sm align-center" style="flex-wrap: nowrap;">
+          <div style="font-size: var(--font-sm); white-space: nowrap;" class="font-bold">ช่วงเวลา:</div>
+          <div class="flex align-center gap-xs" style="flex-wrap: nowrap;">
+            <input
+              type="text"
+              :value="startTime"
+              @input="emit('update:startTime', $event.target.value)"
+              placeholder="00.00"
+              class="form-input reports-filter-control"
+              style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
+            />
+            <span style="font-size: var(--font-sm); color: var(--text-secondary);">ถึง</span>
+            <input
+              type="text"
+              :value="endTime"
+              @input="emit('update:endTime', $event.target.value)"
+              placeholder="23.59"
+              class="form-input reports-filter-control"
+              style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
+            />
           </div>
         </div>
 
@@ -199,9 +187,7 @@ const props = defineProps({
   selectedYear: { type: String, default: () => getToday().substring(0, 4) },
   startTime: { type: String, default: '00.00' },
   endTime: { type: String, default: '23.59' },
-  showTimeFilter: { type: Boolean, default: true },
-  showAll: { type: Boolean, default: false },
-  inline: { type: Boolean, default: false }
+  showTimeFilter: { type: Boolean, default: true }
 });
 
 const emit = defineEmits([
@@ -350,3 +336,29 @@ const selectYear = (y) => {
 onMounted(() => window.addEventListener('click', closeDropdowns));
 onUnmounted(() => window.removeEventListener('click', closeDropdowns));
 </script>
+
+<style scoped>
+.reports-filter-control {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-family) !important;
+  font-size: var(--font-sm) !important;
+  height: 38px !important;
+  line-height: 24px !important;
+  transition: all var(--transition-base) !important;
+}
+
+.reports-filter-control:hover {
+  border-color: var(--border-color-focus) !important;
+  background-color: var(--card-bg-hover) !important;
+}
+
+.reports-filter-control:focus {
+  border-color: var(--primary) !important;
+  background-color: var(--card-bg-active) !important;
+  box-shadow: 0 0 0 3px var(--primary-glow) !important;
+  outline: none !important;
+}
+</style>

@@ -492,6 +492,17 @@
     <!-- Exact Design from Central Kitchen Orders Tab (Requirement 4) -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="currentTab === 'my_orders'" class="my-orders-layout">
+      <!-- Date & Period Filter Card (Same 2-Row Card Layout as POS) -->
+      <DatePeriodFilter
+        v-model:period-mode="periodMode"
+        v-model:selected-date="selectedDate"
+        v-model:selected-month="selectedMonth"
+        v-model:selected-year="selectedYear"
+        v-model:start-time="customStartTime"
+        v-model:end-time="customEndTime"
+        @change="loadMyTransfers"
+      />
+
       <div class="flex flex-between align-center flex-wrap gap-md mb-md">
         <h4 class="font-bold text-base flex align-center gap-xs">
           <i class="fa-solid fa-clock-rotate-left text-primary"></i>
@@ -771,8 +782,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import DatePeriodFilter from '../components/DatePeriodFilter.vue';
 import api from '../api';
-import { ui } from '../helpers';
+import { ui, getToday, isTimeInRange } from '../helpers';
 
 const currentTab = ref('shop'); // 'shop' | 'my_orders'
 
@@ -798,6 +810,26 @@ const selectedCategory = ref('all');
 const requesterFilter = ref('all');
 const isRequesterDropdownOpen = ref(false);
 
+const periodMode = ref('daily');
+const selectedDate = ref(getToday());
+const selectedMonth = ref(getToday().substring(0, 7));
+const selectedYear = ref(getToday().substring(0, 4));
+const customStartTime = ref('00.00');
+const customEndTime = ref('23.59');
+
+const matchesSelectedPeriod = (dateStr) => {
+  if (!dateStr) return true;
+  const d = String(dateStr).substring(0, 10);
+  if (periodMode.value === 'daily') {
+    if (d !== selectedDate.value) return false;
+    const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+    return !isTimeFilterActive || isTimeInRange(dateStr, customStartTime.value, customEndTime.value);
+  }
+  if (periodMode.value === 'monthly') return d.substring(0, 7) === selectedMonth.value;
+  if (periodMode.value === 'yearly') return d.substring(0, 4) === String(selectedYear.value);
+  return true;
+};
+
 const availableRequesters = computed(() => {
   const names = new Set();
   for (const t of myTransfers.value) {
@@ -808,8 +840,10 @@ const availableRequesters = computed(() => {
 });
 
 const filteredMyTransfers = computed(() => {
-  if (requesterFilter.value === 'all') return myTransfers.value;
-  return myTransfers.value.filter(t => (t.requested_by_name || 'พนักงาน').trim() === requesterFilter.value);
+  return myTransfers.value.filter(t => {
+    const matchReq = requesterFilter.value === 'all' || (t.requested_by_name || 'พนักงาน').trim() === requesterFilter.value;
+    return matchReq && matchesSelectedPeriod(t.created_at);
+  });
 });
 
 const closeRequesterDropdown = () => {
@@ -1099,7 +1133,11 @@ const loadItems = async () => {
 const loadMyTransfers = async () => {
   isLoadingOrders.value = true;
   try {
-    const res = await api.centralKitchen.getTransfers();
+    const params = {};
+    if (periodMode.value === 'daily' && selectedDate.value) params.date = selectedDate.value;
+    else if (periodMode.value === 'monthly' && selectedMonth.value) params.month = selectedMonth.value;
+    else if (periodMode.value === 'yearly' && selectedYear.value) params.year = selectedYear.value;
+    const res = await api.centralKitchen.getTransfers(params);
     if (res.success) {
       myTransfers.value = res.data;
     }

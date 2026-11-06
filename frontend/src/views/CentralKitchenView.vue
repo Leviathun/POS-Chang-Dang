@@ -958,134 +958,129 @@
     <!-- TAB 2: ORDERS (คำขอเบิกของจากสาขา & จัดส่ง) -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'orders'" class="orders-section">
-      <!-- Orders Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-col gap-md toolbar-card orders-toolbar">
-        <!-- Row 1: Status Filter Tabs & Branch Filter Dropdown -->
-        <div class="flex flex-between align-center flex-wrap gap-md">
-          <!-- Status Filter Tabs -->
-          <div class="order-status-tabs flex gap-xs align-center">
-            <button 
-              class="order-tab-btn" 
-              :class="{ active: orderFilterStatus === 'all' }"
-              @click="orderFilterStatus = 'all'"
+      <!-- Date & Period Filter Card (Same 2-Row Card Layout as POS) -->
+      <DatePeriodFilter
+        v-model:period-mode="periodMode"
+        v-model:selected-date="selectedDate"
+        v-model:selected-month="selectedMonth"
+        v-model:selected-year="selectedYear"
+        v-model:start-time="customStartTime"
+        v-model:end-time="customEndTime"
+        @change="refreshActivePeriodTab"
+      >
+        <!-- Right: Branch Filter Dropdown -->
+        <div class="order-branch-filter" style="margin-left: auto;">
+          <label class="order-branch-label">
+            <i class="fa-solid fa-store text-primary"></i>
+            <span>สาขา:</span>
+          </label>
+          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
+            <div 
+              class="custom-select-trigger order-branch-select" 
+              :class="{ 'active': isOrderBranchDropdownOpen }" 
+              @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen; isOrderRequesterDropdownOpen = false;"
+              style="height: 38px;"
             >
-              ทั้งหมด
-              <span class="order-tab-count">{{ periodMatchedOrders.length }}</span>
-            </button>
-            <button 
-              class="order-tab-btn" 
-              :class="{ active: orderFilterStatus === 'pending' }"
-              @click="orderFilterStatus = 'pending'"
-            >
-              <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง 
-              <span class="order-tab-count">{{ pendingOrdersCount }}</span>
-            </button>
-            <button 
-              class="order-tab-btn" 
-              :class="{ active: orderFilterStatus === 'dispatched' }"
-              @click="orderFilterStatus = 'dispatched'"
-            >
-              <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง 
-              <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
-            </button>
-            <button 
-              class="order-tab-btn" 
-              :class="{ active: orderFilterStatus === 'received' }"
-              @click="orderFilterStatus = 'received'"
-            >
-              <i class="fa-solid fa-circle-check mr-1"></i> สาขารับแล้ว
-              <span class="order-tab-count">{{ receivedOrdersCount }}</span>
-            </button>
-          </div>
-
-          <!-- Right: Branch & Requester Filter Dropdowns -->
-          <div class="flex align-center gap-sm flex-wrap">
-            <div class="order-branch-filter">
-              <label class="order-branch-label">
-                <i class="fa-solid fa-store text-primary"></i>
-                <span>สาขา:</span>
-              </label>
-              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 170px;">
-                <div 
-                  class="custom-select-trigger order-branch-select" 
-                  :class="{ 'active': isOrderBranchDropdownOpen }" 
-                  @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen; isOrderRequesterDropdownOpen = false;"
-                >
-                  <span class="custom-select-text font-bold">
-                    {{ selectedOrderBranchName }}
-                  </span>
-                </div>
-                <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
-                  <div 
-                    class="custom-select-option"
-                    :class="{ 'selected': orderBranchFilter === 'all' }"
-                    @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
-                  >
-                    ทุกสาขา
-                  </div>
-                  <div 
-                    v-for="b in retailBranches" 
-                    :key="b.id" 
-                    class="custom-select-option"
-                    :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
-                    @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
-                  >
-                    {{ b.name }}
-                  </div>
-                </div>
-              </div>
+              <span class="custom-select-text font-bold">
+                {{ selectedOrderBranchName }}
+              </span>
             </div>
-
-            <div class="order-branch-filter">
-              <label class="order-branch-label">
-                <i class="fa-solid fa-user text-primary"></i>
-                <span>ผู้ขอเบิก:</span>
-              </label>
-              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
-                <div 
-                  class="custom-select-trigger order-branch-select" 
-                  :class="{ 'active': isOrderRequesterDropdownOpen }" 
-                  @click="isOrderRequesterDropdownOpen = !isOrderRequesterDropdownOpen; isOrderBranchDropdownOpen = false;"
-                >
-                  <span class="custom-select-text font-bold">
-                    {{ orderRequesterFilter === 'all' ? 'ทุกคน' : orderRequesterFilter }}
-                  </span>
-                </div>
-                <div v-if="isOrderRequesterDropdownOpen" class="custom-select-dropdown">
-                  <div 
-                    class="custom-select-option"
-                    :class="{ 'selected': orderRequesterFilter === 'all' }"
-                    @click="orderRequesterFilter = 'all'; isOrderRequesterDropdownOpen = false;"
-                  >
-                    ทุกคน
-                  </div>
-                  <div 
-                    v-for="reqName in availableOrderRequesters" 
-                    :key="reqName" 
-                    class="custom-select-option"
-                    :class="{ 'selected': orderRequesterFilter === reqName }"
-                    @click="orderRequesterFilter = reqName; isOrderRequesterDropdownOpen = false;"
-                  >
-                    {{ reqName }}
-                  </div>
-                </div>
+            <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
+              <div 
+                class="custom-select-option"
+                :class="{ 'selected': orderBranchFilter === 'all' }"
+                @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
+              >
+                ทุกสาขา
+              </div>
+              <div 
+                v-for="b in retailBranches" 
+                :key="b.id" 
+                class="custom-select-option"
+                :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
+                @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
+              >
+                {{ b.name }}
               </div>
             </div>
           </div>
         </div>
+      </DatePeriodFilter>
 
-        <!-- Row 2: Shared Global DatePeriodFilter (Inline Toolbar Mode) -->
-        <DatePeriodFilter
-          v-model:period-mode="periodMode"
-          v-model:selected-date="selectedDate"
-          v-model:selected-month="selectedMonth"
-          v-model:selected-year="selectedYear"
-          v-model:start-time="customStartTime"
-          v-model:end-time="customEndTime"
-          :show-all="true"
-          :inline="true"
-          @change="refreshActivePeriodTab"
-        />
+      <!-- Orders Status & Requester Filter Toolbar -->
+      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card orders-toolbar">
+        <!-- Status Filter Tabs -->
+        <div class="order-status-tabs flex gap-xs align-center">
+          <button 
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'all' }"
+            @click="orderFilterStatus = 'all'"
+          >
+            ทั้งหมด
+            <span class="order-tab-count">{{ periodMatchedOrders.length }}</span>
+          </button>
+          <button 
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'pending' }"
+            @click="orderFilterStatus = 'pending'"
+          >
+            <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง 
+            <span class="order-tab-count">{{ pendingOrdersCount }}</span>
+          </button>
+          <button 
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'dispatched' }"
+            @click="orderFilterStatus = 'dispatched'"
+          >
+            <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง 
+            <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
+          </button>
+          <button 
+            class="order-tab-btn" 
+            :class="{ active: orderFilterStatus === 'received' }"
+            @click="orderFilterStatus = 'received'"
+          >
+            <i class="fa-solid fa-circle-check mr-1"></i> สาขารับแล้ว
+            <span class="order-tab-count">{{ receivedOrdersCount }}</span>
+          </button>
+        </div>
+
+        <!-- Right: Requester Filter Dropdown -->
+        <div class="order-branch-filter">
+          <label class="order-branch-label">
+            <i class="fa-solid fa-user text-primary"></i>
+            <span>ผู้ขอเบิก:</span>
+          </label>
+          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
+            <div 
+              class="custom-select-trigger order-branch-select" 
+              :class="{ 'active': isOrderRequesterDropdownOpen }" 
+              @click="isOrderRequesterDropdownOpen = !isOrderRequesterDropdownOpen; isOrderBranchDropdownOpen = false;"
+            >
+              <span class="custom-select-text font-bold">
+                {{ orderRequesterFilter === 'all' ? 'ทุกคน' : orderRequesterFilter }}
+              </span>
+            </div>
+            <div v-if="isOrderRequesterDropdownOpen" class="custom-select-dropdown">
+              <div 
+                class="custom-select-option"
+                :class="{ 'selected': orderRequesterFilter === 'all' }"
+                @click="orderRequesterFilter = 'all'; isOrderRequesterDropdownOpen = false;"
+              >
+                ทุกคน
+              </div>
+              <div 
+                v-for="reqName in availableOrderRequesters" 
+                :key="reqName" 
+                class="custom-select-option"
+                :class="{ 'selected': orderRequesterFilter === reqName }"
+                @click="orderRequesterFilter = reqName; isOrderRequesterDropdownOpen = false;"
+              >
+                {{ reqName }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Loading Skeleton State -->
@@ -1365,90 +1360,84 @@
     <!-- TAB 3: HISTORY (การ์ดประวัติการเติม & การเบิก) -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'history'" class="history-section">
-      <!-- Filter Bar -->
-      <div class="card mb-lg p-md flex flex-col gap-md toolbar-card history-toolbar">
-        <div class="flex flex-between align-center flex-wrap gap-md">
-          <div class="history-status-tabs flex gap-xs align-center">
-            <button 
-              class="history-tab-btn" 
-              :class="{ active: historyFilter === 'all' }"
-              @click="historyFilter = 'all'"
-            >
-              <span>ทั้งหมด</span>
-              <span class="history-tab-count">{{ periodMatchedHistory.length }}</span>
-            </button>
-            <button 
-              class="history-tab-btn" 
-              :class="{ active: historyFilter === 'restock' }"
-              @click="historyFilter = 'restock'"
-            >
-              <i class="fa-solid fa-circle-plus"></i>
-              <span>เติมสต็อกเข้าคลัง</span>
-              <span class="history-tab-count">{{ restockHistoryCount }}</span>
-            </button>
-            <button 
-              class="history-tab-btn" 
-              :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
-              @click="historyFilter = 'transfer'"
-            >
-              <i class="fa-solid fa-truck-fast"></i>
-              <span>สาขาเบิกของ</span>
-              <span class="history-tab-count">{{ transferHistoryCount }}</span>
-            </button>
-          </div>
+      <!-- Date & Period Filter Card (Same 2-Row Card Layout as POS) -->
+      <DatePeriodFilter
+        v-model:period-mode="periodMode"
+        v-model:selected-date="selectedDate"
+        v-model:selected-month="selectedMonth"
+        v-model:selected-year="selectedYear"
+        v-model:start-time="customStartTime"
+        v-model:end-time="customEndTime"
+        @change="refreshActivePeriodTab"
+      />
 
-          <!-- Right: Requester Filter Dropdown -->
-          <div class="flex align-center gap-sm flex-wrap">
-            <div class="order-branch-filter">
-              <label class="order-branch-label">
-                <i class="fa-solid fa-user text-primary"></i>
-                <span>ผู้ขอเบิก:</span>
-              </label>
-              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
-                <div 
-                  class="custom-select-trigger order-branch-select" 
-                  :class="{ 'active': isHistoryRequesterDropdownOpen }" 
-                  @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen"
-                >
-                  <span class="custom-select-text font-bold">
-                    {{ historyRequesterFilter === 'all' ? 'ทุกคน' : historyRequesterFilter }}
-                  </span>
-                </div>
-                <div v-if="isHistoryRequesterDropdownOpen" class="custom-select-dropdown">
-                  <div 
-                    class="custom-select-option"
-                    :class="{ 'selected': historyRequesterFilter === 'all' }"
-                    @click="historyRequesterFilter = 'all'; isHistoryRequesterDropdownOpen = false;"
-                  >
-                    ทุกคน
-                  </div>
-                  <div 
-                    v-for="reqName in availableHistoryRequesters" 
-                    :key="reqName" 
-                    class="custom-select-option"
-                    :class="{ 'selected': historyRequesterFilter === reqName }"
-                    @click="historyRequesterFilter = reqName; isHistoryRequesterDropdownOpen = false;"
-                  >
-                    {{ reqName }}
-                  </div>
-                </div>
+      <!-- History Type & Requester Filter Toolbar -->
+      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card history-toolbar">
+        <div class="history-status-tabs flex gap-xs align-center">
+          <button 
+            class="history-tab-btn" 
+            :class="{ active: historyFilter === 'all' }"
+            @click="historyFilter = 'all'"
+          >
+            <span>ทั้งหมด</span>
+            <span class="history-tab-count">{{ periodMatchedHistory.length }}</span>
+          </button>
+          <button 
+            class="history-tab-btn" 
+            :class="{ active: historyFilter === 'restock' }"
+            @click="historyFilter = 'restock'"
+          >
+            <i class="fa-solid fa-circle-plus"></i>
+            <span>เติมสต็อกเข้าคลัง</span>
+            <span class="history-tab-count">{{ restockHistoryCount }}</span>
+          </button>
+          <button 
+            class="history-tab-btn" 
+            :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
+            @click="historyFilter = 'transfer'"
+          >
+            <i class="fa-solid fa-truck-fast"></i>
+            <span>สาขาเบิกของ</span>
+            <span class="history-tab-count">{{ transferHistoryCount }}</span>
+          </button>
+        </div>
+
+        <!-- Right: Requester Filter Dropdown -->
+        <div class="order-branch-filter">
+          <label class="order-branch-label">
+            <i class="fa-solid fa-user text-primary"></i>
+            <span>ผู้ขอเบิก:</span>
+          </label>
+          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
+            <div 
+              class="custom-select-trigger order-branch-select" 
+              :class="{ 'active': isHistoryRequesterDropdownOpen }" 
+              @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen"
+            >
+              <span class="custom-select-text font-bold">
+                {{ historyRequesterFilter === 'all' ? 'ทุกคน' : historyRequesterFilter }}
+              </span>
+            </div>
+            <div v-if="isHistoryRequesterDropdownOpen" class="custom-select-dropdown">
+              <div 
+                class="custom-select-option"
+                :class="{ 'selected': historyRequesterFilter === 'all' }"
+                @click="historyRequesterFilter = 'all'; isHistoryRequesterDropdownOpen = false;"
+              >
+                ทุกคน
+              </div>
+              <div 
+                v-for="reqName in availableHistoryRequesters" 
+                :key="reqName" 
+                class="custom-select-option"
+                :class="{ 'selected': historyRequesterFilter === reqName }"
+                @click="historyRequesterFilter = reqName; isHistoryRequesterDropdownOpen = false;"
+              >
+                {{ reqName }}
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Row 2: Shared Global DatePeriodFilter (Inline Toolbar Mode) -->
-        <DatePeriodFilter
-          v-model:period-mode="periodMode"
-          v-model:selected-date="selectedDate"
-          v-model:selected-month="selectedMonth"
-          v-model:selected-year="selectedYear"
-          v-model:start-time="customStartTime"
-          v-model:end-time="customEndTime"
-          :show-all="true"
-          :inline="true"
-          @change="refreshActivePeriodTab"
-        />
       </div>
 
       <!-- Loading Skeleton State -->
@@ -2321,31 +2310,29 @@
       </div>
 
       <!-- Loading / Error States -->
+      <div v-if="isLoadingSettlement" class="flex flex-col gap-lg mb-lg">
+        <!-- 4 Summary KPI Cards Skeleton -->
+        <div class="financial-summary-grid">
+          <div v-for="i in (partnerSubTab === 'partners' ? 4 : 3)" :key="i" class="summary-card">
+            <div class="flex flex-between align-center mb-xs">
+              <div class="skeleton" style="width: 60%; height: 16px; border-radius: var(--radius-xs);"></div>
+              <div class="skeleton" style="width: 28%; height: 18px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton my-sm" style="width: 70%; height: 28px; border-radius: var(--radius-sm);"></div>
+            <div class="skeleton" style="width: 85%; height: 14px; border-radius: var(--radius-xs);"></div>
+          </div>
+        </div>
+
+        <!-- Sub-Tab 1 Skeleton: 2-Column Comparison & Partner Equity -->
+        <div v-if="partnerSubTab === 'partners'" class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+          <div class="card p-lg flex flex-col gap-md">
+            <div class="skeleton pb-sm" style="width: 55%; height: 22px; border-radius: var(--radius-xs);"></div>
+            <div v      <!-- Loading / Error States -->
       <div v-if="isLoadingSettlement" class="card text-center p-3xl text-secondary mb-lg">
         <div class="spinner mx-auto mb-sm"></div>
         กำลังคำนวณงบกำไร-ขาดทุน...
       </div>
-      <div v-else-if="settlementError" class="card text-center p-3xl text-danger mb-lg">
-        <i class="fa-solid fa-triangle-exclamation mb-sm" style="font-size: 2rem;"></i>
-        <p class="font-bold text-sm mb-xs">{{ settlementError }}</p>
-        <button class="btn btn-sm btn-secondary" @click="loadPartnerData">ลองใหม่อีกครั้ง</button>
-      </div>
-
-      <!-- Content when Settlement Data is loaded -->
-      <div v-else-if="settlementData" class="flex flex-col gap-lg">
-        <!-- SUB-TAB 1: หุ้นส่วน (เปรียบเทียบ รายรับ vs รายจ่าย & สัดส่วนหุ้นส่วน) -->
-        <div v-if="partnerSubTab === 'partners'" class="flex flex-col gap-lg">
-          <!-- 4 Summary KPI Cards (Photo 2) -->
-        <div class="financial-summary-grid">
-          <!-- Card 1: Revenue -->
-          <div class="summary-card revenue-card">
-            <div class="summary-card-header">
-              <span class="summary-icon"><i class="fa-solid fa-sack-dollar text-success"></i></span>
-              <span class="summary-title">ยอดขาย/รายรับรวม</span>
-            </div>
-            <div class="summary-value text-success">฿{{ formatNumber(settlementData.total_sales) }}</div>
-            <div class="summary-sub-badges">
-              <span class="sub-badge">ยอดขายหน้าร้าน</span>
+     <span class="sub-badge">ยอดขายหน้าร้าน</span>
               <span class="sub-badge">{{ settlementData.period?.start_date }} ถึง {{ settlementData.period?.end_date }}</span>
             </div>
           </div>
@@ -4499,7 +4486,7 @@ const partnerSumPercentage = computed(() => {
 });
 
 // Date & Period Filter State (for Orders & History tabs)
-const periodMode = ref('all'); // 'all' | 'daily' | 'monthly' | 'yearly'
+const periodMode = ref('daily'); // 'daily' | 'monthly' | 'yearly'
 const selectedDate = ref(getToday());
 const selectedMonth = ref(getToday().substring(0, 7));
 const selectedYear = ref(getToday().substring(0, 4));
@@ -4519,7 +4506,7 @@ const refreshActivePeriodTab = () => {
 };
 
 const matchesSelectedPeriod = (dateStr) => {
-  if (periodMode.value === 'all' || !dateStr) return true;
+  if (!dateStr) return true;
   const d = String(dateStr).substring(0, 10);
   if (periodMode.value === 'daily') {
     if (d !== selectedDate.value) return false;
