@@ -235,9 +235,10 @@ router.put('/items/reorder', requireManagerOrAdmin, async (req, res) => {
       return res.status(400).json({ success: false, error: 'กรุณาระบุรายการสินค้าที่ต้องการจัดลำดับ' });
     }
 
-    for (let i = 0; i < item_ids.length; i++) {
-      await db.prepare('UPDATE central_kitchen_items SET sort_order = ? WHERE id = ?').run(i + 1, item_ids[i]);
-    }
+    await db.batch(item_ids.map((id, i) => ({
+      sql: 'UPDATE central_kitchen_items SET sort_order = ? WHERE id = ?',
+      args: [i + 1, id]
+    })));
 
     res.json({ success: true, message: 'บันทึกลำดับสินค้าเรียบร้อยแล้ว' });
   } catch (error) {
@@ -611,6 +612,46 @@ router.post('/items/:id/adjust', requireManagerOrAdmin, async (req, res) => {
 // 2. REQUISITIONS & TRANSFERS (การเบิกของระหว่างสาขา & ครัวกลาง)
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Batch-attach transfer items to a list of transfer records in 1 query (prevents N+1 round-trips)
+ */
+async function attachTransferItems(db, transfers) {
+  if (!transfers || transfers.length === 0) return transfers;
+  const ids = transfers.map(t => t.id);
+  const placeholders = ids.map(() => '?').join(',');
+  const items = await db.prepare(
+    `SELECT * FROM central_kitchen_transfer_items WHERE transfer_id IN (${placeholders}) ORDER BY id ASC`
+  ).all(...ids);
+  const byTransfer = {};
+  for (const item of items) {
+    (byTransfer[item.transfer_id] ||= []).push(item);
+  }
+  for (const t of transfers) {
+    t.items = byTransfer[t.id] || [];
+  }
+  return transfers;
+}
+
+/**
+ * Append optional date / month / year SQL filter on a datetime column
+ */
+function appendDatePeriodFilter(col, query, params) {
+  const { date, month, year } = query || {};
+  if (date) {
+    params.push(date);
+    return ` AND date(${col}) = ?`;
+  }
+  if (month) {
+    params.push(month);
+    return ` AND strftime('%Y-%m', ${col}) = ?`;
+  }
+  if (year) {
+    params.push(String(year));
+    return ` AND strftime('%Y', ${col}) = ?`;
+  }
+  return '';
+}
+
 // GET /api/central-kitchen/transfers — ดึงรายการใบขอเบิก
 router.get('/transfers', async (req, res) => {
   try {
@@ -642,16 +683,10 @@ router.get('/transfers', async (req, res) => {
       params.push(status);
     }
 
-    sql += ' ORDER BY t.id DESC LIMIT 100';
+    sql += appendDatePeriodFilter('t.created_at', req.query, params);
+    sql += ' ORDER BY t.id DESC LIMIT 200';
     const transfers = await db.prepare(sql).all(...params);
-
-    // Fetch items for each transfer
-    for (const t of transfers) {
-      const items = await db.prepare(`
-        SELECT * FROM central_kitchen_transfer_items WHERE transfer_id = ?
-      `).all(t.id);
-      t.items = items || [];
-    }
+    await attachTransferItems(db, transfers);
 
     res.json({
       success: true,
@@ -1168,12 +1203,17 @@ router.get('/history', async (req, res) => {
 
     // 1. Restock logs (ครัวกลางเติมของ)
     if (!type || type === 'all' || type === 'restock') {
-      const restockLogs = await db.prepare(`
-        SELECT l.*, i.name as item_name, i.unit, i.image_url
+      const restockParams = [];
+      let restockSql = `
+        SELECT l.*, i.name as item_name, i.unit
         FROM central_kitchen_restock_logs l
         JOIN central_kitchen_items i ON l.item_id = i.id
-        ORDER BY l.id DESC LIMIT 50
-      `).all();
+        WHERE 1=1
+      `;
+      restockSql += appendDatePeriodFilter('l.created_at', req.query, restockParams);
+      restockSql += ' ORDER BY l.id DESC LIMIT 100';
+
+      const restockLogs = await db.prepare(restockSql).all(...restockParams);
 
       for (const log of restockLogs) {
         timeline.push({
@@ -1187,8 +1227,7 @@ router.get('/history', async (req, res) => {
           total_amount: log.total_amount,
           note: log.supplier_note,
           created_by: log.created_by_name || 'ผู้ดูแลระบบ',
-          created_at: log.created_at,
-          image_url: log.image_url
+          created_at: log.created_at
         });
       }
     }
@@ -1206,15 +1245,13 @@ router.get('/history', async (req, res) => {
         transferSql += ' AND t.branch_id = ?';
         params.push(branch_id);
       }
-      transferSql += ' ORDER BY t.id DESC LIMIT 50';
+      transferSql += appendDatePeriodFilter('t.created_at', req.query, params);
+      transferSql += ' ORDER BY t.id DESC LIMIT 100';
 
       const transfers = await db.prepare(transferSql).all(...params);
+      await attachTransferItems(db, transfers);
 
       for (const t of transfers) {
-        const items = await db.prepare(`
-          SELECT * FROM central_kitchen_transfer_items WHERE transfer_id = ?
-        `).all(t.id);
-
         timeline.push({
           id: `transfer-${t.id}`,
           type: 'transfer',
@@ -1224,7 +1261,7 @@ router.get('/history', async (req, res) => {
           title: `สาขาเบิกของ (${t.branch_name})`,
           status: t.status,
           total_cost: t.total_cost,
-          items: items || [],
+          items: t.items || [],
           note: t.notes,
           created_by: t.requested_by_name,
           dispatched_by: t.dispatched_by_name,
@@ -1240,7 +1277,7 @@ router.get('/history', async (req, res) => {
 
     res.json({
       success: true,
-      data: timeline.slice(0, 100)
+      data: timeline.slice(0, 200)
     });
   } catch (error) {
     console.error('❌ Error fetching central kitchen history:', error);
@@ -1332,51 +1369,49 @@ router.get('/profit-settlement', async (req, res) => {
       return res.status(400).json({ success: false, error: 'กรุณาระบุ branch_id' });
     }
 
-    const branch = await db.prepare('SELECT id, name FROM branches WHERE id = ?').get(branch_id);
     const startDate = start_date || `${getThaiToday().substring(0, 7)}-01`;
     const endDate = end_date || getThaiToday();
 
-    // 1. Total Sales from completed orders
-    const salesRes = await db.prepare(`
-      SELECT COALESCE(SUM(total), 0) as total_sales, COUNT(id) as total_orders
-      FROM orders
-      WHERE branch_id = ? AND status = 'completed'
-        AND date(created_at) >= date(?) AND date(created_at) <= date(?)
-    `).get(branch_id, startDate, endDate);
+    const [branch, salesRes, expRes, partners, reimbRes, existingPayouts] = await Promise.all([
+      db.prepare('SELECT id, name FROM branches WHERE id = ?').get(branch_id),
+      db.prepare(`
+        SELECT COALESCE(SUM(total), 0) as total_sales, COUNT(id) as total_orders
+        FROM orders
+        WHERE branch_id = ? AND status = 'completed'
+          AND date(created_at) >= date(?) AND date(created_at) <= date(?)
+      `).get(branch_id, startDate, endDate),
+      db.prepare(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN note NOT LIKE '%เบิกของจากครัวกลาง%' OR note IS NULL THEN amount ELSE 0 END), 0) as store_expenses,
+          COALESCE(SUM(CASE WHEN note LIKE '%เบิกของจากครัวกลาง%' THEN amount ELSE 0 END), 0) as ck_expenses
+        FROM expenses
+        WHERE branch_id = ? AND status = 'completed'
+          AND date(expense_date) >= date(?) AND date(expense_date) <= date(?)
+      `).get(branch_id, startDate, endDate),
+      db.prepare('SELECT * FROM branch_partners WHERE branch_id = ? ORDER BY is_owner DESC, id ASC').all(branch_id),
+      db.prepare(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN is_reimbursed = 1 THEN total_cost ELSE 0 END), 0) as reimbursed_cost,
+          COALESCE(SUM(CASE WHEN is_reimbursed = 0 OR is_reimbursed IS NULL THEN total_cost ELSE 0 END), 0) as pending_reimbursement,
+          COUNT(CASE WHEN is_reimbursed = 0 OR is_reimbursed IS NULL THEN 1 ELSE NULL END) as pending_transfers_count
+        FROM central_kitchen_transfers
+        WHERE branch_id = ? AND status = 'received'
+          AND date(created_at) >= date(?) AND date(created_at) <= date(?)
+      `).get(branch_id, startDate, endDate),
+      db.prepare(`
+        SELECT *, payout_amount as amount, paid_at as created_at
+        FROM branch_dividend_payouts
+        WHERE branch_id = ?
+        ORDER BY id DESC LIMIT 50
+      `).all(branch_id)
+    ]);
 
     const totalSales = Number(salesRes?.total_sales || 0);
-
-    // 2. Direct branch expenses (excluding central kitchen transfers)
-    const storeExpRes = await db.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as store_expenses
-      FROM expenses
-      WHERE branch_id = ? AND status = 'completed'
-        AND (note NOT LIKE '%เบิกของจากครัวกลาง%' OR note IS NULL)
-        AND date(expense_date) >= date(?) AND date(expense_date) <= date(?)
-    `).get(branch_id, startDate, endDate);
-
-    const directStoreExpenses = Number(storeExpRes?.store_expenses || 0);
-
-    // 3. Central kitchen transfer costs
-    const ckExpRes = await db.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as ck_expenses
-      FROM expenses
-      WHERE branch_id = ? AND status = 'completed'
-        AND note LIKE '%เบิกของจากครัวกลาง%'
-        AND date(expense_date) >= date(?) AND date(expense_date) <= date(?)
-    `).get(branch_id, startDate, endDate);
-
-    const centralKitchenCost = Number(ckExpRes?.ck_expenses || 0);
-
-    // 4. Net Profit
+    const directStoreExpenses = Number(expRes?.store_expenses || 0);
+    const centralKitchenCost = Number(expRes?.ck_expenses || 0);
     const netProfit = totalSales - directStoreExpenses - centralKitchenCost;
 
-    // 5. Partners breakdown
-    const partners = await db.prepare(`
-      SELECT * FROM branch_partners WHERE branch_id = ? ORDER BY is_owner DESC, id ASC
-    `).all(branch_id);
-
-    const partnerDistributions = partners.map(p => {
+    const partnerDistributions = (partners || []).map(p => {
       const shareAmount = netProfit > 0 ? (netProfit * (p.share_percentage / 100)) : 0;
       return {
         id: p.id,
@@ -1386,25 +1421,6 @@ router.get('/profit-settlement', async (req, res) => {
         payout_amount: Number(shareAmount.toFixed(2))
       };
     });
-
-    // 6. Check reimbursement status for this branch in this period
-    const reimbRes = await db.prepare(`
-      SELECT 
-        COALESCE(SUM(CASE WHEN is_reimbursed = 1 THEN total_cost ELSE 0 END), 0) as reimbursed_cost,
-        COALESCE(SUM(CASE WHEN is_reimbursed = 0 OR is_reimbursed IS NULL THEN total_cost ELSE 0 END), 0) as pending_reimbursement,
-        COUNT(CASE WHEN is_reimbursed = 0 OR is_reimbursed IS NULL THEN 1 ELSE NULL END) as pending_transfers_count
-      FROM central_kitchen_transfers
-      WHERE branch_id = ? AND status = 'received'
-        AND date(created_at) >= date(?) AND date(created_at) <= date(?)
-    `).get(branch_id, startDate, endDate);
-
-    // 7. Check existing dividend payouts for this branch
-    const existingPayouts = await db.prepare(`
-      SELECT *, payout_amount as amount, paid_at as created_at
-      FROM branch_dividend_payouts
-      WHERE branch_id = ?
-      ORDER BY id DESC LIMIT 50
-    `).all(branch_id);
 
     res.json({
       success: true,
@@ -1441,63 +1457,39 @@ router.get('/profit-settlement', async (req, res) => {
 router.get('/finances/summary', async (req, res) => {
   try {
     const db = getDb();
-    
-    // 1. Total capital injected by owner
-    const capRes = await db.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as total_capital
-      FROM central_kitchen_finances
-      WHERE type = 'capital_in'
-    `).get();
-    const totalCapital = Number(capRes?.total_capital || 0);
 
-    // 2. Total reimbursement received from branches
-    const reimbRes = await db.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as total_reimbursed
-      FROM central_kitchen_finances
-      WHERE type = 'reimbursement_in'
-    `).get();
-    const totalReimbursed = Number(reimbRes?.total_reimbursed || 0);
+    const [finRes, invRes, outRes, wasteRes] = await Promise.all([
+      db.prepare(`
+        SELECT
+          COALESCE(SUM(CASE WHEN type = 'capital_in' THEN amount ELSE 0 END), 0) as total_capital,
+          COALESCE(SUM(CASE WHEN type = 'reimbursement_in' THEN amount ELSE 0 END), 0) as total_reimbursed,
+          COALESCE(SUM(CASE WHEN type = 'purchase_out' THEN amount ELSE 0 END), 0) as total_purchases,
+          COALESCE(SUM(CASE WHEN type IN ('operating_expense_out', 'other_out') THEN amount ELSE 0 END), 0) as total_op_expenses
+        FROM central_kitchen_finances
+      `).get(),
+      db.prepare(`
+        SELECT COALESCE(SUM(quantity * cost_price), 0) as total_inventory_value, COUNT(id) as total_items
+        FROM central_kitchen_items
+        WHERE active = 1 AND quantity > 0
+      `).get(),
+      db.prepare(`
+        SELECT COALESCE(SUM(total_cost), 0) as pending_receivables
+        FROM central_kitchen_transfers
+        WHERE status = 'received' AND (is_reimbursed = 0 OR is_reimbursed IS NULL)
+      `).get(),
+      db.prepare(`
+        SELECT COALESCE(SUM(total_cost), 0) as total_waste_cost, COUNT(id) as total_waste_count
+        FROM central_kitchen_waste_logs
+      `).get()
+    ]);
 
-    // 3. Total purchases of inventory
-    const purchRes = await db.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as total_purchases
-      FROM central_kitchen_finances
-      WHERE type = 'purchase_out'
-    `).get();
-    const totalPurchases = Number(purchRes?.total_purchases || 0);
-
-    // 4. Total operating expenses (gas, fuel, etc.)
-    const opExpRes = await db.prepare(`
-      SELECT COALESCE(SUM(amount), 0) as total_op_expenses
-      FROM central_kitchen_finances
-      WHERE type IN ('operating_expense_out', 'other_out')
-    `).get();
-    const totalOperatingExpenses = Number(opExpRes?.total_op_expenses || 0);
-
-    // Current Cash Balance: All In minus All Out
+    const totalCapital = Number(finRes?.total_capital || 0);
+    const totalReimbursed = Number(finRes?.total_reimbursed || 0);
+    const totalPurchases = Number(finRes?.total_purchases || 0);
+    const totalOperatingExpenses = Number(finRes?.total_op_expenses || 0);
     const cashBalance = (totalCapital + totalReimbursed) - (totalPurchases + totalOperatingExpenses);
-
-    // 5. Inventory value: SUM(quantity * cost_price)
-    const invRes = await db.prepare(`
-      SELECT COALESCE(SUM(quantity * cost_price), 0) as total_inventory_value, COUNT(id) as total_items
-      FROM central_kitchen_items
-      WHERE active = 1 AND quantity > 0
-    `).get();
     const inventoryValue = Number(invRes?.total_inventory_value || 0);
-
-    // 6. Outstanding receivables from branches: transfers received but not reimbursed
-    const outRes = await db.prepare(`
-      SELECT COALESCE(SUM(total_cost), 0) as pending_receivables
-      FROM central_kitchen_transfers
-      WHERE status = 'received' AND (is_reimbursed = 0 OR is_reimbursed IS NULL)
-    `).get();
     const pendingReceivables = Number(outRes?.pending_receivables || 0);
-
-    // 7. Total waste loss accumulated
-    const wasteRes = await db.prepare(`
-      SELECT COALESCE(SUM(total_cost), 0) as total_waste_cost, COUNT(id) as total_waste_count
-      FROM central_kitchen_waste_logs
-    `).get();
     const totalWasteCost = Number(wasteRes?.total_waste_cost || 0);
     const totalWasteCount = Number(wasteRes?.total_waste_count || 0);
 

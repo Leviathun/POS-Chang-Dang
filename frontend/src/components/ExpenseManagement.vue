@@ -782,7 +782,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, formatDate, formatTime, getToday } from '../helpers';
+import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange } from '../helpers';
 
 const props = defineProps({
   branchId: {
@@ -1085,7 +1085,12 @@ const allLedgerEntries = computed(() => {
   });
 
   // Sort descending: by date first (YYYY-MM-DD), then by time / timestamp
-  return list.sort((a, b) => {
+  const isTimeFilterActive = props.startTime !== '00.00' || props.endTime !== '23.59';
+  const filteredByTime = (activePeriodMode.value === 'daily' && isTimeFilterActive)
+    ? list.filter(item => isTimeInRange(item.created_at, props.startTime, props.endTime))
+    : list;
+
+  return filteredByTime.sort((a, b) => {
     if (b.date !== a.date) {
       return (b.date || '').localeCompare(a.date || '');
     }

@@ -106,6 +106,27 @@ export function getCurrentMonth() {
   return getToday().substring(0, 7);
 }
 
+export function isTimeInRange(dateStr, startStr = '00.00', endStr = '23.59') {
+  if (!dateStr) return true;
+  const parseTimeDot = (s) => {
+    const [h, m] = String(s || '00.00').replace(':', '.').split('.');
+    return (Number(h) || 0) * 60 + (Number(m) || 0);
+  };
+  const d = parseBangkokDate(dateStr);
+  const [bh, bm] = d.toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  }).split(':').map(Number);
+  const timeVal = (bh || 0) * 60 + (bm || 0);
+  const startVal = parseTimeDot(startStr);
+  const endVal = parseTimeDot(endStr);
+  return startVal <= endVal
+    ? timeVal >= startVal && timeVal <= endVal
+    : timeVal >= startVal || timeVal <= endVal;
+}
+
 // ─── Session Helpers ───
 export function getUser() {
   try {
@@ -224,6 +245,7 @@ export default {
   formatDateTime,
   getToday,
   getCurrentMonth,
+  isTimeInRange,
   getUser,
   isAdmin,
   isManager,

@@ -959,80 +959,133 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'orders'" class="orders-section">
       <!-- Orders Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card orders-toolbar">
-        <!-- Status Filter Tabs -->
-        <div class="order-status-tabs flex gap-xs align-center">
-          <button 
-            class="order-tab-btn" 
-            :class="{ active: orderFilterStatus === 'pending' }"
-            @click="orderFilterStatus = 'pending'"
-          >
-            <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง 
-            <span class="order-tab-count">{{ pendingOrdersCount }}</span>
-          </button>
-          <button 
-            class="order-tab-btn" 
-            :class="{ active: orderFilterStatus === 'dispatched' }"
-            @click="orderFilterStatus = 'dispatched'"
-          >
-            <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง 
-            <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
-          </button>
-          <button 
-            class="order-tab-btn" 
-            :class="{ active: orderFilterStatus === 'received' }"
-            @click="orderFilterStatus = 'received'"
-          >
-            <i class="fa-solid fa-circle-check mr-1"></i> สาขารับแล้ว
-          </button>
-          <button 
-            class="order-tab-btn" 
-            :class="{ active: orderFilterStatus === 'all' }"
-            @click="orderFilterStatus = 'all'"
-          >
-            ทั้งหมด
-            <span class="order-tab-count">{{ orders.length }}</span>
-          </button>
-        </div>
+      <div class="card mb-lg p-md flex flex-col gap-md toolbar-card orders-toolbar">
+        <!-- Row 1: Status Filter Tabs & Branch Filter Dropdown -->
+        <div class="flex flex-between align-center flex-wrap gap-md">
+          <!-- Status Filter Tabs -->
+          <div class="order-status-tabs flex gap-xs align-center">
+            <button 
+              class="order-tab-btn" 
+              :class="{ active: orderFilterStatus === 'all' }"
+              @click="orderFilterStatus = 'all'"
+            >
+              ทั้งหมด
+              <span class="order-tab-count">{{ periodMatchedOrders.length }}</span>
+            </button>
+            <button 
+              class="order-tab-btn" 
+              :class="{ active: orderFilterStatus === 'pending' }"
+              @click="orderFilterStatus = 'pending'"
+            >
+              <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง 
+              <span class="order-tab-count">{{ pendingOrdersCount }}</span>
+            </button>
+            <button 
+              class="order-tab-btn" 
+              :class="{ active: orderFilterStatus === 'dispatched' }"
+              @click="orderFilterStatus = 'dispatched'"
+            >
+              <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง 
+              <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
+            </button>
+            <button 
+              class="order-tab-btn" 
+              :class="{ active: orderFilterStatus === 'received' }"
+              @click="orderFilterStatus = 'received'"
+            >
+              <i class="fa-solid fa-circle-check mr-1"></i> สาขารับแล้ว
+              <span class="order-tab-count">{{ receivedOrdersCount }}</span>
+            </button>
+          </div>
 
-        <!-- Right: Branch Filter Dropdown & Direct Dispatch Button -->
-        <div class="flex align-center gap-sm flex-wrap">
-          <div class="order-branch-filter">
-            <label class="order-branch-label">
-              <i class="fa-solid fa-store text-primary"></i>
-              <span>สาขา:</span>
-            </label>
-            <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 170px;">
-              <div 
-                class="custom-select-trigger order-branch-select" 
-                :class="{ 'active': isOrderBranchDropdownOpen }" 
-                @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen"
-              >
-                <span class="custom-select-text font-bold">
-                  {{ selectedOrderBranchName }}
-                </span>
-              </div>
-              <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
+          <!-- Right: Branch & Requester Filter Dropdowns -->
+          <div class="flex align-center gap-sm flex-wrap">
+            <div class="order-branch-filter">
+              <label class="order-branch-label">
+                <i class="fa-solid fa-store text-primary"></i>
+                <span>สาขา:</span>
+              </label>
+              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 170px;">
                 <div 
-                  class="custom-select-option"
-                  :class="{ 'selected': orderBranchFilter === 'all' }"
-                  @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
+                  class="custom-select-trigger order-branch-select" 
+                  :class="{ 'active': isOrderBranchDropdownOpen }" 
+                  @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen; isOrderRequesterDropdownOpen = false;"
                 >
-                  ทุกสาขา
+                  <span class="custom-select-text font-bold">
+                    {{ selectedOrderBranchName }}
+                  </span>
                 </div>
+                <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
+                  <div 
+                    class="custom-select-option"
+                    :class="{ 'selected': orderBranchFilter === 'all' }"
+                    @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
+                  >
+                    ทุกสาขา
+                  </div>
+                  <div 
+                    v-for="b in retailBranches" 
+                    :key="b.id" 
+                    class="custom-select-option"
+                    :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
+                    @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
+                  >
+                    {{ b.name }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="order-branch-filter">
+              <label class="order-branch-label">
+                <i class="fa-solid fa-user text-primary"></i>
+                <span>ผู้ขอเบิก:</span>
+              </label>
+              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
                 <div 
-                  v-for="b in retailBranches" 
-                  :key="b.id" 
-                  class="custom-select-option"
-                  :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
-                  @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
+                  class="custom-select-trigger order-branch-select" 
+                  :class="{ 'active': isOrderRequesterDropdownOpen }" 
+                  @click="isOrderRequesterDropdownOpen = !isOrderRequesterDropdownOpen; isOrderBranchDropdownOpen = false;"
                 >
-                  {{ b.name }}
+                  <span class="custom-select-text font-bold">
+                    {{ orderRequesterFilter === 'all' ? 'ทุกคน' : orderRequesterFilter }}
+                  </span>
+                </div>
+                <div v-if="isOrderRequesterDropdownOpen" class="custom-select-dropdown">
+                  <div 
+                    class="custom-select-option"
+                    :class="{ 'selected': orderRequesterFilter === 'all' }"
+                    @click="orderRequesterFilter = 'all'; isOrderRequesterDropdownOpen = false;"
+                  >
+                    ทุกคน
+                  </div>
+                  <div 
+                    v-for="reqName in availableOrderRequesters" 
+                    :key="reqName" 
+                    class="custom-select-option"
+                    :class="{ 'selected': orderRequesterFilter === reqName }"
+                    @click="orderRequesterFilter = reqName; isOrderRequesterDropdownOpen = false;"
+                  >
+                    {{ reqName }}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Row 2: Shared Global DatePeriodFilter (Inline Toolbar Mode) -->
+        <DatePeriodFilter
+          v-model:period-mode="periodMode"
+          v-model:selected-date="selectedDate"
+          v-model:selected-month="selectedMonth"
+          v-model:selected-year="selectedYear"
+          v-model:start-time="customStartTime"
+          v-model:end-time="customEndTime"
+          :show-all="true"
+          :inline="true"
+          @change="refreshActivePeriodTab"
+        />
       </div>
 
       <!-- Loading Skeleton State -->
@@ -1313,35 +1366,89 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'history'" class="history-section">
       <!-- Filter Bar -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card history-toolbar">
-        <div class="history-status-tabs flex gap-xs align-center">
-          <button 
-            class="history-tab-btn" 
-            :class="{ active: historyFilter === 'all' }"
-            @click="historyFilter = 'all'"
-          >
-            <span>ทั้งหมด</span>
-            <span class="history-tab-count">{{ history.length }}</span>
-          </button>
-          <button 
-            class="history-tab-btn" 
-            :class="{ active: historyFilter === 'restock' }"
-            @click="historyFilter = 'restock'"
-          >
-            <i class="fa-solid fa-circle-plus"></i>
-            <span>เติมสต็อกเข้าคลัง</span>
-            <span class="history-tab-count">{{ restockHistoryCount }}</span>
-          </button>
-          <button 
-            class="history-tab-btn" 
-            :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
-            @click="historyFilter = 'transfer'"
-          >
-            <i class="fa-solid fa-truck-fast"></i>
-            <span>สาขาเบิกของ</span>
-            <span class="history-tab-count">{{ transferHistoryCount }}</span>
-          </button>
+      <div class="card mb-lg p-md flex flex-col gap-md toolbar-card history-toolbar">
+        <div class="flex flex-between align-center flex-wrap gap-md">
+          <div class="history-status-tabs flex gap-xs align-center">
+            <button 
+              class="history-tab-btn" 
+              :class="{ active: historyFilter === 'all' }"
+              @click="historyFilter = 'all'"
+            >
+              <span>ทั้งหมด</span>
+              <span class="history-tab-count">{{ periodMatchedHistory.length }}</span>
+            </button>
+            <button 
+              class="history-tab-btn" 
+              :class="{ active: historyFilter === 'restock' }"
+              @click="historyFilter = 'restock'"
+            >
+              <i class="fa-solid fa-circle-plus"></i>
+              <span>เติมสต็อกเข้าคลัง</span>
+              <span class="history-tab-count">{{ restockHistoryCount }}</span>
+            </button>
+            <button 
+              class="history-tab-btn" 
+              :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
+              @click="historyFilter = 'transfer'"
+            >
+              <i class="fa-solid fa-truck-fast"></i>
+              <span>สาขาเบิกของ</span>
+              <span class="history-tab-count">{{ transferHistoryCount }}</span>
+            </button>
+          </div>
+
+          <!-- Right: Requester Filter Dropdown -->
+          <div class="flex align-center gap-sm flex-wrap">
+            <div class="order-branch-filter">
+              <label class="order-branch-label">
+                <i class="fa-solid fa-user text-primary"></i>
+                <span>ผู้ขอเบิก:</span>
+              </label>
+              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
+                <div 
+                  class="custom-select-trigger order-branch-select" 
+                  :class="{ 'active': isHistoryRequesterDropdownOpen }" 
+                  @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen"
+                >
+                  <span class="custom-select-text font-bold">
+                    {{ historyRequesterFilter === 'all' ? 'ทุกคน' : historyRequesterFilter }}
+                  </span>
+                </div>
+                <div v-if="isHistoryRequesterDropdownOpen" class="custom-select-dropdown">
+                  <div 
+                    class="custom-select-option"
+                    :class="{ 'selected': historyRequesterFilter === 'all' }"
+                    @click="historyRequesterFilter = 'all'; isHistoryRequesterDropdownOpen = false;"
+                  >
+                    ทุกคน
+                  </div>
+                  <div 
+                    v-for="reqName in availableHistoryRequesters" 
+                    :key="reqName" 
+                    class="custom-select-option"
+                    :class="{ 'selected': historyRequesterFilter === reqName }"
+                    @click="historyRequesterFilter = reqName; isHistoryRequesterDropdownOpen = false;"
+                  >
+                    {{ reqName }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- Row 2: Shared Global DatePeriodFilter (Inline Toolbar Mode) -->
+        <DatePeriodFilter
+          v-model:period-mode="periodMode"
+          v-model:selected-date="selectedDate"
+          v-model:selected-month="selectedMonth"
+          v-model:selected-year="selectedYear"
+          v-model:start-time="customStartTime"
+          v-model:end-time="customEndTime"
+          :show-all="true"
+          :inline="true"
+          @change="refreshActivePeriodTab"
+        />
       </div>
 
       <!-- Loading Skeleton State -->
@@ -3781,8 +3888,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import DatePeriodFilter from '../components/DatePeriodFilter.vue';
 import api from '../api';
-import { ui, compressImage } from '../helpers';
+import { ui, compressImage, getToday, isTimeInRange } from '../helpers';
 
 const route = useRoute();
 const router = useRouter();
@@ -3868,10 +3976,32 @@ const isLoadingHistory = ref(false);
 
 const searchQuery = ref('');
 const selectedCategory = ref('all');
-const orderFilterStatus = ref('pending');
+const orderFilterStatus = ref('all');
 const orderBranchFilter = ref('all');
+const orderRequesterFilter = ref('all');
 const isOrderBranchDropdownOpen = ref(false);
+const isOrderRequesterDropdownOpen = ref(false);
+const historyRequesterFilter = ref('all');
+const isHistoryRequesterDropdownOpen = ref(false);
 const isPartnerBranchDropdownOpen = ref(false);
+
+const availableOrderRequesters = computed(() => {
+  const names = new Set();
+  for (const o of orders.value) {
+    const name = (o.requested_by_name || 'ไม่ระบุ').trim();
+    if (name) names.add(name);
+  }
+  return Array.from(names).sort((a, b) => a.localeCompare(b, 'th'));
+});
+
+const availableHistoryRequesters = computed(() => {
+  const names = new Set();
+  for (const h of history.value) {
+    const name = (h.created_by || 'ไม่ระบุ').trim();
+    if (name) names.add(name);
+  }
+  return Array.from(names).sort((a, b) => a.localeCompare(b, 'th'));
+});
 
 const selectedOrderBranchName = computed(() => {
   if (orderBranchFilter.value === 'all') return 'ทุกสาขา';
@@ -3887,6 +4017,8 @@ const selectedPartnerBranchName = computed(() => {
 
 const closeOrderBranchDropdown = () => {
   isOrderBranchDropdownOpen.value = false;
+  isOrderRequesterDropdownOpen.value = false;
+  isHistoryRequesterDropdownOpen.value = false;
 };
 
 const closePartnerBranchDropdown = () => {
@@ -4366,21 +4498,60 @@ const partnerSumPercentage = computed(() => {
   return partnerList.value.reduce((acc, p) => acc + (Number(p.share_percentage) || 0), 0);
 });
 
-const pendingOrdersCount = computed(() => {
-  return orders.value.filter(o => o.status === 'pending').length;
+// Date & Period Filter State (for Orders & History tabs)
+const periodMode = ref('all'); // 'all' | 'daily' | 'monthly' | 'yearly'
+const selectedDate = ref(getToday());
+const selectedMonth = ref(getToday().substring(0, 7));
+const selectedYear = ref(getToday().substring(0, 4));
+const customStartTime = ref('00.00');
+const customEndTime = ref('23.59');
+
+const getPeriodQueryParams = () => {
+  if (periodMode.value === 'daily' && selectedDate.value) return { date: selectedDate.value };
+  if (periodMode.value === 'monthly' && selectedMonth.value) return { month: selectedMonth.value };
+  if (periodMode.value === 'yearly' && selectedYear.value) return { year: selectedYear.value };
+  return {};
+};
+
+const refreshActivePeriodTab = () => {
+  if (activeTab.value === 'orders') loadOrders();
+  else if (activeTab.value === 'history') loadHistory();
+};
+
+const matchesSelectedPeriod = (dateStr) => {
+  if (periodMode.value === 'all' || !dateStr) return true;
+  const d = String(dateStr).substring(0, 10);
+  if (periodMode.value === 'daily') {
+    if (d !== selectedDate.value) return false;
+    const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+    return !isTimeFilterActive || isTimeInRange(dateStr, customStartTime.value, customEndTime.value);
+  }
+  if (periodMode.value === 'monthly') return d.substring(0, 7) === selectedMonth.value;
+  if (periodMode.value === 'yearly') return d.substring(0, 4) === String(selectedYear.value);
+  return true;
+};
+
+const periodMatchedOrders = computed(() => {
+  return orders.value.filter(o => {
+    const matchBranch = orderBranchFilter.value === 'all' || Number(o.branch_id) === Number(orderBranchFilter.value);
+    const matchRequester = orderRequesterFilter.value === 'all' || (o.requested_by_name || 'ไม่ระบุ').trim() === orderRequesterFilter.value;
+    return matchBranch && matchRequester && matchesSelectedPeriod(o.created_at);
+  });
 });
 
-const dispatchedOrdersCount = computed(() => {
-  return orders.value.filter(o => o.status === 'dispatched').length;
+const pendingOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'pending').length);
+const dispatchedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'dispatched').length);
+const receivedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'received').length);
+
+const periodMatchedHistory = computed(() => {
+  return history.value.filter(h => {
+    const matchRequester = historyRequesterFilter.value === 'all' || (h.created_by || 'ไม่ระบุ').trim() === historyRequesterFilter.value;
+    return matchRequester && matchesSelectedPeriod(h.created_at);
+  });
 });
 
-const restockHistoryCount = computed(() => {
-  return history.value.filter(h => h.type === 'restock').length;
-});
-
-const transferHistoryCount = computed(() => {
-  return history.value.filter(h => h.type === 'transfer').length;
-});
+const restockHistoryCount = computed(() => periodMatchedHistory.value.filter(h => h.type === 'restock').length);
+const transferHistoryCount = computed(() => periodMatchedHistory.value.filter(h => h.type === 'transfer').length);
 
 const getCategoryCount = (catId) => {
   if (catId === 'all') return items.value.length;
@@ -4396,19 +4567,16 @@ const filteredItems = computed(() => {
 });
 
 const filteredOrders = computed(() => {
-  return orders.value.filter(o => {
-    const matchStatus = orderFilterStatus.value === 'all' || o.status === orderFilterStatus.value;
-    const matchBranch = orderBranchFilter.value === 'all' || Number(o.branch_id) === Number(orderBranchFilter.value);
-    return matchStatus && matchBranch;
-  });
+  if (orderFilterStatus.value === 'all') return periodMatchedOrders.value;
+  return periodMatchedOrders.value.filter(o => o.status === orderFilterStatus.value);
 });
 
 const filteredHistory = computed(() => {
-  if (historyFilter.value === 'all') return history.value;
+  if (historyFilter.value === 'all') return periodMatchedHistory.value;
   if (historyFilter.value === 'transfer' || historyFilter.value === 'requisition') {
-    return history.value.filter(h => h.type === 'transfer' || h.type === 'requisition');
+    return periodMatchedHistory.value.filter(h => h.type === 'transfer' || h.type === 'requisition');
   }
-  return history.value.filter(h => h.type === historyFilter.value);
+  return periodMatchedHistory.value.filter(h => h.type === historyFilter.value);
 });
 
 // Helpers
@@ -4497,7 +4665,7 @@ const loadItems = async () => {
 const loadOrders = async () => {
   isLoadingOrders.value = true;
   try {
-    const res = await api.centralKitchen.getTransfers();
+    const res = await api.centralKitchen.getTransfers(getPeriodQueryParams());
     if (res.success) {
       orders.value = res.data;
     }
@@ -4511,7 +4679,7 @@ const loadOrders = async () => {
 const loadHistory = async () => {
   isLoadingHistory.value = true;
   try {
-    const res = await api.centralKitchen.getHistory();
+    const res = await api.centralKitchen.getHistory(getPeriodQueryParams());
     if (res.success) {
       history.value = res.data;
     }
@@ -4534,7 +4702,9 @@ const loadBranches = async () => {
       if (retailBranches.value.length > 0 && !dispatchBranchId.value) {
         dispatchBranchId.value = retailBranches.value[0].id;
       }
-      await loadPartnerData();
+      if (activeTab.value === 'partners') {
+        await loadPartnerData();
+      }
     }
   } catch (e) {
     console.warn(e);
@@ -5288,11 +5458,11 @@ const submitPayout = async () => {
 };
 
 watch(selectedPartnerBranch, () => {
-  loadPartnerData();
+  if (activeTab.value === 'partners') loadPartnerData();
 });
 
 watch(activeTab, (tab) => {
-  if (tab === 'catalog') loadItems();
+  if (tab === 'catalog' || tab === 'dispatch') loadItems();
   else if (tab === 'orders') loadOrders();
   else if (tab === 'history') loadHistory();
   else if (tab === 'partners') loadPartnerData();
@@ -5302,7 +5472,7 @@ watch(activeTab, (tab) => {
   }
 }, { immediate: true });
 
-onMounted(async () => {
+onMounted(() => {
   window.addEventListener('click', closeCategoryModalDropdown);
   window.addEventListener('click', closeUomModalDropdown);
   window.addEventListener('click', closePosMenuModalDropdown);
@@ -5311,13 +5481,8 @@ onMounted(async () => {
   window.addEventListener('click', closePartnerBranchDropdown);
   window.addEventListener('click', closeReceivablesBranchDropdown);
   window.addEventListener('click', closeDispatchBranchDropdown);
-  await loadCategories();
-  await loadBranches();
-  loadItems();
-  loadPosMenuItems();
-  loadOrders();
-  loadHistory();
-  loadFinances();
+  loadCategories();
+  loadBranches();
 });
 
 onUnmounted(() => {
@@ -5328,7 +5493,7 @@ onUnmounted(() => {
   window.removeEventListener('click', closeOrderBranchDropdown);
   window.removeEventListener('click', closePartnerBranchDropdown);
   window.removeEventListener('click', closeReceivablesBranchDropdown);
-  window.removeEventListener('click', closeDispatchBranchDropdown);
+  window.addEventListener('click', closeDispatchBranchDropdown);
 });
 </script>
 
@@ -7332,7 +7497,7 @@ onUnmounted(() => {
   .history-toolbar {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: var(--space-sm) !important;
+    gap: var(--space-md) !important;
   }
 
   .history-status-tabs {
