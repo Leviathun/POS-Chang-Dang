@@ -170,11 +170,29 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="loading">
-                  <td colspan="5" class="text-center" style="padding: var(--space-3xl);">
-                    <div class="spinner mx-auto"></div>
-                  </td>
-                </tr>
+                <template v-if="loading">
+                  <tr v-for="n in 4" :key="'sk-menu-' + n" style="border-bottom: 1px solid var(--border-color);">
+                    <td class="text-center" style="padding: var(--space-md);">
+                      <div class="skeleton mx-auto" style="width: 48px; height: 36px; border-radius: var(--radius-sm);"></div>
+                    </td>
+                    <td style="padding: var(--space-md);">
+                      <div class="skeleton mb-xs" style="height: 16px; width: 150px; border-radius: 4px;"></div>
+                      <div class="skeleton" style="height: 12px; width: 90px; border-radius: 4px;"></div>
+                    </td>
+                    <td class="text-right" style="padding: var(--space-md);">
+                      <div class="skeleton" style="height: 16px; width: 80px; border-radius: 4px; margin-left: auto;"></div>
+                    </td>
+                    <td class="text-center" style="padding: var(--space-md);">
+                      <div class="skeleton mx-auto" style="height: 22px; width: 44px; border-radius: 999px;"></div>
+                    </td>
+                    <td class="text-center" style="padding: var(--space-md);">
+                      <div class="flex justify-center gap-sm">
+                        <div class="skeleton" style="height: 30px; width: 64px; border-radius: 6px;"></div>
+                        <div class="skeleton" style="height: 30px; width: 54px; border-radius: 6px;"></div>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
                 <tr v-else-if="menuItems.length === 0">
                   <td colspan="5" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                     ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
@@ -232,8 +250,20 @@
 
         <!-- Mobile Menu Card List (Visible on mobile only) -->
         <div class="mobile-menu-list-container">
-          <div v-if="loading" class="text-center py-3xl">
-            <div class="spinner mx-auto"></div>
+          <div v-if="loading" class="mobile-menu-list">
+            <div v-for="n in 4" :key="'sk-m-menu-' + n" class="mobile-menu-card">
+              <div class="mobile-menu-card-body">
+                <div class="skeleton" style="width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;"></div>
+                <div class="mobile-menu-card-details" style="flex: 1;">
+                  <div class="skeleton mb-xs" style="height: 16px; width: 65%; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 12px; width: 40%; border-radius: 4px;"></div>
+                </div>
+                <div class="mobile-menu-card-meta">
+                  <div class="skeleton mb-xs" style="height: 16px; width: 70px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 22px; width: 42px; border-radius: 999px; margin-left: auto;"></div>
+                </div>
+              </div>
+            </div>
           </div>
           <div v-else-if="menuItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
             ยังไม่มีข้อมูลสินค้า กด "+ เพิ่มเมนู" ด้านบนเพื่อเริ่มสร้างสินค้าชิ้นแรก
@@ -310,11 +340,19 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="modifiersLoading">
-                <td colspan="3" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
+              <template v-if="modifiersLoading">
+                <tr v-for="n in 4" :key="'sk-mod-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: var(--space-md);">
+                    <div class="skeleton" style="height: 16px; width: 140px; border-radius: 4px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 22px; width: 80px; border-radius: 999px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 22px; width: 44px; border-radius: 999px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="modifierItems.length === 0">
                 <td colspan="3" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการเครื่องปรุงในระบบ
@@ -357,8 +395,16 @@
 
       <!-- Mobile Modifiers List -->
       <div class="mobile-menu-list-container">
-        <div v-if="modifiersLoading" class="text-center py-3xl">
-          <div class="spinner mx-auto"></div>
+        <div v-if="modifiersLoading" class="mobile-menu-list">
+          <div v-for="n in 4" :key="'sk-m-mod-' + n" class="mobile-menu-card">
+            <div class="mobile-menu-card-body">
+              <div class="mobile-menu-card-details" style="flex: 1;">
+                <div class="skeleton mb-xs" style="height: 16px; width: 55%; border-radius: 4px;"></div>
+                <div class="skeleton" style="height: 20px; width: 70px; border-radius: 999px;"></div>
+              </div>
+              <div class="skeleton" style="height: 22px; width: 42px; border-radius: 999px;"></div>
+            </div>
+          </div>
         </div>
         <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการเครื่องปรุงในระบบ

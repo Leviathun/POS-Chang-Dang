@@ -2046,10 +2046,26 @@
             </div>
           </div>
 
-          <!-- Loading State -->
-          <div v-if="isLoadingReceivables" class="card p-xl text-center">
-            <i class="fa-solid fa-circle-notch fa-spin text-primary text-3xl mb-md"></i>
-            <p class="text-secondary font-medium">กำลังโหลดข้อมูลยอดค้างชำระแยกสาขา...</p>
+          <!-- Loading Skeleton State -->
+          <div v-if="isLoadingReceivables" class="branch-cards-list flex flex-col gap-lg">
+            <div v-for="i in 2" :key="i" class="card p-lg branch-receivable-card">
+              <div class="flex flex-between align-center pb-md mb-md border-b">
+                <div class="flex align-center gap-sm">
+                  <div class="skeleton" style="width: 44px; height: 44px; border-radius: var(--radius-md);"></div>
+                  <div>
+                    <div class="skeleton mb-xs" style="width: 140px; height: 20px; border-radius: var(--radius-xs);"></div>
+                    <div class="skeleton" style="width: 180px; height: 14px; border-radius: var(--radius-xs);"></div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="skeleton mb-xs" style="width: 100px; height: 14px; border-radius: var(--radius-xs); margin-left: auto;"></div>
+                  <div class="skeleton" style="width: 120px; height: 26px; border-radius: var(--radius-sm); margin-left: auto;"></div>
+                </div>
+              </div>
+              <div class="skeleton mb-xs" style="width: 100%; height: 38px; border-radius: var(--radius-sm);"></div>
+              <div class="skeleton mb-xs" style="width: 100%; height: 44px; border-radius: var(--radius-sm);"></div>
+              <div class="skeleton" style="width: 100%; height: 44px; border-radius: var(--radius-sm);"></div>
+            </div>
           </div>
 
           <!-- Empty State -->
@@ -2328,9 +2344,58 @@
           <div class="card p-lg flex flex-col gap-md">
             <div class="skeleton pb-sm" style="width: 55%; height: 22px; border-radius: var(--radius-xs);"></div>
             <div v      <!-- Loading / Error States -->
-      <div v-if="isLoadingSettlement" class="card text-center p-3xl text-secondary mb-lg">
-        <div class="spinner mx-auto mb-sm"></div>
-        กำลังคำนวณงบกำไร-ขาดทุน...
+      <div v-if="isLoadingSettlement" class="flex flex-col gap-lg mb-lg">
+        <!-- 4 Summary KPI Cards Skeleton -->
+        <div class="financial-summary-grid">
+          <div v-for="i in (partnerSubTab === 'partners' ? 4 : 3)" :key="i" class="summary-card">
+            <div class="flex flex-between align-center mb-xs">
+              <div class="skeleton" style="width: 60%; height: 16px; border-radius: var(--radius-xs);"></div>
+              <div class="skeleton" style="width: 28%; height: 18px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton my-sm" style="width: 70%; height: 28px; border-radius: var(--radius-sm);"></div>
+            <div class="skeleton" style="width: 85%; height: 14px; border-radius: var(--radius-xs);"></div>
+          </div>
+        </div>
+
+        <!-- Sub-Tab 1 Skeleton: 2-Column Comparison & Partner Equity -->
+        <div v-if="partnerSubTab === 'partners'" class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+          <div class="card p-lg flex flex-col gap-md">
+            <div class="skeleton pb-sm" style="width: 55%; height: 22px; border-radius: var(--radius-xs);"></div>
+            <div v-for="b in 3" :key="b" class="flex flex-col gap-xs">
+              <div class="flex flex-between">
+                <div class="skeleton" style="width: 35%; height: 14px; border-radius: var(--radius-xs);"></div>
+                <div class="skeleton" style="width: 25%; height: 14px; border-radius: var(--radius-xs);"></div>
+              </div>
+              <div class="skeleton" style="width: 100%; height: 14px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton mt-xs" style="width: 100%; height: 52px; border-radius: var(--radius-md);"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-sm mt-xs">
+              <div v-for="p in 2" :key="p" class="skeleton" style="width: 100%; height: 120px; border-radius: var(--radius-sm);"></div>
+            </div>
+          </div>
+
+          <div class="card p-lg flex flex-col justify-between gap-md">
+            <div class="flex flex-col gap-md">
+              <div class="flex flex-between align-center">
+                <div class="skeleton" style="width: 50%; height: 22px; border-radius: var(--radius-xs);"></div>
+                <div class="skeleton" style="width: 100px; height: 32px; border-radius: var(--radius-full);"></div>
+              </div>
+              <div class="skeleton" style="width: 85%; height: 14px; border-radius: var(--radius-xs);"></div>
+              <div v-for="r in 2" :key="r" class="skeleton" style="width: 100%; height: 54px; border-radius: var(--radius-md);"></div>
+            </div>
+            <div class="skeleton" style="width: 100%; height: 46px; border-radius: var(--radius-md);"></div>
+          </div>
+        </div>
+
+        <!-- Sub-Tab 2 Skeleton: Payout History Table -->
+        <div v-else class="card p-lg">
+          <div class="flex flex-between align-center mb-lg pb-sm" style="border-bottom: 1px solid var(--border-color);">
+            <div class="skeleton" style="width: 200px; height: 22px; border-radius: var(--radius-xs);"></div>
+            <div class="skeleton" style="width: 110px; height: 36px; border-radius: var(--radius-md);"></div>
+          </div>
+          <div class="skeleton mb-xs" style="width: 100%; height: 40px; border-radius: var(--radius-sm);"></div>
+          <div v-for="r in 3" :key="r" class="skeleton mb-xs" style="width: 100%; height: 48px; border-radius: var(--radius-sm);"></div>
+        </div>
       </div>
      <span class="sub-badge">ยอดขายหน้าร้าน</span>
               <span class="sub-badge">{{ settlementData.period?.start_date }} ถึง {{ settlementData.period?.end_date }}</span>
@@ -5786,7 +5851,7 @@ onUnmounted(() => {
 
 .toolbar-card {
   box-shadow: var(--shadow-sm);
-  border: none !important;
+  border: 1px solid var(--border-color);
   background: var(--card-bg);
 }
 
@@ -6077,7 +6142,7 @@ onUnmounted(() => {
 /* ============================================================ */
 .orders-toolbar {
   box-shadow: var(--shadow-sm);
-  border: none !important;
+  border: 1px solid var(--border-color);
   background: var(--card-bg);
 }
 
@@ -6319,7 +6384,7 @@ onUnmounted(() => {
 /* ============================================================ */
 .history-toolbar {
   box-shadow: var(--shadow-sm);
-  border: none !important;
+  border: 1px solid var(--border-color);
   background: var(--card-bg);
 }
 

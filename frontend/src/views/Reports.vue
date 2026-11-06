@@ -88,9 +88,22 @@
       </div>
     </DatePeriodFilter>
 
-    <!-- Loading spinner for reports -->
-    <div v-if="loading" class="card text-center p-3xl">
-      <div class="spinner mx-auto"></div>
+    <!-- Skeleton Loading for reports -->
+    <div v-if="loading" class="flex flex-col gap-lg">
+      <div class="grid grid-2 gap-md">
+        <div v-for="n in 2" :key="'sk-rep-kpi-' + n" class="card text-center p-md">
+          <div class="skeleton mx-auto mb-xs" style="height: 12px; width: 90px; border-radius: 4px;"></div>
+          <div class="skeleton mx-auto mb-xs" style="height: 26px; width: 120px; border-radius: 6px;"></div>
+          <div class="skeleton mx-auto" style="height: 12px; width: 80px; border-radius: 4px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="skeleton mb-md" style="height: 20px; width: 180px; border-radius: 4px;"></div>
+        <div v-for="r in 4" :key="'sk-rep-row-' + r" class="flex flex-between align-center py-sm" style="border-bottom: 1px solid var(--border-color);">
+          <div class="skeleton" style="height: 16px; width: 45%; border-radius: 4px;"></div>
+          <div class="skeleton" style="height: 18px; width: 85px; border-radius: 4px;"></div>
+        </div>
+      </div>
     </div>
 
     <template v-else>
@@ -713,11 +726,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
-                <td colspan="6" style="text-align: center; padding: var(--space-xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
+              <template v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
+                <tr v-for="n in 4" :key="'sk-rep-led-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td v-for="c in 6" :key="'sk-rep-led-c-' + c" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 16px; width: 75%; border-radius: 4px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="filteredLedgerTransactions.length === 0">
                 <td colspan="6" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
                   ไม่มีรายการธุรกรรมในเดือนนี้
@@ -762,8 +777,14 @@
 
         <!-- Mobile Ledger List (Mobile Only) -->
         <div class="ledger-mobile-list show-mobile-only">
-          <div v-if="ledgerLoading && filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
-            <div class="spinner mx-auto"></div>
+          <div v-if="ledgerLoading && filteredLedgerTransactions.length === 0" style="display:flex; flex-direction:column; gap:var(--space-sm);">
+            <div v-for="n in 3" :key="'sk-m-rep-led-' + n" class="ledger-mobile-card">
+              <div class="skeleton mb-xs" style="height: 16px; width: 60%; border-radius: 4px;"></div>
+              <div class="flex flex-between align-center">
+                <div class="skeleton" style="height: 12px; width: 90px; border-radius: 4px;"></div>
+                <div class="skeleton" style="height: 16px; width: 70px; border-radius: 4px;"></div>
+              </div>
+            </div>
           </div>
           <div v-else-if="filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ไม่มีรายการธุรกรรมในเดือนนี้
@@ -906,9 +927,17 @@
           ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
 
-        <!-- Loading spinner for top items -->
-        <div v-else-if="topItems.length === 0 && topItemsLoading" class="card text-center p-3xl" style="background: #ffffff !important;">
-          <div class="spinner mx-auto"></div>
+        <!-- Skeleton Loading for top items -->
+        <div v-else-if="topItems.length === 0 && topItemsLoading" class="ranked-items-grid">
+          <div v-for="n in 4" :key="'sk-top-' + n" class="ranked-item-card">
+            <div class="ranked-card-header">
+              <div class="skeleton" style="height: 24px; width: 85px; border-radius: 999px;"></div>
+              <div class="skeleton" style="height: 20px; width: 55px; border-radius: 999px;"></div>
+            </div>
+            <div class="skeleton my-sm" style="height: 18px; width: 70%; border-radius: 4px;"></div>
+            <div class="skeleton mb-xs" style="height: 14px; width: 50%; border-radius: 4px;"></div>
+            <div class="skeleton" style="height: 8px; width: 100%; border-radius: 999px;"></div>
+          </div>
         </div>
 
         <!-- Grid Cards of Ranked Items -->
@@ -1379,9 +1408,14 @@
           </div>
         </div>
 
-        <div v-if="stockHistoryLoading" style="text-align: center; padding: var(--space-xl);">
-          <div class="spinner mx-auto"></div>
-          <div class="text-xs text-muted mt-xs">กำลังโหลดประวัติสต็อก...</div>
+        <div v-if="stockHistoryLoading" class="flex flex-col gap-sm">
+          <div v-for="n in 4" :key="'sk-sh-' + n" class="card p-md flex flex-between align-center">
+            <div style="flex: 1;">
+              <div class="skeleton mb-xs" style="height: 16px; width: 45%; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 12px; width: 30%; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton" style="height: 20px; width: 70px; border-radius: 6px;"></div>
+          </div>
         </div>
         <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl); background: rgba(0,0,0,0.01); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
           <div class="mb-xs font-bold text-base" style="color: var(--text-primary);">
@@ -1538,8 +1572,12 @@
         </div>
       </div>
 
-      <div v-if="cashDrawerLoading" class="flex justify-center p-xl" style="display:flex; justify-content:center; padding:var(--space-xl);">
-        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i>
+      <div v-if="cashDrawerLoading" class="flex flex-col gap-sm">
+        <div v-for="n in 3" :key="'sk-rep-cd-' + n" class="card p-md flex flex-between align-center">
+          <div class="skeleton" style="height: 16px; width: 100px; border-radius: 4px;"></div>
+          <div class="skeleton" style="height: 16px; width: 85px; border-radius: 4px;"></div>
+          <div class="skeleton" style="height: 24px; width: 80px; border-radius: 999px;"></div>
+        </div>
       </div>
 
       <div v-else-if="cashDrawerSessions.length === 0" class="flex justify-center p-xl text-center" style="display:flex; justify-content:center; padding:var(--space-xl); color: var(--text-light);">

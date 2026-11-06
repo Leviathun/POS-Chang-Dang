@@ -15,9 +15,9 @@
   --bg-secondary: #fceecc;      /* Slightly Darker Warm Cream */
   --bg-tertiary: #fbe6ba;       /* Medium Warm Cream for Active States */
 
-  --card-bg: rgba(255, 255, 255, 0.7); /* Translucent white card on cream */
-  --card-bg-hover: rgba(255, 255, 255, 0.85);
-  --card-bg-active: rgba(255, 255, 255, 0.95);
+  --card-bg: #ffffff;           /* Crisp white card on warm cream */
+  --card-bg-hover: #fffdf9;
+  --card-bg-active: #ffffff;
 
   --primary: #8b0313;           /* Crimson Red */
   --primary-light: #ad281e;     /* Terracotta Brick Red */
