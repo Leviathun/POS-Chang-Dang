@@ -1513,13 +1513,22 @@ router.get('/finances/summary', async (req, res) => {
   }
 });
 
-// GET /api/central-kitchen/finances/receivables-breakdown — รายละเอียดของที่สาขาเบิกและยอดค้างชำระคืนแยกตามสาขา
+// GET /api/central-kitchen/finances/receivables-breakdown — รายละเอียดของที่สาขาเบิกและยอดค้างชำระคืนแยกตามสาขา (รองรับ pending และ reimbursed)
 router.get('/finances/receivables-breakdown', async (req, res) => {
   try {
     const db = getDb();
-    
-    // 1. ดึงใบเบิกทั้งหมดที่สถานะ received (รับของแล้ว) และยังไม่เคลียร์เงิน (is_reimbursed = 0)
-    const transfers = await db.prepare(`
+    const { status = 'pending', date, month, year, start_date, end_date, filter_pending } = req.query;
+    const isReimbursed = status === 'reimbursed';
+
+    // นับจำนวนใบเบิกทั้งหมดแยกตามสถานะเคลียร์เงิน เพื่อแสดงที่ badge ของแท็บ
+    const countRow = await db.prepare(`
+      SELECT 
+        COUNT(CASE WHEN status = 'received' AND (is_reimbursed = 0 OR is_reimbursed IS NULL) THEN 1 END) as pending_count,
+        COUNT(CASE WHEN status = 'received' AND is_reimbursed = 1 THEN 1 END) as reimbursed_count
+      FROM central_kitchen_transfers
+    `).get();
+
+    let sql = `
       SELECT 
         t.id,
         t.transfer_no,
@@ -1531,26 +1540,72 @@ router.get('/finances/receivables-breakdown', async (req, res) => {
         t.created_at,
         t.dispatched_at,
         t.received_at,
+        t.is_reimbursed,
+        t.reimbursed_at,
+        t.reimbursed_by_name,
         t.dispatched_by_name,
         t.requested_by_name
       FROM central_kitchen_transfers t
       JOIN branches b ON t.branch_id = b.id
-      WHERE t.status = 'received' AND (t.is_reimbursed = 0 OR t.is_reimbursed IS NULL)
-      ORDER BY t.received_at DESC, t.id DESC
-    `).all();
+      WHERE t.status = 'received'
+    `;
+    const params = [];
+
+    if (isReimbursed) {
+      sql += ' AND t.is_reimbursed = 1';
+      // ตัวกรองช่วงวันที่สำหรับการเคลียร์เงิน
+      if (date) {
+        sql += ' AND date(COALESCE(t.reimbursed_at, t.received_at)) = date(?)';
+        params.push(date);
+      } else if (month) {
+        sql += ' AND strftime(\'%Y-%m\', COALESCE(t.reimbursed_at, t.received_at)) = ?';
+        params.push(month);
+      } else if (year) {
+        sql += ' AND strftime(\'%Y\', COALESCE(t.reimbursed_at, t.received_at)) = ?';
+        params.push(String(year));
+      } else if (start_date && end_date) {
+        sql += ' AND date(COALESCE(t.reimbursed_at, t.received_at)) >= date(?) AND date(COALESCE(t.reimbursed_at, t.received_at)) <= date(?)';
+        params.push(start_date, end_date);
+      }
+      sql += ' ORDER BY COALESCE(t.reimbursed_at, t.received_at) DESC, t.id DESC';
+    } else {
+      sql += ' AND (t.is_reimbursed = 0 OR t.is_reimbursed IS NULL)';
+      if (filter_pending === 'true') {
+        if (date) {
+          sql += ' AND date(COALESCE(t.received_at, t.created_at)) = date(?)';
+          params.push(date);
+        } else if (month) {
+          sql += ' AND strftime(\'%Y-%m\', COALESCE(t.received_at, t.created_at)) = ?';
+          params.push(month);
+        } else if (year) {
+          sql += ' AND strftime(\'%Y\', COALESCE(t.received_at, t.created_at)) = ?';
+          params.push(String(year));
+        } else if (start_date && end_date) {
+          sql += ' AND date(COALESCE(t.received_at, t.created_at)) >= date(?) AND date(COALESCE(t.received_at, t.created_at)) <= date(?)';
+          params.push(start_date, end_date);
+        }
+      }
+      sql += ' ORDER BY t.received_at DESC, t.id DESC';
+    }
+
+    const transfers = await db.prepare(sql).all(...params);
 
     if (transfers.length === 0) {
       return res.json({
         success: true,
         data: {
+          status: isReimbursed ? 'reimbursed' : 'pending',
+          total_amount: 0,
           total_pending_amount: 0,
           total_transfers_count: 0,
+          total_pending_count: Number(countRow?.pending_count || 0),
+          total_reimbursed_count: Number(countRow?.reimbursed_count || 0),
           branches: []
         }
       });
     }
 
-    // 2. ดึงรายการสินค้าทั้งหมดของใบเบิกเหล่านี้
+    // ดึงรายการสินค้าทั้งหมดของใบเบิกเหล่านี้
     const transferIds = transfers.map(t => t.id);
     const placeholders = transferIds.map(() => '?').join(',');
     const items = await db.prepare(`
@@ -1578,7 +1633,7 @@ router.get('/finances/receivables-breakdown', async (req, res) => {
       t.items = itemsByTransfer[t.id] || [];
     }
 
-    // 3. จัดกลุ่มตามสาขา และสรุปยอดของที่สาขาเบิกไป
+    // จัดกลุ่มตามสาขา และรวมรายการสินค้า
     const branchMap = {};
     let totalPendingAll = 0;
 
@@ -1590,6 +1645,8 @@ router.get('/finances/receivables-breakdown', async (req, res) => {
           branch_name: t.branch_name,
           total_pending_amount: 0,
           transfers_count: 0,
+          last_reimbursed_at: t.reimbursed_at || null,
+          last_reimbursed_by_name: t.reimbursed_by_name || null,
           transfers: [],
           consolidated_items_map: {}
         };
@@ -1598,6 +1655,10 @@ router.get('/finances/receivables-breakdown', async (req, res) => {
       bObj.total_pending_amount += Number(t.total_cost || 0);
       bObj.transfers_count += 1;
       bObj.transfers.push(t);
+      if (t.reimbursed_at && (!bObj.last_reimbursed_at || t.reimbursed_at > bObj.last_reimbursed_at)) {
+        bObj.last_reimbursed_at = t.reimbursed_at;
+        bObj.last_reimbursed_by_name = t.reimbursed_by_name;
+      }
 
       for (const it of t.items) {
         const key = `${it.item_id}_${it.unit}`;
@@ -1621,6 +1682,8 @@ router.get('/finances/receivables-breakdown', async (req, res) => {
       branch_name: b.branch_name,
       total_pending_amount: Number(b.total_pending_amount.toFixed(2)),
       transfers_count: b.transfers_count,
+      last_reimbursed_at: b.last_reimbursed_at,
+      last_reimbursed_by_name: b.last_reimbursed_by_name,
       consolidated_items: Object.values(b.consolidated_items_map).sort((a, b) => b.total_cost - a.total_cost),
       transfers: b.transfers
     })).sort((a, b) => b.total_pending_amount - a.total_pending_amount);
@@ -1628,8 +1691,12 @@ router.get('/finances/receivables-breakdown', async (req, res) => {
     res.json({
       success: true,
       data: {
+        status: isReimbursed ? 'reimbursed' : 'pending',
+        total_amount: Number(totalPendingAll.toFixed(2)),
         total_pending_amount: Number(totalPendingAll.toFixed(2)),
         total_transfers_count: transfers.length,
+        total_pending_count: Number(countRow?.pending_count || 0),
+        total_reimbursed_count: Number(countRow?.reimbursed_count || 0),
         branches
       }
     });

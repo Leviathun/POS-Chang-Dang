@@ -1962,67 +1962,92 @@
 
         <!-- SUB-TAB 2: Branch Receivables & Consolidated Items -->
         <div v-else-if="financeSubTab === 'receivables'" class="receivables-tab-view flex flex-col gap-md">
-          <!-- Filter Bar: Branch Dropdown & Refresh -->
-          <div class="card p-md receivables-filter-card">
-            <!-- Row 1: Label on left, Refresh button on right -->
-            <div class="flex flex-between align-center mb-sm">
-              <label class="form-label font-bold text-sm text-main mb-0 flex align-center gap-xs">
-                <i class="fa-solid fa-store text-primary"></i> 
-                <span>เลือกดูสาขา:</span>
+          <!-- Date & Period Filter Card (Exact same layout as Orders / History) -->
+          <DatePeriodFilter
+            v-model:period-mode="periodMode"
+            v-model:selected-date="selectedDate"
+            v-model:selected-month="selectedMonth"
+            v-model:selected-year="selectedYear"
+            v-model:start-time="customStartTime"
+            v-model:end-time="customEndTime"
+            @change="refreshActivePeriodTab"
+          >
+            <!-- Right: Branch Filter Dropdown in DatePeriodFilter slot -->
+            <div class="order-branch-filter" style="margin-left: auto;">
+              <label class="order-branch-label">
+                <i class="fa-solid fa-store text-primary"></i>
+                <span>สาขา:</span>
               </label>
+              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
+                <div 
+                  class="custom-select-trigger order-branch-select" 
+                  :class="{ 'active': isReceivablesBranchDropdownOpen }" 
+                  @click="isReceivablesBranchDropdownOpen = !isReceivablesBranchDropdownOpen"
+                  style="height: 38px;"
+                >
+                  <span class="custom-select-text font-bold">
+                    {{ selectedReceivablesBranchLabel }}
+                  </span>
+                </div>
+                <div v-if="isReceivablesBranchDropdownOpen" class="custom-select-dropdown">
+                  <div 
+                    class="custom-select-option" 
+                    :class="{ 'selected': selectedReceivablesBranch === 'all' }"
+                    @click="selectedReceivablesBranch = 'all'; isReceivablesBranchDropdownOpen = false;"
+                  >
+                    ทุกสาขา
+                  </div>
+                  <div 
+                    v-for="b in (receivablesBreakdown?.branches || [])" 
+                    :key="b.branch_id" 
+                    class="custom-select-option"
+                    :class="{ 'selected': Number(selectedReceivablesBranch) === Number(b.branch_id) }"
+                    @click="selectedReceivablesBranch = b.branch_id; isReceivablesBranchDropdownOpen = false;"
+                  >
+                    {{ b.branch_name }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DatePeriodFilter>
+
+          <!-- Status Filter Toolbar (Exact style from Orders / History for 100% unity) -->
+          <div class="card mb-md p-md flex flex-between align-center flex-wrap gap-md toolbar-card">
+            <!-- Status Toggle Buttons -->
+            <div class="order-status-tabs flex gap-xs align-center">
               <button 
-                type="button" 
-                class="btn btn-secondary btn-sm" 
-                :disabled="isLoadingReceivables"
-                @click="loadReceivablesBreakdown"
-                title="รีเฟรชข้อมูล"
+                type="button"
+                class="order-tab-btn" 
+                :class="{ active: receivablesStatusTab === 'pending' }"
+                @click="setReceivablesStatus('pending')"
               >
-                <i class="fa-solid fa-arrows-rotate mr-1" :class="{ 'fa-spin': isLoadingReceivables }"></i>
-                <span>รีเฟรช</span>
+                <i class="fa-solid fa-clock"></i>
+                <span>รอเคลียร์ (ค้างชำระ)</span>
+                <span class="history-tab-count">{{ receivablesBreakdown?.total_pending_count || 0 }}</span>
+              </button>
+              <button 
+                type="button"
+                class="order-tab-btn" 
+                :class="{ active: receivablesStatusTab === 'reimbursed' }"
+                @click="setReceivablesStatus('reimbursed')"
+              >
+                <i class="fa-solid fa-circle-check text-success"></i>
+                <span>เคลียร์แล้ว (ประวัติการชำระเงิน)</span>
+                <span class="history-tab-count">{{ receivablesBreakdown?.total_reimbursed_count || 0 }}</span>
               </button>
             </div>
 
-            <!-- Row 2: Custom Dropdown Selection 100% width with Diner Theme -->
-            <div class="custom-select-wrapper receivables-branch-select-wrapper" @click.stop>
-              <div 
-                class="custom-select-trigger receivables-branch-select-trigger" 
-                :class="{ 'active': isReceivablesBranchDropdownOpen }" 
-                @click="isReceivablesBranchDropdownOpen = !isReceivablesBranchDropdownOpen"
-              >
-                <span class="custom-select-text font-bold text-sm flex align-center gap-xs">
-                  <i class="fa-solid fa-shop text-primary mr-1"></i>
-                  <span>{{ selectedReceivablesBranchLabel }}</span>
-                </span>
-              </div>
-              <div v-if="isReceivablesBranchDropdownOpen" class="custom-select-dropdown receivables-branch-dropdown">
-                <div 
-                  class="custom-select-option" 
-                  :class="{ 'selected': selectedReceivablesBranch === 'all' }"
-                  @click="selectedReceivablesBranch = 'all'; isReceivablesBranchDropdownOpen = false;"
-                >
-                  <div class="flex flex-between align-center w-full gap-sm">
-                    <span class="font-bold">ทุกสาขา</span>
-                    <span class="badge text-xs" :class="selectedReceivablesBranch === 'all' ? 'badge-light' : 'badge-secondary'">
-                      มียอดค้าง {{ receivablesBreakdown?.branches?.length || 0 }} สาขา
-                    </span>
-                  </div>
-                </div>
-                <div 
-                  v-for="b in (receivablesBreakdown?.branches || [])" 
-                  :key="b.branch_id" 
-                  class="custom-select-option"
-                  :class="{ 'selected': Number(selectedReceivablesBranch) === Number(b.branch_id) }"
-                  @click="selectedReceivablesBranch = b.branch_id; isReceivablesBranchDropdownOpen = false;"
-                >
-                  <div class="flex flex-between align-center w-full gap-sm">
-                    <span class="font-bold">{{ b.branch_name }}</span>
-                    <span class="font-bold text-xs" :class="Number(selectedReceivablesBranch) === Number(b.branch_id) ? 'text-white' : 'text-danger'">
-                      ค้าง ฿{{ formatNumber(b.total_pending_amount) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- Refresh Button -->
+            <button 
+              type="button" 
+              class="btn btn-secondary btn-sm" 
+              :disabled="isLoadingReceivables"
+              @click="loadReceivablesBreakdown"
+              title="รีเฟรชข้อมูล"
+            >
+              <i class="fa-solid fa-arrows-rotate mr-1" :class="{ 'fa-spin': isLoadingReceivables }"></i>
+              <span>รีเฟรช</span>
+            </button>
           </div>
 
           <!-- Overview Banner Card -->
@@ -2036,13 +2061,13 @@
               </div>
               <div class="overview-divider"></div>
               <div class="overview-stat">
-                <div class="text-xs text-secondary font-medium">ใบเบิกที่รอเคลียร์</div>
+                <div class="text-xs text-secondary font-medium">{{ receivablesStatusTab === 'reimbursed' ? 'ใบเบิกที่เคลียร์แล้ว' : 'ใบเบิกที่รอเคลียร์' }}</div>
                 <div class="text-lg font-bold text-main">{{ totalFilteredTransfersCount }} ใบ</div>
               </div>
             </div>
             <div class="text-right receivables-banner-right">
-              <div class="text-xs text-secondary font-semibold">ยอดรวมค้างชำระคืน</div>
-              <div class="amount-danger-bold">฿{{ formatNumber(totalFilteredPendingAmount) }}</div>
+              <div class="text-xs text-secondary font-semibold">{{ receivablesStatusTab === 'reimbursed' ? 'ยอดรวมเคลียร์ชำระคืนแล้ว' : 'ยอดรวมค้างชำระคืน' }}</div>
+              <div :class="receivablesStatusTab === 'reimbursed' ? 'text-success font-bold text-2xl' : 'amount-danger-bold'">฿{{ formatNumber(totalFilteredPendingAmount) }}</div>
             </div>
           </div>
 
@@ -2074,9 +2099,17 @@
               <i class="fa-solid fa-circle-check text-success text-3xl"></i>
             </div>
             <h4 class="font-bold text-base mb-xs text-main">
-              {{ selectedReceivablesBranch === 'all' ? 'ไม่มีสาขาค้างชำระคืน' : 'สาขานี้ไม่มีรายการค้างชำระ' }}
+              {{ receivablesStatusTab === 'reimbursed' 
+                  ? (selectedReceivablesBranch === 'all' ? 'ไม่มีประวัติรายการที่เคลียร์เงินในช่วงเวลานี้' : 'สาขานี้ยังไม่มีประวัติการเคลียร์เงินในช่วงเวลานี้')
+                  : (selectedReceivablesBranch === 'all' ? 'ไม่มีสาขาค้างชำระคืน' : 'สาขานี้ไม่มีรายการค้างชำระ') 
+              }}
             </h4>
-            <p class="text-secondary text-sm mb-0">ทุกรายการได้รับการชำระหรือเคลียร์ยอดค่าวัตถุดิบและสินค้าเรียบร้อยแล้ว</p>
+            <p class="text-secondary text-sm mb-0">
+              {{ receivablesStatusTab === 'reimbursed' 
+                  ? 'ลองเลือกเปลี่ยนช่วงวันที่ หรือเลือกดูสาขาอื่น' 
+                  : 'ทุกรายการได้รับการชำระหรือเคลียร์ยอดค่าวัตถุดิบและสินค้าเรียบร้อยแล้ว' 
+              }}
+            </p>
           </div>
 
           <!-- Branch Cards List -->
@@ -2090,18 +2123,18 @@
               <div class="branch-card-header flex flex-between align-center flex-wrap gap-sm pb-md border-b">
                 <div class="flex align-center gap-sm">
                   <span class="branch-badge-icon">
-                    <i class="fa-solid fa-store text-danger"></i>
+                    <i :class="receivablesStatusTab === 'reimbursed' ? 'fa-solid fa-shop text-success' : 'fa-solid fa-store text-danger'"></i>
                   </span>
                   <div>
                     <h4 class="font-bold text-lg text-main mb-0">{{ branch.branch_name }}</h4>
                     <span class="text-xs text-secondary font-medium">
-                      <i class="fa-solid fa-receipt mr-1"></i> {{ branch.transfers_count }} ใบเบิกที่รับของแล้ว (รอเคลียร์)
+                      <i class="fa-solid fa-receipt mr-1"></i> {{ branch.transfers_count }} ใบเบิกที่รับของแล้ว {{ receivablesStatusTab === 'reimbursed' ? '(เคลียร์แล้ว)' : '(รอเคลียร์)' }}
                     </span>
                   </div>
                 </div>
                 <div class="text-right branch-card-header-amount">
-                  <div class="text-xs text-secondary font-medium">ยอดค้างชำระสาขานี้</div>
-                  <div class="amount-danger-bold">฿{{ formatNumber(branch.total_pending_amount) }}</div>
+                  <div class="text-xs text-secondary font-medium">{{ receivablesStatusTab === 'reimbursed' ? 'ยอดที่เคลียร์ชำระคืนแล้ว' : 'ยอดค้างชำระสาขานี้' }}</div>
+                  <div :class="receivablesStatusTab === 'reimbursed' ? 'text-success font-bold text-xl' : 'amount-danger-bold'">฿{{ formatNumber(branch.total_pending_amount) }}</div>
                 </div>
               </div>
 
@@ -2143,8 +2176,8 @@
                     </tbody>
                     <tfoot>
                       <tr class="font-bold border-t">
-                        <td class="p-sm pl-md text-secondary text-xs" colspan="3">รวมมูลค่าสินค้าทั้งหมด</td>
-                        <td class="p-sm pr-md text-right text-danger font-bold text-base">฿{{ formatNumber(branch.total_pending_amount) }}</td>
+                        <td class="p-sm pl-md text-secondary text-xs" colspan="3">{{ receivablesStatusTab === 'reimbursed' ? 'รวมมูลค่าสินค้าที่เคลียร์แล้ว' : 'รวมมูลค่าสินค้าทั้งหมด' }}</td>
+                        <td class="p-sm pr-md text-right font-bold text-base" :class="receivablesStatusTab === 'reimbursed' ? 'text-success' : 'text-danger'">฿{{ formatNumber(branch.total_pending_amount) }}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -2202,14 +2235,14 @@
                       <!-- Row 1: Ticket # and Total Amount -->
                       <div class="flex flex-between align-center">
                         <span class="badge badge-secondary font-bold text-xs">#{{ t.transfer_no }}</span>
-                        <div class="font-bold text-danger text-sm">
+                        <div class="font-bold text-sm" :class="receivablesStatusTab === 'reimbursed' ? 'text-success' : 'text-danger'">
                           ฿{{ formatNumber(t.total_cost) }}
                         </div>
                       </div>
                       <!-- Row 2: Date & Time in 1 single line (Moved down, no wrapping) -->
                       <div class="ticket-time-row flex align-center gap-xs text-xs text-secondary mt-xs">
                         <i class="fa-regular fa-clock text-muted"></i>
-                        <span class="ticket-time-text">รับของเมื่อ: {{ formatDateTime(t.received_at || t.created_at) }}</span>
+                        <span class="ticket-time-text">{{ receivablesStatusTab === 'reimbursed' && t.reimbursed_at ? ('เคลียร์เมื่อ: ' + formatDateTime(t.reimbursed_at) + (t.reimbursed_by_name ? ' โดย ' + t.reimbursed_by_name : '')) : ('รับของเมื่อ: ' + formatDateTime(t.received_at || t.created_at)) }}</span>
                       </div>
                     </div>
 
@@ -2239,8 +2272,8 @@
                 </div>
               </div>
 
-              <!-- Branch Card Footer Action -->
-              <div v-if="branch.total_pending_amount > 0" class="branch-card-footer mt-md pt-md border-t flex flex-between align-center flex-wrap gap-sm">
+              <!-- Branch Card Footer Action: Pending (ปุ่มเคลียร์รับเงิน) VS Reimbursed (สถานะเคลียร์เรียบร้อย) -->
+              <div v-if="receivablesStatusTab === 'pending' && branch.total_pending_amount > 0" class="branch-card-footer mt-md pt-md border-t flex flex-between align-center flex-wrap gap-sm">
                 <div class="text-xs text-secondary">
                   <i class="fa-solid fa-circle-info text-primary mr-1"></i>
                   เมื่อสาขาโอนเงินคืนค่าของเข้ากองกลางแล้ว ให้กดปุ่มเพื่อบันทึกตัดยอดค้างชำระ
@@ -2254,6 +2287,19 @@
                   <i class="fa-solid fa-money-bill-transfer mr-1"></i>
                   <span>เคลียร์รับเงินคืน ฿{{ formatNumber(branch.total_pending_amount) }}</span>
                 </button>
+              </div>
+
+              <div v-else-if="receivablesStatusTab === 'reimbursed'" class="branch-card-footer mt-md pt-md border-t flex flex-between align-center flex-wrap gap-sm">
+                <div class="text-xs text-secondary flex align-center gap-xs">
+                  <i class="fa-solid fa-circle-check text-success"></i>
+                  <span>รายการในรอบนี้ได้รับการเคลียร์เงินคืนเข้ากองกลางเรียบร้อยแล้ว</span>
+                  <span v-if="branch.last_reimbursed_by_name" class="font-medium">
+                    (โดย {{ branch.last_reimbursed_by_name }})
+                  </span>
+                </div>
+                <span class="badge badge-success font-bold">
+                  <i class="fa-solid fa-check-double mr-1"></i> เคลียร์ชำระแล้ว
+                </span>
               </div>
 
             </div>
@@ -2343,24 +2389,6 @@
         <div v-if="partnerSubTab === 'partners'" class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
           <div class="card p-lg flex flex-col gap-md">
             <div class="skeleton pb-sm" style="width: 55%; height: 22px; border-radius: var(--radius-xs);"></div>
-            <div v      <!-- Loading / Error States -->
-      <div v-if="isLoadingSettlement" class="flex flex-col gap-lg mb-lg">
-        <!-- 4 Summary KPI Cards Skeleton -->
-        <div class="financial-summary-grid">
-          <div v-for="i in (partnerSubTab === 'partners' ? 4 : 3)" :key="i" class="summary-card">
-            <div class="flex flex-between align-center mb-xs">
-              <div class="skeleton" style="width: 60%; height: 16px; border-radius: var(--radius-xs);"></div>
-              <div class="skeleton" style="width: 28%; height: 18px; border-radius: var(--radius-full);"></div>
-            </div>
-            <div class="skeleton my-sm" style="width: 70%; height: 28px; border-radius: var(--radius-sm);"></div>
-            <div class="skeleton" style="width: 85%; height: 14px; border-radius: var(--radius-xs);"></div>
-          </div>
-        </div>
-
-        <!-- Sub-Tab 1 Skeleton: 2-Column Comparison & Partner Equity -->
-        <div v-if="partnerSubTab === 'partners'" class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
-          <div class="card p-lg flex flex-col gap-md">
-            <div class="skeleton pb-sm" style="width: 55%; height: 22px; border-radius: var(--radius-xs);"></div>
             <div v-for="b in 3" :key="b" class="flex flex-col gap-xs">
               <div class="flex flex-between">
                 <div class="skeleton" style="width: 35%; height: 14px; border-radius: var(--radius-xs);"></div>
@@ -2397,10 +2425,31 @@
           <div v-for="r in 3" :key="r" class="skeleton mb-xs" style="width: 100%; height: 48px; border-radius: var(--radius-sm);"></div>
         </div>
       </div>
-     <span class="sub-badge">ยอดขายหน้าร้าน</span>
-              <span class="sub-badge">{{ settlementData.period?.start_date }} ถึง {{ settlementData.period?.end_date }}</span>
+
+      <div v-else-if="settlementError" class="card text-center p-3xl text-danger mb-lg">
+        <i class="fa-solid fa-triangle-exclamation mb-sm" style="font-size: 2rem;"></i>
+        <p class="font-bold text-sm mb-xs">{{ settlementError }}</p>
+        <button class="btn btn-sm btn-secondary" @click="loadPartnerData">ลองใหม่อีกครั้ง</button>
+      </div>
+
+      <!-- Content when Settlement Data is loaded -->
+      <div v-else-if="settlementData" class="flex flex-col gap-lg">
+        <!-- SUB-TAB 1: หุ้นส่วน (เปรียบเทียบ รายรับ vs รายจ่าย & สัดส่วนหุ้นส่วน) -->
+        <div v-if="partnerSubTab === 'partners'" class="flex flex-col gap-lg">
+          <!-- 4 Summary KPI Cards (Photo 2) -->
+          <div class="financial-summary-grid">
+            <!-- Card 1: Revenue -->
+            <div class="summary-card revenue-card">
+              <div class="summary-card-header">
+                <span class="summary-icon"><i class="fa-solid fa-sack-dollar text-success"></i></span>
+                <span class="summary-title">ยอดขาย/รายรับรวม</span>
+              </div>
+              <div class="summary-value text-success">฿{{ formatNumber(settlementData.total_sales) }}</div>
+              <div class="summary-sub-badges">
+                <span class="sub-badge">ยอดขายหน้าร้าน</span>
+                <span class="sub-badge">{{ settlementData.period?.start_date }} ถึง {{ settlementData.period?.end_date }}</span>
+              </div>
             </div>
-          </div>
 
           <!-- Card 2: Direct Store Expenses -->
           <div class="summary-card expense-card">
@@ -4458,6 +4507,12 @@ const financeSubTab = ref('ledger'); // 'ledger' | 'receivables'
 const receivablesBreakdown = ref(null);
 const isLoadingReceivables = ref(false);
 const expandedBranchTransfers = ref({}); // { [branchId]: boolean }
+const receivablesStatusTab = ref('pending'); // 'pending' | 'reimbursed'
+const setReceivablesStatus = (status) => {
+  receivablesStatusTab.value = status;
+  loadReceivablesBreakdown();
+};
+
 const selectedReceivablesBranch = ref('all'); // 'all' or branch_id
 const isReceivablesBranchDropdownOpen = ref(false);
 
@@ -4466,13 +4521,20 @@ const closeReceivablesBranchDropdown = () => {
 };
 
 const selectedReceivablesBranchLabel = computed(() => {
+  const isReimbursed = receivablesStatusTab.value === 'reimbursed';
+  const count = receivablesBreakdown.value?.branches?.length || 0;
   if (selectedReceivablesBranch.value === 'all') {
-    return `ทุกสาขา (มียอดค้าง ${receivablesBreakdown.value?.branches?.length || 0} สาขา)`;
+    return isReimbursed 
+      ? `ทุกสาขา (${count} สาขาที่มีประวัติ)` 
+      : `ทุกสาขา (มียอดค้าง ${count} สาขา)`;
   }
   const b = receivablesBreakdown.value?.branches?.find(
     br => Number(br.branch_id) === Number(selectedReceivablesBranch.value)
   );
-  return b ? `${b.branch_name} (ค้าง ฿${formatNumber(b.total_pending_amount)})` : 'เลือกสาขา';
+  if (!b) return 'เลือกสาขา';
+  return isReimbursed
+    ? `${b.branch_name} (เคลียร์ ฿${formatNumber(b.total_pending_amount)})`
+    : `${b.branch_name} (ค้าง ฿${formatNumber(b.total_pending_amount)})`;
 });
 
 const filteredReceivablesBranches = computed(() => {
@@ -4568,6 +4630,9 @@ const getPeriodQueryParams = () => {
 const refreshActivePeriodTab = () => {
   if (activeTab.value === 'orders') loadOrders();
   else if (activeTab.value === 'history') loadHistory();
+  else if (activeTab.value === 'finance' || activeTab.value === 'receivables') {
+    loadReceivablesBreakdown();
+  }
 };
 
 const matchesSelectedPeriod = (dateStr) => {
@@ -5303,7 +5368,14 @@ const submitTransaction = async () => {
 const loadReceivablesBreakdown = async () => {
   isLoadingReceivables.value = true;
   try {
-    const res = await api.centralKitchen.getReceivablesBreakdown();
+    const params = {
+      status: receivablesStatusTab.value
+    };
+    if (receivablesStatusTab.value === 'reimbursed') {
+      const periodParams = getPeriodQueryParams();
+      Object.assign(params, periodParams);
+    }
+    const res = await api.centralKitchen.getReceivablesBreakdown(params);
     if (res.success) {
       receivablesBreakdown.value = res.data;
     }
