@@ -492,15 +492,64 @@
     <!-- Exact Design from Central Kitchen Orders Tab (Requirement 4) -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="currentTab === 'my_orders'" class="my-orders-layout">
-      <div class="flex flex-between align-center mb-md">
+      <!-- Date & Period Filter Card (Same 2-Row Card Layout as POS) -->
+      <DatePeriodFilter
+        v-model:period-mode="periodMode"
+        v-model:selected-date="selectedDate"
+        v-model:selected-month="selectedMonth"
+        v-model:selected-year="selectedYear"
+        v-model:start-time="customStartTime"
+        v-model:end-time="customEndTime"
+        @change="loadMyTransfers"
+      />
+
+      <div class="flex flex-between align-center flex-wrap gap-md mb-md">
         <h4 class="font-bold text-base flex align-center gap-xs">
           <i class="fa-solid fa-clock-rotate-left text-primary"></i>
           <span>รายการเบิกของของสาขาคุณ</span>
         </h4>
-        <button class="btn btn-secondary btn-sm flex align-center gap-xs" @click="loadMyTransfers">
-          <i class="fa-solid fa-rotate-right"></i>
-          <span>รีเฟรช</span>
-        </button>
+        <div class="flex align-center gap-sm flex-wrap">
+          <div class="flex align-center gap-xs">
+            <label class="text-sm font-bold text-secondary whitespace-nowrap flex align-center gap-xs">
+              <i class="fa-solid fa-user text-primary"></i>
+              <span>ผู้ขอเบิก:</span>
+            </label>
+            <div class="custom-select-wrapper" @click.stop style="min-width: 150px;">
+              <div 
+                class="custom-select-trigger" 
+                :class="{ 'active': isRequesterDropdownOpen }" 
+                @click="isRequesterDropdownOpen = !isRequesterDropdownOpen"
+                style="height: 38px; padding: 0 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--card-bg); font-size: var(--font-sm);"
+              >
+                <span class="custom-select-text font-bold">
+                  {{ requesterFilter === 'all' ? 'ทุกคน' : requesterFilter }}
+                </span>
+              </div>
+              <div v-if="isRequesterDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  class="custom-select-option"
+                  :class="{ 'selected': requesterFilter === 'all' }"
+                  @click="requesterFilter = 'all'; isRequesterDropdownOpen = false;"
+                >
+                  ทุกคน
+                </div>
+                <div 
+                  v-for="reqName in availableRequesters" 
+                  :key="reqName" 
+                  class="custom-select-option"
+                  :class="{ 'selected': requesterFilter === reqName }"
+                  @click="requesterFilter = reqName; isRequesterDropdownOpen = false;"
+                >
+                  {{ reqName }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm flex align-center gap-xs" @click="loadMyTransfers">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>รีเฟรช</span>
+          </button>
+        </div>
       </div>
 
       <!-- Skeleton Loading for Orders -->
@@ -527,7 +576,7 @@
       </div>
 
       <!-- Empty Orders State -->
-      <div v-else-if="myTransfers.length === 0" class="empty-state-box">
+      <div v-else-if="filteredMyTransfers.length === 0" class="empty-state-box">
         <div class="empty-state-icon">
           <i class="fa-solid fa-file-invoice"></i>
         </div>
@@ -542,7 +591,7 @@
       <!-- Orders List Cards (Exact Design from Central Kitchen Orders Tab) -->
       <div v-else class="orders-list flex flex-col gap-md">
         <div 
-          v-for="t in myTransfers" 
+          v-for="t in filteredMyTransfers" 
           :key="t.id" 
           class="card p-lg order-card"
           :class="{ 
@@ -733,8 +782,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import DatePeriodFilter from '../components/DatePeriodFilter.vue';
 import api from '../api';
-import { ui } from '../helpers';
+import { ui, getToday, isTimeInRange } from '../helpers';
 
 const currentTab = ref('shop'); // 'shop' | 'my_orders'
 
@@ -757,6 +807,48 @@ const isSubmitting = ref(false);
 
 const searchQuery = ref('');
 const selectedCategory = ref('all');
+const requesterFilter = ref('all');
+const isRequesterDropdownOpen = ref(false);
+
+const periodMode = ref('daily');
+const selectedDate = ref(getToday());
+const selectedMonth = ref(getToday().substring(0, 7));
+const selectedYear = ref(getToday().substring(0, 4));
+const customStartTime = ref('00.00');
+const customEndTime = ref('23.59');
+
+const matchesSelectedPeriod = (dateStr) => {
+  if (!dateStr) return true;
+  const d = String(dateStr).substring(0, 10);
+  if (periodMode.value === 'daily') {
+    if (d !== selectedDate.value) return false;
+    const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+    return !isTimeFilterActive || isTimeInRange(dateStr, customStartTime.value, customEndTime.value);
+  }
+  if (periodMode.value === 'monthly') return d.substring(0, 7) === selectedMonth.value;
+  if (periodMode.value === 'yearly') return d.substring(0, 4) === String(selectedYear.value);
+  return true;
+};
+
+const availableRequesters = computed(() => {
+  const names = new Set();
+  for (const t of myTransfers.value) {
+    const name = (t.requested_by_name || 'พนักงาน').trim();
+    if (name) names.add(name);
+  }
+  return Array.from(names).sort((a, b) => a.localeCompare(b, 'th'));
+});
+
+const filteredMyTransfers = computed(() => {
+  return myTransfers.value.filter(t => {
+    const matchReq = requesterFilter.value === 'all' || (t.requested_by_name || 'พนักงาน').trim() === requesterFilter.value;
+    return matchReq && matchesSelectedPeriod(t.created_at);
+  });
+});
+
+const closeRequesterDropdown = () => {
+  isRequesterDropdownOpen.value = false;
+};
 
 const categories = [
   { id: 'all', label: 'ทั้งหมด', icon: 'fa-solid fa-list' },
@@ -856,6 +948,7 @@ watch(cart, (newCart) => {
 }, { deep: true });
 
 onUnmounted(() => {
+  window.removeEventListener('click', closeRequesterDropdown);
   window.dispatchEvent(new CustomEvent('cart-state-change', {
     detail: { hasItems: false }
   }));
@@ -1040,7 +1133,11 @@ const loadItems = async () => {
 const loadMyTransfers = async () => {
   isLoadingOrders.value = true;
   try {
-    const res = await api.centralKitchen.getTransfers();
+    const params = {};
+    if (periodMode.value === 'daily' && selectedDate.value) params.date = selectedDate.value;
+    else if (periodMode.value === 'monthly' && selectedMonth.value) params.month = selectedMonth.value;
+    else if (periodMode.value === 'yearly' && selectedYear.value) params.year = selectedYear.value;
+    const res = await api.centralKitchen.getTransfers(params);
     if (res.success) {
       myTransfers.value = res.data;
     }
@@ -1052,6 +1149,7 @@ const loadMyTransfers = async () => {
 };
 
 onMounted(() => {
+  window.addEventListener('click', closeRequesterDropdown);
   loadItems();
   loadMyTransfers();
 });

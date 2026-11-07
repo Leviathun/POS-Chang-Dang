@@ -454,8 +454,9 @@ export const centralKitchen = {
   async getFinancesSummary() {
     return request('GET', '/api/central-kitchen/finances/summary');
   },
-  async getReceivablesBreakdown() {
-    return request('GET', '/api/central-kitchen/finances/receivables-breakdown');
+  async getReceivablesBreakdown(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/finances/receivables-breakdown${query ? '?' + query : ''}`);
   },
   async getFinancesLogs(params = {}) {
     const query = new URLSearchParams(params).toString();

@@ -49,11 +49,27 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loading">
-                <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
+              <template v-if="loading">
+                <tr v-for="n in 4" :key="'sk-stock-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: var(--space-md);">
+                    <div class="skeleton mb-xs" style="height: 16px; width: 140px; border-radius: 4px;"></div>
+                    <div class="skeleton" style="height: 12px; width: 95px; border-radius: 4px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="flex justify-center gap-sm">
+                      <div class="skeleton" style="height: 30px; width: 80px; border-radius: 6px;"></div>
+                      <div class="skeleton" style="height: 30px; width: 72px; border-radius: 6px;"></div>
+                      <div class="skeleton" style="height: 30px; width: 68px; border-radius: 6px;"></div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="stockItems.length === 0">
                 <td colspan="4" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก (เพิ่มสินค้าในหน้า "จัดการเมนู")
@@ -106,8 +122,19 @@
 
       <!-- Mobile Stock Card List (Visible on mobile only) -->
       <div class="mobile-stock-list-container">
-        <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner mx-auto"></div>
+        <div v-if="loading" class="mobile-stock-list">
+          <div v-for="n in 4" :key="'sk-m-stock-' + n" class="mobile-stock-card">
+            <div class="mobile-stock-card-body">
+              <div class="mobile-stock-card-details" style="flex: 1;">
+                <div class="skeleton mb-xs" style="height: 16px; width: 60%; border-radius: 4px;"></div>
+                <div class="skeleton" style="height: 12px; width: 35%; border-radius: 4px;"></div>
+              </div>
+              <div class="mobile-stock-card-meta">
+                <div class="skeleton mb-xs" style="height: 18px; width: 65px; border-radius: 4px; margin-left: auto;"></div>
+                <div class="skeleton" style="height: 14px; width: 50px; border-radius: 4px; margin-left: auto;"></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div v-else-if="stockItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการสินค้าที่ต้องคุมคลังสต็อก
@@ -205,11 +232,27 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loading">
-                <td colspan="4" class="text-center" style="padding: var(--space-3xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
+              <template v-if="loading">
+                <tr v-for="n in 4" :key="'sk-stock-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: var(--space-md);">
+                    <div class="skeleton mb-xs" style="height: 16px; width: 140px; border-radius: 4px;"></div>
+                    <div class="skeleton" style="height: 12px; width: 95px; border-radius: 4px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="flex justify-center gap-sm">
+                      <div class="skeleton" style="height: 30px; width: 80px; border-radius: 6px;"></div>
+                      <div class="skeleton" style="height: 30px; width: 72px; border-radius: 6px;"></div>
+                      <div class="skeleton" style="height: 30px; width: 68px; border-radius: 6px;"></div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="modifierItems.length === 0">
                 <td colspan="4" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
                   ไม่มีรายการเครื่องปรุงในระบบ
@@ -266,8 +309,19 @@
 
       <!-- Mobile Free Modifiers Card List -->
       <div class="mobile-stock-list-container">
-        <div v-if="loading" class="text-center py-3xl">
-          <div class="spinner mx-auto"></div>
+        <div v-if="loading" class="mobile-stock-list">
+          <div v-for="n in 4" :key="'sk-m-stock-' + n" class="mobile-stock-card">
+            <div class="mobile-stock-card-body">
+              <div class="mobile-stock-card-details" style="flex: 1;">
+                <div class="skeleton mb-xs" style="height: 16px; width: 60%; border-radius: 4px;"></div>
+                <div class="skeleton" style="height: 12px; width: 35%; border-radius: 4px;"></div>
+              </div>
+              <div class="mobile-stock-card-meta">
+                <div class="skeleton mb-xs" style="height: 18px; width: 65px; border-radius: 4px; margin-left: auto;"></div>
+                <div class="skeleton" style="height: 14px; width: 50px; border-radius: 4px; margin-left: auto;"></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
           ไม่มีรายการเครื่องปรุงในระบบ
@@ -495,8 +549,14 @@
             {{ activeItem?.name }}
           </div>
 
-          <div v-if="logsLoading" style="text-align: center; padding: var(--space-2xl);">
-            <div class="spinner mx-auto"></div>
+          <div v-if="logsLoading" style="display: flex; flex-direction: column; gap: var(--space-md);">
+            <div v-for="n in 3" :key="'sk-log-' + n" class="card p-sm flex flex-between align-center" style="background: var(--bg-primary);">
+              <div style="flex: 1;">
+                <div class="skeleton mb-xs" style="height: 14px; width: 55%; border-radius: 4px;"></div>
+                <div class="skeleton" style="height: 11px; width: 35%; border-radius: 4px;"></div>
+              </div>
+              <div class="skeleton" style="height: 16px; width: 50px; border-radius: 4px;"></div>
+            </div>
           </div>
           <div v-else-if="logs.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ยังไม่มีบันทึกประวัติการปรับปรุงสต็อกสำหรับสินค้าชิ้นนี้

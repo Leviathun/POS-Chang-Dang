@@ -59,17 +59,17 @@ export function formatCurrency(amount) {
   });
 }
 
-export function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  let d;
+function parseBangkokDate(dateStr) {
   if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
     const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
-    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
-    d = new Date(isoStr);
-  } else {
-    d = new Date(dateStr);
+    return new Date(timeAdded.replace(' ', 'T') + '+07:00');
   }
-  return d.toLocaleDateString('th-TH', {
+  return new Date(dateStr);
+}
+
+export function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  return parseBangkokDate(dateStr).toLocaleDateString('th-TH', {
     timeZone: 'Asia/Bangkok',
     year: 'numeric',
     month: 'short',
@@ -79,15 +79,7 @@ export function formatDate(dateStr) {
 
 export function formatTime(dateStr) {
   if (!dateStr) return '-';
-  let d;
-  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
-    const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
-    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
-    d = new Date(isoStr);
-  } else {
-    d = new Date(dateStr);
-  }
-  return d.toLocaleTimeString('th-TH', {
+  return parseBangkokDate(dateStr).toLocaleTimeString('th-TH', {
     timeZone: 'Asia/Bangkok',
     hour: '2-digit',
     minute: '2-digit',
@@ -99,23 +91,40 @@ export function formatDateTime(dateStr) {
   return formatDate(dateStr) + ' ' + formatTime(dateStr);
 }
 
+const bkkDateFmt = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Asia/Bangkok',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+});
+
 export function getToday() {
-  const formatter = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-  return formatter.format(new Date());
+  return bkkDateFmt.format(new Date());
 }
 
 export function getCurrentMonth() {
-  const formatter = new Intl.DateTimeFormat('sv-SE', {
+  return getToday().substring(0, 7);
+}
+
+export function isTimeInRange(dateStr, startStr = '00.00', endStr = '23.59') {
+  if (!dateStr) return true;
+  const parseTimeDot = (s) => {
+    const [h, m] = String(s || '00.00').replace(':', '.').split('.');
+    return (Number(h) || 0) * 60 + (Number(m) || 0);
+  };
+  const d = parseBangkokDate(dateStr);
+  const [bh, bm] = d.toLocaleTimeString('en-US', {
     timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: '2-digit'
-  });
-  return formatter.format(new Date());
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  }).split(':').map(Number);
+  const timeVal = (bh || 0) * 60 + (bm || 0);
+  const startVal = parseTimeDot(startStr);
+  const endVal = parseTimeDot(endStr);
+  return startVal <= endVal
+    ? timeVal >= startVal && timeVal <= endVal
+    : timeVal >= startVal || timeVal <= endVal;
 }
 
 // ─── Session Helpers ───
@@ -167,7 +176,6 @@ export function showConfetti() {
   container.className = 'confetti-container';
   document.body.appendChild(container);
 
-  // colors
   const colors = ['#8b0313', '#ad281e', '#ffab2b', '#fff7df', '#2a9d8f'];
 
   for (let i = 0; i < 30; i++) {
@@ -194,7 +202,6 @@ export function roundUp(amount, to) {
 
 export function compressImage(base64Str, maxWidth = 300, maxHeight = 300, quality = 0.7) {
   return new Promise((resolve, reject) => {
-    // If it's not a base64 image string, resolve immediately
     if (!base64Str || typeof base64Str !== 'string' || !base64Str.startsWith('data:image/')) {
       return resolve(base64Str);
     }
@@ -238,11 +245,13 @@ export default {
   formatDateTime,
   getToday,
   getCurrentMonth,
+  isTimeInRange,
   getUser,
   isAdmin,
   isManager,
   isManagerOrAdmin,
   isStaff,
+  isCentralKitchenSession,
   getRoleLabel,
   showConfetti,
   roundUp,

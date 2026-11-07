@@ -919,6 +919,10 @@ async function initDatabase() {
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_branch ON activity_logs(branch_id)`,
     `CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`,
     `CREATE INDEX IF NOT EXISTS idx_expenses_branch_date ON expenses(branch_id, expense_date)`,
+    `CREATE INDEX IF NOT EXISTS idx_ck_transfer_items_tid ON central_kitchen_transfer_items(transfer_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_ck_transfers_branch_created ON central_kitchen_transfers(branch_id, created_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_ck_transfers_status ON central_kitchen_transfers(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_ck_restock_logs_created ON central_kitchen_restock_logs(created_at)`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_pin_unique ON users(pin) WHERE active = 1`
   ];
 

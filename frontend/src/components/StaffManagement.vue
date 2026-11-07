@@ -84,9 +84,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loadingEmployees">
-                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
-              </tr>
+              <template v-if="loadingEmployees">
+                <tr v-for="n in 4" :key="'sk-emp-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td v-for="c in (isAdminUser ? 6 : 5)" :key="'sk-emp-c-' + c" class="text-center p-md">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 85px; border-radius: 4px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="employees.length === 0">
                 <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
                   <div class="flex flex-col align-center justify-center gap-xs">
@@ -139,7 +143,15 @@
 
       <!-- Mobile Card List View -->
       <div class="show-mobile-flex staff-mobile-card-list">
-        <div v-if="loadingEmployees" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <template v-if="loadingEmployees">
+          <div v-for="n in 3" :key="'sk-m-emp-' + n" class="staff-mobile-card">
+            <div class="flex flex-between align-center">
+              <div class="skeleton" style="height: 18px; width: 120px; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 22px; width: 70px; border-radius: 999px;"></div>
+            </div>
+            <div class="skeleton" style="height: 14px; width: 90px; border-radius: 4px;"></div>
+          </div>
+        </template>
         <div v-else-if="employees.length === 0" class="card text-center p-xl text-secondary">ไม่พบข้อมูลพนักงาน</div>
         <div 
           v-else 
@@ -311,9 +323,10 @@
       </div>
 
       <!-- Calendar Month Grid Card -->
-      <div v-if="loadingMonthlyAttendance" class="card text-center p-3xl" style="border: 1px solid var(--border-color);">
-        <div class="spinner mx-auto mb-sm"></div>
-        <div class="text-sm font-bold text-primary">กำลังโหลดข้อมูลปฏิทิน...</div>
+      <div v-if="loadingMonthlyAttendance" class="card p-md" style="border: 1px solid var(--border-color);">
+        <div class="grid" style="grid-template-columns: repeat(7, 1fr); gap: 8px;">
+          <div v-for="n in 28" :key="'sk-cal-' + n" class="skeleton" style="height: 64px; border-radius: 8px;"></div>
+        </div>
       </div>
       <div v-else class="card p-sm md:p-md overflow-hidden" style="border: 1px solid var(--border-color); border-radius: var(--radius-md);">
         <!-- Calendar Scroll Wrapper to prevent overflowing outside card -->
@@ -497,9 +510,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loadingAttendance">
-                <td colspan="4" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
-              </tr>
+              <template v-if="loadingAttendance">
+                <tr v-for="n in 4" :key="'sk-att-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td v-for="c in 4" :key="'sk-att-c-' + c" class="text-center p-md">
+                    <div class="skeleton mx-auto" style="height: 20px; width: 95px; border-radius: 6px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="attendanceRecords.length === 0">
                 <td colspan="4" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
                   <div class="flex flex-col align-center justify-center gap-xs">
@@ -604,7 +621,15 @@
 
       <!-- Attendance Sheet Mobile Cards List -->
       <div class="show-mobile-flex staff-mobile-card-list">
-        <div v-if="loadingAttendance" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <template v-if="loadingAttendance">
+          <div v-for="n in 3" :key="'sk-m-att-' + n" class="staff-mobile-card">
+            <div class="flex flex-between align-center">
+              <div class="skeleton" style="height: 18px; width: 120px; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 24px; width: 80px; border-radius: 8px;"></div>
+            </div>
+            <div class="skeleton" style="height: 34px; width: 100%; border-radius: 8px;"></div>
+          </div>
+        </template>
         <div v-else-if="attendanceRecords.length === 0" class="card text-center p-xl text-secondary">ไม่พบรายชื่อพนักงาน</div>
         <div 
           v-else 
@@ -738,9 +763,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loadingEventOts">
-                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
-              </tr>
+              <template v-if="loadingEventOts">
+                <tr v-for="n in 3" :key="'sk-ot-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td v-for="c in (isAdminUser ? 6 : 5)" :key="'sk-ot-c-' + c" class="text-center p-md">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 85px; border-radius: 4px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="eventOts.length === 0">
                 <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
                   <div class="flex flex-col align-center justify-center gap-xs">
@@ -791,7 +820,15 @@
 
       <!-- Event OT Mobile Cards List -->
       <div class="show-mobile-flex staff-mobile-card-list">
-        <div v-if="loadingEventOts" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <template v-if="loadingEventOts">
+          <div v-for="n in 3" :key="'sk-m-ot-' + n" class="staff-mobile-card">
+            <div class="flex flex-between align-center">
+              <div class="skeleton" style="height: 18px; width: 130px; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 18px; width: 75px; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton" style="height: 14px; width: 95px; border-radius: 4px;"></div>
+          </div>
+        </template>
         <div v-else-if="eventOts.length === 0" class="card text-center p-xl text-secondary">{{ emptyEventOtsMessage }}</div>
         <div 
           v-else 
@@ -869,9 +906,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loadingAdvances">
-                <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
-              </tr>
+              <template v-if="loadingAdvances">
+                <tr v-for="n in 3" :key="'sk-adv-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td v-for="c in (isAdminUser ? 6 : 5)" :key="'sk-adv-c-' + c" class="text-center p-md">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 85px; border-radius: 4px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="advances.length === 0">
                 <td colspan="6" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
                   <div class="flex flex-col align-center justify-center gap-xs">
@@ -938,7 +979,15 @@
 
       <!-- Advances Mobile Cards List -->
       <div class="show-mobile-flex staff-mobile-card-list">
-        <div v-if="loadingAdvances" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <template v-if="loadingAdvances">
+          <div v-for="n in 3" :key="'sk-m-adv-' + n" class="staff-mobile-card">
+            <div class="flex flex-between align-center">
+              <div class="skeleton" style="height: 18px; width: 120px; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 18px; width: 75px; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton" style="height: 14px; width: 90px; border-radius: 4px;"></div>
+          </div>
+        </template>
         <div v-else-if="advances.length === 0" class="card text-center p-xl text-secondary">{{ emptyAdvancesMessage }}</div>
         <div 
           v-else 
@@ -1154,9 +1203,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loadingPayroll">
-                <td colspan="9" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important;"><div class="spinner mx-auto"></div></td>
-              </tr>
+              <template v-if="loadingPayroll">
+                <tr v-for="n in 4" :key="'sk-pay-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td v-for="c in 9" :key="'sk-pay-c-' + c" class="text-center p-md">
+                    <div class="skeleton mx-auto" style="height: 18px; width: 75px; border-radius: 4px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="payrollList.length === 0">
                 <td colspan="9" class="text-center" style="padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
                   <div class="flex flex-col align-center justify-center gap-xs">
@@ -1250,7 +1303,15 @@
 
       <!-- Payroll Summary Mobile Cards List -->
       <div class="show-mobile-flex staff-mobile-card-list">
-        <div v-if="loadingPayroll" class="card text-center p-xl"><div class="spinner mx-auto"></div></div>
+        <template v-if="loadingPayroll">
+          <div v-for="n in 3" :key="'sk-m-pay-' + n" class="staff-mobile-card">
+            <div class="flex flex-between align-center">
+              <div class="skeleton" style="height: 18px; width: 120px; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 22px; width: 85px; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton" style="height: 14px; width: 95px; border-radius: 4px;"></div>
+          </div>
+        </template>
         <div v-else-if="payrollList.length === 0" class="card text-center p-xl text-secondary">ไม่พบรายการคำนวณเงินเดือนในงวดนี้</div>
         <div 
           v-else 

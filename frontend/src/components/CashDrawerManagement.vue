@@ -21,13 +21,39 @@
       </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div v-if="cashDrawerLoading" class="content-loading-overlay">
-      <div class="loading-box flex flex-col align-center justify-center">
-        <div class="spinner mb-sm"></div>
-        <span class="text-sm font-bold text-primary">กำลังโหลดข้อมูลรอบเงินสด...</span>
+    <!-- Skeleton Loading State -->
+    <template v-if="cashDrawerLoading">
+      <div class="hide-mobile table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: rgba(139, 3, 19, 0.03);">
+              <th v-for="h in ['วันที่', 'เงินทอนตั้งต้น', 'ยอดขายเงินสด', 'ยอดจ่ายเงินสด', 'เงินสดที่ควรมี', 'เงินสดนับจริง', 'ผลต่าง (ขาด/เกิน)', 'สถานะ', 'ตรวจสอบ']" :key="h" class="text-center" style="padding: 16px var(--space-md); border-bottom: 1px solid var(--border-color); white-space: nowrap;">{{ h }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="n in 4" :key="'sk-cd-' + n" style="border-bottom: 1px solid var(--border-color);">
+              <td v-for="c in 9" :key="'sk-cd-c-' + c" class="text-center" style="padding: 18px var(--space-md);">
+                <div class="skeleton mx-auto" style="height: 18px; width: 75px; border-radius: 4px;"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-    </div>
+      <div class="show-mobile-flex cash-audit-mobile-list" style="flex-direction: column; gap: 12px; margin-bottom: var(--space-md);">
+        <div v-for="n in 3" :key="'sk-m-cd-' + n" class="cash-audit-mobile-card">
+          <div class="cash-card-header">
+            <div class="skeleton" style="height: 18px; width: 110px; border-radius: 4px;"></div>
+            <div class="skeleton" style="height: 22px; width: 75px; border-radius: 999px;"></div>
+          </div>
+          <div class="cash-card-grid">
+            <div v-for="g in 4" :key="'sk-g-' + g" class="grid-item">
+              <div class="skeleton mb-xs" style="height: 12px; width: 65px; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 18px; width: 80px; border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <div v-else-if="cashDrawerSessions.length === 0" class="flex flex-col justify-center align-center text-center gap-xs" style="padding: var(--space-3xl) var(--space-md); color: var(--text-secondary);">
       <i class="fa-solid fa-cash-register text-secondary" style="font-size: 2rem; opacity: 0.35;"></i>

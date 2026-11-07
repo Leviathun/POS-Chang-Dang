@@ -85,9 +85,27 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="text-center py-3xl">
-        <div class="spinner"></div>
+      <!-- Loading State (Skeleton) -->
+      <div v-if="loading" class="bulk-stock-table-container">
+        <div class="bulk-stock-rows-container">
+          <div v-for="n in 5" :key="'sk-bulk-' + n" class="bulk-stock-row">
+            <div class="bulk-item-name-col">
+              <div class="skeleton" style="height: 18px; width: 140px; border-radius: 4px;"></div>
+            </div>
+            <div class="bulk-item-current-col text-center">
+              <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+            </div>
+            <div class="bulk-item-input-col">
+              <div class="skeleton mx-auto" style="height: 36px; width: 110px; border-radius: 8px;"></div>
+            </div>
+            <div class="bulk-item-current-col text-center">
+              <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+            </div>
+            <div class="bulk-item-input-col">
+              <div class="skeleton mx-auto" style="height: 36px; width: 110px; border-radius: 8px;"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Form Grid/Table for Menu Items -->
