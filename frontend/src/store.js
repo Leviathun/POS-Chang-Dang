@@ -1,5 +1,8 @@
 import { reactive } from 'vue';
 import api from './api';
+import { getToday, getCurrentMonth } from './helpers';
+
+const sortByOrder = (a, b) => (a.sort_order !== b.sort_order ? (a.sort_order || 0) - (b.sort_order || 0) : a.id - b.id);
 
 export const store = reactive({
   menuItems: [],
@@ -35,10 +38,24 @@ export const store = reactive({
   reportMonthlyExpenses: [],
   reportMonthlyOrders: [],
 
+  _applyStockRes(res) {
+    if (res && res.success && res.data && Array.isArray(res.data.items)) {
+      this.stockItems = res.data.items.map(item => ({
+        ...item,
+        quantity: item.stock,
+        raw_quantity: item.raw_stock
+      }));
+      if (res.data.threshold) {
+        this.lowStockThreshold = Number(res.data.threshold) || 5;
+      }
+    } else {
+      this.stockItems = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    }
+  },
+
   // Fetch Menu & Categories (cached unless forced, refetches in background if cached)
   async fetchMenu(force = false) {
     if (this.menuLoaded && !force) {
-      // Revalidate in the background (stale-while-revalidate)
       Promise.all([
         api.menu.getAll(),
         api.menu.getCategories()
@@ -55,7 +72,6 @@ export const store = reactive({
       return this.menuPromise;
     }
 
-    // First-time load or forced reload
     this.menuPromise = (async () => {
       try {
         const [menuRes, catRes] = await Promise.all([
@@ -79,21 +95,7 @@ export const store = reactive({
   // Fetch Stock Items (cached unless forced, refetches in background if cached)
   async fetchStock(force = false) {
     if (this.stockLoaded && !force) {
-      // Revalidate in the background (stale-while-revalidate)
-      api.stock.getAll().then(res => {
-        if (res.success && res.data && Array.isArray(res.data.items)) {
-          this.stockItems = res.data.items.map(item => ({
-            ...item,
-            quantity: item.stock,
-            raw_quantity: item.raw_stock
-          }));
-          if (res.data.threshold) {
-            this.lowStockThreshold = Number(res.data.threshold) || 5;
-          }
-        } else {
-          this.stockItems = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
-        }
-      }).catch(e => {
+      api.stock.getAll().then(res => this._applyStockRes(res)).catch(e => {
         console.error('Background stock fetch error:', e);
       });
       return;
@@ -103,22 +105,10 @@ export const store = reactive({
       return this.stockPromise;
     }
 
-    // First-time load or forced reload
     this.stockPromise = (async () => {
       try {
         const res = await api.stock.getAll();
-        if (res.success && res.data && Array.isArray(res.data.items)) {
-          this.stockItems = res.data.items.map(item => ({
-            ...item,
-            quantity: item.stock,
-            raw_quantity: item.raw_stock
-          }));
-          if (res.data.threshold) {
-            this.lowStockThreshold = Number(res.data.threshold) || 5;
-          }
-        } else {
-          this.stockItems = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
-        }
+        this._applyStockRes(res);
         this.stockLoaded = true;
       } catch (e) {
         console.error('Store stock fetch error:', e);
@@ -131,7 +121,6 @@ export const store = reactive({
     return this.stockPromise;
   },
 
-  // Invalidate specific cache stores on change
   clearMenuCache() {
     this.menuLoaded = false;
     this.menuPromise = null;
@@ -142,17 +131,10 @@ export const store = reactive({
     this.stockPromise = null;
   },
 
-  // Helper methods to update local menu/category data instantly
   addCategory(category) {
     if (!category) return;
-    const cat = category.data || category;
-    this.categories.push(cat);
-    this.categories.sort((a, b) => {
-      if (a.sort_order !== b.sort_order) {
-        return (a.sort_order || 0) - (b.sort_order || 0);
-      }
-      return a.id - b.id;
-    });
+    this.categories.push(category.data || category);
+    this.categories.sort(sortByOrder);
   },
 
   deleteCategory(catId) {
@@ -163,24 +145,14 @@ export const store = reactive({
     if (!item) return;
     const mi = item.data || item;
     this.menuItems.push(mi);
-    this.menuItems.sort((a, b) => {
-      if (a.sort_order !== b.sort_order) {
-        return (a.sort_order || 0) - (b.sort_order || 0);
-      }
-      return a.id - b.id;
-    });
+    this.menuItems.sort(sortByOrder);
     if (this.stockLoaded) {
       this.stockItems.push({
         ...mi,
         quantity: mi.stock !== undefined ? mi.stock : mi.quantity,
         raw_quantity: mi.raw_stock !== undefined ? mi.raw_stock : mi.raw_quantity
       });
-      this.stockItems.sort((a, b) => {
-        if (a.sort_order !== b.sort_order) {
-          return (a.sort_order || 0) - (b.sort_order || 0);
-        }
-        return a.id - b.id;
-      });
+      this.stockItems.sort(sortByOrder);
     }
   },
 
@@ -190,12 +162,7 @@ export const store = reactive({
     const idx = this.menuItems.findIndex(m => m.id === mi.id);
     if (idx !== -1) {
       this.menuItems[idx] = mi;
-      this.menuItems.sort((a, b) => {
-        if (a.sort_order !== b.sort_order) {
-          return (a.sort_order || 0) - (b.sort_order || 0);
-        }
-        return a.id - b.id;
-      });
+      this.menuItems.sort(sortByOrder);
     }
     const sIdx = this.stockItems.findIndex(s => s.id === mi.id);
     if (sIdx !== -1) {
@@ -205,12 +172,7 @@ export const store = reactive({
         quantity: mi.stock !== undefined ? mi.stock : mi.quantity,
         raw_quantity: mi.raw_stock !== undefined ? mi.raw_stock : mi.raw_quantity
       };
-      this.stockItems.sort((a, b) => {
-        if (a.sort_order !== b.sort_order) {
-          return (a.sort_order || 0) - (b.sort_order || 0);
-        }
-        return a.id - b.id;
-      });
+      this.stockItems.sort(sortByOrder);
     }
   },
 
@@ -250,7 +212,6 @@ export const store = reactive({
       if (stock !== undefined) this.stockItems[idx].quantity = stock;
       if (rawStock !== undefined) this.stockItems[idx].raw_quantity = rawStock;
     }
-    // Also update menuItems stock to keep POS in sync!
     const mIdx = this.menuItems.findIndex(m => Number(m.id) === numId);
     if (mIdx !== -1) {
       if (stock !== undefined) {
@@ -266,17 +227,12 @@ export const store = reactive({
 
   async fetchModifiers(force = false) {
     if (this.modifiersLoaded && !force) {
-      // Revalidate in the background
       Promise.all([
         api.modifiers.getAll(),
         api.modifiers.getPresets()
       ]).then(([modRes, presetRes]) => {
-        if (modRes.success) {
-          this.modifiers = modRes.data || [];
-        }
-        if (presetRes.success) {
-          this.modifierPresets = presetRes.data || [];
-        }
+        if (modRes.success) this.modifiers = modRes.data || [];
+        if (presetRes.success) this.modifierPresets = presetRes.data || [];
       }).catch(e => {
         console.error('Background modifiers fetch error:', e);
       });
@@ -293,12 +249,8 @@ export const store = reactive({
           api.modifiers.getAll(),
           api.modifiers.getPresets()
         ]);
-        if (modRes.success) {
-          this.modifiers = modRes.data || [];
-        }
-        if (presetRes.success) {
-          this.modifierPresets = presetRes.data || [];
-        }
+        if (modRes.success) this.modifiers = modRes.data || [];
+        if (presetRes.success) this.modifierPresets = presetRes.data || [];
         this.modifiersLoaded = true;
       } catch (e) {
         console.error('Store modifiers fetch error:', e);
@@ -317,25 +269,29 @@ export const store = reactive({
   },
 
   async fetchSettingsData(branchId = null, force = false) {
+    const loadSettingsTuple = () => Promise.all([
+      api.settings.getAll(branchId).catch(e => {
+        console.error('fetchSettingsData - settings.getAll error:', e);
+        return { success: false, data: {} };
+      }),
+      api.auth.getBranches().catch(e => {
+        console.error('fetchSettingsData - auth.getBranches error:', e);
+        return { success: false, data: [] };
+      }),
+      api.auth.getUsers().catch(e => {
+        console.error('fetchSettingsData - auth.getUsers error:', e);
+        return { success: false, data: [] };
+      })
+    ]);
+
+    const applySettingsTuple = ([setRes, brRes, usrRes]) => {
+      if (setRes && setRes.success) this.settings = setRes.data || {};
+      if (brRes && brRes.success) this.branches = brRes.data || [];
+      this.users = (usrRes && usrRes.data) ? usrRes.data : (Array.isArray(usrRes) ? usrRes : []);
+    };
+
     if (this.settingsLoaded && !force && this.settingsBranchId === branchId) {
-      Promise.all([
-        api.settings.getAll(branchId).catch(e => {
-          console.error('fetchSettingsData background - settings.getAll error:', e);
-          return { success: false, data: {} };
-        }),
-        api.auth.getBranches().catch(e => {
-          console.error('fetchSettingsData background - auth.getBranches error:', e);
-          return { success: false, data: [] };
-        }),
-        api.auth.getUsers().catch(e => {
-          console.error('fetchSettingsData background - auth.getUsers error:', e);
-          return { success: false, data: [] };
-        })
-      ]).then(([setRes, brRes, usrRes]) => {
-        if (setRes && setRes.success) this.settings = setRes.data || {};
-        if (brRes && brRes.success) this.branches = brRes.data || [];
-        this.users = (usrRes && usrRes.data) ? usrRes.data : (Array.isArray(usrRes) ? usrRes : []);
-      }).catch(e => console.error(e));
+      loadSettingsTuple().then(applySettingsTuple).catch(e => console.error(e));
       return;
     }
 
@@ -345,23 +301,7 @@ export const store = reactive({
 
     this.settingsPromise = (async () => {
       try {
-        const [setRes, brRes, usrRes] = await Promise.all([
-          api.settings.getAll(branchId).catch(e => {
-            console.error('fetchSettingsData - settings.getAll error:', e);
-            return { success: false, data: {} };
-          }),
-          api.auth.getBranches().catch(e => {
-            console.error('fetchSettingsData - auth.getBranches error:', e);
-            return { success: false, data: [] };
-          }),
-          api.auth.getUsers().catch(e => {
-            console.error('fetchSettingsData - auth.getUsers error:', e);
-            return { success: false, data: [] };
-          })
-        ]);
-        if (setRes && setRes.success) this.settings = setRes.data || {};
-        if (brRes && brRes.success) this.branches = brRes.data || [];
-        this.users = (usrRes && usrRes.data) ? usrRes.data : (Array.isArray(usrRes) ? usrRes : []);
+        applySettingsTuple(await loadSettingsTuple());
         this.settingsBranchId = branchId;
         this.settingsLoaded = true;
       } catch (e) {
@@ -376,15 +316,9 @@ export const store = reactive({
   },
 
   async fetchReports(branchId = null, force = false) {
-    const formatter = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'Asia/Bangkok',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    const today = formatter.format(new Date());
-    const currentMonth = today.substring(0, 7);
-    
+    const today = getToday();
+    const currentMonth = getCurrentMonth();
+
     if (this.reportsLoaded && !force && this.reportsBranchId === branchId) {
       return;
     }
@@ -396,15 +330,15 @@ export const store = reactive({
     this.reportsPromise = (async () => {
       try {
         const [sum, top, daily, exp, act, hist, monthlyRes, expMonthRes, monthlyOrdersRes] = await Promise.all([
-          api.reports.summary(branchId).catch(e => ({ success: false, data: null })),
-          api.reports.topItems(7, branchId).catch(e => ({ success: false, data: [] })),
-          api.reports.daily(today, branchId).catch(e => ({ success: false, data: null })),
-          api.expenses.get({ date: today, branch_id: branchId }).catch(e => ({ success: false, data: [] })),
-          api.activities.get({ date: today, branch_id: branchId, limit: 1000 }).catch(e => ({ success: false, data: [] })),
-          api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }).catch(e => ({ success: false, data: [] })),
-          api.reports.monthly(currentMonth, branchId).catch(e => ({ success: false, data: null })),
-          api.expenses.get({ month: currentMonth, branch_id: branchId }).catch(e => ({ success: false, data: [] })),
-          api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId }).catch(e => ({ success: false, data: [] }))
+          api.reports.summary(branchId).catch(() => ({ success: false, data: null })),
+          api.reports.topItems(7, branchId).catch(() => ({ success: false, data: [] })),
+          api.reports.daily(today, branchId).catch(() => ({ success: false, data: null })),
+          api.expenses.get({ date: today, branch_id: branchId }).catch(() => ({ success: false, data: [] })),
+          api.activities.get({ date: today, branch_id: branchId, limit: 1000 }).catch(() => ({ success: false, data: [] })),
+          api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }).catch(() => ({ success: false, data: [] })),
+          api.reports.monthly(currentMonth, branchId).catch(() => ({ success: false, data: null })),
+          api.expenses.get({ month: currentMonth, branch_id: branchId }).catch(() => ({ success: false, data: [] })),
+          api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId }).catch(() => ({ success: false, data: [] }))
         ]);
         this.reportSummary = sum && sum.success ? sum.data : (sum || null);
         this.reportTopItems = top && top.success ? (top.data || []) : [];

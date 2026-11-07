@@ -53,6 +53,17 @@
 
     <!-- Tab 1: Shop Settings Form -->
     <div v-if="activeTab === 'shop'" class="card">
+      <div v-if="shopSettingsLoading" class="flex flex-col gap-md">
+        <div class="skeleton" style="width: 100%; height: 78px; border-radius: var(--radius-md);"></div>
+        <div class="skeleton" style="width: 100%; height: 74px; border-radius: var(--radius-lg);"></div>
+        <div class="skeleton" style="width: 100%; height: 74px; border-radius: var(--radius-lg);"></div>
+        <div class="divider my-xs" style="height: 1px; background: var(--border-color);"></div>
+        <div class="skeleton" style="width: 220px; height: 20px; border-radius: var(--radius-sm);"></div>
+        <div class="skeleton" style="width: 100%; height: 46px; border-radius: var(--radius-md);"></div>
+        <div class="skeleton mt-sm" style="width: 100%; height: 48px; border-radius: var(--radius-md);"></div>
+      </div>
+
+      <template v-else>
       <!-- Branch Selector for Admin -->
       <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl settings-branch-header">
         <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store mr-xs"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
@@ -170,6 +181,7 @@
         <i v-else class="fa-solid fa-floppy-disk"></i>
         {{ isSavingShopSettings ? 'กำลังบันทึก...' : 'บันทึกตั้งค่าระบบร้าน' }}
       </button>
+      </template>
     </div>
 
     <!-- Tab 2: User management -->
@@ -194,11 +206,29 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="usersLoading">
-                <td colspan="5" class="text-center" style="padding: var(--space-2xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
+              <template v-if="usersLoading">
+                <tr v-for="i in 4" :key="'u-skel-' + i" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: var(--space-md);">
+                    <div class="skeleton mb-xs" style="width: 140px; height: 18px; border-radius: var(--radius-sm);"></div>
+                    <div class="skeleton" style="width: 110px; height: 14px; border-radius: var(--radius-sm);"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="width: 100px; height: 18px; border-radius: var(--radius-sm);"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="width: 80px; height: 24px; border-radius: var(--radius-full);"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="width: 48px; height: 18px; border-radius: var(--radius-sm);"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="flex justify-center gap-sm">
+                      <div class="skeleton" style="width: 80px; height: 38px; border-radius: var(--radius-md);"></div>
+                      <div class="skeleton" style="width: 70px; height: 38px; border-radius: var(--radius-md);"></div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
               <tr 
                 v-else 
                 v-for="u in users" 
@@ -244,9 +274,22 @@
 
       <!-- Mobile Users Cards List (Visible on Mobile Only) -->
       <div class="show-mobile-only p-md mobile-users-list">
-        <div v-if="usersLoading" style="text-align: center; padding: var(--space-xl);">
-          <div class="spinner mx-auto"></div>
-        </div>
+        <template v-if="usersLoading">
+          <div v-for="i in 3" :key="'um-skel-' + i" class="card p-sm flex align-center gap-md" style="margin-bottom: var(--space-sm);">
+            <div class="skeleton" style="width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;"></div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-between align-center mb-xs">
+                <div class="skeleton" style="width: 120px; height: 18px; border-radius: var(--radius-sm);"></div>
+                <div class="skeleton" style="width: 64px; height: 22px; border-radius: var(--radius-full);"></div>
+              </div>
+              <div class="skeleton mb-sm" style="width: 160px; height: 14px; border-radius: var(--radius-sm);"></div>
+              <div class="flex gap-sm">
+                <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
+                <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
+              </div>
+            </div>
+          </div>
+        </template>
         <div v-else-if="users.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
           ยังไม่มีข้อมูลพนักงาน
         </div>
@@ -418,7 +461,23 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="branches.length === 0">
+              <template v-if="usersLoading || shopSettingsLoading">
+                <tr v-for="i in 3" :key="'b-skel-' + i" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: var(--space-md);">
+                    <div class="skeleton" style="width: 150px; height: 18px; border-radius: var(--radius-sm);"></div>
+                  </td>
+                  <td style="padding: var(--space-md);">
+                    <div class="skeleton" style="width: 220px; height: 18px; border-radius: var(--radius-sm);"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="flex justify-center gap-sm">
+                      <div class="skeleton" style="width: 80px; height: 38px; border-radius: var(--radius-md);"></div>
+                      <div class="skeleton" style="width: 70px; height: 38px; border-radius: var(--radius-md);"></div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+              <tr v-else-if="branches.length === 0">
                 <td colspan="3" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสาขา
                 </td>
@@ -450,7 +509,20 @@
 
       <!-- Mobile Branch Cards List (Visible on Mobile Only) -->
       <div class="show-mobile-only p-md mobile-users-list">
-        <div v-if="branches.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+        <template v-if="usersLoading || shopSettingsLoading">
+          <div v-for="i in 3" :key="'bm-skel-' + i" class="card p-sm flex align-center gap-md" style="margin-bottom: var(--space-sm);">
+            <div class="skeleton" style="width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;"></div>
+            <div class="flex-1 min-w-0">
+              <div class="skeleton mb-xs" style="width: 140px; height: 18px; border-radius: var(--radius-sm);"></div>
+              <div class="skeleton mb-sm" style="width: 180px; height: 14px; border-radius: var(--radius-sm);"></div>
+              <div class="flex gap-sm">
+                <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
+                <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div v-else-if="branches.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
           ยังไม่มีข้อมูลสาขา
         </div>
         <div 
@@ -560,11 +632,28 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="presetsLoading">
-                <td colspan="4" class="text-center" style="padding: var(--space-2xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
+              <template v-if="presetsLoading">
+                <tr v-for="i in 3" :key="'p-skel-' + i" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: var(--space-md);">
+                    <div class="skeleton" style="width: 140px; height: 18px; border-radius: var(--radius-sm);"></div>
+                  </td>
+                  <td style="padding: var(--space-md);">
+                    <div class="flex gap-xs">
+                      <div class="skeleton" style="width: 80px; height: 24px; border-radius: var(--radius-full);"></div>
+                      <div class="skeleton" style="width: 90px; height: 24px; border-radius: var(--radius-full);"></div>
+                    </div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="width: 76px; height: 24px; border-radius: var(--radius-full);"></div>
+                  </td>
+                  <td class="text-center" style="padding: var(--space-md);">
+                    <div class="flex justify-center gap-sm">
+                      <div class="skeleton" style="width: 80px; height: 38px; border-radius: var(--radius-md);"></div>
+                      <div class="skeleton" style="width: 70px; height: 38px; border-radius: var(--radius-md);"></div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="presets.length === 0">
                 <td colspan="4" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
                   ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
@@ -606,8 +695,18 @@
 
       <!-- Mobile Presets List -->
       <div class="show-mobile-only" style="display: none;">
-        <div v-if="presetsLoading" class="card p-lg text-center" style="background: var(--card-bg);">
-          <div class="spinner mx-auto"></div>
+        <div v-if="presetsLoading" class="flex flex-col gap-sm">
+          <div v-for="i in 3" :key="'pm-skel-' + i" class="card p-md flex flex-col gap-sm">
+            <div class="flex flex-between align-center">
+              <div class="skeleton" style="width: 140px; height: 18px; border-radius: var(--radius-sm);"></div>
+              <div class="skeleton" style="width: 70px; height: 22px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton" style="width: 180px; height: 24px; border-radius: var(--radius-full);"></div>
+            <div class="flex gap-sm">
+              <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
+              <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
+            </div>
+          </div>
         </div>
         <div v-else-if="presets.length === 0" class="card p-lg text-center text-secondary" style="background: var(--card-bg);">
           ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
@@ -1468,6 +1567,7 @@ const activeTab = ref('shop');
 const currentUser = ref(null);
 const selectedSettingsBranchId = ref(null);
 const users = computed(() => store.users || []);
+const shopSettingsLoading = ref(false);
 const usersLoading = ref(false);
 const showUserModal = ref(false);
 const isEditUserMode = ref(false);
@@ -1572,8 +1672,7 @@ const userForm = ref({
 
 // Load Shop Settings
 const loadShopSettings = async (force = false) => {
-  const showOverlay = !store.settingsLoaded || force;
-  if (showOverlay) ui.showLoading();
+  shopSettingsLoading.value = !store.settingsLoaded || force;
   try {
     await store.fetchSettingsData(selectedSettingsBranchId.value, force);
     const data = store.settings || {};
@@ -1584,7 +1683,7 @@ const loadShopSettings = async (force = false) => {
     console.error('Failed to load settings:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลตั้งค่าระบบได้', 'error');
   } finally {
-    if (showOverlay) ui.hideLoading();
+    shopSettingsLoading.value = false;
   }
 };
 

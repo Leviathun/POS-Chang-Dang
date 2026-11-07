@@ -29,14 +29,6 @@
       </button>
     </div>
 
-    <!-- Loading Overlay when fetching new data across period/branch changes -->
-    <div v-if="ledgerLoading" class="content-loading-overlay">
-      <div class="loading-box flex flex-col align-center justify-center">
-        <div class="spinner mb-sm"></div>
-        <span class="text-sm font-bold text-primary">กำลังโหลดข้อมูล...</span>
-      </div>
-    </div>
-
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- SUBTAB 1: หน้าบันทึกรายจ่าย (FULL WIDTH VERTICAL FLOW)     -->
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -362,11 +354,30 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="ledgerLoading && allLedgerEntries.length === 0">
-              <td colspan="6" style="text-align: center; padding: var(--space-3xl) var(--space-md) !important;">
-                <div class="spinner mx-auto"></div>
-              </td>
-            </tr>
+            <template v-if="ledgerLoading">
+              <tr v-for="n in 4" :key="'sk-exp-' + n" style="border-bottom: 1px solid var(--border-color);">
+                <td class="text-center" style="padding: 14px var(--space-xs);">
+                  <div class="skeleton mx-auto mb-xs" style="height: 14px; width: 65px; border-radius: 4px;"></div>
+                  <div class="skeleton mx-auto" style="height: 11px; width: 45px; border-radius: 4px;"></div>
+                </td>
+                <td class="text-center" style="padding: 14px var(--space-xs);">
+                  <div class="skeleton mx-auto" style="height: 24px; width: 95px; border-radius: 999px;"></div>
+                </td>
+                <td class="text-left" style="padding: 14px var(--space-md);">
+                  <div class="skeleton mb-xs" style="height: 16px; width: 70%; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 12px; width: 40%; border-radius: 4px;"></div>
+                </td>
+                <td class="text-center" style="padding: 14px var(--space-xs);">
+                  <div class="skeleton mx-auto" style="height: 22px; width: 70px; border-radius: 999px;"></div>
+                </td>
+                <td class="text-center" style="padding: 14px var(--space-xs);">
+                  <div class="skeleton mx-auto" style="height: 18px; width: 75px; border-radius: 4px;"></div>
+                </td>
+                <td class="text-center" style="padding: 14px var(--space-xs);">
+                  <div class="skeleton mx-auto" style="height: 28px; width: 85px; border-radius: 6px;"></div>
+                </td>
+              </tr>
+            </template>
             <tr v-else-if="filteredLedgerEntries.length === 0">
               <td colspan="6" style="text-align: center; padding: var(--space-3xl) var(--space-md) !important; color: var(--text-secondary);">
                 <div class="flex flex-col align-center justify-center gap-xs">
@@ -467,7 +478,17 @@
 
       <!-- Mobile List Cards -->
       <div class="show-mobile-flex mobile-menu-list-container flex-col" style="gap: 12px; padding-bottom: 24px; width: 100%;">
-        <div v-if="filteredLedgerEntries.length === 0" class="card text-center py-xl" style="color: var(--text-tertiary);">
+        <div v-if="ledgerLoading" class="flex flex-col" style="gap: 12px; width: 100%;">
+          <div v-for="n in 4" :key="'sk-m-exp-' + n" class="expense-mobile-card">
+            <div class="flex flex-between align-center mb-xs">
+              <div class="skeleton" style="height: 22px; width: 95px; border-radius: 999px;"></div>
+              <div class="skeleton" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton mb-xs" style="height: 16px; width: 75%; border-radius: 4px;"></div>
+            <div class="skeleton" style="height: 12px; width: 45%; border-radius: 4px;"></div>
+          </div>
+        </div>
+        <div v-else-if="filteredLedgerEntries.length === 0" class="card text-center py-xl" style="color: var(--text-tertiary);">
           ไม่มีรายการในหมวดหมู่นี้
         </div>
         <div v-else class="flex flex-col" style="gap: 12px; width: 100%;">
@@ -574,7 +595,16 @@
             </div>
           </div>
           
-          <div v-if="allCostBreakdownStats.length === 0" class="text-center py-xl text-secondary text-sm">
+          <div v-if="ledgerLoading" class="flex flex-col gap-md">
+            <div v-for="n in 4" :key="'sk-chart-' + n">
+              <div class="flex flex-between align-center mb-xs">
+                <div class="skeleton" style="height: 14px; width: 120px; border-radius: 4px;"></div>
+                <div class="skeleton" style="height: 14px; width: 75px; border-radius: 4px;"></div>
+              </div>
+              <div class="skeleton" style="height: 10px; width: 100%; border-radius: 999px;"></div>
+            </div>
+          </div>
+          <div v-else-if="allCostBreakdownStats.length === 0" class="text-center py-xl text-secondary text-sm">
             <i class="fa-solid fa-chart-pie text-tertiary" style="font-size: 2rem; opacity: 0.35; display: block; margin-bottom: 8px;"></i>
             ไม่มีข้อมูลสำหรับสร้างกราฟ
           </div>
@@ -782,7 +812,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../api';
-import { ui, formatCurrency, formatDate, formatTime, getToday } from '../helpers';
+import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange } from '../helpers';
 
 const props = defineProps({
   branchId: {
@@ -1085,7 +1115,12 @@ const allLedgerEntries = computed(() => {
   });
 
   // Sort descending: by date first (YYYY-MM-DD), then by time / timestamp
-  return list.sort((a, b) => {
+  const isTimeFilterActive = props.startTime !== '00.00' || props.endTime !== '23.59';
+  const filteredByTime = (activePeriodMode.value === 'daily' && isTimeFilterActive)
+    ? list.filter(item => isTimeInRange(item.created_at, props.startTime, props.endTime))
+    : list;
+
+  return filteredByTime.sort((a, b) => {
     if (b.date !== a.date) {
       return (b.date || '').localeCompare(a.date || '');
     }

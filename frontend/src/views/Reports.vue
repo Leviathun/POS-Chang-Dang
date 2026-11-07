@@ -43,204 +43,67 @@
       </button>
     </div>
 
-    <!-- Date selector card (hidden on 'top_menus' tab only) -->
-    <div v-if="activeTab !== 'top_menus'" class="card mb-lg p-md">
-      <div class="flex flex-col gap-md">
-        <!-- Period Mode Tabs -->
-        <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-          <button 
-            type="button"
-            class="btn btn-secondary btn-sm" 
-            :class="{ 'active': periodMode === 'daily' }"
-            @click="setPeriodMode('daily')"
+    <!-- Date selector card (Shared Global DatePeriodFilter, hidden on 'top_menus' tab only) -->
+    <DatePeriodFilter
+      v-if="activeTab !== 'top_menus'"
+      v-model:period-mode="periodMode"
+      v-model:selected-date="selectedDate"
+      v-model:selected-month="selectedMonth"
+      v-model:selected-year="selectedYear"
+      v-model:start-time="customStartTime"
+      v-model:end-time="customEndTime"
+      @change="loadReportData"
+    >
+      <!-- Branch Selector for Admin (aligned right) -->
+      <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
+        <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
+        <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
+          <div 
+            class="custom-select-trigger reports-filter-control" 
+            :class="{ 'active': isBranchDropdownOpen }" 
+            @click="toggleBranchDropdown"
+            style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
           >
-            <i class="fa-solid fa-calendar-day"></i> รายวัน
-          </button>
-          <button 
-            type="button"
-            class="btn btn-secondary btn-sm" 
-            :class="{ 'active': periodMode === 'monthly' }"
-            @click="setPeriodMode('monthly')"
-          >
-            <i class="fa-solid fa-calendar-days"></i> รายเดือน
-          </button>
-          <button 
-            type="button"
-            class="btn btn-secondary btn-sm" 
-            :class="{ 'active': periodMode === 'yearly' }"
-            @click="setPeriodMode('yearly')"
-          >
-            <i class="fa-solid fa-calendar"></i> รายปี
-          </button>
-        </div>
-
-        <!-- Date Selector Input depending on Mode -->
-        <div class="flex flex-wrap gap-md align-center" style="width: 100%;">
-          <div class="flex gap-sm align-center">
-            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">
-              {{ periodMode === 'daily' ? 'เลือกวัน:' : periodMode === 'monthly' ? 'เลือกเดือน:' : 'เลือกปี:' }}
-            </div>
-            
-            <!-- Custom Select for Daily (Date Picker) -->
-            <div v-if="periodMode === 'daily'" class="custom-select-wrapper" style="max-width: 200px; position: relative;" @click.stop>
-              <div 
-                class="custom-select-trigger reports-filter-control" 
-                :class="{ 'active': isDateDropdownOpen }" 
-                @click="toggleDateDropdown"
-                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
-              >
-                <span class="custom-select-text">{{ selectedDateLabel }}</span>
-              </div>
-              <div v-if="isDateDropdownOpen" class="custom-select-dropdown datepicker-popover" style="top: calc(100% + 2px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
-                <!-- Header: Month & Year Selector -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
-                  <button class="btn btn-secondary" @click.stop="adjustDatePickerMonth(-1)">
-                    <i class="fa-solid fa-chevron-left"></i>
-                  </button>
-                  <span class="font-bold" style="font-size: var(--font-sm);">{{ datePickerMonthName }} {{ datePickerYear + 543 }}</span>
-                  <button class="btn btn-secondary" @click.stop="adjustDatePickerMonth(1)">
-                    <i class="fa-solid fa-chevron-right"></i>
-                  </button>
-                </div>
-                <!-- Weekday Labels -->
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
-                  <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
-                </div>
-                <!-- Days Grid -->
-                <div class="calendar-days-grid">
-                  <div v-for="empty in datePickerStartOffset" :key="'empty-'+empty"></div>
-                  <button 
-                    v-for="dNum in datePickerDaysCount" 
-                    :key="dNum"
-                    type="button"
-                    class="calendar-day-btn"
-                    :class="{ 'btn-primary selected': isDatePickerSelected(dNum) }"
-                    @click="selectDatePickerDay(dNum)"
-                  >
-                    {{ dNum }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Custom Select for Monthly (Month Picker) -->
-            <div v-if="periodMode === 'monthly'" class="custom-select-wrapper" style="max-width: 200px; position: relative;" @click.stop>
-              <div 
-                class="custom-select-trigger reports-filter-control" 
-                :class="{ 'active': isMonthDropdownOpen }" 
-                @click="toggleMonthDropdown"
-              >
-                <span class="custom-select-text">{{ selectedMonthLabel }}</span>
-              </div>
-              <div v-if="isMonthDropdownOpen" class="custom-select-dropdown monthpicker-popover" style="top: calc(100% + 2px); width: 300px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
-                  <button class="btn btn-secondary" @click.stop="adjustMonthPickerYear(-1)">
-                    <i class="fa-solid fa-chevron-left"></i>
-                  </button>
-                  <span class="font-bold">ปี พ.ศ. {{ monthPickerYear + 543 }}</span>
-                  <button class="btn btn-secondary" @click.stop="adjustMonthPickerYear(1)">
-                    <i class="fa-solid fa-chevron-right"></i>
-                  </button>
-                </div>
-                <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-                  <button 
-                    v-for="(mName, idx) in thaiMonthsShort" 
-                    :key="idx" 
-                    class="btn btn-secondary"
-                    :class="{ 'active': isMonthPickerSelected(idx + 1) }"
-                    @click="selectMonthPicker(idx + 1)"
-                  >
-                    {{ mName }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Custom Select for Yearly -->
-            <div v-if="periodMode === 'yearly'" class="custom-select-wrapper" style="max-width: 200px;" @click.stop>
-              <div 
-                class="custom-select-trigger reports-filter-control" 
-                :class="{ 'active': isYearDropdownOpen }" 
-                @click="toggleYearDropdown"
-                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
-              >
-                <span class="custom-select-text">{{ selectedYearLabel }}</span>
-              </div>
-              <div v-if="isYearDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                <div 
-                  v-for="y in availableYears" 
-                  :key="y" 
-                  class="custom-select-option" 
-                  :class="{ 'selected': selectedYear === String(y) }" 
-                  @click="selectYear(y)"
-                >
-                  ปี {{ y }}
-                </div>
-              </div>
-            </div>
+            <span class="custom-select-text">{{ selectedBranchName }}</span>
           </div>
-
-          <!-- Branch Selector for Admin -->
-          <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
-            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
-            <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
-              <div 
-                class="custom-select-trigger reports-filter-control" 
-                :class="{ 'active': isBranchDropdownOpen }" 
-                @click="toggleBranchDropdown"
-                style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
-              >
-                <span class="custom-select-text">{{ selectedBranchName }}</span>
-              </div>
-              <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                <div 
-                  class="custom-select-option" 
-                  :class="{ 'selected': selectedBranchId === null }" 
-                  @click="selectBranch(null)"
-                >
-                  ทุกสาขา
-                </div>
-                <div 
-                  v-for="b in branches" 
-                  :key="b.id" 
-                  class="custom-select-option" 
-                  :class="{ 'selected': selectedBranchId === b.id }" 
-                  @click="selectBranch(b.id)"
-                >
-                  {{ b.name }}
-                </div>
-              </div>
+          <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 8px);">
+            <div 
+              class="custom-select-option" 
+              :class="{ 'selected': selectedBranchId === null }" 
+              @click="selectBranch(null)"
+            >
+              ทุกสาขา
             </div>
-          </div>
-
-          <!-- Time Filter (ช่วงเวลา) - Active only on daily mode for specific tabs -->
-          <div v-if="periodMode === 'daily' && ['order_history', 'activity_logs', 'stock_history'].includes(activeTab)" class="flex gap-sm align-center reports-time-filter">
-            <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">ช่วงเวลา:</div>
-            <div class="flex align-center gap-xs">
-              <input 
-                type="text" 
-                v-model="customStartTime" 
-                placeholder="00.00" 
-                class="form-input reports-filter-control" 
-                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
-              />
-              <span style="font-size: var(--font-sm); color: var(--text-secondary);">ถึง</span>
-              <input 
-                type="text" 
-                v-model="customEndTime" 
-                placeholder="23.59" 
-                class="form-input reports-filter-control" 
-                style="width: 80px; height: 38px; text-align: center; padding: 6px; font-size: var(--font-sm);"
-              />
+            <div 
+              v-for="b in branches" 
+              :key="b.id" 
+              class="custom-select-option" 
+              :class="{ 'selected': selectedBranchId === b.id }" 
+              @click="selectBranch(b.id)"
+            >
+              {{ b.name }}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </DatePeriodFilter>
 
-    <!-- Loading spinner for reports -->
-    <div v-if="loading" class="card text-center p-3xl">
-      <div class="spinner mx-auto"></div>
+    <!-- Skeleton Loading for reports -->
+    <div v-if="loading" class="flex flex-col gap-lg">
+      <div class="grid grid-2 gap-md">
+        <div v-for="n in 2" :key="'sk-rep-kpi-' + n" class="card text-center p-md">
+          <div class="skeleton mx-auto mb-xs" style="height: 12px; width: 90px; border-radius: 4px;"></div>
+          <div class="skeleton mx-auto mb-xs" style="height: 26px; width: 120px; border-radius: 6px;"></div>
+          <div class="skeleton mx-auto" style="height: 12px; width: 80px; border-radius: 4px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="skeleton mb-md" style="height: 20px; width: 180px; border-radius: 4px;"></div>
+        <div v-for="r in 4" :key="'sk-rep-row-' + r" class="flex flex-between align-center py-sm" style="border-bottom: 1px solid var(--border-color);">
+          <div class="skeleton" style="height: 16px; width: 45%; border-radius: 4px;"></div>
+          <div class="skeleton" style="height: 18px; width: 85px; border-radius: 4px;"></div>
+        </div>
+      </div>
     </div>
 
     <template v-else>
@@ -267,15 +130,15 @@
           
           <div class="flex flex-between mb-sm text-sm">
             <span>ยอดขายทั้งหมด (สุทธิ):</span>
-            <strong class="text-accent text-md">{{ formatCurrency(dailyReport.total_sales) }}</strong>
+            <strong class="text-accent text-md">{{ formatCurrency(displayedDailyReport.total_sales) }}</strong>
           </div>
           <div class="flex flex-between mb-sm text-sm">
             <span>จำนวนคำสั่งซื้อ:</span>
-            <span>{{ dailyReport.total_orders }} บิล</span>
+            <span>{{ displayedDailyReport.total_orders }} บิล</span>
           </div>
           <div class="flex flex-between mb-sm text-sm">
             <span>เฉลี่ยต่อบิล:</span>
-            <span>{{ formatCurrency(dailyReport.average_bill) }}</span>
+            <span>{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
           </div>
 
           <div class="divider"></div>
@@ -285,9 +148,9 @@
             <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
-                {{ formatCurrency(dailyReport.cash_sales) }}
+                {{ formatCurrency(displayedDailyReport.cash_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ dailyReport.cash_orders }} บิล</div>
+              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.cash_orders }} บิล</div>
             </div>
             <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
@@ -296,9 +159,9 @@
                 <span class="show-mobile-inline">QR</span>
               </div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
-                {{ formatCurrency(dailyReport.qr_sales) }}
+                {{ formatCurrency(displayedDailyReport.qr_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ dailyReport.qr_orders }} บิล</div>
+              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.qr_orders }} บิล</div>
             </div>
             <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
@@ -307,9 +170,9 @@
                 <span class="show-mobile-inline">รัฐ</span>
               </div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
-                {{ formatCurrency(dailyReport.gov_sales) }}
+                {{ formatCurrency(displayedDailyReport.gov_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ dailyReport.gov_orders }} บิล</div>
+              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.gov_orders }} บิล</div>
             </div>
             <div class="p-xs card card-flat-secondary">
               <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
@@ -318,9 +181,9 @@
                 <span class="show-mobile-inline">เดลิ</span>
               </div>
               <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
-                {{ formatCurrency(dailyReport.delivery_sales) }}
+                {{ formatCurrency(displayedDailyReport.delivery_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ dailyReport.delivery_orders }} บิล</div>
+              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.delivery_orders }} บิล</div>
             </div>
           </div>
         </div>
@@ -331,7 +194,7 @@
             <div class="card-title card-title-clean"><i class="fa-solid fa-list mr-xs"></i> {{ dailyOrdersListTitle }}</div>
           </div>
           
-          <div v-if="dailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
+          <div v-if="displayedDailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
             {{ dailyOrdersEmptyLabel }}
           </div>
           <div v-else class="flex flex-col gap-sm">
@@ -863,11 +726,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
-                <td colspan="6" style="text-align: center; padding: var(--space-xl);">
-                  <div class="spinner mx-auto"></div>
-                </td>
-              </tr>
+              <template v-if="ledgerLoading && filteredLedgerTransactions.length === 0">
+                <tr v-for="n in 4" :key="'sk-rep-led-' + n" style="border-bottom: 1px solid var(--border-color);">
+                  <td v-for="c in 6" :key="'sk-rep-led-c-' + c" style="padding: var(--space-md);">
+                    <div class="skeleton mx-auto" style="height: 16px; width: 75%; border-radius: 4px;"></div>
+                  </td>
+                </tr>
+              </template>
               <tr v-else-if="filteredLedgerTransactions.length === 0">
                 <td colspan="6" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
                   ไม่มีรายการธุรกรรมในเดือนนี้
@@ -912,8 +777,14 @@
 
         <!-- Mobile Ledger List (Mobile Only) -->
         <div class="ledger-mobile-list show-mobile-only">
-          <div v-if="ledgerLoading && filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl);">
-            <div class="spinner mx-auto"></div>
+          <div v-if="ledgerLoading && filteredLedgerTransactions.length === 0" style="display:flex; flex-direction:column; gap:var(--space-sm);">
+            <div v-for="n in 3" :key="'sk-m-rep-led-' + n" class="ledger-mobile-card">
+              <div class="skeleton mb-xs" style="height: 16px; width: 60%; border-radius: 4px;"></div>
+              <div class="flex flex-between align-center">
+                <div class="skeleton" style="height: 12px; width: 90px; border-radius: 4px;"></div>
+                <div class="skeleton" style="height: 16px; width: 70px; border-radius: 4px;"></div>
+              </div>
+            </div>
           </div>
           <div v-else-if="filteredLedgerTransactions.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
             ไม่มีรายการธุรกรรมในเดือนนี้
@@ -1056,9 +927,17 @@
           ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
 
-        <!-- Loading spinner for top items -->
-        <div v-else-if="topItems.length === 0 && topItemsLoading" class="card text-center p-3xl" style="background: #ffffff !important;">
-          <div class="spinner mx-auto"></div>
+        <!-- Skeleton Loading for top items -->
+        <div v-else-if="topItems.length === 0 && topItemsLoading" class="ranked-items-grid">
+          <div v-for="n in 4" :key="'sk-top-' + n" class="ranked-item-card">
+            <div class="ranked-card-header">
+              <div class="skeleton" style="height: 24px; width: 85px; border-radius: 999px;"></div>
+              <div class="skeleton" style="height: 20px; width: 55px; border-radius: 999px;"></div>
+            </div>
+            <div class="skeleton my-sm" style="height: 18px; width: 70%; border-radius: 4px;"></div>
+            <div class="skeleton mb-xs" style="height: 14px; width: 50%; border-radius: 4px;"></div>
+            <div class="skeleton" style="height: 8px; width: 100%; border-radius: 999px;"></div>
+          </div>
         </div>
 
         <!-- Grid Cards of Ranked Items -->
@@ -1529,9 +1408,14 @@
           </div>
         </div>
 
-        <div v-if="stockHistoryLoading" style="text-align: center; padding: var(--space-xl);">
-          <div class="spinner mx-auto"></div>
-          <div class="text-xs text-muted mt-xs">กำลังโหลดประวัติสต็อก...</div>
+        <div v-if="stockHistoryLoading" class="flex flex-col gap-sm">
+          <div v-for="n in 4" :key="'sk-sh-' + n" class="card p-md flex flex-between align-center">
+            <div style="flex: 1;">
+              <div class="skeleton mb-xs" style="height: 16px; width: 45%; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 12px; width: 30%; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton" style="height: 20px; width: 70px; border-radius: 6px;"></div>
+          </div>
         </div>
         <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl); background: rgba(0,0,0,0.01); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
           <div class="mb-xs font-bold text-base" style="color: var(--text-primary);">
@@ -1688,8 +1572,12 @@
         </div>
       </div>
 
-      <div v-if="cashDrawerLoading" class="flex justify-center p-xl" style="display:flex; justify-content:center; padding:var(--space-xl);">
-        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i>
+      <div v-if="cashDrawerLoading" class="flex flex-col gap-sm">
+        <div v-for="n in 3" :key="'sk-rep-cd-' + n" class="card p-md flex flex-between align-center">
+          <div class="skeleton" style="height: 16px; width: 100px; border-radius: 4px;"></div>
+          <div class="skeleton" style="height: 16px; width: 85px; border-radius: 4px;"></div>
+          <div class="skeleton" style="height: 24px; width: 80px; border-radius: 999px;"></div>
+        </div>
       </div>
 
       <div v-else-if="cashDrawerSessions.length === 0" class="flex justify-center p-xl text-center" style="display:flex; justify-content:center; padding:var(--space-xl); color: var(--text-light);">
@@ -2011,8 +1899,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import DatePeriodFilter from '../components/DatePeriodFilter.vue';
 import api from '../api';
-import { ui, formatCurrency, formatDate, formatTime, getToday, isAdmin, isManagerOrAdmin, getUser } from '../helpers';
+import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange, isAdmin, isManagerOrAdmin, getUser } from '../helpers';
 import { store } from '../store';
 
 const formatMoney = (val) => formatCurrency(val).replace('฿', '').trim();
@@ -2055,53 +1944,6 @@ const selectedStockItemName = computed(() => {
   const found = reportsStockItems.value.find(item => item.id === selectedReportsStockItemId.value);
   return found ? found.name : 'สินค้าทั้งหมด';
 });
-
-const parseTimeDot = (timeStr) => {
-  if (!timeStr) return { hour: 0, minute: 0 };
-  const normalized = timeStr.replace(':', '.');
-  const parts = normalized.split('.');
-  const hour = Number(parts[0]) || 0;
-  const minute = Number(parts[1]) || 0;
-  return { hour, minute };
-};
-
-const getBangkokTimeComponents = (dateStr) => {
-  if (!dateStr) return { hour: 0, minute: 0 };
-  let d;
-  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
-    const timeAdded = dateStr.includes(' ') ? dateStr : dateStr + ' 00:00:00';
-    const isoStr = timeAdded.replace(' ', 'T') + '+07:00';
-    d = new Date(isoStr);
-  } else {
-    d = new Date(dateStr);
-  }
-  const bkkString = d.toLocaleTimeString('en-US', {
-    timeZone: 'Asia/Bangkok',
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-  const [h, m] = bkkString.split(':').map(Number);
-  return { hour: h, minute: m };
-};
-
-const isTimeInRange = (dateStr, startStr, endStr) => {
-  const start = parseTimeDot(startStr || '00.00');
-  const end = parseTimeDot(endStr || '23.59');
-  
-  const { hour, minute } = getBangkokTimeComponents(dateStr);
-  const timeVal = hour * 60 + minute;
-  
-  const startVal = start.hour * 60 + start.minute;
-  const endVal = end.hour * 60 + end.minute;
-  
-  if (startVal <= endVal) {
-    return timeVal >= startVal && timeVal <= endVal;
-  } else {
-    return timeVal >= startVal || timeVal <= endVal;
-  }
-};
 
 const getPaymentLabel = (pm) => {
   const map = {
@@ -2609,14 +2451,47 @@ const filteredLedgerTransactions = computed(() => {
 
 
 // Pagination States for Daily/Monthly Orders
+const displayedDailyReport = computed(() => {
+  const rep = dailyReport.value || { orders: [] };
+  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
+  if (periodMode.value !== 'daily' || !isTimeFilterActive) return rep;
+
+  const orders = (rep.orders || []).filter(o => isTimeInRange(o.created_at, customStartTime.value, customEndTime.value));
+  const completed = orders.filter(o => o.status === 'completed');
+  const sumBy = (pm) => completed.filter(o => o.payment_method === pm);
+  const sumAmt = (arr) => arr.reduce((s, o) => s + (Number(o.total) || 0), 0);
+
+  const total_sales = sumAmt(completed);
+  const total_orders = completed.length;
+  const cash = sumBy('cash');
+  const qr = completed.filter(o => o.payment_method === 'qr' || o.payment_method === 'promptpay');
+  const gov = sumBy('gov');
+  const delivery = sumBy('delivery');
+
+  return {
+    total_sales,
+    total_orders,
+    average_bill: total_orders > 0 ? total_sales / total_orders : 0,
+    cash_sales: sumAmt(cash),
+    cash_orders: cash.length,
+    qr_sales: sumAmt(qr),
+    qr_orders: qr.length,
+    gov_sales: sumAmt(gov),
+    gov_orders: gov.length,
+    delivery_sales: sumAmt(delivery),
+    delivery_orders: delivery.length,
+    orders
+  };
+});
+
 const dailyOrdersCurrentPage = ref(1);
 const dailyOrdersPerPage = 15;
 const totalDailyOrdersPages = computed(() => {
-  const count = (dailyReport.value.orders || []).length;
+  const count = (displayedDailyReport.value.orders || []).length;
   return Math.ceil(count / dailyOrdersPerPage) || 1;
 });
 const paginatedDailyReportOrders = computed(() => {
-  const orders = dailyReport.value.orders || [];
+  const orders = displayedDailyReport.value.orders || [];
   const start = (dailyOrdersCurrentPage.value - 1) * dailyOrdersPerPage;
   const end = start + dailyOrdersPerPage;
   return orders.slice(start, end);
@@ -3033,18 +2908,8 @@ const selectHistoryStatus = (status) => {
   loadOrderHistory();
 };
 
-// Custom dropdowns for Branch and Year filter
+// Custom dropdown for Branch filter
 const isBranchDropdownOpen = ref(false);
-const isYearDropdownOpen = ref(false);
-const isMonthDropdownOpen = ref(false);
-const isDateDropdownOpen = ref(false);
-
-const monthPickerYear = ref(new Date().getFullYear());
-const datePickerYear = ref(new Date().getFullYear());
-const datePickerMonth = ref(new Date().getMonth() + 1);
-
-const thaiMonthsShort = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
 const selectedMonthLabel = computed(() => {
   if (!selectedMonth.value) return 'เลือกเดือน';
@@ -3064,7 +2929,7 @@ const selectedBranchName = computed(() => {
   return found ? found.name : 'ทุกสาขา';
 });
 
-const selectedYearLabel = computed(() => `ปี ${selectedYear.value}`);
+const selectedYearLabel = computed(() => `ปี ${Number(selectedYear.value) + 543}`);
 
 const summaryCardTitle = computed(() => {
   if (periodMode.value === 'daily') {
@@ -3109,7 +2974,7 @@ const ledgerPeriodLabel = computed(() => {
     });
     return `เดือน ${formatted}`;
   } else {
-    return `ปี ${selectedYear.value}`;
+    return `ปี ${Number(selectedYear.value) + 543}`;
   }
 });
 
@@ -3117,98 +2982,6 @@ const toggleBranchDropdown = () => {
   const current = isBranchDropdownOpen.value;
   closeReportsDropdowns();
   isBranchDropdownOpen.value = !current;
-};
-
-const toggleYearDropdown = () => {
-  const current = isYearDropdownOpen.value;
-  closeReportsDropdowns();
-  isYearDropdownOpen.value = !current;
-};
-
-const toggleMonthDropdown = () => {
-  const current = isMonthDropdownOpen.value;
-  closeReportsDropdowns();
-  isMonthDropdownOpen.value = !current;
-  if (isMonthDropdownOpen.value) {
-    if (selectedMonth.value) {
-      monthPickerYear.value = Number(selectedMonth.value.split('-')[0]);
-    } else {
-      monthPickerYear.value = new Date().getFullYear();
-    }
-  }
-};
-
-const toggleDateDropdown = () => {
-  const current = isDateDropdownOpen.value;
-  closeReportsDropdowns();
-  isDateDropdownOpen.value = !current;
-  if (isDateDropdownOpen.value) {
-    if (selectedDate.value) {
-      const [y, m] = selectedDate.value.split('-');
-      datePickerYear.value = Number(y);
-      datePickerMonth.value = Number(m);
-    } else {
-      const today = new Date();
-      datePickerYear.value = today.getFullYear();
-      datePickerMonth.value = today.getMonth() + 1;
-    }
-  }
-};
-
-const isMonthPickerSelected = (m) => {
-  if (!selectedMonth.value) return false;
-  const [y, mm] = selectedMonth.value.split('-');
-  return monthPickerYear.value === Number(y) && m === Number(mm);
-};
-
-const selectMonthPicker = (m) => {
-  selectedMonth.value = `${monthPickerYear.value}-${String(m).padStart(2, '0')}`;
-  isMonthDropdownOpen.value = false;
-  loadReportData();
-};
-
-const adjustMonthPickerYear = (amount) => {
-  monthPickerYear.value += amount;
-};
-
-const datePickerMonthName = computed(() => {
-  return thaiMonths[datePickerMonth.value - 1] || '';
-});
-
-const datePickerDaysCount = computed(() => {
-  return new Date(datePickerYear.value, datePickerMonth.value, 0).getDate();
-});
-
-const datePickerStartOffset = computed(() => {
-  return new Date(datePickerYear.value, datePickerMonth.value - 1, 1).getDay();
-});
-
-const isDatePickerSelected = (day) => {
-  if (!selectedDate.value) return false;
-  const [y, m, d] = selectedDate.value.split('-');
-  return datePickerYear.value === Number(y) &&
-         datePickerMonth.value === Number(m) &&
-         day === Number(d);
-};
-
-const selectDatePickerDay = (day) => {
-  selectedDate.value = `${datePickerYear.value}-${String(datePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  isDateDropdownOpen.value = false;
-  loadReportData();
-};
-
-const adjustDatePickerMonth = (amount) => {
-  let m = datePickerMonth.value + amount;
-  let y = datePickerYear.value;
-  if (m < 1) {
-    m = 12;
-    y -= 1;
-  } else if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  datePickerMonth.value = m;
-  datePickerYear.value = y;
 };
 
 const selectBranch = (branchId) => {
@@ -3222,21 +2995,12 @@ const selectBranch = (branchId) => {
   onBranchChange();
 };
 
-const selectYear = (y) => {
-  selectedYear.value = String(y);
-  isYearDropdownOpen.value = false;
-  loadReportData();
-};
-
 const closeReportsDropdowns = () => {
   isExpenseCategoryDropdownOpen.value = false;
   isExpensePaymentMethodDropdownOpen.value = false;
   isFilterActionDropdownOpen.value = false;
   isHistoryStatusDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
-  isYearDropdownOpen.value = false;
-  isMonthDropdownOpen.value = false;
-  isDateDropdownOpen.value = false;
   isHistoryStaffDropdownOpen.value = false;
   isHistoryPaymentDropdownOpen.value = false;
   isActivityStaffDropdownOpen.value = false;
@@ -3857,7 +3621,7 @@ const exportToCSV = (headers, rows, filename) => {
 
 const exportSalesCSV = () => {
   const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
-  const rows = dailyReport.value.orders.map(o => {
+  const rows = (displayedDailyReport.value.orders || []).map(o => {
     let modsText = '';
     const modsStr = o.modifiers || o.free_modifiers;
     if (modsStr) {
