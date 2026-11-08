@@ -835,12 +835,36 @@ router.put('/transfers/:id/dispatch', requireManagerOrAdmin, async (req, res) =>
       }
     }
 
-    // 4. Update transfer status directly to received (completed!)
+    // 4. Update transfer status directly to received (completed!) & auto-reimburse
+    const isCostPositive = Number(transfer.total_cost || 0) > 0;
+    if (isCostPositive) {
+      const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(transfer.branch_id);
+      const branchName = branchInfo?.name || `สาขา #${transfer.branch_id}`;
+      await db.prepare(`
+        INSERT INTO central_kitchen_finances (type, amount, branch_id, transfer_id, payment_method, note, created_by_name, created_at)
+        VALUES ('reimbursement_in', ?, ?, ?, 'transfer', ?, ?, ?)
+      `).run(
+        transfer.total_cost,
+        transfer.branch_id,
+        transferId,
+        `รับเงินคืนค่าของจาก ${branchName} ใบเบิก #${transfer.transfer_no}`,
+        req.user.name,
+        nowLocal
+      );
+    }
+
     await db.prepare(`
       UPDATE central_kitchen_transfers 
-      SET status = 'received', dispatched_by_name = ?, dispatched_at = ?, received_at = ?, expense_id = ?
+      SET status = 'received', dispatched_by_name = ?, dispatched_at = ?, received_at = ?, expense_id = ?,
+          is_reimbursed = ?, reimbursed_at = ?, reimbursed_by_name = ?
       WHERE id = ?
-    `).run(req.user.name, nowLocal, nowLocal, insertedExpenseId, transferId);
+    `).run(
+      req.user.name, nowLocal, nowLocal, insertedExpenseId,
+      isCostPositive ? 1 : 0,
+      isCostPositive ? nowLocal : null,
+      isCostPositive ? req.user.name : null,
+      transferId
+    );
 
     res.json({
       success: true,
@@ -918,20 +942,41 @@ router.post('/transfers/direct-dispatch', requireManagerOrAdmin, async (req, res
       insertedExpenseId = insertExpenseRes.lastInsertRowid;
     }
 
-    // 2. Insert master transfer record with dispatch_type = 'push' and status = 'received'
+    // 2. Insert master transfer record with dispatch_type = 'push' and status = 'received' (Auto-reimburse)
+    const isCostPositive = Number(totalCost || 0) > 0;
     const insertTransfer = await db.prepare(`
       INSERT INTO central_kitchen_transfers (
         transfer_no, branch_id, requested_by_user_id, requested_by_name,
         dispatch_type, status, total_cost, expense_id, notes,
-        dispatched_by_name, created_at, dispatched_at, received_at
-      ) VALUES (?, ?, ?, ?, 'push', 'received', ?, ?, ?, ?, ?, ?, ?)
+        dispatched_by_name, created_at, dispatched_at, received_at,
+        is_reimbursed, reimbursed_at, reimbursed_by_name
+      ) VALUES (?, ?, ?, ?, 'push', 'received', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       transferNo, targetBranchId, req.user.id, req.user.name,
       totalCost, insertedExpenseId, notes || null,
-      req.user.name, nowLocal, nowLocal, nowLocal
+      req.user.name, nowLocal, nowLocal, nowLocal,
+      isCostPositive ? 1 : 0,
+      isCostPositive ? nowLocal : null,
+      isCostPositive ? req.user.name : null
     );
 
     const transferId = insertTransfer.lastInsertRowid;
+
+    if (isCostPositive) {
+      const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(targetBranchId);
+      const branchName = branchInfo?.name || `สาขา #${targetBranchId}`;
+      await db.prepare(`
+        INSERT INTO central_kitchen_finances (type, amount, branch_id, transfer_id, payment_method, note, created_by_name, created_at)
+        VALUES ('reimbursement_in', ?, ?, ?, 'transfer', ?, ?, ?)
+      `).run(
+        totalCost,
+        targetBranchId,
+        transferId,
+        `รับเงินคืนค่าของจาก ${branchName} ใบเบิก #${transferNo}`,
+        req.user.name,
+        nowLocal
+      );
+    }
 
     // 3. Deduct stock in central kitchen & insert transfer items
     const restockedItems = [];
@@ -1023,6 +1068,29 @@ router.put('/transfers/:id/items/:item_id/adjust', requireManagerOrAdmin, async 
       WHERE id = ?
     `).run(newTransferTotalCost, transferId);
 
+    // 2.1 If transfer was already reimbursed, adjust central_kitchen_finances accordingly
+    if (transfer.is_reimbursed === 1 && refundCost > 0) {
+      const existingFinance = await db.prepare("SELECT id, amount FROM central_kitchen_finances WHERE transfer_id = ? AND type = 'reimbursement_in'").get(transferId);
+      if (existingFinance) {
+        const updatedAmount = Math.max(0, Number(existingFinance.amount) - refundCost);
+        await db.prepare('UPDATE central_kitchen_finances SET amount = ? WHERE id = ?').run(updatedAmount, existingFinance.id);
+      } else {
+        const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(transfer.branch_id);
+        const branchName = branchInfo?.name || `สาขา #${transfer.branch_id}`;
+        await db.prepare(`
+          INSERT INTO central_kitchen_finances (type, amount, branch_id, transfer_id, payment_method, note, created_by_name, created_at)
+          VALUES ('other_out', ?, ?, ?, 'transfer', ?, ?, ?)
+        `).run(
+          refundCost,
+          transfer.branch_id,
+          transferId,
+          `ปรับลดเงินคืนค่าของ (${tItem.item_name} -${diffQty} ${tItem.unit}) ใบเบิก #${transfer.transfer_no} (${branchName})`,
+          req.user.name,
+          nowLocal
+        );
+      }
+    }
+
     // 3. Update branch Expense if linked
     if (transfer.expense_id && refundCost > 0) {
       const adjNote = ` [ปรับลดยอดของชำรุด/คืนของ: ${tItem.item_name} -${diffQty} ${tItem.unit}]`;
@@ -1112,10 +1180,32 @@ router.put('/transfers/:id/cancel', requireManagerOrAdmin, async (req, res) => {
       `).run(transfer.expense_id);
     }
 
-    // 3. Mark transfer as cancelled
+    // 3. Cancel or reverse linked Central Kitchen finance reimbursement if already reimbursed
+    if (transfer.is_reimbursed === 1 && Number(transfer.total_cost || 0) > 0) {
+      const existingFinance = await db.prepare("SELECT id FROM central_kitchen_finances WHERE transfer_id = ? AND type = 'reimbursement_in'").get(transferId);
+      if (existingFinance) {
+        await db.prepare('DELETE FROM central_kitchen_finances WHERE id = ?').run(existingFinance.id);
+      } else {
+        const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(transfer.branch_id);
+        const branchName = branchInfo?.name || `สาขา #${transfer.branch_id}`;
+        await db.prepare(`
+          INSERT INTO central_kitchen_finances (type, amount, branch_id, transfer_id, payment_method, note, created_by_name, created_at)
+          VALUES ('other_out', ?, ?, ?, 'transfer', ?, ?, ?)
+        `).run(
+          transfer.total_cost,
+          transfer.branch_id,
+          transferId,
+          `ยกเลิกเงินคืนค่าของตามการยกเลิกใบเบิก #${transfer.transfer_no} (${branchName})`,
+          req.user.name,
+          nowLocal
+        );
+      }
+    }
+
+    // 4. Mark transfer as cancelled
     await db.prepare(`
       UPDATE central_kitchen_transfers 
-      SET status = 'cancelled', notes = COALESCE(notes, '') || ?
+      SET status = 'cancelled', is_reimbursed = 0, notes = COALESCE(notes, '') || ?
       WHERE id = ?
     `).run(` [ยกเลิกใบเบิกโดย ${req.user.name}]`, transferId);
 
@@ -1169,12 +1259,36 @@ router.put('/transfers/:id/receive', async (req, res) => {
       }
     }
 
-    // 3. Update transfer status to received
+    // 3. Update transfer status to received & auto-reimburse
+    const isCostPositive = Number(transfer.total_cost || 0) > 0;
+    if (isCostPositive) {
+      const branchInfo = await db.prepare('SELECT name FROM branches WHERE id = ?').get(transfer.branch_id);
+      const branchName = branchInfo?.name || `สาขา #${transfer.branch_id}`;
+      await db.prepare(`
+        INSERT INTO central_kitchen_finances (type, amount, branch_id, transfer_id, payment_method, note, created_by_name, created_at)
+        VALUES ('reimbursement_in', ?, ?, ?, 'transfer', ?, ?, ?)
+      `).run(
+        transfer.total_cost,
+        transfer.branch_id,
+        transferId,
+        `รับเงินคืนค่าของจาก ${branchName} ใบเบิก #${transfer.transfer_no}`,
+        req.user.name,
+        nowLocal
+      );
+    }
+
     await db.prepare(`
       UPDATE central_kitchen_transfers 
-      SET status = 'received', received_at = ?, expense_id = ?
+      SET status = 'received', received_at = ?, expense_id = ?,
+          is_reimbursed = ?, reimbursed_at = ?, reimbursed_by_name = ?
       WHERE id = ?
-    `).run(nowLocal, insertedExpenseId, transferId);
+    `).run(
+      nowLocal, insertedExpenseId,
+      isCostPositive ? 1 : 0,
+      isCostPositive ? nowLocal : null,
+      isCostPositive ? req.user.name : null,
+      transferId
+    );
 
     res.json({
       success: true,
