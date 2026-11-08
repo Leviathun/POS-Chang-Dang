@@ -1901,6 +1901,7 @@
                         <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
                         <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
                         <i v-else-if="log.type === 'waste_loss'" class="fa-solid fa-trash-can"></i>
+                        <i v-else-if="log.type === 'other_out'" class="fa-solid fa-arrow-right-from-bracket"></i>
                         <span>{{ getFinanceTypeLabel(log.type) }}</span>
                       </span>
                     </td>
@@ -1940,6 +1941,7 @@
                     <i v-else-if="log.type === 'purchase_out'" class="fa-solid fa-cart-shopping"></i>
                     <i v-else-if="log.type === 'operating_expense_out'" class="fa-solid fa-circle-minus"></i>
                     <i v-else-if="log.type === 'waste_loss'" class="fa-solid fa-trash-can"></i>
+                    <i v-else-if="log.type === 'other_out'" class="fa-solid fa-arrow-right-from-bracket"></i>
                     <span>{{ getFinanceTypeLabel(log.type) }}</span>
                   </span>
                   <span class="font-bold text-base" :class="isFinanceInflow(log.type) ? 'text-success' : 'text-danger'">
@@ -5428,7 +5430,8 @@ const getFinanceTypeBadgeClass = (type) => {
     'reimbursement_in': 'badge-info',
     'purchase_out': 'badge-warning',
     'operating_expense_out': 'badge-danger',
-    'waste_loss': 'badge-danger badge-cat-waste'
+    'waste_loss': 'badge-danger badge-cat-waste',
+    'other_out': 'badge-danger'
   };
   return map[type] || 'badge-secondary';
 };
@@ -5439,7 +5442,8 @@ const getFinanceTypeLabel = (type) => {
     'reimbursement_in': 'สาขาคืนเงิน',
     'purchase_out': 'ซื้อของเข้าคลัง',
     'operating_expense_out': 'ค่าใช้จ่ายครัวกลาง',
-    'waste_loss': 'ตัดของเสีย'
+    'waste_loss': 'ตัดของเสีย',
+    'other_out': 'รายจ่ายอื่นๆ'
   };
   return map[type] || type;
 };
