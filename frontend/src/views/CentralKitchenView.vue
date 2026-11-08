@@ -1781,7 +1781,21 @@
         </div>
 
         <!-- SUB-TAB 1: Transactions Ledger Card -->
-        <div v-if="financeSubTab === 'ledger'" class="card p-lg ledger-card">
+        <div v-if="financeSubTab === 'ledger'" class="ledger-tab-view flex flex-col gap-md">
+          <!-- Date & Period Filter Card (Exact same layout as Receivables / Orders / History) -->
+          <DatePeriodFilter
+            v-model:period-mode="periodMode"
+            v-model:selected-date="selectedDate"
+            v-model:selected-month="selectedMonth"
+            v-model:selected-year="selectedYear"
+            v-model:custom-start-date="customStartDate"
+            v-model:custom-end-date="customEndDate"
+            v-model:start-time="customStartTime"
+            v-model:end-time="customEndTime"
+            @change="refreshActivePeriodTab"
+          />
+
+          <div class="card p-lg ledger-card">
           <div class="ledger-header flex flex-between align-center flex-wrap gap-md">
             <div class="flex align-center gap-xs">
               <i class="fa-solid fa-clock-rotate-left text-primary" style="font-size: 1.15rem;"></i>
@@ -1958,6 +1972,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         <!-- SUB-TAB 2: Branch Receivables & Consolidated Items -->
@@ -4631,6 +4646,7 @@ const refreshActivePeriodTab = () => {
   if (activeTab.value === 'orders') loadOrders();
   else if (activeTab.value === 'history') loadHistory();
   else if (activeTab.value === 'finance' || activeTab.value === 'receivables') {
+    loadFinances();
     loadReceivablesBreakdown();
   }
 };
@@ -5321,10 +5337,11 @@ const savePartnersConfig = async () => {
 const loadFinances = async () => {
   isLoadingFinance.value = true;
   try {
+    const periodParams = getPeriodQueryParams();
     const [summaryRes, logsRes, recRes] = await Promise.all([
-      api.centralKitchen.getFinancesSummary(),
-      api.centralKitchen.getFinancesLogs(),
-      api.centralKitchen.getReceivablesBreakdown().catch(() => ({ success: false }))
+      api.centralKitchen.getFinancesSummary(periodParams),
+      api.centralKitchen.getFinancesLogs(periodParams),
+      api.centralKitchen.getReceivablesBreakdown(receivablesStatusTab.value === 'reimbursed' ? { ...periodParams, status: 'reimbursed' } : {}).catch(() => ({ success: false }))
     ]);
     if (summaryRes.success) financeSummary.value = summaryRes.data;
     if (logsRes.success) financeLogs.value = logsRes.data;
