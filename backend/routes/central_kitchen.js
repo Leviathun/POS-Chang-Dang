@@ -1457,16 +1457,46 @@ router.get('/profit-settlement', async (req, res) => {
 router.get('/finances/summary', async (req, res) => {
   try {
     const db = getDb();
+    const { date, month, year, start_date, end_date } = req.query;
 
-    const [finRes, invRes, outRes, wasteRes] = await Promise.all([
-      db.prepare(`
-        SELECT
-          COALESCE(SUM(CASE WHEN type = 'capital_in' THEN amount ELSE 0 END), 0) as total_capital,
-          COALESCE(SUM(CASE WHEN type = 'reimbursement_in' THEN amount ELSE 0 END), 0) as total_reimbursed,
-          COALESCE(SUM(CASE WHEN type = 'purchase_out' THEN amount ELSE 0 END), 0) as total_purchases,
-          COALESCE(SUM(CASE WHEN type IN ('operating_expense_out', 'other_out') THEN amount ELSE 0 END), 0) as total_op_expenses
-        FROM central_kitchen_finances
-      `).get(),
+    let dateCond = '';
+    const dateParams = [];
+    if (date) {
+      dateCond = 'date(created_at) = date(?)';
+      dateParams.push(date);
+    } else if (month) {
+      dateCond = "strftime('%Y-%m', created_at) = ?";
+      dateParams.push(month);
+    } else if (year) {
+      dateCond = "strftime('%Y', created_at) = ?";
+      dateParams.push(String(year));
+    } else if (start_date && end_date) {
+      dateCond = 'date(created_at) >= date(?) AND date(created_at) <= date(?)';
+      dateParams.push(start_date, end_date);
+    }
+
+    const finSql = `
+      SELECT
+        COALESCE(SUM(CASE WHEN type = 'capital_in' THEN amount ELSE 0 END), 0) as total_capital,
+        COALESCE(SUM(CASE WHEN type = 'reimbursement_in' THEN amount ELSE 0 END), 0) as total_reimbursed,
+        COALESCE(SUM(CASE WHEN type = 'purchase_out' THEN amount ELSE 0 END), 0) as total_purchases,
+        COALESCE(SUM(CASE WHEN type IN ('operating_expense_out', 'other_out') THEN amount ELSE 0 END), 0) as total_op_expenses
+      FROM central_kitchen_finances
+      ${dateCond ? 'WHERE ' + dateCond : ''}
+    `;
+
+    const overallFinSql = `
+      SELECT
+        COALESCE(SUM(CASE WHEN type = 'capital_in' THEN amount ELSE 0 END), 0) as total_capital,
+        COALESCE(SUM(CASE WHEN type = 'reimbursement_in' THEN amount ELSE 0 END), 0) as total_reimbursed,
+        COALESCE(SUM(CASE WHEN type = 'purchase_out' THEN amount ELSE 0 END), 0) as total_purchases,
+        COALESCE(SUM(CASE WHEN type IN ('operating_expense_out', 'other_out') THEN amount ELSE 0 END), 0) as total_op_expenses
+      FROM central_kitchen_finances
+    `;
+
+    const [finRes, overallRes, invRes, outRes, wasteRes] = await Promise.all([
+      db.prepare(finSql).get(...dateParams),
+      db.prepare(overallFinSql).get(),
       db.prepare(`
         SELECT COALESCE(SUM(quantity * cost_price), 0) as total_inventory_value, COUNT(id) as total_items
         FROM central_kitchen_items
@@ -1487,7 +1517,14 @@ router.get('/finances/summary', async (req, res) => {
     const totalReimbursed = Number(finRes?.total_reimbursed || 0);
     const totalPurchases = Number(finRes?.total_purchases || 0);
     const totalOperatingExpenses = Number(finRes?.total_op_expenses || 0);
-    const cashBalance = (totalCapital + totalReimbursed) - (totalPurchases + totalOperatingExpenses);
+
+    const overallCapital = Number(overallRes?.total_capital || 0);
+    const overallReimbursed = Number(overallRes?.total_reimbursed || 0);
+    const overallPurchases = Number(overallRes?.total_purchases || 0);
+    const overallOpExpenses = Number(overallRes?.total_op_expenses || 0);
+    const cashBalance = (overallCapital + overallReimbursed) - (overallPurchases + overallOpExpenses);
+    const periodNet = (totalCapital + totalReimbursed) - (totalPurchases + totalOperatingExpenses);
+
     const inventoryValue = Number(invRes?.total_inventory_value || 0);
     const pendingReceivables = Number(outRes?.pending_receivables || 0);
     const totalWasteCost = Number(wasteRes?.total_waste_cost || 0);
@@ -1497,6 +1534,8 @@ router.get('/finances/summary', async (req, res) => {
       success: true,
       data: {
         cash_balance: cashBalance,
+        period_net: periodNet,
+        has_period_filter: Boolean(dateCond),
         inventory_value: inventoryValue,
         pending_receivables: pendingReceivables,
         total_capital: totalCapital,
@@ -1710,11 +1749,33 @@ router.get('/finances/receivables-breakdown', async (req, res) => {
 router.get('/finances/logs', async (req, res) => {
   try {
     const db = getDb();
-    const { type, limit } = req.query;
+    const { type, limit, date, month, year, start_date, end_date } = req.query;
+
+    let dateCondF = '';
+    let dateCondW = '';
+    const dateParams = [];
+
+    if (date) {
+      dateCondF = 'date(f.created_at) = date(?)';
+      dateCondW = 'date(w.created_at) = date(?)';
+      dateParams.push(date);
+    } else if (month) {
+      dateCondF = "strftime('%Y-%m', f.created_at) = ?";
+      dateCondW = "strftime('%Y-%m', w.created_at) = ?";
+      dateParams.push(month);
+    } else if (year) {
+      dateCondF = "strftime('%Y', f.created_at) = ?";
+      dateCondW = "strftime('%Y', w.created_at) = ?";
+      dateParams.push(String(year));
+    } else if (start_date && end_date) {
+      dateCondF = 'date(f.created_at) >= date(?) AND date(f.created_at) <= date(?)';
+      dateCondW = 'date(w.created_at) >= date(?) AND date(w.created_at) <= date(?)';
+      dateParams.push(start_date, end_date);
+    }
 
     let sql;
     const params = [];
-    const limitNum = Number(limit) || 100;
+    const limitNum = Number(limit) || 300;
 
     if (type === 'waste_loss') {
       sql = `
@@ -1730,18 +1791,26 @@ router.get('/finances/logs', async (req, res) => {
           'คลังครัวกลาง' as branch_name
         FROM central_kitchen_waste_logs w
         JOIN central_kitchen_items i ON w.item_id = i.id
+        ${dateCondW ? 'WHERE ' + dateCondW : ''}
         ORDER BY w.id DESC LIMIT ?
       `;
+      if (dateCondW) params.push(...dateParams);
       params.push(limitNum);
     } else if (type && type !== 'all') {
+      const whereClauses = ['f.type = ?'];
+      params.push(type);
+      if (dateCondF) {
+        whereClauses.push(dateCondF);
+        params.push(...dateParams);
+      }
       sql = `
         SELECT f.*, b.name as branch_name
         FROM central_kitchen_finances f
         LEFT JOIN branches b ON f.branch_id = b.id
-        WHERE f.type = ?
+        WHERE ${whereClauses.join(' AND ')}
         ORDER BY f.id DESC LIMIT ?
       `;
-      params.push(type, limitNum);
+      params.push(limitNum);
     } else {
       // type === 'all'
       sql = `
@@ -1758,6 +1827,7 @@ router.get('/finances/logs', async (req, res) => {
             b.name as branch_name
           FROM central_kitchen_finances f
           LEFT JOIN branches b ON f.branch_id = b.id
+          ${dateCondF ? 'WHERE ' + dateCondF : ''}
 
           UNION ALL
 
@@ -1773,9 +1843,12 @@ router.get('/finances/logs', async (req, res) => {
             'คลังครัวกลาง' as branch_name
           FROM central_kitchen_waste_logs w
           JOIN central_kitchen_items i ON w.item_id = i.id
+          ${dateCondW ? 'WHERE ' + dateCondW : ''}
         ) combined
         ORDER BY created_at DESC LIMIT ?
       `;
+      if (dateCondF) params.push(...dateParams);
+      if (dateCondW) params.push(...dateParams);
       params.push(limitNum);
     }
 

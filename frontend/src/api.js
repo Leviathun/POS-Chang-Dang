@@ -451,8 +451,9 @@ export const centralKitchen = {
     const query = new URLSearchParams(params).toString();
     return request('GET', `/api/central-kitchen/profit-settlement?${query}`);
   },
-  async getFinancesSummary() {
-    return request('GET', '/api/central-kitchen/finances/summary');
+  async getFinancesSummary(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request('GET', `/api/central-kitchen/finances/summary${query ? '?' + query : ''}`);
   },
   async getReceivablesBreakdown(params = {}) {
     const query = new URLSearchParams(params).toString();

@@ -730,6 +730,16 @@ ul, ol { list-style: none; }
   color: var(--text-secondary);
 }
 
+.badge-info {
+  background: rgba(14, 116, 144, 0.12);
+  color: #0e7490;
+}
+
+.badge-secondary {
+  background: rgba(110, 78, 55, 0.08);
+  color: var(--text-secondary);
+}
+
 /* Modifier Specific Badges (High Contrast, Distinct Colors) */
 .badge-mod-sauce-small {
   background: rgba(42, 157, 143, 0.12) !important;
