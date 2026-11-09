@@ -1023,10 +1023,18 @@ onMounted(() => {
   color: var(--text-secondary);
   text-align: left;
 }
-.btn-header-cook {
-  padding: 10px 24px !important;
-  min-width: 130px !important;
+.mobile-header-actions .btn {
+  height: 44px !important;
+  padding: 10px 18px !important;
+  font-size: var(--font-base) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
   justify-content: center !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  min-width: 160px !important;
 }
 @media (max-width: 768px) {
   .stock-page-title {
@@ -1052,6 +1060,7 @@ onMounted(() => {
   }
   .mobile-stock-header-card .mobile-header-actions .btn {
     flex: 1 !important;
+    min-width: 0 !important;
     width: auto !important;
     justify-content: center !important;
     padding: 10px 12px !important;
