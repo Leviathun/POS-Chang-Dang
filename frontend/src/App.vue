@@ -227,9 +227,9 @@
         <header id="app-header">
           <!-- Left: Logged-in User Info -->
           <div class="header-left flex align-center gap-xs" v-if="user">
-            <div class="header-user-badge inline-flex align-center gap-2xs">
-              <i class="fa-solid fa-circle-user text-primary" style="font-size: 1.15rem;"></i>
-              <span class="header-user-name font-bold">{{ user.name }}</span>
+            <div class="header-user-badge inline-flex align-center">
+              <i class="fa-solid fa-circle-user user-icon"></i>
+              <span class="header-user-name">{{ user.name }}</span>
             </div>
           </div>
           <div class="header-left" v-else></div>
@@ -1058,22 +1058,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.header-user-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-primary);
-}
-
-.header-user-name {
-  font-size: var(--font-sm);
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 130px;
-}
-
+.header-user-badge,
 .header-branch-badge {
   display: inline-flex;
   align-items: center;
@@ -1085,9 +1070,18 @@ onUnmounted(() => {
   height: 32px;
   padding: 0 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  max-width: calc(100vw - 140px);
+  box-sizing: border-box;
 }
 
+.header-user-badge {
+  max-width: 140px;
+}
+
+.header-branch-badge {
+  max-width: calc(100vw - 160px);
+}
+
+.header-user-badge .user-icon,
 .header-branch-badge .branch-icon {
   font-size: 0.95rem;
   color: var(--primary, #8b0313);
@@ -1095,8 +1089,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transform: translateY(-0.5px);
 }
 
+.header-user-name,
 .header-branch-name {
   font-size: var(--font-sm);
   font-weight: var(--font-weight-bold);
@@ -1106,6 +1102,8 @@ onUnmounted(() => {
   text-overflow: ellipsis;
   display: inline-flex;
   align-items: center;
+  line-height: 1;
+  transform: translateY(1.5px);
 }
 
 #app-header .header-btn {
@@ -1779,6 +1777,7 @@ onUnmounted(() => {
     height: 38px;
     padding: 0 18px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
   }
 
   .desktop-content-header .desktop-branch-badge .branch-icon {
@@ -1788,6 +1787,7 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transform: translateY(-0.5px);
   }
 
   .desktop-content-header .desktop-branch-badge .branch-label {
@@ -1797,6 +1797,8 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
+    line-height: 1;
+    transform: translateY(1.5px);
   }
 
   .desktop-content-header .desktop-user-profile {
