@@ -1103,7 +1103,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   line-height: 1;
-  transform: translateY(3.5px);
+  transform: translateY(1px);
 }
 
 #app-header .header-btn {
