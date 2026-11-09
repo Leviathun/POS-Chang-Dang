@@ -819,9 +819,9 @@ ul, ol { list-style: none; }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(30, 12, 8, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   animation: fadeIn 0.2s ease;
   z-index: 1;
 }
@@ -832,10 +832,13 @@ ul, ol { list-style: none; }
   max-width: var(--max-width);
   max-height: 90vh;
   max-height: 90dvh;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border: 1.5px solid rgba(139, 3, 19, 0.18);
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-  overflow-y: auto;
+  box-shadow: 0 24px 60px -12px rgba(45, 15, 8, 0.5), 0 8px 24px -4px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   z-index: 2;
   animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -858,7 +861,7 @@ ul, ol { list-style: none; }
 .modal-handle {
   width: 36px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(139, 3, 19, 0.2);
   border-radius: var(--radius-full);
   margin: var(--space-md) auto var(--space-sm);
 }
@@ -867,13 +870,27 @@ ul, ol { list-style: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-lg) var(--space-xl);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--primary);
+  color: #ffffff;
+  border-bottom: 2px solid rgba(139, 3, 19, 0.2);
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
   font-size: var(--font-lg);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  letter-spacing: -0.01em;
+}
+
+.modal-header h3 i {
+  color: #ffffff;
+  font-size: 1.15rem;
 }
 
 .modal-close {
@@ -883,27 +900,82 @@ ul, ol { list-style: none; }
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-  font-size: var(--font-lg);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
   transition: var(--transition-base);
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
 
 .modal-close:active {
   transform: scale(0.9);
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .modal-body {
   padding: var(--space-xl);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Modal Inner Form Controls & Cards — Clean Crisp White on Warm Cream */
+.modal-body .form-input,
+.modal-body .form-select,
+.modal-body .form-textarea,
+.modal-body input[type="text"],
+.modal-body input[type="number"],
+.modal-body input[type="password"],
+.modal-body select,
+.modal-body textarea {
+  background: #ffffff !important;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 3px rgba(61, 27, 17, 0.04);
+}
+
+.modal-body .form-input:focus,
+.modal-body .form-select:focus,
+.modal-body .form-textarea:focus,
+.modal-body input:focus,
+.modal-body select:focus,
+.modal-body textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-glow) !important;
+  background: #ffffff !important;
+}
+
+/* Modal Internal Cards & Item Rows */
+.modal-body .card,
+.modal-body [style*="var(--bg-secondary)"] {
+  background: #ffffff !important;
+  border: 1.5px solid var(--border-color) !important;
+  box-shadow: 0 1px 4px rgba(61, 27, 17, 0.05);
+}
+
+/* Modal Field Labels & Headings — Consistently Bold */
+.modal-body .form-label,
+.modal-body label:not(.toggle-switch):not(.btn) {
+  font-weight: var(--font-weight-bold) !important;
 }
 
 .modal-footer {
-  padding: var(--space-lg) var(--space-xl);
-  padding-bottom: calc(var(--space-xl) + var(--safe-bottom));
+  padding: var(--space-md) var(--space-xl);
+  padding-bottom: calc(var(--space-md) + var(--safe-bottom));
   border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   display: flex;
   gap: var(--space-md);
+  flex-shrink: 0;
 }
 
 /* --- Modal Wrappers end --- */
@@ -1677,33 +1749,49 @@ select.form-input:focus {
 
 /* --- Category Tabs Wrapper end --- */
 
-/* --- Bulk Stock Management page buttons start --- */
+/* --- Global Back Button / Secondary Action Button --- */
+.btn-back,
 .btn-bulk-back {
-  background: var(--bg-primary) !important;
-  border: 1px solid var(--border-color-light) !important;
-  color: var(--text-primary) !important;
+  background: #ffffff !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-base);
   text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--transition-base);
 }
 
-.btn-bulk-back:hover {
-  background: var(--bg-secondary) !important;
-  border-color: var(--border-color-focus) !important;
-  transform: translateY(-1px);
+.btn-back i,
+.btn-bulk-back i {
+  color: var(--text-secondary) !important;
+}
+
+.btn-back:active,
+.btn-bulk-back:active {
+  transform: scale(0.97);
+  background: #ffffff !important;
+  color: var(--text-secondary) !important;
 }
 
 .btn-bulk-save,
 .btn-bulk-header-save {
-  background: linear-gradient(135deg, #e63946, #b7091b) !important;
+  background: var(--gradient-primary) !important;
   color: white !important;
   border: none !important;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-glow-primary) !important;
   cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
-.btn-bulk-save:hover,
-.btn-bulk-header-save:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+.btn-bulk-save:active,
+.btn-bulk-header-save:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 30px rgba(230, 57, 70, 0.5) !important;
 }
 
 /* Icon spacing inside buttons */
@@ -1901,7 +1989,7 @@ select.form-input:focus {
 
   .mobile-menu-card-name,
   .mobile-stock-card-name {
-    font-size: var(--font-md) !important;
+    font-size: var(--font-base) !important;
     font-weight: var(--font-weight-bold) !important;
     color: var(--text-primary) !important;
     word-break: break-word !important;

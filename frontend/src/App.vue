@@ -416,6 +416,9 @@
     <div id="modal-container" :class="{ 'active flex align-center': uiState.confirm }">
       <div v-if="uiState.confirm" class="modal-overlay" @click="uiState.confirm.resolve(false)"></div>
       <div v-if="uiState.confirm" class="confirm-dialog" style="position:relative; z-index:2;">
+        <div class="confirm-icon-badge">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
         <div class="confirm-title">{{ uiState.confirm.title }}</div>
         <div class="confirm-message">{{ uiState.confirm.message }}</div>
         <div class="confirm-actions">
@@ -1424,27 +1427,44 @@ onUnmounted(() => {
 
 /* --- Confirm Dialog --- */
 .confirm-dialog {
-  width: 100%;
-  max-width: 320px;
+  width: calc(100% - 32px);
+  max-width: 380px;
   margin: auto;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border: 1.5px solid rgba(139, 3, 19, 0.2);
   border-radius: var(--radius-2xl);
-  padding: var(--space-2xl);
+  padding: var(--space-2xl) var(--space-xl);
   text-align: center;
+  box-shadow: 0 24px 60px -12px rgba(45, 15, 8, 0.55), 0 8px 24px -4px rgba(0, 0, 0, 0.35);
   animation: scaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.confirm-icon-badge {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-md);
+  border-radius: 50%;
+  background: rgba(173, 40, 30, 0.12);
+  border: 1.5px solid rgba(173, 40, 30, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--danger);
+  font-size: 1.6rem;
 }
 
 .confirm-title {
   font-size: var(--font-lg);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
 }
 
 .confirm-message {
   font-size: var(--font-sm);
   color: var(--text-secondary);
-  margin-bottom: var(--space-2xl);
+  line-height: 1.55;
+  margin-bottom: var(--space-xl);
   white-space: pre-line;
 }
 
@@ -1453,8 +1473,10 @@ onUnmounted(() => {
   gap: var(--space-md);
 }
 
-.confirm-actions .btn {
-  flex: 1;
+.confirm-actions .btn-modal {
+  height: 46px;
+  font-size: var(--font-base);
+  border-radius: var(--radius-md);
 }
 
 /* --- Keypad --- */

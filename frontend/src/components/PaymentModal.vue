@@ -347,7 +347,7 @@
                     <img src="@/assets/image/qr.png" alt="Payment QR Code" style="max-width: 480px; width: 100%; max-height: 480px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); object-fit: contain;" />
                   </div>
                   <div class="text-sm text-secondary" style="margin-bottom: var(--space-md);">
-                    ช่องทางชำระเงินด้วย QR Code / โอนเงินผ่านธนาคาร
+                    สแกน QR Code หรือโอนเงิน
                   </div>
 
                   <div class="font-bold text-accent mb-xl text-2xl" style="margin-bottom: var(--space-lg);">
@@ -363,7 +363,7 @@
 
                 <!-- Step 2C: Government Project Payment -->
                 <div v-if="paymentMethod === 'gov'" id="gov-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
-                  <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--accent); opacity: 0.9;">
+                  <div style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: var(--accent); opacity: 0.9; display: flex; justify-content: center;">
                     <i class="fa-solid fa-landmark"></i>
                   </div>
                   <div class="text-sm text-secondary" style="margin-bottom: var(--space-md);">
@@ -383,11 +383,11 @@
 
                 <!-- Step 2D: Delivery App Payment -->
                 <div v-if="paymentMethod === 'delivery'" id="delivery-section" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
-                  <div class="empty-state-icon" style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: #ff9500; opacity: 0.9;">
+                  <div style="font-size: 3.5rem; margin-bottom: var(--space-sm); color: #ff9500; opacity: 0.9; display: flex; justify-content: center;">
                     <i class="fa-solid fa-motorcycle"></i>
                   </div>
                   <div class="text-sm text-secondary" style="margin-bottom: var(--space-md);">
-                    ช่องทางชำระเงินด้วย เดลิเวอรี (Delivery App)
+                    ช่องทางชำระเงินด้วย เดลิเวอรี
                   </div>
 
                   <div class="font-bold mb-xl text-2xl" style="margin-bottom: var(--space-lg); color: #ff9500;">
@@ -589,7 +589,7 @@ const pressNum = (key) => {
 
 const getPaymentMethodLabel = (method) => {
   const map = {
-    'cash': 'เงินสด (Cash)',
+    'cash': 'เงินสด',
     'qr': 'QR / โอน',
     'gov': 'โครงการรัฐ',
     'delivery': 'เดลิเวอรี'
@@ -852,6 +852,15 @@ const confirmDeliveryPayment = () => {
 }
 
 /* Center single-column layout */
+@media (max-width: 767px) {
+  .checkout-left {
+    order: 2 !important;
+  }
+  .checkout-right {
+    order: 1 !important;
+  }
+}
+
 .checkout-container {
   display: flex;
   flex-direction: column;
@@ -890,21 +899,6 @@ const confirmDeliveryPayment = () => {
     flex: 1 !important;
     max-height: none !important;
   }
-}
-
-/* Modal close button override */
-.modal-close {
-  background: transparent;
-  border: none;
-  font-size: var(--font-xl);
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: var(--space-xs);
-  line-height: 1;
-}
-
-.modal-close:hover {
-  color: var(--text-primary);
 }
 
 /* --- Payment Section --- */

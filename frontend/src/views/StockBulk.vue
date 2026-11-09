@@ -27,7 +27,7 @@
     <!-- Main Content Area -->
     <div class="card p-lg overflow-hidden bulk-main-card">
       <!-- Outer Category Tabs: Menu Items vs Modifiers -->
-      <div class="category-tabs mb-lg">
+      <div class="category-tabs mb-lg" v-if="false">
         <button 
           class="btn btn-secondary" 
           :class="{ 'active': activeStockType === 'menu_items' }"
