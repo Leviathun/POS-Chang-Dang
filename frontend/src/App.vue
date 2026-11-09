@@ -225,14 +225,16 @@
       <div class="main-layout">
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
-          <div class="header-left flex align-center gap-xs">
-            <img src="@/assets/image/Logo POS.png" alt="Logo" class="header-logo" style="width: 26px; height: 26px; object-fit: contain; flex-shrink: 0;" />
-            <div class="header-branch-badge inline-flex align-center gap-2xs">
-              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse text-primary"></i>
-              <i v-else class="fa-solid fa-store text-primary"></i>
-              <span class="header-branch-name">{{ currentBranchDisplay }}</span>
+          <!-- Left: Logged-in User Info -->
+          <div class="header-left flex align-center gap-xs" v-if="user">
+            <div class="header-user-badge inline-flex align-center gap-2xs">
+              <i class="fa-solid fa-circle-user text-primary" style="font-size: 1.15rem;"></i>
+              <span class="header-user-name font-bold">{{ user.name }}</span>
             </div>
           </div>
+          <div class="header-left" v-else></div>
+
+          <!-- Right: Branch Badge -->
           <div class="header-right flex align-center gap-xs">
             <!-- When in Central Kitchen mode: show quick switch back to Retail Store in the corner! -->
             <button 
@@ -246,10 +248,11 @@
               <i class="fa-solid fa-store" style="font-size: var(--font-xs);"></i>
               <span style="font-size: var(--font-xs); font-weight: bold;">หน้าร้าน</span>
             </button>
-            <button class="header-btn inline-flex align-center gap-xs" id="btn-logout" @click="handleLogout" title="ออกจากระบบ">
-              <i class="fa-solid fa-right-from-bracket" style="font-size: var(--font-sm);"></i>
-              <span style="font-size: var(--font-xs); font-weight: bold;">ออก</span>
-            </button>
+            <div class="header-branch-badge inline-flex align-center gap-2xs">
+              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse text-primary"></i>
+              <i v-else class="fa-solid fa-store text-primary"></i>
+              <span class="header-branch-name">{{ currentBranchDisplay }}</span>
+            </div>
           </div>
         </header>
  
@@ -262,11 +265,14 @@
               <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: 1.15rem;"></i>
               <span>{{ activeTitle }}</span>
             </h2>
-            <div class="desktop-branch-badge" v-if="user">
-              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
-              <i v-else class="fa-solid fa-store branch-icon"></i>
-              <span class="branch-label">{{ currentBranchDisplay }}</span>
+            <div class="desktop-branch-center" v-if="user">
+              <div class="desktop-branch-badge">
+                <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
+                <i v-else class="fa-solid fa-store branch-icon"></i>
+                <span class="branch-label">{{ currentBranchDisplay }}</span>
+              </div>
             </div>
+            <div class="desktop-header-spacer"></div>
           </div>
 
           <router-view v-slot="{ Component }">
@@ -834,10 +840,12 @@ onMounted(() => {
 
   // Close branch selector dropdown when clicking outside
   window.addEventListener('click', closeBranchDropdown);
+  window.addEventListener('trigger-logout', handleLogout);
 });
 
 onUnmounted(() => {
   window.removeEventListener('click', closeBranchDropdown);
+  window.removeEventListener('trigger-logout', handleLogout);
   if (dragScrollObserver) {
     dragScrollObserver.disconnect();
   }
@@ -1051,6 +1059,22 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-xs);
   flex-shrink: 0;
+}
+
+.header-user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.header-user-name {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
 }
 
 .header-branch-badge {
@@ -1734,26 +1758,49 @@ onUnmounted(() => {
     background-clip: text;
   }
 
+  .desktop-content-header .desktop-branch-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+  }
+
   .desktop-content-header .desktop-branch-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     background: #ffffff;
     border: 1.5px solid var(--primary-light);
     border-radius: var(--radius-full);
-    padding: 6px 16px;
+    padding: 6px 18px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    line-height: 1;
   }
 
   .desktop-content-header .desktop-branch-badge .branch-icon {
-    font-size: 1.05rem;
+    font-size: 1rem;
     color: var(--primary);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .desktop-content-header .desktop-branch-badge .branch-label {
     font-size: var(--font-base);
     font-weight: var(--font-weight-bold);
     color: var(--text-primary);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .desktop-content-header .desktop-header-spacer {
+    width: 1px;
   }
 
   .desktop-content-header .desktop-user-profile {
