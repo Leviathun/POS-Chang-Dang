@@ -60,6 +60,18 @@ async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, us
         menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%นักเก็ต%ลาวา%' LIMIT 1").get(branchId);
       } else if (targetName.includes('นักเก็ต')) {
         menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%นักเก็ต%' AND name NOT LIKE '%ลาวา%' LIMIT 1").get(branchId);
+      } else if (targetName.includes('หมูสับ') && targetName.includes('ไข่เค็ม')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name LIKE '%หมูสับ%ไข่เค็ม%' OR name = 'หมูสับไข่เค็ม') LIMIT 1").get(branchId);
+      } else if (targetName.includes('หมูสับ')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name = 'หมูสับ' OR name LIKE '%ซาลาเปา%หมูสับ%') AND name NOT LIKE '%ไข่เค็ม%' LIMIT 1").get(branchId);
+      } else if (targetName.includes('ครีม')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name = 'ครีม' OR name LIKE '%ซาลาเปา%ครีม%') LIMIT 1").get(branchId);
+      } else if (targetName.includes('ถั่วดำ')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND (name = 'ถั่วดำ' OR name LIKE '%ซาลาเปา%ถั่วดำ%') LIMIT 1").get(branchId);
+      } else if (targetName.includes('หมั่นโถ')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%หมั่นโถ%' LIMIT 1").get(branchId);
+      } else if (targetName.includes('ขนมจีบ')) {
+        menuItem = await db.prepare("SELECT * FROM menu_items WHERE branch_id = ? AND name LIKE '%ขนมจีบ%' LIMIT 1").get(branchId);
       }
     }
 

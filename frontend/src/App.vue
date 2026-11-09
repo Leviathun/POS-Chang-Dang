@@ -184,7 +184,7 @@
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
           </router-link>
 
-          <router-link to="/stock" class="sidebar-item" active-class="active">
+          <router-link to="/stock" class="sidebar-item" :class="{ 'active': route.path.startsWith('/stock') }">
             <span class="sidebar-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="sidebar-label">คลังสินค้า/สต็อก</span>
           </router-link>
@@ -225,14 +225,16 @@
       <div class="main-layout">
         <!-- App Header (Visible on Mobile) -->
         <header id="app-header">
-          <div class="header-left flex align-center gap-xs">
-            <img src="@/assets/image/Logo POS.png" alt="Logo" class="header-logo" style="width: 26px; height: 26px; object-fit: contain; flex-shrink: 0;" />
-            <div class="header-branch-badge inline-flex align-center gap-2xs">
-              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse text-primary"></i>
-              <i v-else class="fa-solid fa-store text-primary"></i>
-              <span class="header-branch-name">{{ currentBranchDisplay }}</span>
+          <!-- Left: Logged-in User Info -->
+          <div class="header-left flex align-center gap-xs" v-if="user">
+            <div class="header-user-badge inline-flex align-center">
+              <i class="fa-solid fa-circle-user user-icon"></i>
+              <span class="header-user-name">{{ user.name }}</span>
             </div>
           </div>
+          <div class="header-left" v-else></div>
+
+          <!-- Right: Branch Badge -->
           <div class="header-right flex align-center gap-xs">
             <!-- When in Central Kitchen mode: show quick switch back to Retail Store in the corner! -->
             <button 
@@ -246,10 +248,11 @@
               <i class="fa-solid fa-store" style="font-size: var(--font-xs);"></i>
               <span style="font-size: var(--font-xs); font-weight: bold;">หน้าร้าน</span>
             </button>
-            <button class="header-btn inline-flex align-center gap-xs" id="btn-logout" @click="handleLogout" title="ออกจากระบบ">
-              <i class="fa-solid fa-right-from-bracket" style="font-size: var(--font-sm);"></i>
-              <span style="font-size: var(--font-xs); font-weight: bold;">ออก</span>
-            </button>
+            <div class="header-branch-badge inline-flex align-center">
+              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
+              <i v-else class="fa-solid fa-store branch-icon"></i>
+              <span class="header-branch-name">{{ currentBranchDisplay }}</span>
+            </div>
           </div>
         </header>
  
@@ -262,9 +265,10 @@
               <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: 1.15rem;"></i>
               <span>{{ activeTitle }}</span>
             </h2>
-            <div class="desktop-user-profile" v-if="user">
-              <span class="user-greeting">สวัสดี, <strong>{{ user.name }}</strong></span>
-              <span class="user-badge" :class="user.role">{{ getRoleLabel(user.role) }}</span>
+            <div class="desktop-branch-badge" v-if="user">
+              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
+              <i v-else class="fa-solid fa-store branch-icon"></i>
+              <span class="branch-label">{{ currentBranchDisplay }}</span>
             </div>
           </div>
 
@@ -317,7 +321,7 @@
               <span class="nav-label">เมนู</span>
             </router-link>
             <!-- 3. สต็อก -->
-            <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
+            <router-link to="/stock" class="nav-item" :class="{ 'active': route.path.startsWith('/stock') }" data-page="stock">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
               <span class="nav-label">สต็อก</span>
             </router-link>
@@ -412,6 +416,9 @@
     <div id="modal-container" :class="{ 'active flex align-center': uiState.confirm }">
       <div v-if="uiState.confirm" class="modal-overlay" @click="uiState.confirm.resolve(false)"></div>
       <div v-if="uiState.confirm" class="confirm-dialog" style="position:relative; z-index:2;">
+        <div class="confirm-icon-badge">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
         <div class="confirm-title">{{ uiState.confirm.title }}</div>
         <div class="confirm-message">{{ uiState.confirm.message }}</div>
         <div class="confirm-actions">
@@ -630,6 +637,7 @@ const activeTitle = computed(() => {
     '/management': 'บริหารจัดการร้าน',
     '/menu': 'จัดการเมนู',
     '/stock': 'คลังสินค้า',
+    '/stock/cook': 'คลังสินค้า',
     '/stock/bulk': 'คลังสินค้า',
     '/reports': 'รายงานยอดขาย',
     '/settings': 'ตั้งค่าระบบ'
@@ -833,10 +841,12 @@ onMounted(() => {
 
   // Close branch selector dropdown when clicking outside
   window.addEventListener('click', closeBranchDropdown);
+  window.addEventListener('trigger-logout', handleLogout);
 });
 
 onUnmounted(() => {
   window.removeEventListener('click', closeBranchDropdown);
+  window.removeEventListener('trigger-logout', handleLogout);
   if (dragScrollObserver) {
     dragScrollObserver.disconnect();
   }
@@ -1052,25 +1062,52 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
+.header-user-badge,
 .header-branch-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   background: #ffffff;
   border: 1.5px solid var(--primary-light);
   border-radius: var(--radius-full);
-  padding: 4px 10px;
+  height: 32px;
+  padding: 0 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  max-width: calc(100vw - 110px);
+  box-sizing: border-box;
 }
 
+.header-user-badge {
+  max-width: 140px;
+}
+
+.header-branch-badge {
+  max-width: calc(100vw - 160px);
+}
+
+.header-user-badge .user-icon,
+.header-branch-badge .branch-icon {
+  font-size: 0.95rem;
+  color: var(--primary, #8b0313);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+}
+
+.header-user-name,
 .header-branch-name {
   font-size: var(--font-sm);
   font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  color: #111111;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  transform: translateY(-1.2px);
 }
 
 #app-header .header-btn {
@@ -1391,27 +1428,44 @@ onUnmounted(() => {
 
 /* --- Confirm Dialog --- */
 .confirm-dialog {
-  width: 100%;
-  max-width: 320px;
+  width: calc(100% - 32px);
+  max-width: 380px;
   margin: auto;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border: 1.5px solid rgba(139, 3, 19, 0.2);
   border-radius: var(--radius-2xl);
-  padding: var(--space-2xl);
+  padding: var(--space-2xl) var(--space-xl);
   text-align: center;
+  box-shadow: 0 24px 60px -12px rgba(45, 15, 8, 0.55), 0 8px 24px -4px rgba(0, 0, 0, 0.35);
   animation: scaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.confirm-icon-badge {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-md);
+  border-radius: 50%;
+  background: rgba(173, 40, 30, 0.12);
+  border: 1.5px solid rgba(173, 40, 30, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--danger);
+  font-size: 1.6rem;
 }
 
 .confirm-title {
   font-size: var(--font-lg);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
 }
 
 .confirm-message {
   font-size: var(--font-sm);
   color: var(--text-secondary);
-  margin-bottom: var(--space-2xl);
+  line-height: 1.55;
+  margin-bottom: var(--space-xl);
   white-space: pre-line;
 }
 
@@ -1420,8 +1474,10 @@ onUnmounted(() => {
   gap: var(--space-md);
 }
 
-.confirm-actions .btn {
-  flex: 1;
+.confirm-actions .btn-modal {
+  height: 46px;
+  font-size: var(--font-base);
+  border-radius: var(--radius-md);
 }
 
 /* --- Keypad --- */
@@ -1592,14 +1648,14 @@ onUnmounted(() => {
     gap: var(--space-md);
     padding: var(--space-sm) var(--space-md);
     background: var(--card-bg);
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--primary-light);
     border-radius: var(--radius-lg);
     text-align: left;
   }
 
   .sidebar-user .user-avatar {
     font-size: 1.5rem;
-    background: var(--bg-tertiary);
+    background: transparent;
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -1731,6 +1787,41 @@ onUnmounted(() => {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .desktop-content-header .desktop-branch-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1.5px solid var(--primary-light);
+    border-radius: var(--radius-full);
+    height: 38px;
+    padding: 0 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+  }
+
+  .desktop-content-header .desktop-branch-badge .branch-icon {
+    font-size: 1.05rem;
+    color: var(--primary, #8b0313);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    
+  }
+
+  .desktop-content-header .desktop-branch-badge .branch-label {
+    font-size: var(--font-base);
+    font-weight: var(--font-weight-bold);
+    color: #111111;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    line-height: 1;
+    transform: translateY(4px);
   }
 
   .desktop-content-header .desktop-user-profile {

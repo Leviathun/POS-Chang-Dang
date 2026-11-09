@@ -1,8 +1,8 @@
 <template>
   <div id="stock-page" class="page-enter">
     
-    <!-- Tab Selector -->
-    <div class="category-tabs mb-lg">
+    <!-- Tab Selector (Hidden from frontend view while preserving code structure) -->
+    <div class="category-tabs mb-lg" v-if="false">
       <button 
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'menu_items' }"
@@ -24,9 +24,9 @@
       <div class="stock-page-title">
         ระบบจัดการสต็อกสินค้า
       </div>
-      <div class="flex align-center gap-xs flex-wrap">
-        <router-link to="/requisition" class="btn btn-secondary">
-          <i class="fa-solid fa-boxes-packing"></i> เบิกของจากครัวกลาง
+      <div class="flex align-center gap-xs flex-wrap mobile-header-actions">
+        <router-link to="/stock/cook" class="btn btn-primary btn-header-cook">
+          <i class="fa-solid fa-fire-burner"></i> ปรุง
         </router-link>
         <router-link v-if="isManagerOrAdminUser" to="/stock/bulk" class="btn btn-primary">
           <i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน
@@ -430,7 +430,7 @@
           <div class="form-group">
             <template v-if="!activeIsModifier && activeItem?.uom === 'กรัม' && actionType === 'restock'">
               <div class="form-group">
-                <label class="form-label">จำนวนถุงที่ต้องการเติม *</label>
+                <label class="form-label font-bold">จำนวนถุงที่ต้องการเติม *</label>
                 <input 
                   type="number" 
                   class="form-input" 
@@ -440,7 +440,7 @@
                 />
               </div>
               <div class="form-group mt-sm">
-                <label class="form-label">ขนาดบรรจุต่อถุง *</label>
+                <label class="form-label font-bold">ขนาดบรรจุต่อถุง *</label>
                 <select class="form-input" v-model.number="restockBagCapacity">
                   <option :value="1000">1 กิโลกรัม (1,000 กรัม)</option>
                   <option :value="2000">2 กิโลกรัม (2,000 กรัม)</option>
@@ -451,7 +451,7 @@
               </div>
             </template>
             <template v-else>
-              <label class="form-label">
+              <label class="form-label font-bold">
                 <template v-if="activeIsModifier">
                   {{ actionType === 'restock' ? (activeItem?.category === 'sauce_small' ? 'จำนวนซองที่ต้องการเติม *' : 'จำนวนถุงที่ต้องการเติม *') : 'จำนวนรอบเสิร์ฟที่ต้องการปรับ (ใส่ติดลบเพื่อหักออก) *' }}
                 </template>
@@ -482,7 +482,7 @@
           </div>
 
           <div v-if="!activeIsModifier && actionType === 'fry'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
-            * ระบบจะหักออกจากสต็อก "ของสด" และเพิ่มเข้าสต็อก "{{ activeItem ? getCookActionLabel(activeItem.name) + 'สุก' : 'ทอดสุก' }}" 
+            * ย้ายจากสต็อก "ของสด" ไปยัง "{{ activeItem ? getCookActionLabel(activeItem.name) + 'สุก' : 'ทอดสุก' }}"
           </div>
 
           <div v-if="activeIsModifier && actionType === 'restock'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
@@ -491,7 +491,7 @@
 
           <!-- Waste Preset Notes -->
           <div v-if="!activeIsModifier && actionType === 'waste'" class="form-group">
-            <label class="form-label">สาเหตุของเสีย</label>
+            <label class="form-label font-bold">สาเหตุของเสีย</label>
             <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
               <button 
                 v-for="preset in wastePresets" :key="preset"
@@ -508,7 +508,7 @@
 
           <!-- Note/Reason -->
           <div v-if="actionType !== 'fry'" class="form-group">
-            <label class="form-label">บันทึกช่วยจำ {{ actionType === 'waste' || actionType === 'staff_benefit' ? '' : '(เช่น เลขบิล หรือเหตุผลที่ปรับปรุง)' }}</label>
+            <label class="form-label font-bold">บันทึกช่วยจำ {{ actionType === 'waste' || actionType === 'staff_benefit' ? '' : '(เช่น เลขบิล หรือเหตุผลที่ปรับปรุง)' }}</label>
             <input 
               type="text" 
               class="form-input" 
@@ -527,8 +527,9 @@
             >
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-                <i v-else :class="actionType === 'fry' ? (activeItem ? getCookActionIcon(activeItem.name) : 'fa-solid fa-fire') : 'fa-solid fa-floppy-disk'"></i>
-                {{ isSaving ? 'กำลังบันทึกข้อมูล...' : (actionType === 'fry' ? `เริ่ม${activeItem ? getCookActionLabel(activeItem.name) : 'ทอด'}สินค้า` : 'บันทึกสต็อก') }}
+                <i v-else-if="actionType === 'fry'" :class="activeItem ? getCookActionIcon(activeItem.name) : 'fa-solid fa-fire'"></i>
+                <i v-else class="fa-solid fa-floppy-disk"></i>
+                {{ isSaving ? 'กำลังบันทึก...' : (actionType === 'fry' ? (activeItem ? getCookActionLabel(activeItem.name) : 'ทอด') : 'บันทึก') }}
               </span>
             </button>
           </div>
@@ -559,7 +560,7 @@
             </div>
           </div>
           <div v-else-if="logs.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
-            ยังไม่มีบันทึกประวัติการปรับปรุงสต็อกสำหรับสินค้าชิ้นนี้
+            ยังไม่มีบันทึกประวัติ
           </div>
           
           <div v-else style="display: flex; flex-direction: column; gap: var(--space-md);">
@@ -604,10 +605,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api';
 import { ui, formatDateTime, getUser, getToday, isManagerOrAdmin } from '../helpers';
 
 import { store } from '../store';
+
+const router = useRouter();
 
 // States
 const isManagerOrAdminUser = computed(() => isManagerOrAdmin());
@@ -861,9 +865,13 @@ const handleSaveAction = async () => {
           store.updateStock(res.data.id, res.data.stock, res.data.raw_stock);
         }
       }
+      const wasFry = actionType.value === 'fry';
       ui.showToast('ระบบอัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
       showActionModal.value = false;
       actionForm.value = { quantity: '', note: '' };
+      if (wasFry) {
+        router.push('/stock/cook');
+      }
     }
   } catch (e) {
     console.error(e);
@@ -944,7 +952,7 @@ const getActionTitleLabel = (type, isMod) => {
   }
   const map = {
     'restock': 'เติมสต็อกสินค้า',
-    'waste': 'บันทึกสินค้าเสีย',
+    'waste': 'ของเสีย',
     'staff_benefit': 'บันทึกเครดิตพนักงาน',
     'adjust': 'ปรับปรุงยอดสต็อก'
   };
@@ -1015,6 +1023,19 @@ onMounted(() => {
   color: var(--text-secondary);
   text-align: left;
 }
+.mobile-header-actions .btn {
+  height: 44px !important;
+  padding: 10px 18px !important;
+  font-size: var(--font-base) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  min-width: 160px !important;
+}
 @media (max-width: 768px) {
   .stock-page-title {
     font-size: var(--font-lg) !important;
@@ -1031,8 +1052,18 @@ onMounted(() => {
   .mobile-stock-header-card > div {
     text-align: center !important;
   }
-  .mobile-stock-header-card .btn {
+  .mobile-stock-header-card .mobile-header-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: var(--space-xs) !important;
     width: 100% !important;
+  }
+  .mobile-stock-header-card .mobile-header-actions .btn {
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: auto !important;
+    justify-content: center !important;
+    padding: 10px 12px !important;
   }
 }
 

@@ -1,8 +1,8 @@
 <template>
   <div id="menu-page" class="page-enter">
 
-    <!-- Tab Selector -->
-    <div class="category-tabs mb-lg">
+    <!-- Tab Selector (Hidden from frontend view while preserving code structure) -->
+    <div class="category-tabs mb-lg" v-if="false">
       <button 
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'menu_items' }"
@@ -43,10 +43,10 @@
             <table class="table w-full" style="border-collapse: collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th class="text-center" style="padding: var(--space-md); width: 60px;">ลาก</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
-                  <th class="text-left" style="padding: var(--space-md);">เมนูอาหาร</th>
-                  <th class="text-right" style="padding: var(--space-md); width: 150px;">ราคา</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 10%;">ลาก</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 15%;">รูป</th>
+                  <th class="text-left" style="padding: var(--space-md); width: 45%;">เมนูอาหาร</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 30%; white-space: nowrap;">ราคา</th>
                 </tr>
               </thead>
               <tbody>
@@ -90,7 +90,7 @@
                     </div>
                   </td>
                   <!-- Price -->
-                  <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
+                  <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;">
                     {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
                   </td>
                 </tr>
@@ -128,7 +128,7 @@
                 </div>
                 
                 <!-- Middle: Name & Category -->
-                <div class="mobile-menu-card-details" style="flex: 1;">
+                <div class="mobile-menu-card-details" style="flex: 1; min-width: 0;">
                   <div class="mobile-menu-card-name">{{ item.name }}</div>
                   <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
                 </div>
@@ -164,7 +164,7 @@
                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
                   <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
                   <th class="text-left" style="padding: var(--space-md);">เมนูอาหาร</th>
-                  <th class="text-right" style="padding: var(--space-md);">ราคา</th>
+                  <th class="text-right" style="padding: var(--space-md); min-width: 170px; white-space: nowrap;">ราคา</th>
                   <th class="text-center" style="padding: var(--space-md);">ขาย</th>
                   <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
                 </tr>
@@ -220,7 +220,7 @@
                     </div>
                   </td>
                   <!-- Price -->
-                  <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
+                  <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;">
                     {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
                   </td>
                   <!-- Toggle Active Switch -->
@@ -522,7 +522,7 @@
         <div class="modal-body">
           <!-- Food Name -->
           <div class="form-group">
-            <label class="form-label">ชื่อเมนูอาหาร *</label>
+            <label class="form-label font-bold">ชื่อเมนูอาหาร *</label>
             <input 
               type="text" 
               class="form-input" 
@@ -538,14 +538,14 @@
               <span class="toggle-slider"></span>
             </label>
             <span class="font-semibold text-sm" style="margin-left: 6px;">
-              ใช้งานหลายราคาตามขนาดไซส์ (S, M, L)
+              ราคาตามไซส์ (S, M, L)
             </span>
           </div>
 
 
           <!-- Price (Single) -->
           <div v-if="!itemForm.use_multiple_prices" class="form-group">
-            <label class="form-label">ราคาขาย (บาท) *</label>
+            <label class="form-label font-bold">ราคาขาย (บาท) *</label>
             <input 
               type="number" 
               class="form-input" 
@@ -600,7 +600,7 @@
 
           <!-- Category Selector -->
           <div class="form-group">
-            <label class="form-label">หมวดหมู่สินค้า *</label>
+            <label class="form-label font-bold">หมวดหมู่สินค้า *</label>
             <div class="custom-select-wrapper" @click.stop>
               <div 
                 class="custom-select-trigger" 

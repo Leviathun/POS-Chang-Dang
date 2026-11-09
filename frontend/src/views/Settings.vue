@@ -1254,6 +1254,22 @@
       </div>
     </div>
 
+    <!-- Mobile-Only Logout Section -->
+    <div class="mobile-logout-section card mt-xl">
+      <div class="flex flex-between align-center">
+        <div class="flex align-center gap-sm">
+          <i class="fa-solid fa-circle-user text-primary" style="font-size: 1.5rem;"></i>
+          <div>
+            <div class="font-bold text-base text-primary">{{ currentUser?.name }}</div>
+            <div class="text-xs text-secondary">{{ getRoleLabel(currentUser?.role) }}</div>
+          </div>
+        </div>
+        <button class="btn btn-danger mobile-logout-btn" @click="handleLogout">
+          <i class="fa-solid fa-right-from-bracket mr-xs"></i>
+          <span>ออกจากระบบ</span>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2463,6 +2479,39 @@ input:checked + .slider:before {
   .setting-item.setting-item-select .custom-select-wrapper {
     width: 100% !important;
     min-width: 100% !important;
+  }
+}
+.mobile-logout-section {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-logout-section {
+    display: block;
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-2xl);
+    padding: var(--space-md) var(--space-lg);
+    background: #ffffff;
+    border: 1.5px solid rgba(173, 40, 30, 0.2);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+  .mobile-logout-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: var(--font-sm);
+    font-weight: var(--font-weight-bold);
+    background: var(--danger, #ad281e);
+    color: #ffffff;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+  }
+  .mobile-logout-btn:active {
+    transform: scale(0.96);
   }
 }
 </style>

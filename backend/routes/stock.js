@@ -5,8 +5,8 @@ const { attachUser, requireAuth, requireManagerOrAdmin } = require('../middlewar
 
 const getBunLinkageName = (name) => {
   if (!name) return null;
-  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
-    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม')) {
+  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง') || name.includes('เปาทอด') || name.includes('เปาปิ้ง')) {
+    if (name.includes('ไข่เค็ม') || name.includes('ไขเค็ม')) {
       return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
     }
     if (name.includes('หมู')) return 'ซาลาเปาไส้หมูสับ';
@@ -78,7 +78,14 @@ async function adjustLinkedIngredients(db, itemBranchId, itemName, deltaQty, sta
   // 2. เปาทอด / เปาปิ้ง -> ซาลาเปานึ่ง
   const steamedBunName = getBunLinkageName(itemName);
   if (steamedBunName) {
-    const steamedItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(itemBranchId, steamedBunName);
+    let steamedItem = await db.prepare('SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name = ?').get(itemBranchId, steamedBunName);
+    if (!steamedItem) {
+      if (itemName.includes('ไข่เค็ม') || itemName.includes('ไขเค็ม')) {
+        steamedItem = await db.prepare("SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND (name LIKE '%ไข่เค็ม%' OR name LIKE '%ไขเค็ม%') AND name NOT LIKE '%ทอด%' AND name NOT LIKE '%ปิ้ง%' LIMIT 1").get(itemBranchId);
+      } else if (itemName.includes('หมู')) {
+        steamedItem = await db.prepare("SELECT id, name, quantity FROM menu_items WHERE branch_id = ? AND name LIKE '%หมู%' AND name NOT LIKE '%ไข่เค็ม%' AND name NOT LIKE '%ไขเค็ม%' AND name NOT LIKE '%ทอด%' AND name NOT LIKE '%ปิ้ง%' LIMIT 1").get(itemBranchId);
+      }
+    }
     if (steamedItem && steamedItem.quantity !== null && steamedItem.quantity !== undefined) {
       const prevSteamedStock = steamedItem.quantity;
       const deductSteamed = deltaQty;
