@@ -136,7 +136,7 @@
         <!-- Checkout summary -->
         <div class="desktop-cart-summary" v-if="cart.size > 0">
           <!-- Free Modifiers Toggle & Pills inside Desktop summary -->
-          <div class="free-modifiers-section mb-md p-sm card free-modifiers-box">
+          <div class="free-modifiers-section mb-md p-sm card free-modifiers-box" v-if="false">
             <div class="flex flex-between align-center">
               <span class="font-semibold text-sm text-primary flex align-center gap-xs">
                 <i class="fa-solid fa-bottle-droplet mr-xs" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
@@ -217,33 +217,34 @@
                 ล้างส่วนลด
               </button>
             </div>
-            <!-- Discount buttons & custom input -->
-            <div class="flex gap-xs flex-wrap align-center" style="margin-top: 6px; padding: 2px 4px;">
+            <!-- Discount input on top & promo button below -->
+            <div class="flex flex-col gap-xs" style="margin-top: 6px; padding: 2px 4px;">
+              <!-- Input field for custom discount -->
+              <div style="position: relative; display: inline-flex; align-items: center; width: 100%;">
+                <input 
+                  type="number" 
+                  class="form-input" 
+                  v-model.number="discountInputVal"
+                  @input="onDiscountInput"
+                  placeholder="ลดระบุเอง (บาท)..." 
+                  min="0"
+                  :max="cartTotal"
+                  style="font-size: var(--font-sm); padding: 6px 26px 6px 12px; height: 38px; width: 100%; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); background: var(--bg-primary);"
+                />
+                <span style="position: absolute; right: 10px; font-size: var(--font-sm); color: var(--text-muted); pointer-events: none;">฿</span>
+              </div>
+
+              <!-- Promo button below -->
               <button 
                 class="btn btn-secondary btn-sm"
                 :class="{ 'active': activeDiscountType === 'bun_promo' }"
                 @click="applyBunPromoDiscount"
                 :disabled="!canApplyBunPromo"
                 title="โปรซาลาเปา 3 ลูก ลด 10 บาท"
+                style="width: 100%; justify-content: center;"
               >
                 🎁 โปรเปา 3 ลูก (-10฿)
-              </button>
-              
-              <!-- Input field for custom discount -->
-              <div style="position: relative; display: inline-flex; align-items: center; flex: 1; min-width: 80px;">
-                <input 
-                  type="number" 
-                  class="form-input" 
-                  v-model.number="discountInputVal"
-                  @input="onDiscountInput"
-                  placeholder="ลดระบุเอง..." 
-                  min="0"
-                  :max="cartTotal"
-                  style="font-size: var(--font-xs); padding: 4px 20px 4px 8px; height: 28px; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary);"
-                />
-                <span style="position: absolute; right: 8px; font-size: var(--font-xs); color: var(--text-muted); pointer-events: none;">฿</span>
-              </div>
-            </div>
+              </button></div>
           </div>
           <div class="summary-row total-row font-bold mt-sm">
             <span>ยอดสุทธิ</span>
@@ -260,7 +261,10 @@
     <div id="cart-bar" class="cart-bar mobile-only-cart" :class="{ 'hidden': cart.size === 0 }">
       <div class="cart-bar-inner">
         <div class="cart-info" style="cursor:pointer;" @click="toggleCartDetail">
-          <span class="cart-count">{{ cartCount }} รายการ</span>
+          <span class="cart-count" style="display: inline-flex; align-items: center; gap: 4px;">
+            {{ cartCount }} รายการ
+            <i :class="cartExpanded ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: 0.75rem; margin-left: 2px;"></i>
+          </span>
           <span class="cart-total">{{ formatCurrency(netCartTotal) }}</span>
         </div>
         <button class="cart-pay-btn" @click="handleCheckout" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
@@ -277,7 +281,7 @@
         <button class="btn btn-ghost btn-sm text-danger" @click="handleClearCart">ล้างทั้งหมด</button>
       </div>
       
-      <div id="cart-items-list" style="overflow-y: auto; max-height: calc(45vh - 75px); padding-bottom: 0px;">
+      <div id="cart-items-list" style="overflow-y: auto; max-height: calc(50vh - 75px); padding-bottom: 24px;">
         <div v-for="[itemId, cartItem] in cart" :key="itemId" class="cart-item animate-fade-in">
           <div class="cart-item-info">
             <div class="cart-item-name">{{ cartItem.item.name }}</div>
@@ -310,17 +314,9 @@
               ล้างส่วนลด (ลดอยู่ -{{ formatCurrency(discountAmount) }})
             </button>
           </div>
-          <div class="flex gap-xs flex-wrap align-center">
-            <button 
-              class="btn btn-secondary btn-sm"
-              :class="{ 'active': activeDiscountType === 'bun_promo' }"
-              @click="applyBunPromoDiscount"
-              :disabled="!canApplyBunPromo"
-            >
-              🎁 โปรเปา 3 ลูก (-10฿)
-            </button>
-            
-            <div style="position: relative; display: inline-flex; align-items: center; flex: 1; min-width: 100px;">
+          <div class="flex flex-col gap-xs">
+            <!-- Custom discount input on top -->
+            <div style="position: relative; display: inline-flex; align-items: center; width: 100%;">
               <input 
                 type="number" 
                 class="form-input" 
@@ -329,15 +325,25 @@
                 placeholder="ลดระบุเอง (บาท)..." 
                 min="0"
                 :max="cartTotal"
-                style="font-size: var(--font-sm); padding: 6px 24px 6px 12px; height: 32px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
+                style="font-size: var(--font-sm); padding: 6px 28px 6px 12px; height: 34px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
               />
               <span style="position: absolute; right: 10px; font-size: var(--font-sm); color: var(--text-muted); pointer-events: none;">฿</span>
             </div>
-          </div>
+
+            <!-- Promo button below -->
+            <button 
+              class="btn btn-secondary btn-sm"
+              :class="{ 'active': activeDiscountType === 'bun_promo' }"
+              @click="applyBunPromoDiscount"
+              :disabled="!canApplyBunPromo"
+              style="width: 100%; justify-content: center; height: 34px;"
+            >
+              🎁 โปรเปา 3 ลูก (-10฿)
+            </button></div>
         </div>
 
         <!-- Mobile Free Modifiers Toggle & Pills -->
-        <div class="free-modifiers-section mobile-modifiers-box" :class="{ 'expanded': useModifiers }">
+        <div class="free-modifiers-section mobile-modifiers-box" :class="{ 'expanded': useModifiers }" v-if="false">
           <div class="flex flex-between align-center" style="margin-bottom: 8px;">
             <span class="font-bold" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
               <i class="fa-solid fa-bottle-droplet" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
@@ -401,13 +407,13 @@
     <div v-if="showOptionsModal" class="modal-container active">
       <div class="modal-overlay" @click="showOptionsModal = false"></div>
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; border-radius: var(--radius-lg);">
-        <div class="modal-header" style="padding: var(--space-md) var(--space-lg);">
-          <h3 class="text-lg font-bold">
-            <i :class="isSamKrobItem ? 'fa-solid fa-gears' : 'fa-solid fa-tags'" style="margin-right: 6px; color: var(--primary);"></i> 
-            {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : 'เลือกขนาด (Size)' }}
-          </h3>
-          <button class="modal-close" @click="showOptionsModal = false" style="font-size: var(--font-md);">✕</button>
-        </div>
+        <div class="modal-header">
+        <h3>
+          <i :class="isSamKrobItem ? 'fa-solid fa-bowl-food' : 'fa-solid fa-tags'" style="margin-right: 8px; color: #ffffff;"></i>
+          {{ isSamKrobItem ? 'เลือกผสมสามกรอบ' : 'เลือกขนาด (Size)' }}
+        </h3>
+        <button class="modal-close" @click="showOptionsModal = false">✕</button>
+      </div>
         <div class="modal-body" style="text-align: left; padding: var(--space-lg);">
           <div class="mb-lg font-bold text-center text-primary text-lg" style="margin-bottom: 20px;">
             {{ activeModalItem?.name }}
@@ -424,14 +430,7 @@
                 v-for="(config, size) in getAvailableSizes()" 
                 :key="size"
                 class="card text-center p-sm cursor-pointer"
-                :style="{
-                  border: selectedSize === size ? '2.5px solid var(--primary)' : '1px solid var(--border-color)',
-                  background: selectedSize === size ? 'rgba(139, 3, 19, 0.05)' : 'var(--bg-secondary)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px 8px',
-                  transition: 'all 0.2s',
-                  boxShadow: selectedSize === size ? '0 4px 12px rgba(139, 3, 19, 0.15)' : 'none'
-                }"
+                :style="{ border: selectedSize === size ? '2.5px solid var(--primary)' : '1.5px solid var(--border-color)', background: '#ffffff', borderRadius: 'var(--radius-md)', padding: '12px 8px', transition: 'all 0.15s ease', boxShadow: selectedSize === size ? '0 0 0 1px var(--primary)' : '0 1px 3px rgba(0,0,0,0.04)' }"
                 @click="selectedSize = size"
               >
                 <div class="font-bold text-sm">{{ config.name }}</div>
@@ -442,7 +441,7 @@
           </div>
 
           <!-- Mix Toggle Switch (SamKrob Only) -->
-          <div v-if="isSamKrobItem" class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: var(--bg-secondary); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div v-if="isSamKrobItem" class="form-group flex align-center gap-sm" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: #ffffff; padding: 12px 16px; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
             <label class="toggle-switch" style="margin: 0; flex-shrink: 0;">
               <input type="checkbox" v-model="mixSamKrob" />
               <span class="toggle-slider"></span>
@@ -460,17 +459,7 @@
                 v-for="ing in samKrobIngredients" 
                 :key="ing.id"
                 class="cursor-pointer"
-                :style="{
-                  border: selectedSamKrobIds.includes(ing.id) ? '1.5px solid var(--accent)' : '1px solid var(--border-color)',
-                  background: selectedSamKrobIds.includes(ing.id) ? 'rgba(255, 149, 0, 0.05)' : 'var(--bg-primary)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '14px 18px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  transition: 'all 0.2s',
-                  boxShadow: selectedSamKrobIds.includes(ing.id) ? '0 3px 8px rgba(255, 149, 0, 0.1)' : 'none'
-                }"
+                :style="{ border: selectedSamKrobIds.includes(ing.id) ? '2px solid var(--primary)' : '1.5px solid var(--border-color)', background: '#ffffff', borderRadius: 'var(--radius-md)', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.15s ease', boxShadow: selectedSamKrobIds.includes(ing.id) ? '0 0 0 1px var(--primary)' : '0 1px 3px rgba(0,0,0,0.04)' }"
                 @click="toggleSamKrobIngredient(ing.id)"
               >
                 <!-- Left: Checkbox + Name and Stock -->
@@ -479,7 +468,7 @@
                     type="checkbox" 
                     :checked="selectedSamKrobIds.includes(ing.id)"
                     @click.stop="toggleSamKrobIngredient(ing.id)"
-                    style="width: 22px; height: 22px; cursor: pointer; flex-shrink: 0;"
+                    style="width: 22px; height: 22px; cursor: pointer; flex-shrink: 0; accent-color: var(--primary);"
                   />
                   <div style="display: flex; flex-direction: column; gap: 4px;">
                     <span class="font-bold text-primary text-base">{{ ing.name }}</span>
@@ -499,7 +488,7 @@
           </div>
 
           <!-- Summary Preview -->
-          <div class="card p-sm mb-lg" style="background: var(--bg-secondary); border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
+          <div class="card p-sm mb-lg" style="background: #ffffff; border: 1.5px dashed var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
             <div class="font-bold mb-xs text-xs text-secondary" style="text-transform: uppercase; margin-bottom: 8px;">สรุปรายการที่เลือก:</div>
             <div class="text-base" style="display: flex; justify-content: space-between; align-items: center;">
               <span>{{ isSamKrobItem ? 'น้ำหนักรวม:' : 'ขนาด:' }}</span>
@@ -1534,7 +1523,7 @@ onUnmounted(() => {
 /* --- Cart Detail Panel --- */
 .cart-detail-panel {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height) - 16px);
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height, 60px) + 8px);
   left: 0;
   right: 0;
   margin: 0 auto;
