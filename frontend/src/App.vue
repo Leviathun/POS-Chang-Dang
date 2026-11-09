@@ -1103,7 +1103,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   line-height: 1;
-  transform: translateY(1px);
+  transform: translateY(-1.2px);
 }
 
 #app-header .header-btn {
@@ -1625,14 +1625,14 @@ onUnmounted(() => {
     gap: var(--space-md);
     padding: var(--space-sm) var(--space-md);
     background: var(--card-bg);
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--primary-light);
     border-radius: var(--radius-lg);
     text-align: left;
   }
 
   .sidebar-user .user-avatar {
     font-size: 1.5rem;
-    background: var(--bg-tertiary);
+    background: transparent;
     width: 40px;
     height: 40px;
     border-radius: 50%;
