@@ -33,6 +33,11 @@ const routes = [
     component: () => import('../views/Stock.vue')
   },
   {
+    path: '/stock/cook',
+    name: 'StockCook',
+    component: () => import('../views/StockCook.vue')
+  },
+  {
     path: '/stock/bulk',
     name: 'StockBulk',
     component: () => import('../views/StockBulk.vue'),

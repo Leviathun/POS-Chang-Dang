@@ -184,7 +184,7 @@
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
           </router-link>
 
-          <router-link to="/stock" class="sidebar-item" active-class="active">
+          <router-link to="/stock" class="sidebar-item" :class="{ 'active': route.path.startsWith('/stock') }">
             <span class="sidebar-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
             <span class="sidebar-label">คลังสินค้า/สต็อก</span>
           </router-link>
@@ -321,7 +321,7 @@
               <span class="nav-label">เมนู</span>
             </router-link>
             <!-- 3. สต็อก -->
-            <router-link to="/stock" class="nav-item" active-class="active" data-page="stock">
+            <router-link to="/stock" class="nav-item" :class="{ 'active': route.path.startsWith('/stock') }" data-page="stock">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-boxes-stacked"></i></span>
               <span class="nav-label">สต็อก</span>
             </router-link>
@@ -637,6 +637,7 @@ const activeTitle = computed(() => {
     '/management': 'บริหารจัดการร้าน',
     '/menu': 'จัดการเมนู',
     '/stock': 'คลังสินค้า',
+    '/stock/cook': 'คลังสินค้า',
     '/stock/bulk': 'คลังสินค้า',
     '/reports': 'รายงานยอดขาย',
     '/settings': 'ตั้งค่าระบบ'

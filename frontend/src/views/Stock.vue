@@ -24,7 +24,10 @@
       <div class="stock-page-title">
         ระบบจัดการสต็อกสินค้า
       </div>
-      <div class="flex align-center gap-xs flex-wrap">
+      <div class="flex align-center gap-xs flex-wrap mobile-header-actions">
+        <router-link to="/stock/cook" class="btn btn-primary btn-header-cook">
+          <i class="fa-solid fa-fire-burner"></i> ปรุง
+        </router-link>
         <router-link v-if="isManagerOrAdminUser" to="/stock/bulk" class="btn btn-primary">
           <i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน
         </router-link>
@@ -525,6 +528,7 @@
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else-if="actionType === 'fry'" :class="activeItem ? getCookActionIcon(activeItem.name) : 'fa-solid fa-fire'"></i>
+                <i v-else class="fa-solid fa-floppy-disk"></i>
                 {{ isSaving ? 'กำลังบันทึก...' : (actionType === 'fry' ? (activeItem ? getCookActionLabel(activeItem.name) : 'ทอด') : 'บันทึก') }}
               </span>
             </button>
@@ -601,10 +605,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api';
 import { ui, formatDateTime, getUser, getToday, isManagerOrAdmin } from '../helpers';
 
 import { store } from '../store';
+
+const router = useRouter();
 
 // States
 const isManagerOrAdminUser = computed(() => isManagerOrAdmin());
@@ -858,9 +865,13 @@ const handleSaveAction = async () => {
           store.updateStock(res.data.id, res.data.stock, res.data.raw_stock);
         }
       }
+      const wasFry = actionType.value === 'fry';
       ui.showToast('ระบบอัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
       showActionModal.value = false;
       actionForm.value = { quantity: '', note: '' };
+      if (wasFry) {
+        router.push('/stock/cook');
+      }
     }
   } catch (e) {
     console.error(e);
@@ -1012,6 +1023,11 @@ onMounted(() => {
   color: var(--text-secondary);
   text-align: left;
 }
+.btn-header-cook {
+  padding: 10px 24px !important;
+  min-width: 130px !important;
+  justify-content: center !important;
+}
 @media (max-width: 768px) {
   .stock-page-title {
     font-size: var(--font-lg) !important;
@@ -1028,8 +1044,17 @@ onMounted(() => {
   .mobile-stock-header-card > div {
     text-align: center !important;
   }
-  .mobile-stock-header-card .btn {
+  .mobile-stock-header-card .mobile-header-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: var(--space-xs) !important;
     width: 100% !important;
+  }
+  .mobile-stock-header-card .mobile-header-actions .btn {
+    flex: 1 !important;
+    width: auto !important;
+    justify-content: center !important;
+    padding: 10px 12px !important;
   }
 }
 
