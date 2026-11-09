@@ -248,9 +248,9 @@
               <i class="fa-solid fa-store" style="font-size: var(--font-xs);"></i>
               <span style="font-size: var(--font-xs); font-weight: bold;">หน้าร้าน</span>
             </button>
-            <div class="header-branch-badge inline-flex align-center gap-2xs">
-              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse text-primary"></i>
-              <i v-else class="fa-solid fa-store text-primary"></i>
+            <div class="header-branch-badge inline-flex align-center">
+              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
+              <i v-else class="fa-solid fa-store branch-icon"></i>
               <span class="header-branch-name">{{ currentBranchDisplay }}</span>
             </div>
           </div>
@@ -265,14 +265,11 @@
               <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: 1.15rem;"></i>
               <span>{{ activeTitle }}</span>
             </h2>
-            <div class="desktop-branch-center" v-if="user">
-              <div class="desktop-branch-badge">
-                <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
-                <i v-else class="fa-solid fa-store branch-icon"></i>
-                <span class="branch-label">{{ currentBranchDisplay }}</span>
-              </div>
+            <div class="desktop-branch-badge" v-if="user">
+              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
+              <i v-else class="fa-solid fa-store branch-icon"></i>
+              <span class="branch-label">{{ currentBranchDisplay }}</span>
             </div>
-            <div class="desktop-header-spacer"></div>
           </div>
 
           <router-view v-slot="{ Component }">
@@ -1080,22 +1077,35 @@ onUnmounted(() => {
 .header-branch-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   background: #ffffff;
   border: 1.5px solid var(--primary-light);
   border-radius: var(--radius-full);
-  padding: 4px 10px;
+  height: 32px;
+  padding: 0 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  max-width: calc(100vw - 110px);
+  max-width: calc(100vw - 140px);
+}
+
+.header-branch-badge .branch-icon {
+  font-size: 0.95rem;
+  color: var(--primary, #8b0313);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .header-branch-name {
   font-size: var(--font-sm);
   font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  color: #111111;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
 }
 
 #app-header .header-btn {
@@ -1758,16 +1768,6 @@ onUnmounted(() => {
     background-clip: text;
   }
 
-  .desktop-content-header .desktop-branch-center {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-  }
-
   .desktop-content-header .desktop-branch-badge {
     display: inline-flex;
     align-items: center;
@@ -1776,31 +1776,27 @@ onUnmounted(() => {
     background: #ffffff;
     border: 1.5px solid var(--primary-light);
     border-radius: var(--radius-full);
-    padding: 6px 18px;
+    height: 38px;
+    padding: 0 18px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    line-height: 1;
   }
 
   .desktop-content-header .desktop-branch-badge .branch-icon {
-    font-size: 1rem;
-    color: var(--primary);
-    line-height: 1;
+    font-size: 1.05rem;
+    color: var(--primary, #8b0313);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .desktop-content-header .desktop-branch-badge .branch-label {
     font-size: var(--font-base);
     font-weight: var(--font-weight-bold);
-    color: var(--text-primary);
-    line-height: 1;
+    color: #111111;
     display: inline-flex;
     align-items: center;
-  }
-
-  .desktop-content-header .desktop-header-spacer {
-    width: 1px;
+    white-space: nowrap;
   }
 
   .desktop-content-header .desktop-user-profile {
