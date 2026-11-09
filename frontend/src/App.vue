@@ -262,9 +262,10 @@
               <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: 1.15rem;"></i>
               <span>{{ activeTitle }}</span>
             </h2>
-            <div class="desktop-user-profile" v-if="user">
-              <span class="user-greeting">สวัสดี, <strong>{{ user.name }}</strong></span>
-              <span class="user-badge" :class="user.role">{{ getRoleLabel(user.role) }}</span>
+            <div class="desktop-branch-badge" v-if="user">
+              <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
+              <i v-else class="fa-solid fa-store branch-icon"></i>
+              <span class="branch-label">{{ currentBranchDisplay }}</span>
             </div>
           </div>
 
@@ -1731,6 +1732,28 @@ onUnmounted(() => {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .desktop-content-header .desktop-branch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1.5px solid var(--primary-light);
+    border-radius: var(--radius-full);
+    padding: 6px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .desktop-content-header .desktop-branch-badge .branch-icon {
+    font-size: 1.05rem;
+    color: var(--primary);
+  }
+
+  .desktop-content-header .desktop-branch-badge .branch-label {
+    font-size: var(--font-base);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
   }
 
   .desktop-content-header .desktop-user-profile {
