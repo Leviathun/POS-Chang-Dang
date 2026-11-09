@@ -1089,7 +1089,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transform: translateY(-0.5px);
+  
 }
 
 .header-user-name,
@@ -1103,7 +1103,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   line-height: 1;
-  transform: translateY(1.5px);
+  transform: translateY(3.5px);
 }
 
 #app-header .header-btn {
@@ -1787,7 +1787,7 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transform: translateY(-0.5px);
+    
   }
 
   .desktop-content-header .desktop-branch-badge .branch-label {
@@ -1798,7 +1798,7 @@ onUnmounted(() => {
     align-items: center;
     white-space: nowrap;
     line-height: 1;
-    transform: translateY(1.5px);
+    transform: translateY(4px);
   }
 
   .desktop-content-header .desktop-user-profile {
