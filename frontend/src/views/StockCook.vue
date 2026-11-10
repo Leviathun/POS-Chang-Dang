@@ -839,15 +839,9 @@ const executeSingleCook = async () => {
     const actionLabel = getCookActionLabel(item.name);
     let res;
     if (item.raw_quantity !== null && item.raw_quantity !== undefined) {
-      const cookNote = note 
-        ? `ปรุงหน้าจุดทอด: ${note}` 
-        : `ปรุงหน้าจุดทอด (${actionLabel} ${qty} ${item.uom || 'ชิ้น'})`;
-      res = await api.stock.fry(item.id, { quantity: qty, note: cookNote });
+      res = await api.stock.fry(item.id, { quantity: qty, note: note || '' });
     } else {
-      const cookNote = note 
-        ? `${actionLabel}ปรุง: ${note}` 
-        : `${actionLabel}ปรุง (${qty} ${item.uom || 'ชิ้น'})`;
-      res = await api.stock.restock(item.id, { quantity: qty, stock_type: 'cooked', note: cookNote });
+      res = await api.stock.restock(item.id, { quantity: qty, stock_type: 'cooked', note: note || '' });
     }
 
     if (res && res.success) {
@@ -880,10 +874,7 @@ const executeBatchCook = async () => {
   try {
     for (const entry of entries) {
       const item = entry.item;
-      const actionLabel = getCookActionLabel(item.name);
-      const cookNote = customNote 
-        ? `ปรุงพร้อมกัน (${customNote}): ${actionLabel} ${entry.quantity}` 
-        : `ปรุงพร้อมกัน (${actionLabel} ${entry.quantity})`;
+      const cookNote = customNote || '';
 
       try {
         let res;
