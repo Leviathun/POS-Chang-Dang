@@ -12,6 +12,7 @@ process.on('uncaughtException', (err) => {
 
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const { initDatabase } = require('./config/database');
 
 const app = express();
@@ -19,6 +20,9 @@ const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ────────────────────────────────────────────
 app.use(cors());
+
+// Gzip/Deflate compression for all responses (reduces payload by 70-85%)
+app.use(compression());
 
 // JSON parser for all other routes
 app.use(express.json({ limit: '10mb' }));
@@ -33,6 +37,9 @@ app.use(express.static(path.join(__dirname, '..', 'dist'), {
     }
   }
 }));
+
+// Health check endpoint for UptimeRobot / Render keep-alive
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // ─── API Routes ───────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));

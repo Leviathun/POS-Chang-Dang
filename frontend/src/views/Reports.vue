@@ -1463,10 +1463,21 @@
                     {{ log.staff_name || 'ระบบ' }}
                   </td>
                   <td style="padding: var(--space-sm) var(--space-md);">
-                    <span class="font-bold flex align-center" style="gap: 6px;">
-                      <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
-                      <span>{{ getStockReasonLabel(log.reason) }}</span>
-                    </span>
+                    <div class="flex align-center gap-xs flex-wrap">
+                      <span 
+                        class="badge" 
+                        :style="isRawStockLog(log) 
+                          ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;' 
+                          : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;'"
+                      >
+                        <i :class="isRawStockLog(log) ? 'fa-solid fa-box' : 'fa-solid fa-drumstick-bite'" style="font-size: 9px;"></i>
+                        {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
+                      </span>
+                      <span class="font-bold flex align-center" style="gap: 4px;">
+                        <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
+                        <span>{{ getStockReportActionLabel(log) }}</span>
+                      </span>
+                    </div>
                   </td>
                   <td class="text-center" style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
                     {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
@@ -1477,11 +1488,12 @@
                   <td style="padding: var(--space-sm) var(--space-md); text-align: center;" :class="log.change_qty > 0 ? 'text-success' : 'text-danger'">
                     <strong>{{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}</strong>
                   </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center; font-weight:bold;">
+                  <td style="padding: var(--space-sm) var(--space-md); text-align: center; font-weight:bold; font-variant-numeric: tabular-nums;">
                     {{ log.new_stock }}
+                    <div class="text-xs text-muted" style="font-weight: normal; font-size: 10px;">{{ isRawStockLog(log) ? '(ของสด)' : '(พร้อมขาย)' }}</div>
                   </td>
                   <td style="padding: var(--space-sm) var(--space-md); font-size: var(--font-xs); color: var(--text-secondary); max-width: 250px;" class="truncate">
-                    {{ log.note || '-' }}
+                    {{ formatReportLogNote(log, isRawStockLog(log)) || '-' }}
                   </td>
                 </tr>
               </tbody>
@@ -1502,11 +1514,20 @@
                     {{ log.item_name || selectedStockItemName }}
                   </div>
                   <div class="font-bold mb-xs" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
-                    <span>{{ getStockReasonLabel(log.reason) }}</span>
+                    <span 
+                      class="badge" 
+                      :style="isRawStockLog(log) 
+                        ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;' 
+                        : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;'"
+                    >
+                      <i :class="isRawStockLog(log) ? 'fa-solid fa-box' : 'fa-solid fa-drumstick-bite'" style="font-size: 9px;"></i>
+                      {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
+                    </span>
+                    <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
+                    <span>{{ getStockReportActionLabel(log) }}</span>
                     <span 
                       :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
-                      style="margin-left: 4px;"
+                      style="margin-left: 4px; font-variant-numeric: tabular-nums;"
                     >
                       {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
                     </span>
@@ -1514,13 +1535,13 @@
                   <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-xs);">
                     โดย: {{ log.staff_name || 'ระบบ' }} <span style="margin: 0 4px; color: var(--border-color);">|</span> {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
                   </div>
-                  <div v-if="log.note" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 6px; border-left: 3px solid var(--primary-light); padding-left: 8px; background: rgba(139, 3, 19, 0.01); padding-top: 4px; padding-bottom: 4px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; line-height: 1.4; word-break: break-word;">
-                    {{ log.note }}
+                  <div v-if="formatReportLogNote(log, isRawStockLog(log))" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 6px; border-left: 3px solid var(--primary-light); padding-left: 8px; background: rgba(139, 3, 19, 0.01); padding-top: 4px; padding-bottom: 4px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; line-height: 1.4; word-break: break-word;">
+                    {{ formatReportLogNote(log, isRawStockLog(log)) }}
                   </div>
                 </div>
-                <div style="text-align: right; flex-shrink: 0; min-width: 75px; display: flex; flex-direction: column; gap: 2px;">
-                  <div style="font-size: var(--font-xxs); color: var(--text-tertiary); letter-spacing: 0.5px;">ยอดหลังปรับ</div>
-                  <div class="font-bold text-base" style="color: var(--text-primary);">{{ log.new_stock }}</div>
+                <div style="text-align: right; flex-shrink: 0; min-width: 80px; display: flex; flex-direction: column; gap: 2px;">
+                  <div style="font-size: var(--font-xxs); color: var(--text-tertiary); letter-spacing: 0.5px;">{{ isRawStockLog(log) ? 'ยอดของสดหลังปรับ' : 'ยอดพร้อมขายหลังปรับ' }}</div>
+                  <div class="font-bold text-base" style="color: var(--text-primary); font-variant-numeric: tabular-nums;">{{ log.new_stock }}</div>
                 </div>
               </div>
             </div>
@@ -2755,6 +2776,68 @@ const selectReportsStockItem = (item) => {
   isStockItemDropdownOpen.value = false;
   stockLogsCurrentPage.value = 1;
   loadStockHistoryLogs();
+};
+
+const isRawStockLog = (log) => {
+  if (log.stock_type === 'raw') return true;
+  if (log.stock_type === 'cooked') return false;
+  const note = log.note || '';
+  if (note.includes('ของสด') || note.includes('วัตถุดิบ') || note.includes('[ของสด]')) return true;
+  if (note.includes('สุก') || note.includes('พร้อมขาย') || note.includes('[พร้อมขาย]')) return false;
+  if ((note.includes('ปรุง') || note.includes('ทอด') || note.includes('ปิ้ง')) && log.change_qty < 0 && log.reason === 'adjustment') {
+    return true;
+  }
+  return false;
+};
+
+const getStockReportActionLabel = (log) => {
+  const isRaw = isRawStockLog(log);
+  if (log.reason === 'adjustment') {
+    if (isRaw && log.change_qty < 0 && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('หัก'))) {
+      return 'ตัดของสดไปปรุง';
+    }
+    return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกพร้อมขาย';
+  }
+  if (log.reason === 'restock') {
+    if (!isRaw && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('สุก'))) {
+      return 'ปรุงสุกพร้อมขาย';
+    }
+    return isRaw ? 'เติมสต็อกของสด' : 'เติมสต็อกสินค้า';
+  }
+  return getStockReasonLabel(log.reason);
+};
+
+const formatReportLogNote = (log, isRaw) => {
+  if (!log.note) return '';
+  let note = log.note.trim();
+  note = note.replace(/^\|(.*)$/, '$1').trim();
+  note = note.replace(/^\[(ของสด|พร้อมขาย|.*สุก\/พร้อมขาย|.*\/พร้อมขาย)\]\s*/i, '').trim();
+
+  if (/^ปรุงพร้อมกัน\s*\([^)]*\)$/.test(note)) {
+    return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+  }
+
+  const matchCustom = note.match(/^ปรุงพร้อมกัน\s*\(([^)]+)\):/);
+  if (matchCustom && matchCustom[1]) {
+    const custom = matchCustom[1].trim();
+    if (custom.startsWith('ทอด') || custom.startsWith('ปิ้ง') || custom.startsWith('ห่อ')) {
+      return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+    }
+    return `หมายเหตุ: ${custom}`;
+  }
+
+  if (/^ปรุงหน้าจุดทอด\s*\(.*\)$/.test(note)) {
+    return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+  }
+
+  if (note.includes('หักวัตถุดิบของสดเพื่อนำไป')) {
+    return 'ตัดของสดเพื่อนำไปปรุง';
+  }
+  if (note.includes('สุกพร้อมขาย:')) {
+    return 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+  }
+
+  return note;
 };
 
 const getStockReasonLabel = (reason) => {

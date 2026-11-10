@@ -2,7 +2,7 @@
  * API Client — POS ร้านไก่ทอดช้างแดง
  * Reusable fetch wrapper with error handling for Vue 3 SPA
  */
-const BASE_URL = window.location.origin;
+const BASE_URL = (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/+$/, '');
 
 async function request(method, path, body, options = {}) {
   let urlPath = path;

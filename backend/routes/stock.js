@@ -69,8 +69,8 @@ async function adjustLinkedIngredients(db, itemBranchId, itemName, deltaQty, sta
         : `คืนอัตโนมัติจากการ${actionLabel} ${itemName} ${deltaQty} ชิ้น (คืนไก่ไร้กระดูก ${Math.abs(deductChicken)} ชิ้น)`;
 
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, 'cooked', datetime('now', '+7 hours'))
       `).run(itemBranchId, chickenItem.id, -deductChicken, prevChickenStock, newChickenStock, staffId, noteText);
     }
   }
@@ -106,8 +106,8 @@ async function adjustLinkedIngredients(db, itemBranchId, itemName, deltaQty, sta
         : `คืนอัตโนมัติจากการ${actionLabel} ${itemName} ${deductSteamed} ชิ้น`;
 
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, 'cooked', datetime('now', '+7 hours'))
       `).run(itemBranchId, steamedItem.id, -deductSteamed, prevSteamedStock, newSteamedStock, staffId, noteText);
     }
   }
@@ -231,9 +231,13 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
         WHERE id = ?
       `).run(newVal, Number(id));
 
+      const restockNote = note 
+        ? (note.includes('ของสด') || note.includes('พร้อมขาย') || note.includes('สุก') ? note : `[${isRaw ? 'ของสด' : 'พร้อมขาย'}] ${note}`) 
+        : `เติมสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} +${quantity}`;
+
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, ?, datetime('now', '+7 hours'))
       `).run(
         itemBranchId,
         Number(id),
@@ -241,7 +245,8 @@ router.post('/:id/restock', requireAuth, async (req, res) => {
         previousVal,
         newVal,
         req.user.id,
-        note || `เติมสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} +${quantity}`
+        restockNote,
+        isRaw ? 'raw' : 'cooked'
       );
 
       if (!isRaw && quantity > 0) {
@@ -329,9 +334,13 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         WHERE id = ?
       `).run(newVal, Number(id));
 
+      const adjustNote = note 
+        ? (note.includes('ของสด') || note.includes('พร้อมขาย') || note.includes('สุก') ? note : `[${isRaw ? 'ของสด' : 'พร้อมขาย'}] ${note}`) 
+        : `ปรับสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`;
+
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
       `).run(
         itemBranchId,
         Number(id),
@@ -340,7 +349,8 @@ router.post('/:id/adjust', requireAuth, async (req, res) => {
         newVal,
         reason,
         req.user.id,
-        note || `ปรับสต็อก${isRaw ? 'ของสด' : getCookMethodLabel(item.name)} ${item.name} ${quantity >= 0 ? '+' : ''}${quantity} (${reason})`
+        adjustNote,
+        isRaw ? 'raw' : 'cooked'
       );
 
       if (!isRaw && quantity !== 0) {
@@ -436,9 +446,13 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
         WHERE id = ?
       `).run(newRawStock, newCookedStock, Number(id));
 
+      const rawFryNote = note 
+        ? (note.includes('ของสด') ? note : `[ของสด] ${note}`) 
+        : `หักวัตถุดิบของสดเพื่อนำไป${getCookVerb(item.name)}: ${quantity} ชิ้น`;
+
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+        VALUES (?, ?, ?, ?, ?, 'adjustment', ?, ?, 'raw', datetime('now', '+7 hours'))
       `).run(
         itemBranchId,
         Number(id),
@@ -446,12 +460,17 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
         item.raw_quantity,
         newRawStock,
         req.user.id,
-        note || `หักวัตถุดิบของสดเพื่อนำไปทอด: ${quantity} ชิ้น`
+        rawFryNote
       );
 
+      const cookedMethod = getCookMethodLabel(item.name) || 'ทอดสุก';
+      const cookedFryNote = note 
+        ? (note.includes('พร้อมขาย') || note.includes('สุก') ? note : `[${cookedMethod}/พร้อมขาย] ${note}`) 
+        : `${cookedMethod}พร้อมขาย: +${quantity} ชิ้น`;
+
       await db.prepare(`
-        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, datetime('now', '+7 hours'))
+        INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+        VALUES (?, ?, ?, ?, ?, 'restock', ?, ?, 'cooked', datetime('now', '+7 hours'))
       `).run(
         itemBranchId,
         Number(id),
@@ -459,7 +478,7 @@ router.post('/:id/fry', requireAuth, async (req, res) => {
         item.quantity,
         newCookedStock,
         req.user.id,
-        note || `ทอดสุกพร้อมขาย: +${quantity} ชิ้น`
+        cookedFryNote
       );
 
       await db.prepare(`
@@ -767,8 +786,8 @@ router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
             : `ปรับปรุงสต็อก${getCookMethodLabel(menuItem.name)}สุก (Absolute): ปรับจาก ${currentCooked} เป็น ${newCooked} ชิ้น [สาเหตุ: ${reason_preset || 'อื่นๆ'}] (${note || 'ไม่ระบุโน้ต'})`;
 
           await db.prepare(`
-            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'cooked', datetime('now', '+7 hours'))
           `).run(itemBranchId, Number(menu_item_id), deltaCooked, currentCooked, newCooked, logReason, req.user.id, logNote);
 
           await db.prepare(`
@@ -813,8 +832,8 @@ router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
             : `ปรับปรุงสต็อกวัตถุดิบ (Absolute): ปรับจาก ${currentRaw} เป็น ${newRaw} ชิ้น [สาเหตุ: ${reason_preset || 'อื่นๆ'}] (${note || 'ไม่ระบุโน้ต'})`;
 
           await db.prepare(`
-            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 hours'))
+            INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, staff_id, note, stock_type, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'raw', datetime('now', '+7 hours'))
           `).run(itemBranchId, Number(menu_item_id), deltaRaw, currentRaw, newRaw, logReason, req.user.id, logNote);
 
           await db.prepare(`
