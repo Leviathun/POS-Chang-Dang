@@ -494,14 +494,14 @@
             <label class="form-label font-bold">สาเหตุของเสีย</label>
             <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
               <button 
-                v-for="preset in wastePresets" :key="preset"
+                v-for="preset in wastePresets" :key="preset.label"
                 class="btn btn-secondary btn-sm"
-                :class="{ 'active': actionForm.note === preset }"
-                @click="actionForm.note = preset"
+                :class="{ 'active': actionForm.note === preset.label }"
+                @click="actionForm.note = actionForm.note === preset.label ? '' : preset.label"
                 type="button"
               >
-                <i :class="preset === 'เน่า/เสีย' ? 'fa-solid fa-trash-can' : 'fa-solid fa-circle-exclamation'"></i>
-                {{ preset }}
+                <i :class="preset.icon" style="margin-right: 4px;"></i>
+                {{ preset.label }}
               </button>
             </div>
           </div>
@@ -563,36 +563,82 @@
             ยังไม่มีบันทึกประวัติ
           </div>
           
-          <div v-else style="display: flex; flex-direction: column; gap: var(--space-md);">
-            <div 
-              v-for="log in logs" 
-              :key="log.id" 
-              class="card p-sm flex flex-between align-center text-sm"
-              style="background: var(--bg-primary);"
-            >
-              <div>
-                <div class="font-bold" style="display: inline-flex; align-items: center; gap: 6px;">
-                  <i :class="getReasonIconClass(log.reason)" style="color: var(--text-tertiary);"></i>
-                  <span>{{ getReasonLabel(log.reason) }}</span>
+          <div v-else style="display: flex; flex-direction: column;">
+            <template v-for="(log, idx) in logs" :key="log.id">
+              <div 
+                class="card p-sm text-sm"
+                :style="[
+                  { background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' },
+                  isCookPair(log, logs[idx + 1]) ? { borderBottomStyle: 'dashed', borderBottomColor: 'rgba(234, 88, 12, 0.4)' } : {},
+                  idx > 0 && isCookPair(logs[idx - 1], log) ? { borderTopStyle: 'dashed', borderTopColor: 'rgba(22, 101, 52, 0.4)', marginBottom: 'var(--space-md)' } : { marginBottom: isCookPair(log, logs[idx + 1]) ? '0' : 'var(--space-sm)' }
+                ]"
+              >
+                <!-- Row 1: Header (Left: Badge & Action Title | Right: Quantity Delta Pill) -->
+                <div class="flex flex-between align-center gap-xs">
+                  <div class="flex align-center gap-xs min-w-0" style="flex: 1;">
+                    <!-- Type Badge -->
+                    <span 
+                      class="badge flex-shrink-0" 
+                      :style="isRawLog(log) 
+                        ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;' 
+                        : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;'"
+                    >
+                      <i :class="isRawLog(log) ? 'fa-solid fa-box' : (isFriedFoodItem(activeItem?.name) ? 'fa-solid fa-drumstick-bite' : 'fa-solid fa-circle-check')" style="font-size: 10px;"></i>
+                      {{ isRawLog(log) ? 'ของสด' : 'พร้อมขาย' }}
+                    </span>
+
+                    <!-- Action / Movement Title -->
+                    <span class="font-bold truncate text-primary flex align-center gap-xs" style="font-size: 13px;">
+                      <i :class="getReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
+                      <span>{{ getStockLogActionLabel(log) }}</span>
+                    </span>
+                  </div>
+
+                  <!-- Quantity Delta Pill (Large, Clear & Tabular) -->
                   <span 
-                    :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
-                    style="margin-left: 4px;"
+                    class="flex-shrink-0"
+                    :style="log.change_qty > 0 
+                      ? 'background: rgba(22, 101, 52, 0.12); color: #15803d; font-weight: bold; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(22, 101, 52, 0.2);' 
+                      : 'background: rgba(220, 38, 38, 0.12); color: #dc2626; font-weight: bold; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(220, 38, 38, 0.2);'"
                   >
-                    {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
+                    {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} {{ activeItem?.uom || 'ชิ้น' }}
                   </span>
                 </div>
-                <div class="text-xs text-muted" style="margin-top: 2px;">
-                  โดย: {{ log.staff_name || 'ระบบ' }} | {{ formatDateTime(log.created_at) }}
+
+                <!-- Row 2: Status Explanation & Meaningful Note (Full width, no wrapping collisions) -->
+                <div v-if="formatLogNote(log, isRawLog(log))" class="text-xs text-secondary flex align-start gap-xs" style="background: rgba(0,0,0,0.02); padding: 5px 8px; border-radius: var(--radius-sm); border-left: 2.5px solid var(--border-color); line-height: 1.4; word-break: break-word;">
+                  <i class="fa-solid fa-circle-info text-muted" style="margin-top: 2px; font-size: 10px; flex-shrink: 0;"></i>
+                  <span>{{ formatLogNote(log, isRawLog(log)) }}</span>
                 </div>
-                <div v-if="log.note" class="text-xs text-secondary" style="margin-top: 4px; border-left: 2px solid var(--border-color); padding-left: 6px;">
-                  {{ log.note }}
+
+                <!-- Row 3: Footer (Staff, Timestamp & Remaining Balance) -->
+                <div class="flex flex-between align-center pt-xs text-xs text-muted" style="border-top: 1px dashed var(--border-color); margin-top: 2px; gap: 8px;">
+                  <div class="truncate text-muted" style="font-size: 11px;">
+                    <i class="fa-regular fa-user" style="margin-right: 3px;"></i>{{ log.staff_name || 'ระบบ' }}
+                    <span style="margin: 0 4px; opacity: 0.5;">•</span>
+                    {{ formatDateTime(log.created_at) }}
+                  </div>
+                  <div class="flex-shrink-0" style="font-size: 12px; font-variant-numeric: tabular-nums;">
+                    <span style="font-size: 11px; color: var(--text-tertiary); margin-right: 4px;">{{ activeIsModifier ? 'คงเหลือ' : (isRawLog(log) ? 'ของสดคงเหลือ' : 'พร้อมขายคงเหลือ') }}:</span>
+                    <strong style="color: var(--text-primary);">{{ log.new_stock }} {{ activeItem?.uom || 'ชิ้น' }}</strong>
+                  </div>
                 </div>
               </div>
-              <div style="text-align: right;">
-                <div class="text-xs text-muted">ยอดหลังปรับ</div>
-                <div class="font-bold">{{ log.new_stock }} ชิ้น</div>
+
+              <!-- Downward Pair Connector (ชี้ลงจากของสดไปของทอด) -->
+              <div 
+                v-if="isCookPair(log, logs[idx + 1])" 
+                class="flex flex-center align-center" 
+                style="margin: -6px 0; z-index: 2; position: relative;"
+              >
+                <div 
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.06);"
+                >
+                  <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
+                  <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
@@ -627,7 +673,11 @@ const activeItem = ref(null);
 const activeIsModifier = ref(false);
 const logs = ref([]);
 const logsLoading = ref(false);
-const wastePresets = ['เน่า/เสีย', 'ตกพื้น/เสียหาย'];
+const wastePresets = [
+  { label: 'เน่า/เสีย', icon: 'fa-solid fa-bacteria' },
+  { label: 'ตกพื้น/เสียหาย', icon: 'fa-solid fa-arrows-down-to-line' },
+  { label: 'ไหม้/ทอดเสีย', icon: 'fa-solid fa-fire-burner' }
+];
 
 // Gram-based restocking states
 const restockBags = ref(1);
@@ -900,6 +950,93 @@ const viewLogs = async (item, isMod = false) => {
   } finally {
     logsLoading.value = false;
   }
+};
+
+const isCookPair = (rawLog, cookedLog) => {
+  if (!rawLog || !cookedLog) return false;
+  if (!isRawLog(rawLog) || isRawLog(cookedLog)) return false;
+  if (rawLog.change_qty >= 0 || cookedLog.change_qty <= 0) return false;
+  const sameQty = Math.abs(rawLog.change_qty) === Math.abs(cookedLog.change_qty);
+  const timeClose = Math.abs(new Date(rawLog.created_at) - new Date(cookedLog.created_at)) <= 120000;
+  return sameQty && timeClose;
+};
+
+const isRawLog = (log) => {
+  if (log.stock_type === 'raw') return true;
+  if (log.stock_type === 'cooked') return false;
+  const note = log.note || '';
+  if (note.includes('ของสด') || note.includes('วัตถุดิบ') || note.includes('[ของสด]')) return true;
+  if (note.includes('สุก') || note.includes('พร้อมขาย') || note.includes('[พร้อมขาย]')) return false;
+  if ((note.includes('ปรุง') || note.includes('ทอด') || note.includes('ปิ้ง')) && log.change_qty < 0 && log.reason === 'adjustment') {
+    return true;
+  }
+  return false;
+};
+
+const isFriedFoodItem = (name) => {
+  if (!name) return false;
+  return name.includes('ไก่') || name.includes('สะโพก') || name.includes('น่อง') || name.includes('ปีก') || name.includes('อก') || name.includes('ทอด') || name.includes('กรอบ');
+};
+
+const getStockLogActionLabel = (log) => {
+  const isRaw = isRawLog(log);
+  const name = activeItem.value?.name || log.item_name || '';
+  const cookVerb = name.includes('ปิ้ง') ? 'ปิ้ง' : (name.includes('ห่อ') ? 'ห่อ' : 'ทอด');
+
+  if (log.reason === 'adjustment') {
+    if (isRaw && log.change_qty < 0 && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('ปิ้ง') || log.note?.includes('หัก') || log.stock_type === 'raw')) {
+      return `ตัดของสดไป${cookVerb}`;
+    }
+    return isRaw ? 'ปรับยอดของสด' : 'ปรับยอดพร้อมขาย';
+  }
+  if (log.reason === 'restock') {
+    if (!isRaw && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('ปิ้ง') || log.note?.includes('สุก'))) {
+      return `${cookVerb}สุกพร้อมขาย`;
+    }
+    return isRaw ? 'รับของสดเข้าคลัง' : 'เติมสต็อกพร้อมขาย';
+  }
+  if (log.reason === 'sale') return 'ขายหน้าร้าน (POS)';
+  if (log.reason === 'waste') return isRaw ? 'ของสดเสียหาย/ทิ้ง' : 'ของสุกเสียหาย/ทิ้ง';
+  if (log.reason === 'staff_benefit') return 'อาหารพนักงาน/สวัสดิการ';
+  if (log.reason === 'cancel_restore') return 'คืนสต็อก (ยกเลิกบิล)';
+  return getReasonLabel(log.reason);
+};
+
+const formatLogNote = (log, isRaw) => {
+  if (!log.note) return '';
+  let note = log.note.trim();
+  note = note.replace(/^\|(.*)$/, '$1').trim();
+  note = note.replace(/^\[(ของสด|พร้อมขาย|.*สุก\/พร้อมขาย|.*\/พร้อมขาย)\]\s*/i, '').trim();
+
+  // Legacy pattern: "ปรุงพร้อมกัน (ทอด 40)" or "ปรุงพร้อมกัน (ทอด 10)"
+  if (/^ปรุงพร้อมกัน\s*\([^)]*\)$/.test(note)) {
+    return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+  }
+
+  // Pattern: "ปรุงพร้อมกัน (customNote): ทอด 10"
+  const matchCustom = note.match(/^ปรุงพร้อมกัน\s*\(([^)]+)\):/);
+  if (matchCustom && matchCustom[1]) {
+    const custom = matchCustom[1].trim();
+    if (custom.startsWith('ทอด') || custom.startsWith('ปิ้ง') || custom.startsWith('ห่อ')) {
+      return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+    }
+    return `หมายเหตุ: ${custom}`;
+  }
+
+  // Pattern: "ปรุงหน้าจุดทอด (ทอด 10 ชิ้น)"
+  if (/^ปรุงหน้าจุดทอด\s*\(.*\)$/.test(note)) {
+    return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+  }
+
+  // Default fry note
+  if (note.includes('หักวัตถุดิบของสดเพื่อนำไป')) {
+    return 'ตัดของสดเพื่อนำไปปรุง';
+  }
+  if (note.includes('สุกพร้อมขาย:')) {
+    return 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
+  }
+
+  return note;
 };
 
 const getReasonLabel = (reason) => {

@@ -795,6 +795,18 @@ async function initDatabase() {
     if (!stockCols.some(c => c.name === 'cancel_reason')) {
       await db.exec("ALTER TABLE stock_logs ADD COLUMN cancel_reason TEXT");
     }
+    if (!stockCols.some(c => c.name === 'stock_type')) {
+      await db.exec("ALTER TABLE stock_logs ADD COLUMN stock_type TEXT DEFAULT 'cooked'");
+      try {
+        await db.exec(`
+          UPDATE stock_logs 
+          SET stock_type = 'raw' 
+          WHERE (note LIKE '%ของสด%' OR note LIKE '%วัตถุดิบ%' OR (note LIKE '%ปรุง%' AND change_qty < 0 AND reason = 'adjustment'))
+        `);
+      } catch (backfillErr) {
+        console.warn('⚠️ Backfill stock_type failed:', backfillErr.message);
+      }
+    }
   } catch (e) {
     console.warn('⚠️ Migration reversal columns on stock_logs failed:', e.message);
   }
