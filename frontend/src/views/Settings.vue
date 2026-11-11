@@ -4,7 +4,6 @@
     <!-- Tab toggles inside Settings page -->
     <div class="category-tabs mb-lg">
       <button 
-        v-if="currentUser?.role === 'admin'"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'shop' }"
         @click="activeTab = 'shop'"
@@ -91,8 +90,8 @@
 
       <!-- Quick Navigation Cards: Central Kitchen & Requisition (จับส่วนเกินเข้าหน้าตั้งค่าร้าน) -->
       <div class="settings-extra-modules mb-xl">
-        <!-- 1. Central Kitchen System (Admin / Manager) -->
-        <div v-if="currentUser?.role === 'admin' || currentUser?.role === 'manager'" class="card p-md mb-md border-primary-light" :style="isCentralKitchenSession ? 'background: rgba(139, 3, 19, 0.06); border: 2px solid var(--primary);' : 'background: rgba(139, 3, 19, 0.03); border: 1.5px dashed var(--primary-light);'">
+        <!-- 1. Central Kitchen System (Admin Only - พนักงานและบทบาทอื่นไม่แสดง) -->
+        <div v-if="currentUser?.role === 'admin'" class="card p-md mb-md border-primary-light" :style="isCentralKitchenSession ? 'background: rgba(139, 3, 19, 0.06); border: 2px solid var(--primary);' : 'background: rgba(139, 3, 19, 0.03); border: 1.5px dashed var(--primary-light);'">
           <div class="flex flex-between align-center flex-wrap gap-md">
             <div class="flex align-center gap-md">
               <div class="p-sm rounded-circle" style="background: rgba(139, 3, 19, 0.1); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -155,32 +154,57 @@
             </router-link>
           </div>
         </div>
+
+        <!-- 3. Logout (ออกจากระบบสำหรับทุกระดับ) -->
+        <div class="card p-md mb-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center flex-wrap gap-md">
+            <div class="flex align-center gap-md">
+              <div class="p-sm rounded-circle" style="background: rgba(173, 40, 30, 0.08); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fa-solid fa-right-from-bracket" style="font-size: 1.25rem; color: var(--danger, #ad281e);"></i>
+              </div>
+              <div>
+                <div class="font-bold text-base" style="color: var(--danger, #ad281e);">ออกจากระบบ (Logout)</div>
+                <div class="text-xs text-secondary">ออกจากระบบ POS เพื่อเปลี่ยนกะ หรือเปลี่ยนผู้ใช้งาน</div>
+              </div>
+            </div>
+            <button 
+              type="button" 
+              class="btn btn-secondary inline-flex align-center gap-xs"
+              @click="handleLogout"
+              style="padding: 8px 16px; font-size: var(--font-sm); color: var(--danger, #ad281e); border-color: rgba(173, 40, 30, 0.3);"
+            >
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span>ออกจากระบบ</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="divider mb-lg" style="height: 1px; background: var(--border-color);"></div>
+      <!-- Stock Notification & Save (Admin only) -->
+      <template v-if="currentUser?.role === 'admin'">
+        <div class="divider mb-lg" style="height: 1px; background: var(--border-color);"></div>
 
-      <div class="card-title text-sm"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> การแจ้งเตือนสต็อกวัตถุดิบ</div>
+        <div class="card-title text-sm"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> การแจ้งเตือนสต็อกวัตถุดิบ</div>
 
+        <!-- Low Stock Threshold -->
+        <div class="form-group">
+          <label class="form-label">จุดเตือนสต็อกวัตถุดิบใกล้หมด (ชิ้น)</label>
+          <input 
+            type="number" 
+            class="form-input" 
+            v-model.number="shopForm.low_stock_threshold" 
+            placeholder="เช่น 5" 
+            min="1"
+          />
+        </div>
 
-
-      <!-- Low Stock Threshold -->
-      <div class="form-group">
-        <label class="form-label">จุดเตือนสต็อกวัตถุดิบใกล้หมด (ชิ้น)</label>
-        <input 
-          type="number" 
-          class="form-input" 
-          v-model.number="shopForm.low_stock_threshold" 
-          placeholder="เช่น 5" 
-          min="1"
-        />
-      </div>
-
-      <!-- Save Shop Settings Button -->
-      <button class="btn btn-primary btn-block mt-lg" :disabled="isSavingShopSettings" @click="saveShopSettings">
-        <i v-if="isSavingShopSettings" class="fa-solid fa-spinner fa-spin"></i>
-        <i v-else class="fa-solid fa-floppy-disk"></i>
-        {{ isSavingShopSettings ? 'กำลังบันทึก...' : 'บันทึกตั้งค่าระบบร้าน' }}
-      </button>
+        <!-- Save Shop Settings Button -->
+        <button class="btn btn-primary btn-block mt-lg" :disabled="isSavingShopSettings" @click="saveShopSettings">
+          <i v-if="isSavingShopSettings" class="fa-solid fa-spinner fa-spin"></i>
+          <i v-else class="fa-solid fa-floppy-disk"></i>
+          {{ isSavingShopSettings ? 'กำลังบันทึก...' : 'บันทึกตั้งค่าระบบร้าน' }}
+        </button>
+      </template>
       </template>
     </div>
 
@@ -1331,6 +1355,10 @@ const switchToPosBranchFromSettings = () => {
   router.push('/pos');
 };
 
+const handleLogout = () => {
+  window.dispatchEvent(new CustomEvent('trigger-logout'));
+};
+
 // --- Printer & Cash Drawer States & Actions ---
 const printerConnected = ref(false);
 const printerConfig = ref({
@@ -2160,9 +2188,6 @@ const handleExecutePurgeCloud = async () => {
 
 onMounted(() => {
   currentUser.value = getUser();
-  if (currentUser.value && currentUser.value.role !== 'admin') {
-    activeTab.value = 'presets';
-  }
   if (sessionStorage.getItem('selected_branch_id')) {
     selectedSettingsBranchId.value = Number(sessionStorage.getItem('selected_branch_id'));
   } else if (currentUser.value) {
