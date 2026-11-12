@@ -2526,6 +2526,8 @@ const getTopItemSalesPct = (sales) => {
 const expenses = ref([]);
 const activityLogs = ref([]);
 const activityLogsLoading = ref(false);
+const stockHistoryLogs = ref([]);
+const stockHistoryLoading = ref(false);
 let activityFilterSkeletonTimer = null;
 const triggerActivityFilterSkeleton = () => {
   activityCurrentPage.value = 1;
@@ -2645,8 +2647,8 @@ const filteredActivityLogs = computed(() => {
     };
   });
 
-  // 2.5 Map Central Kitchen auto-restocks from stockLogs into activity logs
-  const mappedCkRestocks = (Array.isArray(stockLogs.value) ? stockLogs.value : [])
+  // 2.5 Map Central Kitchen auto-restocks from stockHistoryLogs into activity logs
+  const mappedCkRestocks = (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : [])
     .filter(s => s.reason === 'restock' && String(s.note || '').includes('ครัวกลาง'))
     .map(s => {
       const reqMatch = String(s.note || '').match(/ใบเบิก\s*(#\S+)/);
@@ -2901,8 +2903,6 @@ const paginatedActivityLogs = computed(() => {
 // Pagination & Filtering States for Stock Logs
 const stockLogsCurrentPage = ref(1);
 const stockLogsPerPage = 15;
-const stockHistoryLogs = ref([]);
-const stockHistoryLoading = ref(false);
 const stockReasonFilter = ref('all'); // 'all', 'waste', 'staff_benefit', 'restock', 'adjustment'
 
 const filteredStockLogs = computed(() => {
