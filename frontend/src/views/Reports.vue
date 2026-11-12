@@ -175,30 +175,30 @@
               </span>
               <span class="tabular-nums font-bold text-primary">{{ formatCurrency(displayedDailyReport.total_sales) }}</span>
             </div>
-            <!-- Multi-Color Visual Ratio Bar -->
-            <div class="payment-ratio-bar">
+            <!-- Multi-Color Visual Ratio Bar (Flex filled, no grey gap) -->
+            <div class="payment-ratio-bar" style="background: transparent;">
               <div 
                 v-if="displayedDailyReport.cash_sales > 0" 
                 class="ratio-seg seg-cash" 
-                :style="{ width: getPaymentPct(displayedDailyReport.cash_sales) + '%' }"
+                :style="{ flex: displayedDailyReport.cash_sales }"
                 :title="'เงินสด: ' + getPaymentPct(displayedDailyReport.cash_sales) + '%'"
               ></div>
               <div 
                 v-if="displayedDailyReport.qr_sales > 0" 
                 class="ratio-seg seg-qr" 
-                :style="{ width: getPaymentPct(displayedDailyReport.qr_sales) + '%' }"
+                :style="{ flex: displayedDailyReport.qr_sales }"
                 :title="'QR Code: ' + getPaymentPct(displayedDailyReport.qr_sales) + '%'"
               ></div>
               <div 
                 v-if="displayedDailyReport.gov_sales > 0" 
                 class="ratio-seg seg-gov" 
-                :style="{ width: getPaymentPct(displayedDailyReport.gov_sales) + '%' }"
+                :style="{ flex: displayedDailyReport.gov_sales }"
                 :title="'โครงการรัฐ: ' + getPaymentPct(displayedDailyReport.gov_sales) + '%'"
               ></div>
               <div 
                 v-if="displayedDailyReport.delivery_sales > 0" 
                 class="ratio-seg seg-delivery" 
-                :style="{ width: getPaymentPct(displayedDailyReport.delivery_sales) + '%' }"
+                :style="{ flex: displayedDailyReport.delivery_sales }"
                 :title="'เดลิเวอรี: ' + getPaymentPct(displayedDailyReport.delivery_sales) + '%'"
               ></div>
             </div>
@@ -230,7 +230,8 @@
               <div class="flex flex-between align-center mb-xs">
                 <span class="pay-title inline-flex align-center gap-xs">
                   <i class="fa-solid fa-qrcode text-primary"></i>
-                  <span>QR Code</span>
+                  <span class="hide-mobile">QR Code</span>
+                  <span class="show-mobile-inline">QR</span>
                 </span>
                 <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
                   {{ getPaymentPct(displayedDailyReport.qr_sales) }}%
@@ -249,7 +250,8 @@
               <div class="flex flex-between align-center mb-xs">
                 <span class="pay-title inline-flex align-center gap-xs">
                   <i class="fa-solid fa-landmark" style="color: #3b82f6;"></i>
-                  <span>โครงการรัฐ</span>
+                  <span class="hide-mobile">โครงการรัฐ</span>
+                  <span class="show-mobile-inline">รัฐ</span>
                 </span>
                 <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
                   {{ getPaymentPct(displayedDailyReport.gov_sales) }}%
@@ -322,7 +324,8 @@
                     <!-- 3. ประเภทการชำระเงิน -->
                     <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
-                      <span>{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
+                      <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
+                      <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
                     </span>
                     <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
                       <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
@@ -4732,7 +4735,7 @@ select.reports-filter-control,
   width: 100%;
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.05);
+  background: transparent;
 }
 .ratio-seg {
   height: 100%;
