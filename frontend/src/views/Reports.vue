@@ -425,22 +425,14 @@
       </div>
 
       <!-- Tab: Order History (ประวัติออเดอร์ย้อนหลัง) -->
-      <div v-if="activeTab === 'order_history'" class="card">
-        <div class="card-header-clean">
-          <div class="card-title card-title-clean"><i class="fa-solid fa-clock-rotate-left mr-xs"></i> ประวัติออเดอร์ย้อนหลัง</div>
-          <div class="flex align-center gap-sm" style="flex-wrap: wrap;">
-            <button 
-              v-if="historyOrders.length > 0"
-              class="btn btn-sm btn-secondary csv-export-btn" 
-              style="display:inline-flex; align-items:center; gap:4px;"
-              @click="exportHistoryOrdersCSV"
-            >
-              <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกประวัติออเดอร์ (CSV)
-            </button>
-            
+      <div v-if="activeTab === 'order_history'" class="flex flex-col gap-md">
+        
+        <!-- Filter Card: Separate Box between Date Filter and Orders (Similar to Central Kitchen) -->
+        <div class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex align-center gap-md" style="flex-wrap: wrap;">
             <!-- Staff Filter -->
             <div class="flex align-center gap-xs">
-              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">พนักงาน:</span>
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">พนักงาน:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
@@ -470,7 +462,7 @@
 
             <!-- Payment Filter -->
             <div class="flex align-center gap-xs">
-              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">ชำระเงิน:</span>
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">ชำระเงิน:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
@@ -494,7 +486,7 @@
 
             <!-- Status Filter -->
             <div class="flex align-center gap-xs">
-              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">สถานะ:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
@@ -516,215 +508,148 @@
           </div>
         </div>
 
-        <div v-if="historyOrders.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
-          ไม่มีรายการออเดอร์ในช่วงเวลาที่เลือก
-        </div>
-        <div v-else>
-          <!-- Desktop Table (Desktop Only) -->
-          <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-            <table class="table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th style="padding: var(--space-md); text-align: left;">วัน-เวลา</th>
-                  <th style="padding: var(--space-md); text-align: left;">เลขที่บิล</th>
-                  <th class="text-center" style="padding: var(--space-md);">พนักงาน</th>
-                  <th class="text-center" style="padding: var(--space-md);">สาขา</th>
-                  <th class="text-center" style="padding: var(--space-md);">ชำระเงิน</th>
-                  <th class="text-center" style="padding: var(--space-md);">ยอดสุทธิ</th>
-                  <th class="text-center" style="padding: var(--space-md);">สถานะ</th>
-                  <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="order in paginatedHistoryOrders" :key="order.id">
-                  <tr 
-                    style="border-bottom: 1px solid var(--border-color); cursor: pointer;"
-                    class="table-row-hover"
-                    @click="toggleExpandOrder(order.id)"
-                  >
-                    <td style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
-                      {{ formatDate(order.created_at) }}<br/>{{ formatTime(order.created_at) }}
-                    </td>
-                    <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
-                      #{{ order.order_number }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
-                      {{ order.staff_name || 'ระบบ' }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
-                      {{ order.branch_name || 'ไม่ระบุ' }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); white-space: nowrap;">
-                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
-                      {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
-                      <div class="flex flex-col align-center" style="gap: 2px;">
-                        <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
-                        <span v-if="order.discount > 0" class="badge animate-fade-in" style="background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 1px 4px; border-radius: var(--radius-sm); font-weight: normal; display: inline-block;">ลด -{{ formatCurrency(order.discount) }}</span>
-                      </div>
-                    </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                      <span v-if="order.status === 'completed'" class="text-success"><i class="fa-solid fa-circle-check text-success" style="margin-right: 4px;"></i> สำเร็จ</span>
-                      <span v-else-if="order.status === 'cancelled'" class="text-danger"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
-                      <span v-else class="text-warning"><i class="fa-solid fa-hourglass-half text-warning" style="margin-right: 4px;"></i> รอชำระ</span>
-                    </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;" @click.stop>
-                      <button 
-                        v-if="order.status === 'completed'" 
-                        class="btn-delete-action"
-                        @click="openVoidModal(order)"
-                      >
-                        <i class="fa-solid fa-trash-can"></i> ลบ
-                      </button>
-                      <span v-else>-</span>
-                    </td>
-                  </tr>
-                  <!-- Expand detail row for Desktop table -->
-                  <tr v-if="expandedOrderId === order.id" :key="'expand-' + order.id" style="background: rgba(139, 3, 19, 0.01);">
-                    <td colspan="8" style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-                      <div style="max-width: 500px; margin: 0 auto; border: 1px dashed var(--border-color); padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-primary);">
-                        <div class="font-bold mb-xs" style="color: var(--primary);">รายละเอียดสินค้า:</div>
-                        <div v-if="expandedItems.length === 0" class="text-center" style="color:var(--text-tertiary);">กำลังโหลด...</div>
-                        <div v-else>
-                          <div v-for="item in expandedItems" :key="item.id" class="flex flex-between mb-xs" style="border-bottom:1px solid rgba(0,0,0,0.03); padding-bottom:2px;">
-                            <span>{{ item.item_name }} x{{ item.quantity }}</span>
-                            <span class="font-bold">{{ formatCurrency(item.subtotal) }}</span>
-                          </div>
-                          <!-- Discount Info if applied -->
-                          <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);">
-                            <div class="flex flex-between">
-                              <span>ยอดรวม (ก่อนหัก):</span>
-                              <span>{{ formatCurrency(order.subtotal) }}</span>
-                            </div>
-                            <div class="flex flex-between font-bold" style="color: #ff3b30;">
-                              <span>ส่วนลด:</span>
-                              <span>-{{ formatCurrency(order.discount) }}</span>
-                            </div>
-                            <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
-                              <span>ยอดสุทธิ:</span>
-                              <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
-                          <i class="fa-solid fa-triangle-exclamation text-danger"></i> <strong>เหตุผลที่ยกเลิก:</strong> {{ order.cancel_reason }}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+        <!-- Orders Card / List (Unified Modern Card Layout with Direct Item Details) -->
+        <div ref="historyOrdersCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color);">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>ประวัติออเดอร์ย้อนหลัง</span>
+            </div>
+            <span class="text-xs text-secondary font-medium tabular-nums" v-if="filteredHistoryOrders.length > 0">
+              รวม {{ filteredHistoryOrders.length }} รายการ
+            </span>
           </div>
 
-          <!-- Mobile Cards (Mobile Only) -->
-          <div class="show-mobile-only history-mobile-list" style="margin-bottom: var(--space-md);">
+          <div v-if="filteredHistoryOrders.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
+            ไม่มีรายการออเดอร์ในช่วงเวลาที่เลือก
+          </div>
+          <div v-else class="flex flex-col gap-sm">
             <div 
               v-for="order in paginatedHistoryOrders" 
               :key="order.id" 
-              class="p-sm card"
-              style="font-size:var(--font-sm); background: var(--bg-primary); display:flex; flex-direction:column; gap:4px; cursor:pointer; border:1px solid var(--border-color);"
-              @click="toggleExpandOrder(order.id)"
+              class="p-md card order-report-card"
+              :class="{ 'cancelled-order': order.status === 'cancelled' }"
             >
-              <div class="flex flex-between font-bold">
-                <span :style="order.status === 'cancelled' ? 'text-decoration:line-through; opacity:0.5;' : ''">
-                  #{{ order.order_number }}
-                </span>
-                <div>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
-                  <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+              <!-- Order Header Row -->
+              <div class="flex flex-between align-center gap-sm" style="flex-wrap: wrap;">
+                <div class="flex align-center gap-md" style="flex-wrap: wrap;">
+                  <span class="font-bold text-base tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
+                    #{{ order.order_number }}
+                  </span>
+                  <div class="flex align-center gap-xs" style="flex-wrap: wrap;">
+                    <!-- Date & Time -->
+                    <span class="text-xs text-muted tabular-nums mr-xs">
+                      <i class="fa-regular fa-clock mr-2xs" style="font-size: 0.75rem;"></i>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}
+                    </span>
+                    <!-- Staff -->
+                    <span class="text-xs text-secondary mr-xs" v-if="order.staff_name">
+                      <i class="fa-regular fa-user mr-2xs"></i>{{ order.staff_name }}
+                    </span>
+                    <!-- Branch -->
+                    <span class="text-xs text-secondary mr-xs" v-if="order.branch_name && !selectedBranchId">
+                      <i class="fa-solid fa-store mr-2xs"></i>{{ order.branch_name }}
+                    </span>
+                    <!-- Payment Method -->
+                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
+                      <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
+                      <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
+                    </span>
+                    <!-- Status -->
+                    <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
+                      <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
+                    </span>
+                    <!-- Discount -->
+                    <span v-if="order.discount > 0" class="order-discount-pill tabular-nums">
+                      ลด -{{ formatCurrency(order.discount) }}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div class="flex flex-col gap-xs" style="font-size:var(--font-xs); color:var(--text-secondary); text-align: left; margin-top: 4px; margin-bottom: 4px;">
-                <div class="flex align-center">
-                  <i class="fa-solid fa-user" style="margin-right: 4px; opacity: 0.7;"></i> 
-                  {{ order.staff_name || 'ระบบ' }} 
-                  <span style="margin: 0 6px; color: var(--border-color);">|</span>
-                  <i class="fa-solid fa-store" style="margin-right: 4px; opacity: 0.7;"></i> 
-                  {{ order.branch_name || 'ไม่ระบุ' }}
-                </div>
-                <div class="flex align-center" style="color: var(--text-tertiary);">
-                  <i class="fa-solid fa-clock" style="margin-right: 4px; opacity: 0.7;"></i> 
-                  {{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}
-                </div>
-              </div>
-              <div class="flex flex-between align-center mt-xs" style="font-size:var(--font-xs);">
-                <span style="display: inline-flex; align-items: center; gap: 4px;">
-                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
-                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
-                </span>
-                <div>
-                  <span v-if="order.status === 'completed'" class="text-success"><i class="fa-solid fa-circle-check text-success" style="margin-right: 2px;"></i> สำเร็จ</span>
-                  <span v-else-if="order.status === 'cancelled'" class="text-danger"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> ยกเลิก</span>
+
+                <div class="text-right">
+                  <div class="order-total-amount tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
+                    {{ formatCurrency(order.total) }}
+                  </div>
                 </div>
               </div>
 
-              <!-- Expanded detail for Mobile card -->
-              <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);" @click.stop>
-                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
-                <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
-                    <span>{{ item.item_name }} x{{ item.quantity }}</span>
-                    <span>{{ formatCurrency(item.subtotal) }}</span>
-                  </div>
-                  <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
-                    <div class="flex flex-between">
-                      <span>ยอดรวม (ก่อนหัก):</span>
-                      <span>{{ formatCurrency(order.subtotal) }}</span>
+              <!-- Cancel Reason Box if cancelled -->
+              <div v-if="order.cancel_reason" class="order-cancel-reason-box mt-xs">
+                <i class="fa-solid fa-triangle-exclamation mr-xs"></i>
+                <span>เหตุผลยกเลิก: {{ order.cancel_reason }}</span>
+              </div>
+
+              <!-- Item Details Directly Displayed (No clicking required!) -->
+              <div class="order-drawer-content mt-sm pt-sm">
+                <div v-if="order.items && order.items.length > 0" class="order-items-table">
+                  <div v-for="item in order.items" :key="item.id" class="order-item-row flex flex-between py-xs" style="align-items: flex-start;">
+                    <div class="flex gap-xs" style="align-items: flex-start; flex: 1; min-width: 0;">
+                      <span class="order-item-qty tabular-nums" style="margin-top: 1px; flex-shrink: 0;">x{{ item.quantity }}</span>
+                      <span class="order-item-name font-medium" style="word-break: break-word;">{{ item.item_name }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
+                    <span class="order-item-subtotal tabular-nums font-semibold" style="margin-left: var(--space-sm); flex-shrink: 0;">{{ formatCurrency(item.subtotal) }}</span>
+                  </div>
+
+                  <!-- Subtotal & Discount Info if applied -->
+                  <div v-if="order.discount > 0" class="order-drawer-summary pt-xs mt-xs">
+                    <div class="flex flex-between text-xs text-secondary py-2xs">
+                      <span>ยอดรวมสินค้า:</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.subtotal) }}</span>
+                    </div>
+                    <div class="flex flex-between text-xs text-danger font-semibold py-2xs">
                       <span>ส่วนลด:</span>
-                      <span>-{{ formatCurrency(order.discount) }}</span>
+                      <span class="tabular-nums">-{{ formatCurrency(order.discount) }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
+                    <div class="flex flex-between text-sm font-bold text-primary pt-2xs" style="border-top: 1px dashed var(--border-color);">
                       <span>ยอดสุทธิ:</span>
-                      <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.total) }}</span>
                     </div>
                   </div>
                 </div>
-                <div v-if="order.cancel_reason" style="font-size:var(--font-xs); color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-triangle-exclamation text-danger"></i> เหตุผลยกเลิก: {{ order.cancel_reason }}
+                <div v-else style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center; padding: var(--space-xs);">
+                  ไม่มีรายละเอียดสินค้า
                 </div>
-                <!-- Void Button inside Mobile Expanded Card -->
-                <button 
-                  v-if="order.status === 'completed'" 
-                  class="btn btn-sm mt-sm" 
-                  style="width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); min-height:36px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
-                  @click="openVoidModal(order)"
-                >
-                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
-                </button>
+
+                <!-- Void Button (Pinned to Far Right) -->
+                <div v-if="order.status === 'completed'" class="flex justify-end mt-sm" style="width: 100%;">
+                  <button 
+                    type="button"
+                    class="btn order-void-btn" 
+                    style="margin-left: auto;"
+                    @click.stop="openVoidModal(order)"
+                  >
+                    <i class="fa-solid fa-trash-can mr-xs"></i> ลบบิลนี้
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Pagination UI -->
-          <div v-if="totalPages > 1" class="pagination-bar flex flex-center align-center gap-md">
-            <button 
-              class="pagination-btn" 
-              :disabled="historyCurrentPage === 1" 
-              @click="historyCurrentPage--"
-            >
-              <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-            </button>
-            <span class="pagination-info">
-              หน้า {{ historyCurrentPage }} / {{ totalPages }}
-            </span>
-            <button 
-              class="pagination-btn" 
-              :disabled="historyCurrentPage === totalPages" 
-              @click="historyCurrentPage++"
-            >
-              ถัดไป <i class="fa-solid fa-chevron-right"></i>
-            </button>
+            <!-- Pagination UI for Order History -->
+            <div v-if="totalPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
+              <button 
+                class="pagination-btn" 
+                :disabled="historyCurrentPage === 1" 
+                @click="changeHistoryOrdersPage(historyCurrentPage - 1)"
+              >
+                <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+              </button>
+              <span class="pagination-info tabular-nums">
+                หน้า {{ historyCurrentPage }} / {{ totalPages }}
+              </span>
+              <button 
+                class="pagination-btn" 
+                :disabled="historyCurrentPage === totalPages" 
+                @click="changeHistoryOrdersPage(historyCurrentPage + 1)"
+              >
+                ถัดไป <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Tab 2: Expenses (บันทึกค่าใช้จ่ายประจำวัน) -->
-      <div v-if="activeTab === 'expenses' && isAdminUser" class="card">
+      <div v-if="activeTab === 'expenses' && isAdminUser" ref="ledgerCardRef" class="card">
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 6px;"></i> บันทึกค่าใช้จ่ายประจำวัน ({{ selectedDate === getToday() ? 'วันนี้' : 'วันที่ ' + formatDate(selectedDate) }})</div>
         
         <!-- Quick Add Expense Form -->
@@ -969,17 +894,17 @@
           <button 
             class="pagination-btn" 
             :disabled="ledgerCurrentPage === 1" 
-            @click="ledgerCurrentPage--"
+            @click="changeLedgerPage(ledgerCurrentPage - 1)"
           >
             <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
           </button>
-          <span class="pagination-info">
+          <span class="pagination-info tabular-nums">
             หน้า {{ ledgerCurrentPage }} / {{ totalLedgerPages }}
           </span>
           <button 
             class="pagination-btn" 
             :disabled="ledgerCurrentPage === totalLedgerPages" 
-            @click="ledgerCurrentPage++"
+            @click="changeLedgerPage(ledgerCurrentPage + 1)"
           >
             ถัดไป <i class="fa-solid fa-chevron-right"></i>
           </button>
@@ -1184,7 +1109,7 @@
       </div>
 
       <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
-      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" class="card">
+      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" ref="activityCardRef" class="card">
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
         
         <!-- Filter dropdowns in a 2-column grid -->
@@ -1275,17 +1200,17 @@
           <button 
             class="pagination-btn" 
             :disabled="activityCurrentPage === 1" 
-            @click="activityCurrentPage--"
+            @click="changeActivityPage(activityCurrentPage - 1)"
           >
             <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
           </button>
-          <span class="pagination-info">
+          <span class="pagination-info tabular-nums">
             หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
           </span>
           <button 
             class="pagination-btn" 
             :disabled="activityCurrentPage === totalActivityPages" 
-            @click="activityCurrentPage++"
+            @click="changeActivityPage(activityCurrentPage + 1)"
           >
             ถัดไป <i class="fa-solid fa-chevron-right"></i>
           </button>
@@ -1345,7 +1270,7 @@
     </div>
 
     <!-- Tab 5: Stock History (ประวัติสต็อก) -->
-    <div v-if="activeTab === 'stock_history' && isManagerOrAdminUser" class="flex flex-col gap-md">
+    <div v-if="activeTab === 'stock_history' && isManagerOrAdminUser" ref="stockLogsCardRef" class="flex flex-col gap-md">
       
       <!-- Summary Stat Cards for Stock History (Waste, Credit, Restock) -->
       <div class="stock-summary-cards-grid gap-md">
@@ -1694,17 +1619,17 @@
             <button 
               class="pagination-btn" 
               :disabled="stockLogsCurrentPage === 1" 
-              @click="stockLogsCurrentPage--"
+              @click="changeStockLogsPage(stockLogsCurrentPage - 1)"
             >
               <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
             </button>
-            <span class="pagination-info">
+            <span class="pagination-info tabular-nums">
               หน้า {{ stockLogsCurrentPage }} / {{ totalStockLogsPages }}
             </span>
             <button 
               class="pagination-btn" 
               :disabled="stockLogsCurrentPage === totalStockLogsPages" 
-              @click="stockLogsCurrentPage++"
+              @click="changeStockLogsPage(stockLogsCurrentPage + 1)"
             >
               ถัดไป <i class="fa-solid fa-chevron-right"></i>
             </button>
@@ -2653,16 +2578,29 @@ const getPaymentPct = (sales) => {
   return Math.round(((Number(sales) || 0) / total) * 100);
 };
 
+const scrollToRef = (refEl) => {
+  nextTick(() => {
+    if (refEl && refEl.value) {
+      const topOffset = 70;
+      const y = refEl.value.getBoundingClientRect().top + window.pageYOffset - topOffset;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }
+  });
+};
+
 const dailyOrdersCardRef = ref(null);
 const dailyOrdersCurrentPage = ref(1);
 const changeDailyOrdersPage = (newPage) => {
   if (newPage < 1 || newPage > totalDailyOrdersPages.value) return;
   dailyOrdersCurrentPage.value = newPage;
-  nextTick(() => {
-    if (dailyOrdersCardRef.value) {
-      dailyOrdersCardRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
+  scrollToRef(dailyOrdersCardRef);
+};
+
+const historyOrdersCardRef = ref(null);
+const changeHistoryOrdersPage = (newPage) => {
+  if (newPage < 1 || newPage > totalPages.value) return;
+  historyCurrentPage.value = newPage;
+  scrollToRef(historyOrdersCardRef);
 };
 const dailyOrdersPerPage = 15;
 const totalDailyOrdersPages = computed(() => {
@@ -2677,12 +2615,18 @@ const paginatedDailyReportOrders = computed(() => {
 });
 
 // Pagination States for Ledger Transactions
+const ledgerCardRef = ref(null);
 const ledgerCurrentPage = ref(1);
 const ledgerPerPage = 15;
 const totalLedgerPages = computed(() => {
   const count = filteredLedgerTransactions.value.length;
   return Math.ceil(count / ledgerPerPage) || 1;
 });
+const changeLedgerPage = (newPage) => {
+  if (newPage < 1 || newPage > totalLedgerPages.value) return;
+  ledgerCurrentPage.value = newPage;
+  scrollToRef(ledgerCardRef);
+};
 const paginatedLedgerTransactions = computed(() => {
   const start = (ledgerCurrentPage.value - 1) * ledgerPerPage;
   const end = start + ledgerPerPage;
@@ -2690,12 +2634,18 @@ const paginatedLedgerTransactions = computed(() => {
 });
 
 // Pagination States for Activity Logs
+const activityCardRef = ref(null);
 const activityCurrentPage = ref(1);
 const activityPerPage = 15;
 const totalActivityPages = computed(() => {
   const count = filteredActivityLogs.value.length;
   return Math.ceil(count / activityPerPage) || 1;
 });
+const changeActivityPage = (newPage) => {
+  if (newPage < 1 || newPage > totalActivityPages.value) return;
+  activityCurrentPage.value = newPage;
+  scrollToRef(activityCardRef);
+};
 const paginatedActivityLogs = computed(() => {
   const start = (activityCurrentPage.value - 1) * activityPerPage;
   const end = start + activityPerPage;
@@ -2856,10 +2806,16 @@ const stockRestockTotalQty = computed(() => {
   return stockRestockLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
 });
 
+const stockLogsCardRef = ref(null);
 const totalStockLogsPages = computed(() => {
   const count = Array.isArray(filteredStockLogs.value) ? filteredStockLogs.value.length : 0;
   return Math.ceil(count / stockLogsPerPage) || 1;
 });
+const changeStockLogsPage = (newPage) => {
+  if (newPage < 1 || newPage > totalStockLogsPages.value) return;
+  stockLogsCurrentPage.value = newPage;
+  scrollToRef(stockLogsCardRef);
+};
 const paginatedStockLogs = computed(() => {
   if (!Array.isArray(filteredStockLogs.value)) return [];
   const start = (stockLogsCurrentPage.value - 1) * stockLogsPerPage;

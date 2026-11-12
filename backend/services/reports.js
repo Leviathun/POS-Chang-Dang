@@ -192,6 +192,27 @@ async function getMonthlyReport(month, branchId = null) {
       ORDER BY o.id DESC
     `).all(paramsOrders)
   ]);
+
+  if (orders && orders.length > 0) {
+    try {
+      const orderIds = orders.map(o => o.id);
+      const placeholders = orderIds.map(() => '?').join(',');
+      const allItems = await db.prepare(`SELECT * FROM order_items WHERE order_id IN (${placeholders})`).all(orderIds);
+      const itemsByOrderId = {};
+      for (const item of allItems) {
+        if (!itemsByOrderId[item.order_id]) itemsByOrderId[item.order_id] = [];
+        itemsByOrderId[item.order_id].push({
+          ...item,
+          options: item.options ? (typeof item.options === 'string' ? JSON.parse(item.options) : item.options) : null
+        });
+      }
+      for (const o of orders) {
+        o.items = itemsByOrderId[o.id] || [];
+      }
+    } catch (e) {
+      console.warn('⚠️ Error batch loading items in reports.js:', e.message);
+    }
+  }
   const breakdownData = {
     cash_count: cashStats.count,
     cash_total: cashStats.total,

@@ -537,6 +537,28 @@ router.get('/', async (req, res) => {
     }
 
     const orders = await db.prepare(sql).all(params);
+
+    if (orders.length > 0) {
+      try {
+        const orderIds = orders.map(o => o.id);
+        const placeholders = orderIds.map(() => '?').join(',');
+        const allItems = await db.prepare(`SELECT * FROM order_items WHERE order_id IN (${placeholders})`).all(orderIds);
+        const itemsByOrderId = {};
+        for (const item of allItems) {
+          if (!itemsByOrderId[item.order_id]) itemsByOrderId[item.order_id] = [];
+          itemsByOrderId[item.order_id].push({
+            ...item,
+            options: item.options ? (typeof item.options === 'string' ? JSON.parse(item.options) : item.options) : null
+          });
+        }
+        for (const o of orders) {
+          o.items = itemsByOrderId[o.id] || [];
+        }
+      } catch (err) {
+        console.warn('⚠️ Error fetching batch order_items:', err.message);
+      }
+    }
+
     const formattedOrders = orders;
 
     res.json({
