@@ -317,13 +317,14 @@
                   <span class="font-bold text-base tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
                     #{{ order.order_number }}
                   </span>
-                  <div class="flex align-center gap-xs" style="flex-wrap: wrap;">
+                  <div class="flex align-center" style="flex-wrap: wrap; gap: 14px;">
                     <!-- 2. เวลา -->
-                    <span class="text-xs text-muted tabular-nums mr-xs">
-                      <i class="fa-regular fa-clock mr-2xs" style="font-size: 0.75rem;"></i>{{ formatTime(order.created_at) }}
+                    <span class="text-xs text-muted tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <span>{{ formatTime(order.created_at) }}</span>
                     </span>
                     <!-- 3. ประเภทการชำระเงิน -->
-                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
                       <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
                       <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
@@ -536,21 +537,24 @@
                   <span class="font-bold text-base tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
                     #{{ order.order_number }}
                   </span>
-                  <div class="flex align-center gap-xs" style="flex-wrap: wrap;">
+                  <div class="flex align-center" style="flex-wrap: wrap; gap: 14px;">
                     <!-- Date & Time -->
-                    <span class="text-xs text-muted tabular-nums mr-xs">
-                      <i class="fa-regular fa-clock mr-2xs" style="font-size: 0.75rem;"></i>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}
+                    <span class="text-xs text-muted tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <span>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}</span>
                     </span>
                     <!-- Staff -->
-                    <span class="text-xs text-secondary mr-xs" v-if="order.staff_name">
-                      <i class="fa-regular fa-user mr-2xs"></i>{{ order.staff_name }}
+                    <span class="text-xs text-secondary" v-if="order.staff_name" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
+                      <span>{{ order.staff_name }}</span>
                     </span>
                     <!-- Branch -->
-                    <span class="text-xs text-secondary mr-xs" v-if="order.branch_name && !selectedBranchId">
-                      <i class="fa-solid fa-store mr-2xs"></i>{{ order.branch_name }}
+                    <span class="text-xs text-secondary" v-if="order.branch_name && !selectedBranchId" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-store" style="font-size: 0.75rem;"></i>
+                      <span>{{ order.branch_name }}</span>
                     </span>
                     <!-- Payment Method -->
-                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
                       <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
                       <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
@@ -649,7 +653,7 @@
       </div>
 
       <!-- Tab 2: Expenses (บันทึกค่าใช้จ่ายประจำวัน) -->
-      <div v-if="activeTab === 'expenses' && isAdminUser" ref="ledgerCardRef" class="card">
+      <div v-if="activeTab === 'expenses' && isAdminUser" class="card">
         <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 6px;"></i> บันทึกค่าใช้จ่ายประจำวัน ({{ selectedDate === getToday() ? 'วันนี้' : 'วันที่ ' + formatDate(selectedDate) }})</div>
         
         <!-- Quick Add Expense Form -->
@@ -741,7 +745,7 @@
         <!-- Monthly Ledger Section -->
         <div class="divider" style="margin: var(--space-xl) 0; height:1px; background:var(--border-color);"></div>
         
-        <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
+        <div ref="ledgerCardRef" class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
           <div class="card-title" style="font-size: var(--font-sm); margin: 0;">
             <i class="fa-solid fa-book" style="margin-right: 6px;"></i> สมุดบัญชีรายรับ-รายจ่าย ({{ ledgerPeriodLabel }})
           </div>
@@ -1270,7 +1274,7 @@
     </div>
 
     <!-- Tab 5: Stock History (ประวัติสต็อก) -->
-    <div v-if="activeTab === 'stock_history' && isManagerOrAdminUser" ref="stockLogsCardRef" class="flex flex-col gap-md">
+    <div v-if="activeTab === 'stock_history' && isManagerOrAdminUser" class="flex flex-col gap-md">
       
       <!-- Summary Stat Cards for Stock History (Waste, Credit, Restock) -->
       <div class="stock-summary-cards-grid gap-md">
@@ -1318,7 +1322,7 @@
       </div>
 
       <!-- Stock Logs Main Card -->
-      <div class="card p-md">
+      <div ref="stockLogsCardRef" class="card p-md">
         <div class="card-header-clean mb-md" style="padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-color);">
           <div class="card-title card-title-clean">
             <i class="fa-solid fa-boxes-stacked mr-xs"></i> ประวัติสต็อกและการปรับปรุง
@@ -2580,11 +2584,15 @@ const getPaymentPct = (sales) => {
 
 const scrollToRef = (refEl) => {
   nextTick(() => {
-    if (refEl && refEl.value) {
-      const topOffset = 70;
-      const y = refEl.value.getBoundingClientRect().top + window.pageYOffset - topOffset;
-      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-    }
+    const el = refEl?.value;
+    if (!el) return;
+    const isMobile = window.innerWidth < 1024;
+    const card = el.closest('.card') || el;
+    card.style.minHeight = isMobile ? 'calc(100dvh - 130px)' : 'calc(100dvh - 24px)';
+    el.style.scrollMarginTop = isMobile ? '64px' : '12px';
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   });
 };
 
