@@ -3525,6 +3525,10 @@ const formatReportLogNote = (log, isRaw) => {
   note = note.replace(/^\|(.*)$/, '$1').trim();
   note = note.replace(/^\[(ของสด|พร้อมขาย|.*สุก\/พร้อมขาย|.*\/พร้อมขาย)\]\s*/i, '').trim();
 
+  if (log.reason === 'staff_benefit' && note && note === String(log.staff_name || '').trim()) {
+    return '';
+  }
+
   if (/^ปรุงพร้อมกัน\s*\([^)]*\)$/.test(note)) {
     return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
   }
