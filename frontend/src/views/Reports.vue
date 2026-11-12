@@ -460,7 +460,7 @@
               >
                 <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
               </button>
-              <span class="pagination-info tabular-nums">
+              <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalDailyOrdersPages >= 10 }">
                 หน้า {{ dailyOrdersCurrentPage }} / {{ totalDailyOrdersPages }}
               </span>
               <button 
@@ -702,7 +702,7 @@
               >
                 <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
               </button>
-              <span class="pagination-info tabular-nums">
+              <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalPages >= 10 }">
                 หน้า {{ historyCurrentPage }} / {{ totalPages }}
               </span>
               <button 
@@ -967,7 +967,7 @@
           >
             <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
           </button>
-          <span class="pagination-info tabular-nums">
+          <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalLedgerPages >= 10 }">
             หน้า {{ ledgerCurrentPage }} / {{ totalLedgerPages }}
           </span>
           <button 
@@ -1167,13 +1167,14 @@
                 </div>
                 <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
                   <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับปรุงยอด / ของเสีย (Stock & Waste)</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> เข้าสู่ระบบ</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i> ขายสำเร็จ</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> ยกเลิกบิล</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> ค่าใช้จ่าย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับสต็อก</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'waste' }" @click="selectFilterAction('waste')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ของเสีย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> ลิ้นชักเงินสด</div>
                 </div>
               </div>
             </div>
@@ -1249,7 +1250,8 @@
                 </div>
               </div>
               <div class="log-content-wrapper">
-                <div class="log-details">{{ log.details }}</div>
+                <div class="log-title">{{ getActivityCardTitle(log) }}</div>
+                <div class="log-details tabular-nums">{{ formatActivityDetails(log) }}</div>
                 <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                   <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-user" style="font-size: 0.75rem;"></i><span>{{ log.staff_name || 'ระบบ' }}</span></span>
                   <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i><span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span></span>
@@ -1267,7 +1269,7 @@
             >
               <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
             </button>
-            <span class="pagination-info tabular-nums">
+            <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalActivityPages >= 10 }">
               หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
             </span>
             <button 
@@ -1705,7 +1707,7 @@
             >
               <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
             </button>
-            <span class="pagination-info tabular-nums">
+            <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalStockLogsPages >= 10 }">
               หน้า {{ stockLogsCurrentPage }} / {{ totalStockLogsPages }}
             </span>
             <button 
@@ -2556,9 +2558,54 @@ const getExpenseCategoryLabel = (cat) => {
   return map[cat] || cat;
 };
 
+const getActivityCardTitle = (log) => {
+  const map = {
+    login: 'เข้าสู่ระบบ',
+    complete_order: 'ขายสำเร็จ',
+    cancel_order: 'ยกเลิกบิล',
+    log_expense: 'บันทึกค่าใช้จ่าย',
+    delete_expense: 'ยกเลิกค่าใช้จ่าย',
+    reverse_expense: 'ยกเลิกค่าใช้จ่าย',
+    adjust_stock: 'ปรับสต็อก',
+    adjust_raw_stock: 'ปรับสต็อกวัตถุดิบ',
+    restock_stock: 'เติมสต็อก',
+    restock_raw_stock: 'เติมสต็อกวัตถุดิบ',
+    fry_chicken: 'ทอด/ปรุงสินค้า',
+    reverse_stock_log: 'ยกเลิกรายการสต็อก',
+    record_waste: 'บันทึกของเสีย',
+    record_raw_waste: 'บันทึกของเสียวัตถุดิบ',
+    staff_credit: 'เครดิตพนักงาน',
+    staff_raw_credit: 'เครดิตพนักงาน',
+    cash_opening_set: 'ตั้งเงินทอนเริ่มต้น',
+    cash_audit: 'ตรวจนับลิ้นชักเงินสด',
+    setting_change: 'เปลี่ยนการตั้งค่า'
+  };
+  return map[log?.action] || 'กิจกรรมระบบ';
+};
+
+const formatActivityDetails = (log) => {
+  const raw = String(log?.details || '').trim();
+  if (!raw) return '-';
+  return raw
+    .replace(/^(.+?)\s*เข้าสู่ระบบ(?:สำเร็จ)?\s*\(สาขา:\s*(.+)\)$/, '$1 • $2')
+    .replace(/^สร้าง(?:ออเดอร์และชำระเงินสำเร็จ|และชำระเงินออเดอร์)\s*เลขที่\s*#?(\S+)\s*ยอดรวม\s*([\d,.]+)\s*บาท$/, 'เลขที่ #$1 • ยอดรวม ฿$2')
+    .replace(/^ยกเลิก(?:บิล|ออเดอร์)\s*#?(\S+)\s*สำเร็จ\s*\(เหตุผล:\s*(.+)\)$/, 'เลขที่ #$1 • เหตุผล: $2')
+    .replace(/^รายจ่าย:\s*/, '')
+    .replace(/^บันทึกค่าใช้จ่าย\s*หมวดหมู่\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*บาท(?:\s*\(บันทึกเพิ่มเติม:\s*(.+)\))?$/, (_, cat, amt, note) => `${cat} • ฿${amt}${note ? ` (${note})` : ''}`)
+    .replace(/^ยกเลิก(?:และคืนยอดค่าใช้จ่าย|รายการเบิกของจากครัวกลาง)\s*(#\S+)\s*\((.+?)\)\s*จำนวน\s*([\d,.]+)\s*บาท.*$/, 'รายการ $1 ($2) • ฿$3')
+    .replace(/^ปรับปรุงสต็อก(?:ของสด|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[สาเหตุ:\s*(.+)\])?$/, (_, name, qty, prev, next, r) => `${name} ${qty} (${prev} → ${next})${r && r !== 'อื่นๆ' ? ` • ${r}` : ''}`)
+    .replace(/^ทำการ(?:ทอด|ย่าง|ต้ม|นึ่ง)\s*(.+?)\s*จำนวน\s*([\d,.]+\s*\S+)\s*\(ของสดคงเหลือ:\s*([\d,.]+),\s*.+?พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1 $2 (ของสดเหลือ $3 / พร้อมขาย $4)')
+    .replace(/^ยกเลิกบันทึกสต็อก\s*(#\S+)\s*\((.+?)\).*$/, 'รายการ $1 • $2')
+    .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? ` (${note})` : ''}`)
+    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${name} ${qty}${note && note !== 'แจกพนักงานรับประทาน' ? ` (${note})` : ''}`)
+    .replace(/^.+?บันทึกเงินทอนตั้งต้นกะวันที่\s*(\S+)\s*จำนวน\s*([\d,.]+)\s*บาท$/, 'กะวันที่ $1 • ฿$2')
+    .replace(/^.+?ตรวจสอบเงินสดกะวันที่\s*(\S+)\s*\(นับจริง:\s*([\d,.]+)\s*บาท,\s*คาดการณ์:\s*([\d,.]+)\s*บาท,\s*ผลต่าง:\s*([+-]?[\d,.]+)\s*บาท\)$/, 'นับจริง ฿$2 • คาดการณ์ ฿$3 (ผลต่าง ฿$4)')
+    .replace(/\s*\(สาขา:\s*(.+)\)$/, ' • $1');
+};
+
 const filteredActivityLogs = computed(() => {
-  // 1. Get database activity logs, filtering out database log_expense to avoid duplicates with actual expenses
-  let dbLogs = activityLogs.value.filter(log => log.action !== 'log_expense');
+  // 1. Get database activity logs, filtering out database log_expense (avoid duplicates) and create_order (keep only completed orders)
+  let dbLogs = activityLogs.value.filter(log => log.action !== 'log_expense' && log.action !== 'create_order');
   
   // 2. Map actual expense records dynamically to mock activity logs
   const mappedExpenses = expenses.value.map(e => ({
@@ -2566,7 +2613,7 @@ const filteredActivityLogs = computed(() => {
     branch_id: e.branch_id,
     user_id: e.staff_id,
     action: 'log_expense',
-    details: `บันทึกค่าใช้จ่าย หมวดหมู่ ${getExpenseCategoryLabel(e.category)} จำนวน ${e.amount} บาท${e.note ? ` (บันทึกเพิ่มเติม: ${e.note})` : ''}`,
+    details: `${getExpenseCategoryLabel(e.category)} • ฿${Number(e.amount || 0).toLocaleString()}${e.note ? ` (${e.note})` : ''}`,
     created_at: e.created_at,
     staff_name: e.staff_name || 'ผู้ดูแลระบบ'
   }));
@@ -2582,11 +2629,12 @@ const filteredActivityLogs = computed(() => {
     combined = combined.filter(log => {
       const act = log.action;
       if (filterAction.value === 'login') return act === 'login';
-      if (filterAction.value === 'sales') return act === 'complete_order' || act === 'create_order';
+      if (filterAction.value === 'sales') return act === 'complete_order';
       if (filterAction.value === 'cancel') return act === 'cancel_order';
-      if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
-      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
-      if (filterAction.value === 'credit') return act === 'staff_credit';
+      if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense' || act === 'reverse_expense';
+      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'adjust_raw_stock' || act === 'restock_stock' || act === 'restock_raw_stock' || act === 'fry_chicken' || act === 'reverse_stock_log';
+      if (filterAction.value === 'waste') return act === 'record_waste' || act === 'record_raw_waste';
+      if (filterAction.value === 'credit') return act === 'staff_credit' || act === 'staff_raw_credit';
       if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
       return true;
     });
@@ -3212,13 +3260,14 @@ const isFilterActionDropdownOpen = ref(false);
 const selectedFilterActionLabel = computed(() => {
   const filterLabels = {
     all: 'ทั้งหมด',
-    login: 'การลงชื่อเข้าใช้งาน (Login)',
-    sales: 'การขาย / ออกบิล (Sales)',
-    cancel: 'การยกเลิกบิล (Void)',
-    expenses: 'บันทึกค่าใช้จ่าย (Expenses)',
-    stock: 'ปรับปรุงยอด / ของเสีย (Stock & Waste)',
-    credit: 'เครดิตพนักงาน (Staff Credit)',
-    cash_drawer: 'การจัดการลิ้นชักเงินสด (Cash Drawer)'
+    login: 'เข้าสู่ระบบ',
+    sales: 'ขายสำเร็จ',
+    cancel: 'ยกเลิกบิล',
+    expenses: 'ค่าใช้จ่าย',
+    stock: 'ปรับสต็อก',
+    waste: 'ของเสีย',
+    credit: 'เครดิตพนักงาน',
+    cash_drawer: 'ลิ้นชักเงินสด'
   };
   return filterLabels[filterAction.value] || 'ทั้งหมด';
 });
@@ -3226,10 +3275,11 @@ const getFilterActionIcon = (action) => {
   const map = {
     all: 'fa-solid fa-folder-open',
     login: 'fa-solid fa-key',
-    sales: 'fa-solid fa-cart-shopping',
+    sales: 'fa-solid fa-circle-check',
     cancel: 'fa-solid fa-ban',
     expenses: 'fa-solid fa-wallet',
     stock: 'fa-solid fa-boxes-stacked',
+    waste: 'fa-solid fa-trash-can',
     credit: 'fa-solid fa-user-check',
     cash_drawer: 'fa-solid fa-cash-register'
   };
@@ -3917,8 +3967,15 @@ const getActionIconClass = (action) => {
     'complete_order': 'fa-solid fa-circle-check text-success',
     'cancel_order': 'fa-solid fa-ban text-danger',
     'adjust_stock': 'fa-solid fa-boxes-stacked text-accent',
+    'adjust_raw_stock': 'fa-solid fa-boxes-stacked text-accent',
+    'restock_stock': 'fa-solid fa-boxes-packing text-success',
+    'restock_raw_stock': 'fa-solid fa-boxes-packing text-success',
+    'fry_chicken': 'fa-solid fa-fire-burner text-warning',
+    'reverse_stock_log': 'fa-solid fa-rotate-left text-accent',
     'record_waste': 'fa-solid fa-trash-can text-danger',
+    'record_raw_waste': 'fa-solid fa-trash-can text-danger',
     'staff_credit': 'fa-solid fa-user-check text-warning',
+    'staff_raw_credit': 'fa-solid fa-user-check text-warning',
     'log_expense': 'fa-solid fa-wallet text-danger',
     'delete_expense': 'fa-solid fa-trash-can text-danger',
     'cash_opening_set': 'fa-solid fa-cash-register text-success',
@@ -4262,10 +4319,11 @@ select.reports-filter-control,
 .log-badge.login { background: rgba(255, 171, 43, 0.1); color: #f4a261; }
 .log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
 .log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); color: #e63946; }
-.log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); color: #e63946; }
-.log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
-.log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); color: #8b0313; }
-.log-badge.cash_opening_set, .log-badge.cash_audit { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
+.log-badge.log_expense, .log-badge.delete_expense, .log-badge.reverse_expense { background: rgba(173, 40, 30, 0.08); color: #e63946; }
+.log-badge.adjust_stock, .log-badge.adjust_raw_stock, .log-badge.restock_stock, .log-badge.restock_raw_stock, .log-badge.fry_chicken, .log-badge.reverse_stock_log { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
+.log-badge.record_waste, .log-badge.record_raw_waste { background: rgba(173, 40, 30, 0.1); color: #e63946; }
+.log-badge.staff_credit, .log-badge.staff_raw_credit { background: rgba(139, 3, 19, 0.08); color: #8b0313; }
+.log-badge.cash_opening_set, .log-badge.cash_audit, .log-badge.setting_change { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
 
 .log-content-wrapper {
   flex: 1;
@@ -4273,12 +4331,19 @@ select.reports-filter-control,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
+}
+
+.log-title {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .log-details {
-  font-size: var(--font-sm);
-  color: var(--text-primary);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
   font-weight: 500;
   line-height: 1.4;
   word-break: break-word;

@@ -561,6 +561,30 @@ ul, ol { list-style: none; }
   font-weight: 700 !important;
   color: var(--text-secondary) !important;
   padding: 0 12px;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .pagination-bar {
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+  .pagination-btn {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    gap: 6px !important;
+  }
+  .pagination-info {
+    padding: 0 6px !important;
+  }
+  .pagination-info.is-multi-digit {
+    font-size: 12px !important;
+    padding: 0 4px !important;
+    letter-spacing: -0.2px;
+  }
 }
 /* --- Buttons end --- */
 

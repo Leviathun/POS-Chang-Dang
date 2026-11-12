@@ -565,7 +565,7 @@
         >
           <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
         </button>
-        <span class="pagination-info">
+        <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalLedgerPages >= 10 }">
           หน้า {{ ledgerCurrentPage }} จาก {{ totalLedgerPages }}
         </span>
         <button 
