@@ -4755,8 +4755,7 @@ select.reports-filter-control,
   font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
-  line-height: 1.55;
-  white-space: pre-line;
+  line-height: 1.4;
   word-break: break-word;
 }
 
@@ -4784,6 +4783,7 @@ select.reports-filter-control,
   .log-details {
     font-size: 0.8125rem;
     line-height: 1.6;
+    white-space: pre-line;
   }
 
   .log-meta {
