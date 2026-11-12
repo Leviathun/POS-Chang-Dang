@@ -2949,10 +2949,13 @@ watch(stockReasonFilter, () => {
 const isLinkedRecipeCookPair = (deductLog, readyLog) => {
   if (!deductLog || !readyLog || deductLog.id === readyLog.id) return false;
   const dNote = String(deductLog.note || '');
-  if (!dNote.includes('หักอัตโนมัติจากการ')) return false;
+  const m = dNote.match(/หักอัตโนมัติจากการ(?:เพิ่มสต็อก|เติมสต็อก|ปรับปรุงสต็อก)\s+(.+?)\s+\+([\d,.]+)\s*ชิ้น/);
+  if (!m) return false;
+  const targetName = m[1].trim();
+  const targetQty = Number(m[2].replace(/,/g, ''));
   const rName = String(readyLog.item_name || '').trim();
-  if (!rName || Number(readyLog.change_qty) <= 0) return false;
-  if (!dNote.includes(rName)) return false;
+  if (!rName || rName !== targetName || Number(readyLog.change_qty) <= 0) return false;
+  if (!isNaN(targetQty) && Math.abs(Number(readyLog.change_qty) - targetQty) > 0.01) return false;
   const t1 = new Date(deductLog.created_at).getTime();
   const t2 = new Date(readyLog.created_at).getTime();
   return Math.abs(t1 - t2) <= 120000;
@@ -2966,9 +2969,13 @@ const getStockLogCategory = (log) => {
   if (log.reason === 'staff_benefit') return 'staff_benefit';
   if (log.reason === 'cancel_restore') return 'cancel_restore';
   if (log.reason === 'sale') return 'sale';
+  const itemName = String(log.item_name || '').trim();
+  const pool = Array.isArray(allStockHistoryLogs.value) && allStockHistoryLogs.value.length > 0
+    ? allStockHistoryLogs.value
+    : (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : []);
   const isLinkedTarget = !isRaw && Number(log.change_qty) > 0 && !note.includes('ครัวกลาง') && (
-    ['แร็ปไก่', 'เปาทอด', 'เปาปิ้ง'].includes(String(log.item_name || '').trim()) ||
-    (Array.isArray(stockHistoryLogs.value) && stockHistoryLogs.value.some(other => isLinkedRecipeCookPair(other, log)))
+    itemName.includes('แร็ป') || itemName.includes('เปาทอด') || itemName.includes('เปาปิ้ง') ||
+    pool.some(other => isLinkedRecipeCookPair(other, log))
   );
   if (log.reason === 'adjustment') {
     if (note.includes('หักอัตโนมัติจากการ') || (isRaw && Number(log.change_qty) < 0 && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('หัก')))) {
@@ -3002,15 +3009,38 @@ const isReportCookPair = (topLog, bottomLog) => {
 };
 
 const orderStockLogsWithCookPairs = (logs) => {
-  if (!Array.isArray(logs) || logs.length < 2) return logs;
+  if (!Array.isArray(logs) || logs.length === 0) return logs;
+  const pool = Array.isArray(allStockHistoryLogs.value) && allStockHistoryLogs.value.length > 0
+    ? allStockHistoryLogs.value
+    : (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : logs);
+  const expanded = [...logs];
+  const expandedIds = new Set(expanded.map(l => l?.id));
+  for (const item of logs) {
+    if (!item) continue;
+    const cat = getStockLogCategory(item);
+    if (cat === 'cook_deduct') {
+      const partner = pool.find(other => other && !expandedIds.has(other.id) && isReportCookPair(item, other));
+      if (partner) {
+        expandedIds.add(partner.id);
+        expanded.push(partner);
+      }
+    } else if (cat === 'cook_ready') {
+      const partner = pool.find(other => other && !expandedIds.has(other.id) && isReportCookPair(other, item));
+      if (partner) {
+        expandedIds.add(partner.id);
+        expanded.push(partner);
+      }
+    }
+  }
+  if (expanded.length < 2) return expanded;
   const usedIds = new Set();
   const result = [];
-  for (let i = 0; i < logs.length; i++) {
-    const current = logs[i];
+  for (let i = 0; i < expanded.length; i++) {
+    const current = expanded[i];
     if (!current || usedIds.has(current.id)) continue;
     const cat = getStockLogCategory(current);
     if (cat === 'cook_deduct') {
-      const partner = logs.find(other => !usedIds.has(other.id) && isReportCookPair(current, other));
+      const partner = expanded.find(other => !usedIds.has(other.id) && isReportCookPair(current, other));
       usedIds.add(current.id);
       result.push(current);
       if (partner) {
@@ -3018,7 +3048,7 @@ const orderStockLogsWithCookPairs = (logs) => {
         result.push(partner);
       }
     } else if (cat === 'cook_ready') {
-      const partner = logs.find(other => !usedIds.has(other.id) && isReportCookPair(other, current));
+      const partner = expanded.find(other => !usedIds.has(other.id) && isReportCookPair(other, current));
       if (partner) {
         usedIds.add(partner.id);
         usedIds.add(current.id);
@@ -3265,7 +3295,17 @@ const loadStockHistoryLogs = async () => {
       const res = await api.stock.getLogs(selectedReportsStockItemId.value, params);
       const rawLogs = res.data?.logs || res.data || [];
       const itemName = selectedStockItemName.value;
-      logs = Array.isArray(rawLogs) ? rawLogs.map(l => ({ ...l, item_name: l.item_name || itemName })) : [];
+      const baseLogs = Array.isArray(rawLogs) ? rawLogs.map(l => ({ ...l, item_name: l.item_name || itemName })) : [];
+      const includedIds = new Set(baseLogs.map(l => l.id));
+      const partnerLogs = [];
+      for (const bLog of baseLogs) {
+        const partner = allLogs.find(other => other && !includedIds.has(other.id) && (isLinkedRecipeCookPair(bLog, other) || isLinkedRecipeCookPair(other, bLog)));
+        if (partner) {
+          includedIds.add(partner.id);
+          partnerLogs.push(partner);
+        }
+      }
+      logs = [...baseLogs, ...partnerLogs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || b.id - a.id);
     } else {
       logs = allLogs;
     }
