@@ -3380,14 +3380,23 @@ const totalStaffCreditValue = computed(() => {
   }
 });
 
+const stockRestockReversalLogs = computed(() =>
+  Array.isArray(stockHistoryLogs.value)
+    ? stockHistoryLogs.value.filter(l => String(l?.note || '').includes('ปรับลดคืนวัตถุดิบจากการยกเลิกรายจ่าย'))
+    : []
+);
 const stockRestockCount = computed(() => Array.isArray(stockRestockLogs.value) ? stockRestockLogs.value.length : 0);
 const stockRestockTotalQty = computed(() => {
   if (!Array.isArray(stockRestockLogs.value)) return 0;
-  return stockRestockLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
+  const added = stockRestockLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
+  const reversed = stockRestockReversalLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
+  return Math.max(0, added + reversed);
 });
 const totalRestockValue = computed(() => {
   if (!Array.isArray(stockRestockLogs.value)) return 0;
-  return stockRestockLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+  const added = stockRestockLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+  const reversed = stockRestockReversalLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+  return Math.max(0, added - reversed);
 });
 
 const stockLogsCardRef = ref(null);
