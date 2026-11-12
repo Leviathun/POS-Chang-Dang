@@ -43,9 +43,8 @@
       </button>
     </div>
 
-    <!-- Date selector card (Shared Global DatePeriodFilter, hidden on 'top_menus' tab only) -->
+    <!-- Date selector card (Shared Global DatePeriodFilter across all tabs) -->
     <DatePeriodFilter
-      v-if="activeTab !== 'top_menus'"
       v-model:period-mode="periodMode"
       v-model:selected-date="selectedDate"
       v-model:selected-month="selectedMonth"
@@ -977,75 +976,37 @@
       <!-- Tab: Ranked Menus (อันดับสินค้าขายดี) -->
       <div v-if="activeTab === 'top_menus' && isAdminUser" class="flex flex-col gap-lg">
         
-        <!-- Filter Card: Period Selector (Pills) & Branch Selector -->
-        <div class="card p-md">
-          <div class="flex flex-col gap-md">
-            <!-- Period Mode Tabs (Matching Daily/Monthly/Yearly design) -->
-            <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-              <button 
-                type="button"
-                class="btn btn-secondary btn-sm" 
-                :class="{ 'active': topItemsDays === 1 }"
-                @click="setTopItemsDays(1)"
-              >
-                <i class="fa-solid fa-calendar-day"></i> วันนี้
-              </button>
-              <button 
-                type="button"
-                class="btn btn-secondary btn-sm" 
-                :class="{ 'active': topItemsDays === 7 }"
-                @click="setTopItemsDays(7)"
-              >
-                <i class="fa-solid fa-calendar-week"></i> 7 วัน
-              </button>
-              <button 
-                type="button"
-                class="btn btn-secondary btn-sm" 
-                :class="{ 'active': topItemsDays === 30 }"
-                @click="setTopItemsDays(30)"
-              >
-                <i class="fa-solid fa-calendar-days"></i> 30 วัน
-              </button>
+        <!-- Summary Overview Card -->
+        <div class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color); flex-wrap: wrap; gap: 8px;">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
+              <i class="fa-solid fa-fire"></i>
+              <span>สรุปภาพรวมอันดับสินค้าขายดี ({{ summaryCardTitle.replace('สรุปยอด', '') }})</span>
             </div>
+            <span class="text-xs text-secondary font-medium tabular-nums">
+              แสดงทั้งหมด {{ topItems.length }} รายการ
+            </span>
+          </div>
 
-            <!-- Title & Subtitle + Branch Selector if Admin -->
-            <div class="flex flex-between align-center flex-wrap gap-md">
-              <div>
-                <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">อันดับสินค้าขายดี</span>
-                <span style="font-size: var(--font-xs); color: var(--text-secondary); font-weight: normal;">สถิติยอดขายและจำนวนชิ้นจากการขายจริง (แสดงทั้งหมด {{ topItems.length }} รายการ)</span>
-              </div>
-
-              <!-- Branch Selector -->
-              <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
-                <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
-                <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
-                  <div 
-                    class="custom-select-trigger reports-filter-control" 
-                    :class="{ 'active': isBranchDropdownOpen }" 
-                    @click="toggleBranchDropdown"
-                    style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
-                  >
-                    <span class="custom-select-text">{{ selectedBranchName }}</span>
-                  </div>
-                  <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                    <div 
-                      class="custom-select-option" 
-                      :class="{ 'selected': selectedBranchId === null }" 
-                      @click="selectBranch(null)"
-                    >
-                      ทุกสาขา
-                    </div>
-                    <div 
-                      v-for="b in branches" 
-                      :key="b.id" 
-                      class="custom-select-option" 
-                      :class="{ 'selected': selectedBranchId === b.id }" 
-                      @click="selectBranch(b.id)"
-                    >
-                      {{ b.name }}
-                    </div>
-                  </div>
-                </div>
+          <div class="sales-clean-summary-grid">
+            <div class="sales-clean-stat">
+              <span class="stat-clean-label">ยอดขายรวมทุกเมนู</span>
+              <span class="stat-clean-val text-primary tabular-nums">{{ formatCurrency(topItemsTotalSales) }}</span>
+            </div>
+            <div class="sales-clean-stat border-sides">
+              <span class="stat-clean-label">จำนวนเมนูที่ขายได้</span>
+              <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
+                {{ topItems.length }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">รายการ</small>
+              </span>
+            </div>
+            <div class="sales-clean-stat">
+              <span class="stat-clean-label">เมนูทำเงินสูงสุด</span>
+              <span class="stat-clean-val tabular-nums" style="color: #b45309; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ topRevenueItem ? topRevenueItem.item_name : '-' }}
+              </span>
+              <div v-if="topRevenueItem" class="flex align-center gap-xs text-xs tabular-nums" style="margin-top: 4px; color: var(--text-secondary);">
+                <span style="font-weight: 600; color: var(--primary);">{{ formatCurrency(topRevenueItem.total_sales) }}</span>
+                <span>({{ getTopItemSalesPct(topRevenueItem.total_sales) }}% ของยอดรวม)</span>
               </div>
             </div>
           </div>
@@ -1053,14 +1014,14 @@
 
         <!-- Skeleton Loading for top items -->
         <div v-if="topItemsLoading" class="ranked-items-grid">
-          <div v-for="n in 4" :key="'sk-top-' + n" class="ranked-item-card">
+          <div v-for="n in 6" :key="'sk-top-' + n" class="ranked-item-card">
             <div class="ranked-card-header">
               <div class="skeleton" style="height: 24px; width: 85px; border-radius: 999px;"></div>
               <div class="skeleton" style="height: 20px; width: 55px; border-radius: 999px;"></div>
             </div>
-            <div class="skeleton my-sm" style="height: 18px; width: 70%; border-radius: 4px;"></div>
-            <div class="skeleton mb-xs" style="height: 14px; width: 50%; border-radius: 4px;"></div>
-            <div class="skeleton" style="height: 8px; width: 100%; border-radius: 999px;"></div>
+            <div class="skeleton my-sm" style="height: 140px; width: 100%; border-radius: 8px;"></div>
+            <div class="skeleton mb-xs" style="height: 18px; width: 70%; border-radius: 4px;"></div>
+            <div class="skeleton" style="height: 44px; width: 100%; border-radius: 8px;"></div>
           </div>
         </div>
 
@@ -1070,13 +1031,12 @@
           ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
 
-        <!-- Grid Cards of Ranked Items -->
+        <!-- Uniform Grid Cards of Ranked Items (Equal Size for Every Rank) -->
         <div v-else class="ranked-items-grid">
           <div 
             v-for="(item, index) in topItems" 
             :key="item.menu_item_id || item.item_name"
             class="ranked-item-card"
-            :class="{ 'ranked-item-card-first': index === 0 }"
           >
             <!-- Card Header: Rank Badge & Category/Type Tag -->
             <div class="ranked-card-header">
@@ -1090,48 +1050,8 @@
               <span v-else class="badge-type main">ทั่วไป</span>
             </div>
 
-            <!-- Rank 1 Special Layout (Image Left, Title + Stacked Boxes Right) -->
-            <div v-if="index === 0" class="ranked-card-first-body">
-              <!-- Left: Image Full Height -->
-              <div class="ranked-image-wrapper-first">
-                <img 
-                  v-if="item.image_url" 
-                  :src="item.image_url" 
-                  :alt="item.item_name" 
-                  class="ranked-img"
-                  @error="item.image_url = null"
-                />
-                <div v-else class="ranked-img-placeholder">
-                  <i class="fa-solid fa-utensils"></i>
-                </div>
-              </div>
-
-              <!-- Right: Details & 2 Stacked Full-Width Boxes -->
-              <div class="ranked-details-first">
-                <h3 class="ranked-item-title-first" :title="item.item_name">{{ item.item_name }}</h3>
-                
-                <div class="ranked-stats-first-stacked">
-                  <!-- Box 1: จำนวนขาย (บน) -->
-                  <div class="ranked-stat-box-first">
-                    <span class="stat-label">จำนวนขาย</span>
-                    <div class="stat-value-lg font-bold text-primary">
-                      {{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}
-                      <span class="stat-unit">{{ item.unit || 'ชิ้น' }}</span>
-                    </div>
-                  </div>
-                  <!-- Box 2: ยอดขายรวม (ล่าง) -->
-                  <div class="ranked-stat-box-first">
-                    <span class="stat-label">ยอดขายรวม</span>
-                    <div class="stat-value-lg font-bold text-accent">
-                      {{ formatCurrency(item.total_sales) }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Rank 2..N Single Column Card Layout -->
-            <div v-else class="ranked-card-single-body">
+            <!-- Uniform Single Column Card Body for All Ranks -->
+            <div class="ranked-card-single-body">
               <!-- Product Image -->
               <div class="ranked-image-wrapper">
                 <img 
@@ -1153,16 +1073,34 @@
               <div class="ranked-stats-2boxes">
                 <div class="ranked-stat-box-half">
                   <span class="stat-label">จำนวนขาย</span>
-                  <div class="stat-value font-bold text-primary">
+                  <div class="stat-value font-bold text-primary tabular-nums">
                     {{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}
                     <span class="stat-unit">{{ item.unit || 'ชิ้น' }}</span>
                   </div>
                 </div>
                 <div class="ranked-stat-box-half">
                   <span class="stat-label">ยอดขายรวม</span>
-                  <div class="stat-value font-bold text-accent">
+                  <div class="stat-value font-bold text-accent tabular-nums">
                     {{ formatCurrency(item.total_sales) }}
                   </div>
+                </div>
+              </div>
+
+              <!-- Sales Share Percentage Bar -->
+              <div style="margin-top: 8px;">
+                <div class="flex flex-between align-center text-xs tabular-nums" style="margin-bottom: 4px; color: var(--text-secondary);">
+                  <span>สัดส่วนยอดขาย</span>
+                  <span style="font-weight: 700; color: var(--primary);">{{ getTopItemSalesPct(item.total_sales) }}%</span>
+                </div>
+                <div style="height: 6px; width: 100%; background: var(--bg-secondary); border-radius: 999px; overflow: hidden;">
+                  <div
+                    :style="{
+                      width: Math.min(100, Math.max(2, Number(getTopItemSalesPct(item.total_sales)))) + '%',
+                      height: '100%',
+                      background: index === 0 ? 'linear-gradient(90deg, #d97706, #f59e0b)' : 'var(--primary)',
+                      borderRadius: '999px'
+                    }"
+                  ></div>
                 </div>
               </div>
             </div>
@@ -2298,7 +2236,7 @@ const applyDataFromStore = () => {
     };
   }
   
-  if (store.reportTopItems && topItemsDays.value === 7) {
+  if (store.reportTopItems && !topItems.value.length) {
     topItems.value = store.reportTopItems.map(item => ({
       ...item,
       total_sales: item.total_revenue || 0
@@ -2454,6 +2392,9 @@ watch(historyStatusFilter, () => {
 
 watch([historyStaffFilter, historyPaymentFilter, customStartTime, customEndTime], () => {
   triggerHistoryFilterSkeleton();
+  if (activeTab.value === 'top_menus' && periodMode.value === 'daily') {
+    loadTopItems();
+  }
 });
 
 const loading = ref(true);
@@ -2482,13 +2423,20 @@ const topItemsDays = ref(7); // default 7 days
 const topItemsCache = ref({});
 const topItemsLoading = ref(false);
 
-const setTopItemsDays = (days) => {
-  topItemsDays.value = days;
-  const cacheKey = `${selectedBranchId.value || 'all'}_${days}`;
-  if (topItemsCache.value[cacheKey]) {
-    topItems.value = topItemsCache.value[cacheKey];
-  }
-  loadTopItems();
+const topItemsTotalSales = computed(() => {
+  return topItems.value.reduce((sum, item) => sum + (Number(item.total_sales) || 0), 0);
+});
+
+const topRevenueItem = computed(() => {
+  if (!topItems.value || topItems.value.length === 0) return null;
+  return [...topItems.value].sort((a, b) => (Number(b.total_sales) || 0) - (Number(a.total_sales) || 0))[0];
+});
+
+const getTopItemSalesPct = (sales) => {
+  const total = topItemsTotalSales.value;
+  if (!total || total <= 0) return 0;
+  const pct = ((Number(sales) || 0) / total) * 100;
+  return pct >= 10 ? Math.round(pct) : Number(pct.toFixed(1));
 };
 const expenses = ref([]);
 const activityLogs = ref([]);
@@ -3562,6 +3510,9 @@ const loadReportData = async () => {
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
     loading.value = false;
+    if (isAdmin()) {
+      loadTopItems().catch(e => console.warn('Background top items load error:', e));
+    }
     
     if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
       fetchCashDrawerSummary();
@@ -3654,6 +3605,7 @@ const loadReportData = async () => {
 
     // สั่งโหลดข้อมูลตารางประวัติอื่นๆ เบื้องหลังแบบขนานโดยไม่ขัดจังหวะผู้ใช้ (Background Async Load)
     if (isAdmin()) {
+      loadTopItems().catch(e => console.warn('Background top items load error:', e));
       // โหลดค่าใช้จ่ายให้เสร็จก่อนรันสมุดรายวัน เพื่อหลีกเลี่ยงการเรียก API รายจ่ายซ้ำซ้อน
       (async () => {
         await loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
@@ -3678,24 +3630,24 @@ const loadReportData = async () => {
 };
 
 const loadTopItems = async () => {
-  const cacheKey = `${selectedBranchId.value || 'all'}_${topItemsDays.value}`;
+  const periodParams = {};
+  if (periodMode.value === 'daily') {
+    periodParams.date = selectedDate.value;
+    if (customStartTime.value !== '00.00' || customEndTime.value !== '23.59') {
+      periodParams.start_time = customStartTime.value;
+      periodParams.end_time = customEndTime.value;
+    }
+  } else if (periodMode.value === 'monthly') {
+    periodParams.month = selectedMonth.value;
+  } else {
+    periodParams.year = selectedYear.value;
+  }
+
+  const cacheKey = `${selectedBranchId.value || 'all'}_${periodMode.value}_${periodParams.date || periodParams.month || periodParams.year}_${periodParams.start_time || ''}_${periodParams.end_time || ''}`;
   topItemsLoading.value = true;
   
-  if (topItemsDays.value === 7 && isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value && store.reportTopItems) {
-    const mapped = store.reportTopItems.map(item => ({
-      ...item,
-      total_sales: item.total_revenue || 0
-    }));
-    topItems.value = mapped;
-    topItemsCache.value[cacheKey] = mapped;
-    setTimeout(() => {
-      topItemsLoading.value = false;
-    }, 180);
-    return;
-  }
-  
   try {
-    const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value);
+    const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value, periodParams);
     if (res.success && Array.isArray(res.data)) {
       const mapped = res.data.map(item => ({
         ...item,

@@ -359,16 +359,37 @@ async function getYearlyReport(year, branchId = null) {
  * สินค้าขายดี
  * @param {number} days - จำนวนวันย้อนหลัง
  * @param {number} [branchId] - รหัสสาขา
+ * @param {object} [periodOpts] - ตัวเลือกช่วงเวลา { date, month, year, start_time, end_time }
  */
-async function getTopItems(days = 7, branchId = null) {
+async function getTopItems(days = 7, branchId = null, periodOpts = {}) {
   const db = getDb();
   let branchFilter = '';
-  const offsetDays = days - 1;
-  const params = [`-${offsetDays} days`];
+  const params = [];
 
   if (branchId) {
     branchFilter = ' AND o.branch_id = ?';
-    params.unshift(branchId);
+    params.push(branchId);
+  }
+
+  let dateFilterSql = '';
+  if (periodOpts.date) {
+    const startTime = periodOpts.start_time ? periodOpts.start_time.replace('.', ':') + ':00' : '00:00:00';
+    const endTime = periodOpts.end_time ? periodOpts.end_time.replace('.', ':') + ':59' : '23:59:59';
+    dateFilterSql = ' AND o.created_at >= ? AND o.created_at <= ?';
+    params.push(`${periodOpts.date} ${startTime}`, `${periodOpts.date} ${endTime}`);
+  } else if (periodOpts.month) {
+    const [y, m] = periodOpts.month.split('-').map(Number);
+    const nextMonthDate = new Date(Date.UTC(y, m, 1));
+    const endStr = nextMonthDate.toISOString().split('T')[0] + ' 00:00:00';
+    dateFilterSql = ' AND o.created_at >= ? AND o.created_at < ?';
+    params.push(`${periodOpts.month}-01 00:00:00`, endStr);
+  } else if (periodOpts.year) {
+    dateFilterSql = ' AND o.created_at >= ? AND o.created_at < ?';
+    params.push(`${periodOpts.year}-01-01 00:00:00`, `${Number(periodOpts.year) + 1}-01-01 00:00:00`);
+  } else {
+    const offsetDays = (Number(days) || 7) - 1;
+    dateFilterSql = " AND o.created_at >= datetime('now', 'localtime', 'start of day', ?)";
+    params.push(`-${offsetDays} days`);
   }
 
   const sql = `
@@ -382,7 +403,7 @@ async function getTopItems(days = 7, branchId = null) {
     JOIN orders o ON o.id = oi.order_id
     WHERE o.status = 'completed'
       ${branchFilter}
-      AND o.created_at >= datetime('now', 'localtime', 'start of day', ?)
+      ${dateFilterSql}
   `;
 
   const allOrderItems = await db.prepare(sql).all(params);
