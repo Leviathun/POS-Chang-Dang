@@ -1343,10 +1343,18 @@
       <!-- Summary Stat Cards for Stock History (Waste, Credit, Restock) -->
       <div class="stock-summary-cards-grid gap-md">
         <!-- Waste Summary Card -->
-        <div class="card p-md" style="position:relative; overflow:hidden; border-left: 4px solid #dc3545; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">
+        <div 
+          class="card p-md sales-kpi-card" 
+          style="position: relative; overflow: hidden; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #dc2626; cursor: pointer;"
+          :style="stockReasonFilter === 'waste' ? 'border-color: #dc2626; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.12);' : ''"
+          @click="stockReasonFilter = stockReasonFilter === 'waste' ? 'all' : 'waste'"
+        >
           <div class="flex flex-between align-center mb-xs">
-            <span class="text-sm font-bold" style="color: var(--text-secondary);">🗑️ สินค้าเสีย / ทิ้ง</span>
-            <span class="badge badge-danger" style="font-size: var(--font-xxs);">{{ stockWasteCount }} รายการ</span>
+            <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
+              <span class="sales-kpi-icon-badge" style="background: rgba(220, 38, 38, 0.1); color: #dc2626;"><i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i></span>
+              สินค้าเสีย / ทิ้ง
+            </span>
+            <span class="badge badge-danger tabular-nums" style="font-size: var(--font-xxs);">{{ stockWasteCount }} รายการ</span>
           </div>
           <template v-if="loading || stockHistoryLoading">
             <div class="skeleton my-xs" style="height: 28px; width: 100px; border-radius: 6px;"></div>
@@ -1362,10 +1370,18 @@
         </div>
 
         <!-- Staff Credit Summary Card -->
-        <div class="card p-md" style="position:relative; overflow:hidden; border-left: 4px solid #fd7e14; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); cursor: pointer;" @click="stockReasonFilter = stockReasonFilter === 'staff_benefit' ? 'all' : 'staff_benefit'">
+        <div 
+          class="card p-md sales-kpi-card" 
+          style="position: relative; overflow: hidden; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #ea580c; cursor: pointer;"
+          :style="stockReasonFilter === 'staff_benefit' ? 'border-color: #ea580c; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.12);' : ''"
+          @click="stockReasonFilter = stockReasonFilter === 'staff_benefit' ? 'all' : 'staff_benefit'"
+        >
           <div class="flex flex-between align-center mb-xs">
-            <span class="text-sm font-bold" style="color: var(--text-secondary);">🍴 เครดิตพนักงาน / สวัสดิการ</span>
-            <span class="badge" style="background: rgba(253, 126, 20, 0.12); color: #fd7e14; font-size: var(--font-xxs);">{{ stockStaffCreditCount }} รายการ</span>
+            <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
+              <span class="sales-kpi-icon-badge" style="background: rgba(234, 88, 12, 0.1); color: #ea580c;"><i class="fa-solid fa-utensils" style="font-size: 0.75rem;"></i></span>
+              เครดิตพนักงาน / สวัสดิการ
+            </span>
+            <span class="badge tabular-nums" style="background: rgba(234, 88, 12, 0.12); color: #ea580c; font-size: var(--font-xxs);">{{ stockStaffCreditCount }} รายการ</span>
           </div>
           <template v-if="loading || stockHistoryLoading">
             <div class="skeleton my-xs" style="height: 28px; width: 110px; border-radius: 6px;"></div>
@@ -1373,21 +1389,29 @@
           </template>
           <template v-else>
             <div class="flex align-baseline gap-sm tabular-nums">
-              <div class="text-2xl font-bold" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
+              <div class="text-2xl font-bold" style="color: #ea580c;">{{ stockStaffCreditTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
               <div v-if="totalStaffCreditValue > 0" class="text-base font-bold text-danger">({{ formatMoney(totalStaffCreditValue) }} ฿)</div>
             </div>
             <div class="text-xs text-secondary mt-xs flex flex-between align-center" style="color: var(--text-tertiary);">
               <span class="truncate"><i class="fa-solid fa-user-check text-muted mr-xs"></i> {{ stockStaffCreditSummaryText }}</span>
-              <span class="text-xs font-bold" style="color: #fd7e14; white-space: nowrap;">ดูสรุปรายคน <i class="fa-solid fa-chevron-right ml-xs"></i></span>
+              <span class="text-xs font-bold" style="color: #ea580c; white-space: nowrap;">ดูสรุปรายคน <i class="fa-solid fa-chevron-right ml-xs"></i></span>
             </div>
           </template>
         </div>
 
         <!-- Restock Summary Card -->
-        <div class="card p-md" style="position:relative; overflow:hidden; border-left: 4px solid #28a745; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">
+        <div 
+          class="card p-md sales-kpi-card" 
+          style="position: relative; overflow: hidden; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #10b981; cursor: pointer;"
+          :style="stockReasonFilter === 'restock' ? 'border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);' : ''"
+          @click="stockReasonFilter = stockReasonFilter === 'restock' ? 'all' : 'restock'"
+        >
           <div class="flex flex-between align-center mb-xs">
-            <span class="text-sm font-bold" style="color: var(--text-secondary);">📦 การเติมสต็อกรวม</span>
-            <span class="badge badge-success" style="font-size: var(--font-xxs);">{{ stockRestockCount }} รายการ</span>
+            <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
+              <span class="sales-kpi-icon-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-boxes-packing" style="font-size: 0.75rem;"></i></span>
+              การเติมสต็อกรวม
+            </span>
+            <span class="badge badge-success tabular-nums" style="font-size: var(--font-xxs);">{{ stockRestockCount }} รายการ</span>
           </div>
           <template v-if="loading || stockHistoryLoading">
             <div class="skeleton my-xs" style="height: 28px; width: 100px; border-radius: 6px;"></div>
@@ -1403,16 +1427,52 @@
         </div>
       </div>
 
-      <!-- Stock Logs Main Card -->
-      <div ref="stockLogsCardRef" class="card p-md">
-        <div class="card-header-clean mb-md" style="padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-color);">
-          <div class="card-title card-title-clean">
-            <i class="fa-solid fa-boxes-stacked mr-xs"></i> ประวัติสต็อกและการปรับปรุง
+      <!-- Standalone Filter Card for Stock History -->
+      <div class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+        <div class="flex flex-between align-center flex-wrap gap-md">
+          <!-- Quick Reason Filter Pills -->
+          <div class="flex flex-wrap align-center gap-xs">
+            <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-right: 4px;">ประเภท:</span>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active': stockReasonFilter === 'all' }" 
+              @click="stockReasonFilter = 'all'"
+            >
+              ทั้งหมด ({{ stockHistoryLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-success': stockReasonFilter === 'restock' }" 
+              @click="stockReasonFilter = 'restock'"
+            >
+              เติมสต็อก ({{ stockRestockCount }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active': stockReasonFilter === 'adjustment' }" 
+              @click="stockReasonFilter = 'adjustment'"
+            >
+              ปรับปรุงยอด ({{ stockAdjustmentLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-danger': stockReasonFilter === 'waste' }" 
+              @click="stockReasonFilter = 'waste'"
+            >
+              ของเสีย/ทิ้ง ({{ stockWasteCount }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-warning': stockReasonFilter === 'staff_benefit' }" 
+              @click="stockReasonFilter = 'staff_benefit'"
+            >
+              เครดิตพนักงาน ({{ stockStaffCreditCount }})
+            </button>
           </div>
 
           <!-- Menu Item Filter -->
           <div class="flex align-center gap-xs">
-            <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">เลือกสินค้า:</span>
+            <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">สินค้า:</span>
             <div class="custom-select-wrapper" style="width: 220px;" @click.stop>
               <div 
                 class="custom-select-trigger" 
@@ -1424,14 +1484,14 @@
                   {{ selectedStockItemName }}
                 </span>
               </div>
-              <div v-if="isStockItemDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 250px; overflow-y: auto; z-index:1001;">
+              <div v-if="isStockItemDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 250px; overflow-y: auto; z-index: 1001;">
                 <div 
                   class="custom-select-option" 
                   :class="{ 'selected': selectedReportsStockItemId === 'all' }" 
                   @click="selectReportsStockItem({ id: 'all', name: 'สินค้าทั้งหมด (รวมทั้งร้าน)' })" 
                   style="padding: 6px 12px; font-size: var(--font-sm); font-weight: bold; border-bottom: 1px dashed var(--border-color);"
                 >
-                  📦 สินค้าทั้งหมด (รวมทั้งร้าน)
+                  สินค้าทั้งหมด (รวมทั้งร้าน)
                 </div>
                 <div 
                   v-for="item in reportsStockItems" 
@@ -1447,130 +1507,69 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Quick Reason Filter Pills -->
-        <div class="flex flex-wrap align-center gap-xs mb-md" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed var(--border-color);">
-          <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-right: 4px;">กรองกิจกรรม:</span>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active': stockReasonFilter === 'all' }" 
-            @click="stockReasonFilter = 'all'"
-          >
-            ทั้งหมด ({{ stockHistoryLogs.length }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active-danger': stockReasonFilter === 'waste' }" 
-            @click="stockReasonFilter = 'waste'"
-          >
-            <i class="fa-solid fa-trash-can"></i> ของเสีย/ทิ้ง ({{ stockWasteCount }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active-warning': stockReasonFilter === 'staff_benefit' }" 
-            @click="stockReasonFilter = 'staff_benefit'"
-          >
-            <i class="fa-solid fa-utensils"></i> เครดิตพนักงาน ({{ stockStaffCreditCount }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active-success': stockReasonFilter === 'restock' }" 
-            @click="stockReasonFilter = 'restock'"
-          >
-            <i class="fa-solid fa-boxes-packing"></i> เติมสต็อก ({{ stockRestockCount }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active': stockReasonFilter === 'adjustment' }" 
-            @click="stockReasonFilter = 'adjustment'"
-          >
-            <i class="fa-solid fa-sliders"></i> ปรับปรุงยอด ({{ stockAdjustmentLogs.length }})
-          </button>
-        </div>
-
-        <!-- Per-Staff Credit Breakdown Table (Visible when staff_benefit filter active) -->
-        <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md mb-md" style="background: rgba(253, 126, 20, 0.03); border: 1px solid rgba(253, 126, 20, 0.25); border-radius: var(--radius-md);">
-          <div class="flex flex-between align-center mb-sm flex-wrap gap-xs">
-            <div class="font-bold text-sm flex align-center gap-xs" style="color: #fd7e14;">
-              <i class="fa-solid fa-users-viewfinder"></i> สรุปเครดิตพนักงานรายคน
-            </div>
-            <div class="text-xs font-bold" style="color: var(--text-secondary);">
-              รวม: <span class="font-bold mr-xs" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} ชิ้น</span>
-              <span v-if="totalStaffCreditValue > 0">| <span class="text-danger font-bold">{{ formatMoney(totalStaffCreditValue) }} ฿</span></span>
-            </div>
+      <!-- Per-Staff Credit Breakdown Card (Visible when staff_benefit filter active) -->
+      <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md" style="background: #ffffff; border: 1.5px solid rgba(234, 88, 12, 0.35); border-radius: var(--radius-md);">
+        <div class="flex flex-between align-center mb-sm flex-wrap gap-xs">
+          <div class="font-bold text-sm flex align-center gap-xs" style="color: #ea580c;">
+            <i class="fa-solid fa-users-viewfinder"></i> สรุปเครดิตพนักงานรายคน
           </div>
-
-          <!-- Desktop Table (Desktop Only) -->
-          <div class="hide-mobile" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-primary);">
-            <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-xs);">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(253, 126, 20, 0.08);">
-                  <th style="padding: 8px 12px; text-align: left;">พนักงาน</th>
-                  <th style="padding: 8px 12px; text-align: center;">จำนวนครั้ง</th>
-                  <th style="padding: 8px 12px; text-align: center;">จำนวนชิ้น</th>
-                  <th style="padding: 8px 12px; text-align: right;">มูลค่า (บาท)</th>
-                  <th style="padding: 8px 12px; text-align: left;">เมนูที่เบิก/ทาน</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="staff in staffCreditBreakdown" :key="staff.name" style="border-bottom: 1px solid var(--border-color);" class="table-row-hover">
-                  <td style="padding: 8px 12px; font-weight: bold; color: var(--text-primary);">
-                    <i class="fa-solid fa-user-circle mr-xs" style="color: #fd7e14;"></i> {{ staff.name }}
-                  </td>
-                  <td style="padding: 8px 12px; text-align: center; color: var(--text-secondary);">{{ staff.log_count }} ครั้ง</td>
-                  <td style="padding: 8px 12px; text-align: center; font-weight: bold; color: #fd7e14;">{{ staff.total_qty }} ชิ้น</td>
-                  <td style="padding: 8px 12px; text-align: right; font-weight: bold; color: var(--danger-color, #dc3545);">
-                    {{ staff.total_value > 0 ? `${formatMoney(staff.total_value)} ฿` : '-' }}
-                  </td>
-                  <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 300px;" class="truncate">
-                    {{ staff.items_summary }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile Cards List (Mobile Only) -->
-          <div class="show-mobile-flex flex-col gap-xs">
-            <div 
-              v-for="staff in staffCreditBreakdown" 
-              :key="staff.name" 
-              class="card p-sm"
-              style="background: #ffffff; border: 1px solid var(--border-color); border-left: 3.5px solid #fd7e14; border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,0.03);"
-            >
-              <!-- Row 1: Staff Name & Badges -->
-              <div class="flex flex-between align-center mb-xs">
-                <div class="font-bold text-sm text-primary flex align-center gap-xs">
-                  <i class="fa-solid fa-user-circle text-warning"></i>
-                  <span>{{ staff.name }}</span>
-                </div>
-                <div class="flex align-center gap-xs">
-                  <span class="capsule-badge badge-warning text-xs font-bold">{{ staff.total_qty }} ชิ้น</span>
-                  <span v-if="staff.total_value > 0" class="capsule-badge badge-danger text-xs font-bold">{{ formatMoney(staff.total_value) }} ฿</span>
-                </div>
-              </div>
-
-              <!-- Row 2: Frequency & Menu list -->
-              <div class="flex flex-between align-center text-xs text-secondary mt-xs" style="background: rgba(253, 126, 20, 0.05); border-radius: 6px; padding: 6px 10px;">
-                <span class="text-tertiary font-medium">{{ staff.log_count }} ครั้ง</span>
-                <span class="font-medium text-primary text-right truncate ml-sm" style="max-width: 70%;" :title="staff.items_summary">
-                  {{ staff.items_summary }}
-                </span>
-              </div>
-            </div>
+          <div class="text-xs font-bold tabular-nums" style="color: var(--text-secondary);">
+            รวม: <span class="font-bold mr-xs" style="color: #ea580c;">{{ stockStaffCreditTotalQty }} ชิ้น</span>
+            <span v-if="totalStaffCreditValue > 0">| <span class="text-danger font-bold">{{ formatMoney(totalStaffCreditValue) }} ฿</span></span>
           </div>
         </div>
 
-        <div v-if="loading || stockHistoryLoading" class="flex flex-col gap-sm">
-          <div v-for="n in 4" :key="'sk-sh-' + n" class="card p-md flex flex-between align-center">
+        <div class="flex flex-col gap-xs">
+          <div 
+            v-for="staff in staffCreditBreakdown" 
+            :key="staff.name" 
+            class="card p-sm"
+            style="background: #ffffff; border: 1.5px solid var(--border-color); border-left: 3.5px solid #ea580c; border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,0.03);"
+          >
+            <div class="flex flex-between align-center flex-wrap gap-xs">
+              <div class="font-bold text-sm text-primary flex align-center gap-xs">
+                <i class="fa-solid fa-user-circle" style="color: #ea580c;"></i>
+                <span>{{ staff.name }}</span>
+                <span class="text-xs text-muted font-normal tabular-nums">({{ staff.log_count }} ครั้ง)</span>
+              </div>
+              <div class="flex align-center gap-xs tabular-nums">
+                <span class="capsule-badge badge-warning text-xs font-bold">{{ staff.total_qty }} ชิ้น</span>
+                <span v-if="staff.total_value > 0" class="capsule-badge badge-danger text-xs font-bold">{{ formatMoney(staff.total_value) }} ฿</span>
+              </div>
+            </div>
+            <div class="text-xs text-secondary mt-xs" style="line-height: 1.4;">
+              {{ staff.items_summary }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Logs Main Card -->
+      <div ref="stockLogsCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+        <div class="card-header-clean mb-md" style="padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-color);">
+          <div class="card-title card-title-clean">
+            <i class="fa-solid fa-boxes-stacked mr-xs" style="color: var(--primary);"></i> ประวัติสต็อกและการปรับปรุง
+          </div>
+          <span class="text-xs text-muted font-bold tabular-nums">{{ filteredStockLogs.length }} รายการ</span>
+        </div>
+
+        <div v-if="loading || stockHistoryLoading" class="activity-logs-list">
+          <div v-for="n in 5" :key="'sk-sh-' + n" class="activity-log-item" style="align-items: center;">
+            <div class="skeleton" style="width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;"></div>
             <div style="flex: 1;">
-              <div class="skeleton mb-xs" style="height: 16px; width: 45%; border-radius: 4px;"></div>
-              <div class="skeleton" style="height: 12px; width: 30%; border-radius: 4px;"></div>
+              <div class="skeleton mb-xs" style="height: 15px; width: 45%; border-radius: 4px;"></div>
+              <div class="skeleton mb-xs" style="height: 12px; width: 65%; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 11px; width: 35%; border-radius: 4px;"></div>
             </div>
-            <div class="skeleton" style="height: 20px; width: 70px; border-radius: 6px;"></div>
+            <div style="text-align: right; flex-shrink: 0;">
+              <div class="skeleton mb-xs" style="height: 18px; width: 55px; border-radius: 6px; margin-left: auto;"></div>
+              <div class="skeleton" style="height: 12px; width: 70px; border-radius: 4px;"></div>
+            </div>
           </div>
         </div>
-        <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl); background: rgba(0,0,0,0.01); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+        <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl); background: #ffffff; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
           <div class="mb-xs font-bold text-base" style="color: var(--text-primary);">
             <i class="fa-solid fa-folder-open text-muted mr-xs"></i> ไม่พบประวัติกิจกรรมสต็อกในช่วงเวลาที่เลือก ({{ periodMode === 'daily' ? formatDate(selectedDate) : (periodMode === 'monthly' ? selectedMonth : selectedYear) }})
           </div>
@@ -1587,121 +1586,65 @@
           </div>
         </div>
         <div v-else>
-          <!-- Desktop Table (Desktop Only) -->
-          <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-            <table class="table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th style="padding: var(--space-md); text-align: left;">สินค้า</th>
-                  <th class="text-center" style="padding: var(--space-md);">ชื่อพนักงาน</th>
-                  <th style="padding: var(--space-md); text-align: left;">กิจกรรม</th>
-                  <th class="text-center" style="padding: var(--space-md);">เวลา</th>
-                  <th class="text-center" style="padding: var(--space-md);">จำนวนก่อนปรับ</th>
-                  <th class="text-center" style="padding: var(--space-md);">จำนวนที่ปรับ</th>
-                  <th class="text-center" style="padding: var(--space-md);">จำนวนหลังปรับ</th>
-                  <th style="padding: var(--space-md); text-align: left;">หมายเหตุ / เหตุผล</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="log in paginatedStockLogs" 
-                  :key="log.id"
-                  style="border-bottom: 1px solid var(--border-color);"
-                  class="table-row-hover"
-                >
-                  <td style="padding: var(--space-sm) var(--space-md); font-weight: 500;">
-                    {{ log.item_name || selectedStockItemName }}
-                  </td>
-                  <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
-                    {{ log.staff_name || 'ระบบ' }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md);">
-                    <div class="flex align-center gap-xs flex-wrap">
-                      <span 
-                        class="badge" 
-                        :style="isRawStockLog(log) 
-                          ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;' 
-                          : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;'"
-                      >
-                        <i :class="isRawStockLog(log) ? 'fa-solid fa-box' : 'fa-solid fa-drumstick-bite'" style="font-size: 9px;"></i>
-                        {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
-                      </span>
-                      <span class="font-bold flex align-center" style="gap: 4px;">
-                        <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
-                        <span>{{ getStockReportActionLabel(log) }}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
-                    {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                    {{ log.previous_stock }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center;" :class="log.change_qty > 0 ? 'text-success' : 'text-danger'">
-                    <strong>{{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}</strong>
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center; font-weight:bold; font-variant-numeric: tabular-nums;">
-                    {{ log.new_stock }}
-                    <div class="text-xs text-muted" style="font-weight: normal; font-size: 10px;">{{ isRawStockLog(log) ? '(ของสด)' : '(พร้อมขาย)' }}</div>
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); font-size: var(--font-xs); color: var(--text-secondary); max-width: 250px;" class="truncate">
-                    {{ formatReportLogNote(log, isRawStockLog(log)) || '-' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile List View (Mobile Only) -->
-          <div class="show-mobile-only">
-            <div class="flex flex-col gap-md">
-              <div 
-                v-for="log in paginatedStockLogs" 
-                :key="log.id" 
-                class="card p-md flex flex-between align-center gap-md"
-                style="font-size: var(--font-sm); background: var(--bg-primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);"
-              >
-                <div class="flex-1 min-w-0" style="text-align: left;">
-                  <div class="font-bold mb-xs" style="color: var(--text-primary);">
-                    {{ log.item_name || selectedStockItemName }}
-                  </div>
-                  <div class="font-bold mb-xs" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <span 
-                      class="badge" 
-                      :style="isRawStockLog(log) 
-                        ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;' 
-                        : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;'"
-                    >
-                      <i :class="isRawStockLog(log) ? 'fa-solid fa-box' : 'fa-solid fa-drumstick-bite'" style="font-size: 9px;"></i>
-                      {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
-                    </span>
-                    <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
-                    <span>{{ getStockReportActionLabel(log) }}</span>
-                    <span 
-                      :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
-                      style="margin-left: 4px; font-variant-numeric: tabular-nums;"
-                    >
-                      {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
-                    </span>
-                  </div>
-                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-xs);">
-                    โดย: {{ log.staff_name || 'ระบบ' }} <span style="margin: 0 4px; color: var(--border-color);">|</span> {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
-                  </div>
-                  <div v-if="formatReportLogNote(log, isRawStockLog(log))" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 6px; border-left: 3px solid var(--primary-light); padding-left: 8px; background: rgba(139, 3, 19, 0.01); padding-top: 4px; padding-bottom: 4px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; line-height: 1.4; word-break: break-word;">
-                    {{ formatReportLogNote(log, isRawStockLog(log)) }}
-                  </div>
+          <!-- Unified Clean White Cards for Desktop & Mobile -->
+          <div class="activity-logs-list">
+            <div 
+              v-for="log in paginatedStockLogs" 
+              :key="log.id" 
+              class="activity-log-item stock-log-card"
+            >
+              <!-- Left Reason Badge -->
+              <div class="log-badge-wrapper">
+                <div class="log-badge" :class="'stock-reason-' + log.reason">
+                  <i :class="getStockReasonIconClass(log.reason)"></i>
                 </div>
-                <div style="text-align: right; flex-shrink: 0; min-width: 80px; display: flex; flex-direction: column; gap: 2px;">
-                  <div style="font-size: var(--font-xxs); color: var(--text-tertiary); letter-spacing: 0.5px;">{{ isRawStockLog(log) ? 'ยอดของสดหลังปรับ' : 'ยอดพร้อมขายหลังปรับ' }}</div>
-                  <div class="font-bold text-base" style="color: var(--text-primary); font-variant-numeric: tabular-nums;">{{ log.new_stock }}</div>
+              </div>
+
+              <!-- Center Info -->
+              <div class="log-content-wrapper">
+                <div class="flex align-center gap-xs flex-wrap">
+                  <span class="log-title">{{ log.item_name || selectedStockItemName }}</span>
+                  <span 
+                    class="stock-type-pill" 
+                    :class="isRawStockLog(log) ? 'raw' : 'cooked'"
+                  >
+                    {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
+                  </span>
+                  <span class="stock-action-tag">{{ getStockReportActionLabel(log) }}</span>
+                </div>
+
+                <div v-if="formatReportLogNote(log, isRawStockLog(log))" class="log-details tabular-nums">
+                  {{ formatReportLogNote(log, isRawStockLog(log)) }}
+                </div>
+
+                <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                  <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
+                    <span>{{ log.staff_name || 'ระบบ' }}</span>
+                  </span>
+                  <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                    <span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Right Stock Change & Balance -->
+              <div class="stock-log-right tabular-nums">
+                <div class="stock-delta-badge" :class="log.change_qty > 0 ? 'positive' : 'negative'">
+                  {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} ชิ้น
+                </div>
+                <div class="stock-balance-flow">
+                  <span>{{ log.previous_stock }}</span>
+                  <i class="fa-solid fa-arrow-right" style="font-size: 9px; opacity: 0.6;"></i>
+                  <strong style="color: var(--text-primary);">{{ log.new_stock }}</strong>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Pagination UI -->
-          <div v-if="totalStockLogsPages > 1" class="pagination-bar flex flex-center align-center gap-md">
+          <div v-if="totalStockLogsPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
             <button 
               class="pagination-btn" 
               :disabled="stockLogsCurrentPage === 1" 
@@ -2904,6 +2847,15 @@ const paginatedActivityLogs = computed(() => {
 const stockLogsCurrentPage = ref(1);
 const stockLogsPerPage = 15;
 const stockReasonFilter = ref('all'); // 'all', 'waste', 'staff_benefit', 'restock', 'adjustment'
+let stockFilterSkeletonTimer = null;
+watch(stockReasonFilter, () => {
+  stockLogsCurrentPage.value = 1;
+  stockHistoryLoading.value = true;
+  if (stockFilterSkeletonTimer) clearTimeout(stockFilterSkeletonTimer);
+  stockFilterSkeletonTimer = setTimeout(() => {
+    stockHistoryLoading.value = false;
+  }, 220);
+});
 
 const filteredStockLogs = computed(() => {
   try {
@@ -3197,7 +3149,10 @@ const formatReportLogNote = (log, isRaw) => {
     return 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
   }
 
-  return note;
+  return note
+    .replace(/^ปรับปรุงสต็อก.*?\(Absolute\):\s*ปรับจาก\s*[\d,.]+\s*เป็น\s*[\d,.]+\s*\S+\s*\[สาเหตุ:\s*(.+?)\](?:\s*\((.+)\))?$/, (_, r, n) => `สาเหตุ: ${r}${n && n !== 'ไม่ระบุโน้ต' ? ` (${n})` : ''}`)
+    .replace(/^เติมสต็อก.*?\(Relative\)\s*[+-]?[\d,.]+\s*\S+$/, 'เติมสต็อกเพิ่มเข้าคลัง')
+    .replace(/^เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง\s*ใบเบิก\s*(#\S+)\s*\((.+?)\)(?:\s*\((.+?)\))?(?:\s*โดย\s*(.+))?$/, (_, reqNo, ckName, formula) => `เติมจากครัวกลาง • ใบเบิก ${reqNo}${formula ? ` (${formula})` : ''}`);
 };
 
 const getStockReasonLabel = (reason) => {
@@ -5200,7 +5155,77 @@ select.reports-filter-control,
   width: 180px !important;
 }
 
-/* Custom Stock Quick Filter Pills */
+/* Custom Stock Quick Filter Pills & Stock Log Cards */
+.stock-log-card {
+  align-items: center;
+}
+
+.log-badge.stock-reason-restock { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.log-badge.stock-reason-adjustment { background: rgba(139, 3, 19, 0.08); color: var(--primary); }
+.log-badge.stock-reason-waste { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+.log-badge.stock-reason-staff_benefit { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
+.log-badge.stock-reason-sale, .log-badge.stock-reason-cancel_restore { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+
+.stock-type-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+}
+.stock-type-pill.raw {
+  background: rgba(234, 88, 12, 0.1);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.25);
+}
+.stock-type-pill.cooked {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.stock-action-tag {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.stock-log-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 78px;
+}
+
+.stock-delta-badge {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.stock-delta-badge.positive {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+.stock-delta-badge.negative {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.stock-balance-flow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .stock-pill-btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -5209,8 +5234,8 @@ select.reports-filter-control,
   font-size: var(--font-xs, 12px) !important;
   font-weight: 600 !important;
   border-radius: 9999px !important;
-  border: 1px solid var(--border-color, #e2e8f0) !important;
-  background: var(--bg-primary, #ffffff) !important;
+  border: 1.5px solid var(--border-color, #e2e8f0) !important;
+  background: #ffffff !important;
   color: var(--text-secondary, #64748b) !important;
   cursor: pointer !important;
   transition: all 0.2s ease-in-out !important;
