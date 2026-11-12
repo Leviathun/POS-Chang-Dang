@@ -1370,7 +1370,10 @@
             <div class="skeleton mt-xs" style="height: 14px; width: 160px; border-radius: 4px;"></div>
           </template>
           <template v-else>
-            <div class="text-2xl font-bold text-danger tabular-nums">{{ stockWasteTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
+            <div class="flex flex-between align-baseline gap-sm tabular-nums">
+              <div class="text-2xl font-bold text-danger">{{ stockWasteTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
+              <div class="text-base font-bold text-danger">฿{{ formatMoney(totalWasteValue) }}</div>
+            </div>
             <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
               <i class="fa-solid fa-circle-info text-muted"></i>
               <span class="truncate">{{ stockWasteSummaryText }}</span>
@@ -1397,9 +1400,9 @@
             <div class="skeleton mt-xs" style="height: 14px; width: 180px; border-radius: 4px;"></div>
           </template>
           <template v-else>
-            <div class="flex align-baseline gap-sm tabular-nums">
+            <div class="flex flex-between align-baseline gap-sm tabular-nums">
               <div class="text-2xl font-bold" style="color: #ea580c;">{{ stockStaffCreditTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
-              <div v-if="totalStaffCreditValue > 0" class="text-base font-bold text-danger">({{ formatMoney(totalStaffCreditValue) }} ฿)</div>
+              <div class="text-base font-bold" style="color: #ea580c;">฿{{ formatMoney(totalStaffCreditValue) }}</div>
             </div>
             <div class="text-xs text-secondary mt-xs flex flex-between align-center" style="color: var(--text-tertiary);">
               <span class="truncate"><i class="fa-solid fa-user-check text-muted mr-xs"></i> {{ stockStaffCreditSummaryText }}</span>
@@ -1427,10 +1430,13 @@
             <div class="skeleton mt-xs" style="height: 14px; width: 150px; border-radius: 4px;"></div>
           </template>
           <template v-else>
-            <div class="text-2xl font-bold text-success tabular-nums">+{{ stockRestockTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
+            <div class="flex flex-between align-baseline gap-sm tabular-nums">
+              <div class="text-2xl font-bold text-success">+{{ stockRestockTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
+              <div class="text-base font-bold text-success">฿{{ formatMoney(totalRestockValue) }}</div>
+            </div>
             <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
               <i class="fa-solid fa-boxes-packing text-muted"></i>
-              <span>เติมสินค้าเข้าคลังสาขา</span>
+              <span>มูลค่าสินค้าที่เติมเข้าคลังสาขา</span>
             </div>
           </template>
         </div>
@@ -1606,19 +1612,29 @@
             </div>
           </div>
         </div>
-        <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl); background: #ffffff; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
-          <div class="mb-xs font-bold text-base" style="color: var(--text-primary);">
-            <i class="fa-solid fa-folder-open text-muted mr-xs"></i> ไม่พบประวัติกิจกรรมสต็อกในช่วงเวลาที่เลือก ({{ periodMode === 'daily' ? formatDate(selectedDate) : (periodMode === 'monthly' ? selectedMonth : selectedYear) }})
+        <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-lg text-sm" style="padding: var(--space-lg); background: #ffffff; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(139, 3, 19, 0.06); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <i class="fa-solid fa-box-open" style="font-size: 1rem;"></i>
+          </div>
+          <div class="font-bold text-sm mb-xs" style="color: var(--text-primary);">
+            ไม่พบประวัติสต็อก ({{ periodMode === 'daily' ? formatDate(selectedDate) : (periodMode === 'monthly' ? selectedMonth : selectedYear) }})
           </div>
           <div class="text-xs text-muted mb-md">
-            ยังไม่มีการบันทึกเติมสต็อก ของเสีย หรือเครดิตพนักงานในช่วงเวลานี้
+            ไม่มีรายการตามตัวกรองหรือช่วงเวลาที่เลือก
           </div>
           <div class="flex justify-center gap-xs flex-wrap">
-            <button class="stock-pill-btn" @click="selectYesterdayDate">
-              <i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i> ดูประวัติสต็อกเมื่อวาน ({{ getYesterdayLabel() }})
+            <button
+              v-if="stockReasonFilter !== 'all' || selectedReportsStockItemId !== 'all'"
+              class="stock-pill-btn"
+              @click="stockReasonFilter = 'all'; selectReportsStockItem({ id: 'all', name: 'สินค้าทั้งหมด (รวมทั้งร้าน)' })"
+            >
+              <i class="fa-solid fa-rotate-left" style="color: var(--primary);"></i> ล้างตัวกรอง
             </button>
-            <button class="stock-pill-btn" @click="switchToMonthlyStock">
-              <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> ดูประวัติสต็อกรายเดือน ({{ selectedMonth }})
+            <button class="stock-pill-btn" @click="selectYesterdayDate">
+              <i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i> ดูเมื่อวาน ({{ getYesterdayLabel() }})
+            </button>
+            <button v-if="periodMode !== 'monthly'" class="stock-pill-btn" @click="switchToMonthlyStock">
+              <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> ดูรายเดือน ({{ selectedMonth }})
             </button>
           </div>
         </div>
@@ -1674,7 +1690,7 @@
                   <div class="stock-delta-badge" :class="log.change_qty > 0 ? 'positive' : 'negative'">
                     {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} ชิ้น
                   </div>
-                  <div class="stock-balance-flow">
+                  <div v-if="log.previous_stock !== null && log.previous_stock !== undefined" class="stock-balance-flow">
                     <span>{{ log.previous_stock }}</span>
                     <i class="fa-solid fa-arrow-right" style="font-size: 9px; opacity: 0.6;"></i>
                     <strong style="color: var(--text-primary);">{{ log.new_stock }}</strong>
@@ -2946,19 +2962,71 @@ watch(stockReasonFilter, () => {
   }, 220);
 });
 
+const normalizeLinkedName = (str) => String(str || '').replace(/ไส้/g, '').replace(/หมั่นโถว/g, 'หมั่นโถ').replace(/ไขเค็ม/g, 'ไข่เค็ม').replace(/\s+/g, '').trim();
+
 const isLinkedRecipeCookPair = (deductLog, readyLog) => {
   if (!deductLog || !readyLog || deductLog.id === readyLog.id) return false;
+  if (readyLog._syntheticPartnerId === deductLog.id || deductLog._syntheticForId === readyLog.id) return true;
   const dNote = String(deductLog.note || '');
-  const m = dNote.match(/หักอัตโนมัติจากการ(?:เพิ่มสต็อก|เติมสต็อก|ปรับปรุงสต็อก)\s+(.+?)\s+\+([\d,.]+)\s*ชิ้น/);
+  const m = dNote.match(/หักอัตโนมัติจากการ\S+\s+(.+?)\s+\+([\d,.]+)\s*ชิ้น/);
   if (!m) return false;
-  const targetName = m[1].trim();
+  const targetName = normalizeLinkedName(m[1]);
   const targetQty = Number(m[2].replace(/,/g, ''));
-  const rName = String(readyLog.item_name || '').trim();
+  const rName = normalizeLinkedName(readyLog.item_name);
   if (!rName || rName !== targetName || Number(readyLog.change_qty) <= 0) return false;
   if (!isNaN(targetQty) && Math.abs(Number(readyLog.change_qty) - targetQty) > 0.01) return false;
   const t1 = new Date(deductLog.created_at).getTime();
   const t2 = new Date(readyLog.created_at).getTime();
   return Math.abs(t1 - t2) <= 120000;
+};
+
+const buildSyntheticCookDeductPartner = (readyLog) => {
+  if (!readyLog) return null;
+  const name = String(readyLog.item_name || '').trim();
+  const qty = Math.abs(Number(readyLog.change_qty) || 0);
+  if (qty <= 0) return null;
+  if (name.includes('แร็ป')) {
+    const deductQty = Math.round(qty * 1.5 * 100) / 100;
+    return {
+      id: `syn-deduct-${readyLog.id}`,
+      _syntheticForId: readyLog.id,
+      branch_id: readyLog.branch_id,
+      menu_item_id: null,
+      item_name: 'ไก่ไร้กระดูก',
+      change_qty: -deductQty,
+      previous_stock: null,
+      new_stock: null,
+      reason: 'adjustment',
+      staff_name: readyLog.staff_name,
+      stock_type: 'cooked',
+      note: `หักอัตโนมัติจากการเพิ่มสต็อก ${name} +${qty} ชิ้น (ใช้ไก่ไร้กระดูก ${deductQty} ชิ้น)`,
+      created_at: readyLog.created_at
+    };
+  }
+  if (name.includes('เปาทอด') || name.includes('เปาปิ้ง')) {
+    let sourceName = 'ซาลาเปานึ่ง';
+    if (name.includes('ไข่เค็ม') || name.includes('ไขเค็ม')) sourceName = 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
+    else if (name.includes('หมู')) sourceName = 'ซาลาเปาไส้หมูสับ';
+    else if (name.includes('ถั่วดำ')) sourceName = 'ซาลาเปาไส้ถั่วดำ';
+    else if (name.includes('ครีม')) sourceName = 'ซาลาเปาไส้ครีม';
+    else if (name.includes('หมั่นโถ')) sourceName = 'หมั่นโถว';
+    return {
+      id: `syn-deduct-${readyLog.id}`,
+      _syntheticForId: readyLog.id,
+      branch_id: readyLog.branch_id,
+      menu_item_id: null,
+      item_name: sourceName,
+      change_qty: -qty,
+      previous_stock: null,
+      new_stock: null,
+      reason: 'adjustment',
+      staff_name: readyLog.staff_name,
+      stock_type: 'cooked',
+      note: `หักอัตโนมัติจากการเพิ่มสต็อก ${name} +${qty} ชิ้น`,
+      created_at: readyLog.created_at
+    };
+  }
+  return null;
 };
 
 const getStockLogCategory = (log) => {
@@ -3032,7 +3100,13 @@ const orderStockLogsWithCookPairs = (logs) => {
       }
     }
   }
-  if (expanded.length < 2) return expanded;
+  if (expanded.length < 2) {
+    if (expanded.length === 1 && getStockLogCategory(expanded[0]) === 'cook_ready') {
+      const syn = buildSyntheticCookDeductPartner(expanded[0]);
+      if (syn) return [syn, expanded[0]];
+    }
+    return expanded;
+  }
   const usedIds = new Set();
   const result = [];
   for (let i = 0; i < expanded.length; i++) {
@@ -3048,7 +3122,10 @@ const orderStockLogsWithCookPairs = (logs) => {
         result.push(partner);
       }
     } else if (cat === 'cook_ready') {
-      const partner = expanded.find(other => !usedIds.has(other.id) && isReportCookPair(other, current));
+      let partner = expanded.find(other => !usedIds.has(other.id) && isReportCookPair(other, current));
+      if (!partner) {
+        partner = buildSyntheticCookDeductPartner(current);
+      }
       if (partner) {
         usedIds.add(partner.id);
         usedIds.add(current.id);
@@ -3237,10 +3314,26 @@ const staffCreditBreakdown = computed(() => {
   }
 });
 
+const getStockLogMonetaryValue = (log) => {
+  if (!log) return 0;
+  const qty = Math.abs(Number(log.change_qty) || 0);
+  let price = Number(log.item_price) || 0;
+  if (!price && Array.isArray(store.stockItems)) {
+    const found = store.stockItems.find(item => item && (item.id === log.menu_item_id || item.name === log.item_name));
+    if (found && found.price) price = Number(found.price) || 0;
+  }
+  return qty * price;
+};
+
+const totalWasteValue = computed(() => {
+  if (!Array.isArray(stockWasteLogs.value)) return 0;
+  return stockWasteLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+});
+
 const totalStaffCreditValue = computed(() => {
   try {
-    if (!Array.isArray(staffCreditBreakdown.value)) return 0;
-    return staffCreditBreakdown.value.reduce((sum, s) => sum + (Number(s?.total_value) || 0), 0);
+    if (!Array.isArray(stockStaffCreditLogs.value)) return 0;
+    return stockStaffCreditLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
   } catch (e) {
     console.error('totalStaffCreditValue error:', e);
     return 0;
@@ -3251,6 +3344,10 @@ const stockRestockCount = computed(() => Array.isArray(stockRestockLogs.value) ?
 const stockRestockTotalQty = computed(() => {
   if (!Array.isArray(stockRestockLogs.value)) return 0;
   return stockRestockLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
+});
+const totalRestockValue = computed(() => {
+  if (!Array.isArray(stockRestockLogs.value)) return 0;
+  return stockRestockLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
 });
 
 const stockLogsCardRef = ref(null);
