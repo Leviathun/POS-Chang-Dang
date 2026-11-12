@@ -112,7 +112,7 @@ router.get('/top-items', requireAdmin, async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
     const branchId = getBranchFilter(req);
-    const items = await reportsService.getTopItems(days, branchId);
+    const items = await reportsService.getTopItems(days, branchId, { date: req.query.date || null, month: req.query.month || null, year: req.query.year || null, start_time: req.query.start_time || null, end_time: req.query.end_time || null });
 
     res.json({
       success: true,

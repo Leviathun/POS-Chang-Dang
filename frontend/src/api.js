@@ -195,8 +195,8 @@ const reports = {
     if (branchId) path += `&branch_id=${branchId}`;
     return request('GET', path);
   },
-  async topItems(days = 7, branchId = null) {
-    let path = `/api/reports/top-items?days=${days}`;
+  async topItems(days = 7, branchId = null, periodParams = null) {
+    let path = periodParams && typeof periodParams === 'object' ? `/api/reports/top-items?${new URLSearchParams(Object.entries(periodParams).filter(([, v]) => v != null)).toString()}` : `/api/reports/top-items?days=${days}`;
     if (branchId) path += `&branch_id=${branchId}`;
     return request('GET', path);
   },

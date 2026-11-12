@@ -43,9 +43,8 @@
       </button>
     </div>
 
-    <!-- Date selector card (Shared Global DatePeriodFilter, hidden on 'top_menus' tab only) -->
+    <!-- Date selector card (Shared Global DatePeriodFilter across all tabs) -->
     <DatePeriodFilter
-      v-if="activeTab !== 'top_menus'"
       v-model:period-mode="periodMode"
       v-model:selected-date="selectedDate"
       v-model:selected-month="selectedMonth"
@@ -88,8 +87,8 @@
       </div>
     </DatePeriodFilter>
 
-    <!-- Skeleton Loading for reports -->
-    <div v-if="loading" class="flex flex-col gap-lg">
+    <!-- Skeleton Loading for Sales tab only -->
+    <div v-if="loading && activeTab === 'sales'" class="flex flex-col gap-lg">
       <div class="grid grid-2 gap-md">
         <div v-for="n in 2" :key="'sk-rep-kpi-' + n" class="card text-center p-md">
           <div class="skeleton mx-auto mb-xs" style="height: 12px; width: 90px; border-radius: 4px;"></div>
@@ -110,170 +109,364 @@
       <!-- Tab 1: Sales (ยอดขาย) -->
       <div v-if="activeTab === 'sales'" class="flex flex-col gap-lg">
         
-        <!-- Top summary widgets (moved inside Tab 1) -->
+        <!-- Top summary widgets (Clean Minimal Cards, No background colors) -->
         <div class="grid grid-2 gap-md">
-          <div class="card text-center p-md">
-            <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดขายวันนี้</div>
-            <div class="font-bold text-primary text-xl">{{ formatCurrency(summary.today_sales) }}</div>
-            <div class="text-xs text-muted" style="margin-top: 2px;">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</div>
+          <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(139, 3, 19, 0.15); background: #ffffff; position: relative; overflow: hidden;">
+            <div class="flex flex-center align-center gap-xs text-xs text-secondary mb-xs font-semibold">
+              <i class="fa-solid fa-sack-dollar text-primary"></i>
+              <span>ยอดขายวันนี้</span>
+            </div>
+            <div class="font-bold text-primary tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px;">
+              {{ formatCurrency(summary.today_sales) }}
+            </div>
+            <div class="inline-flex align-center gap-xs text-xs text-muted font-medium" style="white-space: nowrap;">
+              <i class="fa-solid fa-receipt"></i>
+              <span class="tabular-nums">{{ summary.today_orders }} บิลสำเร็จ</span>
+            </div>
           </div>
-          <div class="card text-center p-md">
-            <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดรวมเดือนนี้</div>
-            <div class="font-bold text-accent text-xl">{{ formatCurrency(summary.month_sales) }}</div>
-            <div class="text-xs text-muted" style="margin-top: 2px;">{{ summary.month_orders }} รายการขาย</div>
+
+          <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(217, 119, 6, 0.2); background: #ffffff; position: relative; overflow: hidden;">
+            <div class="flex flex-center align-center gap-xs text-xs text-secondary mb-xs font-semibold">
+              <i class="fa-solid fa-calendar-check" style="color: #b45309;"></i>
+              <span>ยอดรวมเดือนนี้</span>
+            </div>
+            <div class="font-bold tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px; color: #b45309;">
+              {{ formatCurrency(summary.month_sales) }}
+            </div>
+            <div class="inline-flex align-center gap-xs text-xs text-muted font-medium">
+              <i class="fa-solid fa-bag-shopping"></i>
+              <span class="tabular-nums">{{ summary.month_orders }} รายการขาย</span>
+            </div>
           </div>
         </div>
 
-        <!-- Daily Summary Card -->
-        <div class="card">
-          <div class="card-title text-sm"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> {{ summaryCardTitle }}</div>
+        <!-- Daily / Period Summary Card -->
+        <div class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color);">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
+              <i class="fa-solid fa-chart-pie"></i>
+              <span>{{ summaryCardTitle }}</span>
+            </div>
+          </div>
           
-          <div class="flex flex-between mb-sm text-sm">
-            <span>ยอดขายทั้งหมด (สุทธิ):</span>
-            <strong class="text-accent text-md">{{ formatCurrency(displayedDailyReport.total_sales) }}</strong>
-          </div>
-          <div class="flex flex-between mb-sm text-sm">
-            <span>จำนวนคำสั่งซื้อ:</span>
-            <span>{{ displayedDailyReport.total_orders }} บิล</span>
-          </div>
-          <div class="flex flex-between mb-sm text-sm">
-            <span>เฉลี่ยต่อบิล:</span>
-            <span>{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
+          <!-- Clean 3-Metric Stats Bar (No colored boxes, clean white theme) -->
+          <div class="sales-clean-summary-grid mb-lg">
+            <div class="sales-clean-stat">
+              <span class="stat-clean-label">ยอดขายทั้งหมด (สุทธิ)</span>
+              <span class="stat-clean-val text-primary tabular-nums">{{ formatCurrency(displayedDailyReport.total_sales) }}</span>
+            </div>
+            <div class="sales-clean-stat border-sides">
+              <span class="stat-clean-label">จำนวนคำสั่งซื้อ</span>
+              <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
+                {{ displayedDailyReport.all_orders }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">บิลทั้งหมด</small>
+              </span>
+              <div class="flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
+                <span style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-circle-check" style="font-size: 0.7rem;"></i> ชำระแล้ว {{ displayedDailyReport.total_orders }} บิล
+                </span>
+                <span style="color: var(--border-color-light);">|</span>
+                <span style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-ban" style="font-size: 0.7rem;"></i> ยกเลิก {{ displayedDailyReport.cancelled_orders }} บิล
+                </span>
+              </div>
+            </div>
+            <div class="sales-clean-stat" style="position: relative;">
+              <div class="stat-clean-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%; position: relative;">
+                <span>เฉลี่ยต่อบิล</span>
+                <div style="position: relative; display: inline-flex; align-items: center;" @mouseenter="showAvgBillInfo = true" @mouseleave="showAvgBillInfo = false" @click.stop>
+                  <button
+                    type="button"
+                    @click="showAvgBillInfo = !showAvgBillInfo"
+                    aria-label="ดูสูตรการคำนวณ"
+                    style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                    :style="showAvgBillInfo ? { color: 'var(--primary)', background: 'rgba(139, 3, 19, 0.08)' } : {}"
+                  >
+                    <i class="fa-solid fa-circle-info"></i>
+                  </button>
+                  <!-- Floating Tooltip Card -->
+                  <div
+                    v-if="showAvgBillInfo"
+                    class="text-xs"
+                    style="position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: min(300px, 82vw); padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(139, 3, 19, 0.18); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14); white-space: normal; text-align: left;"
+                  >
+                    <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(139, 3, 19, 0.18); border-left: 1px solid rgba(139, 3, 19, 0.18); transform: rotate(45deg);"></div>
+                    <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
+                      <span>สูตรการคำนวณ</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <div>• <strong style="color: var(--text-primary);">เฉลี่ยต่อบิล:</strong> ยอดขายสุทธิ ÷ จำนวนบิลที่ชำระแล้ว</div>
+                      <div>• <strong style="color: var(--text-primary);">เกณฑ์เฉลี่ยสาขา:</strong> ยอดขายสะสมทั้งหมด ÷ จำนวนบิลสะสมทั้งหมด <span style="color: var(--text-muted);">(ตั้งแต่เปิดสาขาถึงวันก่อนหน้า)</span></div>
+                      <div>• <strong style="color: var(--text-primary);">ผลต่าง:</strong> เฉลี่ยต่อบิล − เกณฑ์เฉลี่ยสาขา</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
+              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center text-xs tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 5px; margin-top: 4px; font-size: 0.78rem;">
+                <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
+                <span style="color: var(--border-color-light);">|</span>
+                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                  <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.72rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
+                </span>
+                <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                  <i class="fa-solid fa-arrow-trend-down" style="font-size: 0.72rem;"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div class="divider"></div>
+          <!-- Payment Proportion Progress Bar -->
+          <div class="payment-ratio-section mb-md" v-if="displayedDailyReport.total_sales > 0">
+            <div class="flex flex-between align-center mb-xs text-xs text-secondary font-semibold">
+              <span class="flex align-center gap-xs">
+                <i class="fa-solid fa-chart-bar text-primary"></i>
+                <span>สัดส่วนช่องทางชำระเงิน</span>
+              </span>
+              <span class="tabular-nums font-bold text-primary">{{ formatCurrency(displayedDailyReport.total_sales) }}</span>
+            </div>
+            <!-- Multi-Color Visual Ratio Bar (Flex filled, no grey gap) -->
+            <div class="payment-ratio-bar" style="background: transparent;">
+              <div 
+                v-if="displayedDailyReport.cash_sales > 0" 
+                class="ratio-seg seg-cash" 
+                :style="{ flex: displayedDailyReport.cash_sales }"
+                :title="'เงินสด: ' + getPaymentPct(displayedDailyReport.cash_sales) + '%'"
+              ></div>
+              <div 
+                v-if="displayedDailyReport.qr_sales > 0" 
+                class="ratio-seg seg-qr" 
+                :style="{ flex: displayedDailyReport.qr_sales }"
+                :title="'QR Code: ' + getPaymentPct(displayedDailyReport.qr_sales) + '%'"
+              ></div>
+              <div 
+                v-if="displayedDailyReport.gov_sales > 0" 
+                class="ratio-seg seg-gov" 
+                :style="{ flex: displayedDailyReport.gov_sales }"
+                :title="'โครงการรัฐ: ' + getPaymentPct(displayedDailyReport.gov_sales) + '%'"
+              ></div>
+              <div 
+                v-if="displayedDailyReport.delivery_sales > 0" 
+                class="ratio-seg seg-delivery" 
+                :style="{ flex: displayedDailyReport.delivery_sales }"
+                :title="'เดลิเวอรี: ' + getPaymentPct(displayedDailyReport.delivery_sales) + '%'"
+              ></div>
+            </div>
+          </div>
           
-          <!-- Payment Methods Breakdowns -->
+          <!-- Payment Methods 4 Cards Grid -->
           <div class="payment-methods-grid">
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            <!-- 1. Cash -->
+            <div class="p-sm card pay-card pay-card-cash">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-money-bill-wave" style="color: #10b981;"></i>
+                  <span>เงินสด</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.cash_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.cash_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.cash_orders }} บิล</div>
-            </div>
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i>
-                <span class="hide-mobile">QR Code</span>
-                <span class="show-mobile-inline">QR</span>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.cash_orders }} บิล
               </div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            </div>
+
+            <!-- 2. QR Code -->
+            <div class="p-sm card pay-card pay-card-qr">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i>
+                  <span class="hide-mobile">QR Code</span>
+                  <span class="show-mobile-inline">QR</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.qr_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.qr_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.qr_orders }} บิล</div>
-            </div>
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-landmark" style="color: var(--accent);"></i>
-                <span class="hide-mobile">โครงการรัฐ</span>
-                <span class="show-mobile-inline">รัฐ</span>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.qr_orders }} บิล
               </div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            </div>
+
+            <!-- 3. Gov -->
+            <div class="p-sm card pay-card pay-card-gov">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-landmark" style="color: #3b82f6;"></i>
+                  <span class="hide-mobile">โครงการรัฐ</span>
+                  <span class="show-mobile-inline">รัฐ</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.gov_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.gov_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.gov_orders }} บิล</div>
-            </div>
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-motorcycle" style="color: #ff9500;"></i>
-                <span class="hide-mobile">เดลิเวอรี</span>
-                <span class="show-mobile-inline">เดลิ</span>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.gov_orders }} บิล
               </div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            </div>
+
+            <!-- 4. Delivery -->
+            <div class="p-sm card pay-card pay-card-delivery">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-motorcycle" style="color: #ea580c;"></i>
+                  <span class="hide-mobile">เดลิเวอรี</span>
+                  <span class="show-mobile-inline">เดลี่</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.delivery_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.delivery_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.delivery_orders }} บิล</div>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.delivery_orders }} บิล
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Today's Transaction Logs (ALL ROLES) -->
-        <div class="card">
-          <div class="card-header-clean">
-            <div class="card-title card-title-clean"><i class="fa-solid fa-list mr-xs"></i> {{ dailyOrdersListTitle }}</div>
+        <div ref="dailyOrdersCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color);">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
+              <i class="fa-solid fa-list-check"></i>
+              <span>{{ dailyOrdersListTitle }}</span>
+            </div>
+            <span class="text-xs text-secondary font-medium tabular-nums" v-if="displayedDailyReport.orders?.length > 0">
+              รวม {{ displayedDailyReport.orders.length }} รายการ
+            </span>
           </div>
           
-          <div v-if="displayedDailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
-            {{ dailyOrdersEmptyLabel }}
+          <div v-if="displayedDailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-xl) var(--space-md);">
+            <i class="fa-regular fa-clipboard" style="font-size: 2.25rem; color: var(--text-tertiary); opacity: 0.45; margin-bottom: 8px; display: inline-block;"></i>
+            <div>{{ dailyOrdersEmptyLabel }}</div>
           </div>
           <div v-else class="flex flex-col gap-sm">
             <div 
               v-for="order in paginatedDailyReportOrders" 
               :key="order.id" 
-              class="p-sm card"
-              style="font-size:var(--font-sm); background: var(--bg-primary); display:flex; flex-direction:column; gap:2px; cursor:pointer;"
+              class="p-md card order-report-card"
+              :class="{ 'expanded': expandedOrderId === order.id, 'cancelled-order': order.status === 'cancelled' }"
               @click="toggleExpandOrder(order.id)"
             >
-              <div class="flex flex-between font-bold">
-                <span :style="order.status === 'cancelled' ? 'text-decoration:line-through; opacity:0.5;' : ''">
-                  #{{ order.order_number }}
-                </span>
-                <div>
-                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:var(--font-xs); margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
-                  <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+              <!-- Order Header Row (Clean, no clunky boxes) -->
+              <div class="flex flex-between align-center gap-sm">
+                <div class="flex align-center gap-md">
+                  <span class="font-bold text-base tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
+                    #{{ order.order_number }}
+                  </span>
+                  <div class="flex align-center" style="flex-wrap: wrap; gap: 14px;">
+                    <!-- 2. เวลา -->
+                    <span class="text-xs text-muted tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <span>{{ formatTime(order.created_at) }}</span>
+                    </span>
+                    <!-- 3. ประเภทการชำระเงิน -->
+                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: #ea580c;' : ''"></i>
+                      <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
+                      <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
+                    </span>
+                    <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
+                      <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
+                    </span>
+                    <span v-if="order.discount > 0" class="order-discount-pill tabular-nums">
+                      ลด -{{ formatCurrency(order.discount) }}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div class="flex flex-between" style="font-size:var(--font-xs); color:var(--text-secondary); margin-top:2px;">
-                <span style="display: inline-flex; align-items: center; gap: 4px;">
-                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
-                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
-                </span>
-                <span>เวลา: {{ formatTime(order.created_at) }}</span>
-              </div>
-              <div v-if="order.cancel_reason" style="font-size: var(--font-xs); color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
-                เหตุผลยกเลิก: {{ order.cancel_reason }}
+
+                <div class="flex align-center gap-sm">
+                  <div class="text-right">
+                    <div class="order-total-amount tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
+                      {{ formatCurrency(order.total) }}
+                    </div>
+                  </div>
+                  <div class="order-chevron-btn" :class="{ 'rotate': expandedOrderId === order.id }">
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </div>
+                </div>
               </div>
 
-              <!-- Expandable: Order Items Detail -->
-              <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);">
-                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
-                <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
-                    <span>{{ item.item_name }} x{{ item.quantity }}</span>
-                    <span>{{ formatCurrency(item.subtotal) }}</span>
-                  </div>
-                  <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
-                    <div class="flex flex-between">
-                      <span>ยอดรวม (ก่อนหัก):</span>
-                      <span>{{ formatCurrency(order.subtotal) }}</span>
+              <!-- Cancel Reason Box -->
+              <div v-if="order.cancel_reason" class="order-cancel-reason-box mt-xs">
+                <i class="fa-solid fa-triangle-exclamation mr-xs"></i>
+                <span>เหตุผลยกเลิก: {{ order.cancel_reason }}</span>
+              </div>
+
+              <!-- Expandable: Order Items Detail Drawer -->
+              <div v-if="expandedOrderId === order.id" class="order-drawer-content mt-sm pt-sm" @click.stop>
+                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center; padding: var(--space-sm);">
+                  <i class="fa-solid fa-spinner fa-spin mr-xs"></i> กำลังโหลดรายการอาหาร...
+                </div>
+                <div v-else class="order-items-table">
+                  <div v-for="item in expandedItems" :key="item.id" class="order-item-row flex flex-between py-xs" style="align-items: flex-start;">
+                    <div class="flex gap-xs" style="align-items: flex-start; flex: 1; min-width: 0;">
+                      <span class="order-item-qty tabular-nums" style="margin-top: 1px; flex-shrink: 0;">x{{ item.quantity }}</span>
+                      <span class="order-item-name font-medium" style="word-break: break-word;">{{ item.item_name }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
+                    <span class="order-item-subtotal tabular-nums font-semibold" style="margin-left: var(--space-sm); flex-shrink: 0;">{{ formatCurrency(item.subtotal) }}</span>
+                  </div>
+
+                  <!-- Subtotal & Discount Info if applied -->
+                  <div v-if="order.discount > 0" class="order-drawer-summary pt-xs mt-xs">
+                    <div class="flex flex-between text-xs text-secondary py-2xs">
+                      <span>ยอดรวมสินค้า:</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.subtotal) }}</span>
+                    </div>
+                    <div class="flex flex-between text-xs text-danger font-semibold py-2xs">
                       <span>ส่วนลด:</span>
-                      <span>-{{ formatCurrency(order.discount) }}</span>
+                      <span class="tabular-nums">-{{ formatCurrency(order.discount) }}</span>
+                    </div>
+                    <div class="flex flex-between text-sm font-bold text-primary pt-2xs" style="border-top: 1px dashed var(--border-color);">
+                      <span>ยอดสุทธิ:</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.total) }}</span>
                     </div>
                   </div>
                 </div>
-                <!-- Void Button (only for completed orders) -->
-                <button 
-                  v-if="order.status === 'completed'" 
-                  class="btn btn-sm" 
-                  style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
-                  @click.stop="openVoidModal(order)"
-                >
-                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
-                </button>
+
+                <!-- Void Button (Aligned to the far right) -->
+                <div v-if="order.status === 'completed'" style="display: flex; justify-content: flex-end; width: 100%; margin-top: var(--space-md);">
+                  <button 
+                    type="button"
+                    class="btn order-void-btn" 
+                    style="margin-left: auto;"
+                    @click.stop="openVoidModal(order)"
+                  >
+                    <i class="fa-solid fa-trash-can mr-xs"></i> ลบบิลนี้
+                  </button>
+                </div>
               </div>
             </div>
 
             <!-- Pagination UI for Daily Orders -->
-            <div v-if="totalDailyOrdersPages > 1" class="pagination-bar flex flex-center align-center gap-md">
+            <div v-if="totalDailyOrdersPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
               <button 
                 class="pagination-btn" 
                 :disabled="dailyOrdersCurrentPage === 1" 
-                @click="dailyOrdersCurrentPage--"
+                @click="changeDailyOrdersPage(dailyOrdersCurrentPage - 1)"
               >
                 <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
               </button>
-              <span class="pagination-info">
+              <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalDailyOrdersPages >= 10 }">
                 หน้า {{ dailyOrdersCurrentPage }} / {{ totalDailyOrdersPages }}
               </span>
               <button 
                 class="pagination-btn" 
                 :disabled="dailyOrdersCurrentPage === totalDailyOrdersPages" 
-                @click="dailyOrdersCurrentPage++"
+                @click="changeDailyOrdersPage(dailyOrdersCurrentPage + 1)"
               >
                 ถัดไป <i class="fa-solid fa-chevron-right"></i>
               </button>
@@ -283,22 +476,14 @@
       </div>
 
       <!-- Tab: Order History (ประวัติออเดอร์ย้อนหลัง) -->
-      <div v-if="activeTab === 'order_history'" class="card">
-        <div class="card-header-clean">
-          <div class="card-title card-title-clean"><i class="fa-solid fa-clock-rotate-left mr-xs"></i> ประวัติออเดอร์ย้อนหลัง</div>
-          <div class="flex align-center gap-sm" style="flex-wrap: wrap;">
-            <button 
-              v-if="historyOrders.length > 0"
-              class="btn btn-sm btn-secondary csv-export-btn" 
-              style="display:inline-flex; align-items:center; gap:4px;"
-              @click="exportHistoryOrdersCSV"
-            >
-              <i class="fa-solid fa-file-csv" style="margin-right: 4px;"></i> ส่งออกประวัติออเดอร์ (CSV)
-            </button>
-            
+      <div v-if="activeTab === 'order_history'" class="flex flex-col gap-md">
+        
+        <!-- Filter Card: Separate Box between Date Filter and Orders (Similar to Central Kitchen) -->
+        <div class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex align-center gap-md" style="flex-wrap: wrap;">
             <!-- Staff Filter -->
             <div class="flex align-center gap-xs">
-              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">พนักงาน:</span>
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">พนักงาน:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
@@ -328,7 +513,7 @@
 
             <!-- Payment Filter -->
             <div class="flex align-center gap-xs">
-              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">ชำระเงิน:</span>
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">ชำระเงิน:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
@@ -352,7 +537,7 @@
 
             <!-- Status Filter -->
             <div class="flex align-center gap-xs">
-              <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">สถานะ:</span>
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">สถานะ:</span>
               <div class="custom-select-wrapper" style="width: 140px;" @click.stop>
                 <div 
                   class="custom-select-trigger" 
@@ -374,209 +559,160 @@
           </div>
         </div>
 
-        <div v-if="historyOrders.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
-          ไม่มีรายการออเดอร์ในช่วงเวลาที่เลือก
-        </div>
-        <div v-else>
-          <!-- Desktop Table (Desktop Only) -->
-          <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-            <table class="table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th style="padding: var(--space-md); text-align: left;">วัน-เวลา</th>
-                  <th style="padding: var(--space-md); text-align: left;">เลขที่บิล</th>
-                  <th class="text-center" style="padding: var(--space-md);">พนักงาน</th>
-                  <th class="text-center" style="padding: var(--space-md);">สาขา</th>
-                  <th class="text-center" style="padding: var(--space-md);">ชำระเงิน</th>
-                  <th class="text-center" style="padding: var(--space-md);">ยอดสุทธิ</th>
-                  <th class="text-center" style="padding: var(--space-md);">สถานะ</th>
-                  <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="order in paginatedHistoryOrders" :key="order.id">
-                  <tr 
-                    style="border-bottom: 1px solid var(--border-color); cursor: pointer;"
-                    class="table-row-hover"
-                    @click="toggleExpandOrder(order.id)"
-                  >
-                    <td style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
-                      {{ formatDate(order.created_at) }}<br/>{{ formatTime(order.created_at) }}
-                    </td>
-                    <td style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
-                      #{{ order.order_number }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
-                      {{ order.staff_name || 'ระบบ' }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
-                      {{ order.branch_name || 'ไม่ระบุ' }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); white-space: nowrap;">
-                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" style="margin-right: 4px;"></i>
-                      {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
-                    </td>
-                    <td class="text-center" style="padding: var(--space-sm) var(--space-md); font-weight:bold;">
-                      <div class="flex flex-col align-center" style="gap: 2px;">
-                        <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
-                        <span v-if="order.discount > 0" class="badge animate-fade-in" style="background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 1px 4px; border-radius: var(--radius-sm); font-weight: normal; display: inline-block;">ลด -{{ formatCurrency(order.discount) }}</span>
-                      </div>
-                    </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                      <span v-if="order.status === 'completed'" class="text-success"><i class="fa-solid fa-circle-check text-success" style="margin-right: 4px;"></i> สำเร็จ</span>
-                      <span v-else-if="order.status === 'cancelled'" class="text-danger"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
-                      <span v-else class="text-warning"><i class="fa-solid fa-hourglass-half text-warning" style="margin-right: 4px;"></i> รอชำระ</span>
-                    </td>
-                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;" @click.stop>
-                      <button 
-                        v-if="order.status === 'completed'" 
-                        class="btn-delete-action"
-                        @click="openVoidModal(order)"
-                      >
-                        <i class="fa-solid fa-trash-can"></i> ลบ
-                      </button>
-                      <span v-else>-</span>
-                    </td>
-                  </tr>
-                  <!-- Expand detail row for Desktop table -->
-                  <tr v-if="expandedOrderId === order.id" :key="'expand-' + order.id" style="background: rgba(139, 3, 19, 0.01);">
-                    <td colspan="8" style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-                      <div style="max-width: 500px; margin: 0 auto; border: 1px dashed var(--border-color); padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-primary);">
-                        <div class="font-bold mb-xs" style="color: var(--primary);">รายละเอียดสินค้า:</div>
-                        <div v-if="expandedItems.length === 0" class="text-center" style="color:var(--text-tertiary);">กำลังโหลด...</div>
-                        <div v-else>
-                          <div v-for="item in expandedItems" :key="item.id" class="flex flex-between mb-xs" style="border-bottom:1px solid rgba(0,0,0,0.03); padding-bottom:2px;">
-                            <span>{{ item.item_name }} x{{ item.quantity }}</span>
-                            <span class="font-bold">{{ formatCurrency(item.subtotal) }}</span>
-                          </div>
-                          <!-- Discount Info if applied -->
-                          <div v-if="order.discount > 0" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);">
-                            <div class="flex flex-between">
-                              <span>ยอดรวม (ก่อนหัก):</span>
-                              <span>{{ formatCurrency(order.subtotal) }}</span>
-                            </div>
-                            <div class="flex flex-between font-bold" style="color: #ff3b30;">
-                              <span>ส่วนลด:</span>
-                              <span>-{{ formatCurrency(order.discount) }}</span>
-                            </div>
-                            <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
-                              <span>ยอดสุทธิ:</span>
-                              <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div v-if="order.cancel_reason" class="mt-sm pt-sm" style="border-top: 1px solid rgba(255,59,48,0.1); color:#ff3b30; display: inline-flex; align-items: center; gap: 4px;">
-                          <i class="fa-solid fa-triangle-exclamation text-danger"></i> <strong>เหตุผลที่ยกเลิก:</strong> {{ order.cancel_reason }}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+        <!-- Orders Card / List (Unified Modern Card Layout with Direct Item Details) -->
+        <div ref="historyOrdersCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color);">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>ประวัติออเดอร์ย้อนหลัง</span>
+            </div>
+            <span class="text-xs text-secondary font-medium tabular-nums" v-if="filteredHistoryOrders.length > 0">
+              รวม {{ filteredHistoryOrders.length }} รายการ
+            </span>
           </div>
 
-          <!-- Mobile Cards (Mobile Only) -->
-          <div class="show-mobile-only history-mobile-list" style="margin-bottom: var(--space-md);">
-            <div 
-              v-for="order in paginatedHistoryOrders" 
-              :key="order.id" 
-              class="p-sm card"
-              style="font-size:var(--font-sm); background: var(--bg-primary); display:flex; flex-direction:column; gap:4px; cursor:pointer; border:1px solid var(--border-color);"
-              @click="toggleExpandOrder(order.id)"
-            >
-              <div class="flex flex-between font-bold">
-                <span :style="order.status === 'cancelled' ? 'text-decoration:line-through; opacity:0.5;' : ''">
-                  #{{ order.order_number }}
-                </span>
-                <div>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
-                  <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+          <!-- Skeleton Loading for Order History -->
+          <div v-if="loading || historyOrdersLoading" class="flex flex-col gap-sm">
+            <div v-for="n in 4" :key="'sk-hist-ord-' + n" class="p-md card order-report-card">
+              <div class="flex flex-between align-center gap-sm mb-xs">
+                <div class="flex align-center gap-md" style="flex-wrap: wrap;">
+                  <div class="skeleton" style="height: 18px; width: 85px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 14px; width: 160px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 14px; width: 90px; border-radius: 4px;"></div>
                 </div>
+                <div class="skeleton" style="height: 20px; width: 75px; border-radius: 4px;"></div>
               </div>
-              <div class="flex flex-col gap-xs" style="font-size:var(--font-xs); color:var(--text-secondary); text-align: left; margin-top: 4px; margin-bottom: 4px;">
-                <div class="flex align-center">
-                  <i class="fa-solid fa-user" style="margin-right: 4px; opacity: 0.7;"></i> 
-                  {{ order.staff_name || 'ระบบ' }} 
-                  <span style="margin: 0 6px; color: var(--border-color);">|</span>
-                  <i class="fa-solid fa-store" style="margin-right: 4px; opacity: 0.7;"></i> 
-                  {{ order.branch_name || 'ไม่ระบุ' }}
-                </div>
-                <div class="flex align-center" style="color: var(--text-tertiary);">
-                  <i class="fa-solid fa-clock" style="margin-right: 4px; opacity: 0.7;"></i> 
-                  {{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}
-                </div>
-              </div>
-              <div class="flex flex-between align-center mt-xs" style="font-size:var(--font-xs);">
-                <span style="display: inline-flex; align-items: center; gap: 4px;">
-                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
-                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
-                </span>
-                <div>
-                  <span v-if="order.status === 'completed'" class="text-success"><i class="fa-solid fa-circle-check text-success" style="margin-right: 2px;"></i> สำเร็จ</span>
-                  <span v-else-if="order.status === 'cancelled'" class="text-danger"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> ยกเลิก</span>
-                </div>
-              </div>
-
-              <!-- Expanded detail for Mobile card -->
-              <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);" @click.stop>
-                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
-                <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
-                    <span>{{ item.item_name }} x{{ item.quantity }}</span>
-                    <span>{{ formatCurrency(item.subtotal) }}</span>
-                  </div>
-                  <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
-                    <div class="flex flex-between">
-                      <span>ยอดรวม (ก่อนหัก):</span>
-                      <span>{{ formatCurrency(order.subtotal) }}</span>
-                    </div>
-                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
-                      <span>ส่วนลด:</span>
-                      <span>-{{ formatCurrency(order.discount) }}</span>
-                    </div>
-                    <div class="flex flex-between font-bold" style="border-top: 1px solid var(--border-color); padding-top: 4px; margin-top: 2px;">
-                      <span>ยอดสุทธิ:</span>
-                      <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
-                    </div>
-                  </div>
-                </div>
-                <div v-if="order.cancel_reason" style="font-size:var(--font-xs); color:#ff3b30; margin-top:4px; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-triangle-exclamation text-danger"></i> เหตุผลยกเลิก: {{ order.cancel_reason }}
-                </div>
-                <!-- Void Button inside Mobile Expanded Card -->
-                <button 
-                  v-if="order.status === 'completed'" 
-                  class="btn btn-sm mt-sm" 
-                  style="width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.2); min-height:36px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
-                  @click="openVoidModal(order)"
-                >
-                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
-                </button>
-              </div>
+              <div class="skeleton mt-xs" style="height: 30px; width: 100%; border-radius: 6px;"></div>
             </div>
           </div>
 
-          <!-- Pagination UI -->
-          <div v-if="totalPages > 1" class="pagination-bar flex flex-center align-center gap-md">
-            <button 
-              class="pagination-btn" 
-              :disabled="historyCurrentPage === 1" 
-              @click="historyCurrentPage--"
+          <div v-else-if="filteredHistoryOrders.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
+            ไม่มีรายการออเดอร์ในช่วงเวลาที่เลือก
+          </div>
+          <div v-else class="flex flex-col gap-sm">
+            <div 
+              v-for="order in paginatedHistoryOrders" 
+              :key="order.id" 
+              class="p-md card order-report-card"
+              :class="{ 'cancelled-order': order.status === 'cancelled' }"
             >
-              <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-            </button>
-            <span class="pagination-info">
-              หน้า {{ historyCurrentPage }} / {{ totalPages }}
-            </span>
-            <button 
-              class="pagination-btn" 
-              :disabled="historyCurrentPage === totalPages" 
-              @click="historyCurrentPage++"
-            >
-              ถัดไป <i class="fa-solid fa-chevron-right"></i>
-            </button>
+              <!-- Order Header Row -->
+              <div class="flex flex-between align-center gap-sm" style="flex-wrap: wrap;">
+                <div class="flex align-center gap-md" style="flex-wrap: wrap;">
+                  <span class="font-bold text-base tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
+                    #{{ order.order_number }}
+                  </span>
+                  <div class="flex align-center" style="flex-wrap: wrap; gap: 14px;">
+                    <!-- Date & Time -->
+                    <span class="text-xs text-muted tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <span>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}</span>
+                    </span>
+                    <!-- Staff -->
+                    <span class="text-xs text-secondary" v-if="order.staff_name" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
+                      <span>{{ order.staff_name }}</span>
+                    </span>
+                    <!-- Branch -->
+                    <span class="text-xs text-secondary" v-if="order.branch_name && !selectedBranchId" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-store" style="font-size: 0.75rem;"></i>
+                      <span>{{ order.branch_name }}</span>
+                    </span>
+                    <!-- Payment Method -->
+                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: #ea580c;' : ''"></i>
+                      <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
+                      <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
+                    </span>
+                    <!-- Status -->
+                    <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
+                      <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
+                    </span>
+                    <!-- Discount -->
+                    <span v-if="order.discount > 0" class="order-discount-pill tabular-nums">
+                      ลด -{{ formatCurrency(order.discount) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <div class="order-total-amount tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
+                    {{ formatCurrency(order.total) }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cancel Reason Box if cancelled -->
+              <div v-if="order.cancel_reason" class="order-cancel-reason-box mt-xs">
+                <i class="fa-solid fa-triangle-exclamation mr-xs"></i>
+                <span>เหตุผลยกเลิก: {{ order.cancel_reason }}</span>
+              </div>
+
+              <!-- Item Details Directly Displayed (No clicking required!) -->
+              <div class="order-drawer-content mt-sm pt-sm">
+                <div v-if="order.items && order.items.length > 0" class="order-items-table">
+                  <div v-for="item in order.items" :key="item.id" class="order-item-row flex flex-between py-xs" style="align-items: flex-start;">
+                    <div class="flex gap-xs" style="align-items: flex-start; flex: 1; min-width: 0;">
+                      <span class="order-item-qty tabular-nums" style="margin-top: 1px; flex-shrink: 0;">x{{ item.quantity }}</span>
+                      <span class="order-item-name font-medium" style="word-break: break-word;">{{ item.item_name }}</span>
+                    </div>
+                    <span class="order-item-subtotal tabular-nums font-semibold" style="margin-left: var(--space-sm); flex-shrink: 0;">{{ formatCurrency(item.subtotal) }}</span>
+                  </div>
+
+                  <!-- Subtotal & Discount Info if applied -->
+                  <div v-if="order.discount > 0" class="order-drawer-summary pt-xs mt-xs">
+                    <div class="flex flex-between text-xs text-secondary py-2xs">
+                      <span>ยอดรวมสินค้า:</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.subtotal) }}</span>
+                    </div>
+                    <div class="flex flex-between text-xs text-danger font-semibold py-2xs">
+                      <span>ส่วนลด:</span>
+                      <span class="tabular-nums">-{{ formatCurrency(order.discount) }}</span>
+                    </div>
+                    <div class="flex flex-between text-sm font-bold text-primary pt-2xs" style="border-top: 1px dashed var(--border-color);">
+                      <span>ยอดสุทธิ:</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.total) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center; padding: var(--space-xs);">
+                  ไม่มีรายละเอียดสินค้า
+                </div>
+
+                <!-- Void Button (Pinned to Far Right) -->
+                <div v-if="order.status === 'completed'" class="flex justify-end mt-sm" style="width: 100%;">
+                  <button 
+                    type="button"
+                    class="btn order-void-btn" 
+                    style="margin-left: auto;"
+                    @click.stop="openVoidModal(order)"
+                  >
+                    <i class="fa-solid fa-trash-can mr-xs"></i> ลบบิลนี้
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pagination UI for Order History -->
+            <div v-if="totalPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
+              <button 
+                class="pagination-btn" 
+                :disabled="historyCurrentPage === 1" 
+                @click="changeHistoryOrdersPage(historyCurrentPage - 1)"
+              >
+                <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+              </button>
+              <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalPages >= 10 }">
+                หน้า {{ historyCurrentPage }} / {{ totalPages }}
+              </span>
+              <button 
+                class="pagination-btn" 
+                :disabled="historyCurrentPage === totalPages" 
+                @click="changeHistoryOrdersPage(historyCurrentPage + 1)"
+              >
+                ถัดไป <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -674,7 +810,7 @@
         <!-- Monthly Ledger Section -->
         <div class="divider" style="margin: var(--space-xl) 0; height:1px; background:var(--border-color);"></div>
         
-        <div class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
+        <div ref="ledgerCardRef" class="flex flex-between align-center mb-md" style="flex-wrap: wrap; gap: var(--space-sm);">
           <div class="card-title" style="font-size: var(--font-sm); margin: 0;">
             <i class="fa-solid fa-book" style="margin-right: 6px;"></i> สมุดบัญชีรายรับ-รายจ่าย ({{ ledgerPeriodLabel }})
           </div>
@@ -827,17 +963,17 @@
           <button 
             class="pagination-btn" 
             :disabled="ledgerCurrentPage === 1" 
-            @click="ledgerCurrentPage--"
+            @click="changeLedgerPage(ledgerCurrentPage - 1)"
           >
             <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
           </button>
-          <span class="pagination-info">
+          <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalLedgerPages >= 10 }">
             หน้า {{ ledgerCurrentPage }} / {{ totalLedgerPages }}
           </span>
           <button 
             class="pagination-btn" 
             :disabled="ledgerCurrentPage === totalLedgerPages" 
-            @click="ledgerCurrentPage++"
+            @click="changeLedgerPage(ledgerCurrentPage + 1)"
           >
             ถัดไป <i class="fa-solid fa-chevron-right"></i>
           </button>
@@ -847,106 +983,95 @@
       <!-- Tab: Ranked Menus (อันดับสินค้าขายดี) -->
       <div v-if="activeTab === 'top_menus' && isAdminUser" class="flex flex-col gap-lg">
         
-        <!-- Filter Card: Period Selector (Pills) & Branch Selector -->
-        <div class="card p-md">
-          <div class="flex flex-col gap-md">
-            <!-- Period Mode Tabs (Matching Daily/Monthly/Yearly design) -->
-            <div class="flex gap-xs period-tabs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-              <button 
-                type="button"
-                class="btn btn-secondary btn-sm" 
-                :class="{ 'active': topItemsDays === 1 }"
-                @click="setTopItemsDays(1)"
-              >
-                <i class="fa-solid fa-calendar-day"></i> วันนี้
-              </button>
-              <button 
-                type="button"
-                class="btn btn-secondary btn-sm" 
-                :class="{ 'active': topItemsDays === 7 }"
-                @click="setTopItemsDays(7)"
-              >
-                <i class="fa-solid fa-calendar-week"></i> 7 วัน
-              </button>
-              <button 
-                type="button"
-                class="btn btn-secondary btn-sm" 
-                :class="{ 'active': topItemsDays === 30 }"
-                @click="setTopItemsDays(30)"
-              >
-                <i class="fa-solid fa-calendar-days"></i> 30 วัน
-              </button>
+        <!-- Summary Overview Card -->
+        <div class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color); flex-wrap: wrap; gap: 8px;">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0; flex-wrap: wrap;">
+              <span class="flex align-center gap-xs"><i class="fa-solid fa-fire"></i><span>สรุปภาพรวมอันดับสินค้าขายดี</span></span>
+              <span class="top-menus-period-sub">({{ summaryCardTitle.replace('สรุปยอด', '').trim() }})</span>
             </div>
+            <span class="text-xs text-secondary font-medium tabular-nums">
+              แสดงทั้งหมด {{ topItems.length }} รายการ
+            </span>
+          </div>
 
-            <!-- Title & Subtitle + Branch Selector if Admin -->
-            <div class="flex flex-between align-center flex-wrap gap-md">
-              <div>
-                <span style="font-weight: 700; color: var(--text-primary); font-size: var(--font-lg); display: block;">อันดับสินค้าขายดี</span>
-                <span style="font-size: var(--font-xs); color: var(--text-secondary); font-weight: normal;">สถิติยอดขายและจำนวนชิ้นจากการขายจริง (แสดงทั้งหมด {{ topItems.length }} รายการ)</span>
-              </div>
-
-              <!-- Branch Selector -->
-              <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
-                <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
-                <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
-                  <div 
-                    class="custom-select-trigger reports-filter-control" 
-                    :class="{ 'active': isBranchDropdownOpen }" 
-                    @click="toggleBranchDropdown"
-                    style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
-                  >
-                    <span class="custom-select-text">{{ selectedBranchName }}</span>
-                  </div>
-                  <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                    <div 
-                      class="custom-select-option" 
-                      :class="{ 'selected': selectedBranchId === null }" 
-                      @click="selectBranch(null)"
-                    >
-                      ทุกสาขา
-                    </div>
-                    <div 
-                      v-for="b in branches" 
-                      :key="b.id" 
-                      class="custom-select-option" 
-                      :class="{ 'selected': selectedBranchId === b.id }" 
-                      @click="selectBranch(b.id)"
-                    >
-                      {{ b.name }}
-                    </div>
-                  </div>
+          <div class="sales-clean-summary-grid">
+            <div class="sales-clean-stat">
+              <span class="stat-clean-label">ยอดขายรวมทุกเมนู</span>
+              <div v-if="loading || topItemsLoading" class="skeleton mt-xs" style="height: 28px; width: 120px; border-radius: 6px;"></div>
+              <span v-else class="stat-clean-val text-primary tabular-nums">{{ formatCurrency(topItemsTotalSales) }}</span>
+            </div>
+            <div class="sales-clean-stat border-sides">
+              <span class="stat-clean-label">จำนวนเมนูที่ขายได้</span>
+              <div v-if="loading || topItemsLoading" class="skeleton mt-xs" style="height: 28px; width: 90px; border-radius: 6px;"></div>
+              <span v-else class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
+                {{ topItems.length }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">รายการ</small>
+              </span>
+            </div>
+            <div class="sales-clean-stat">
+              <span class="stat-clean-label">เมนูทำเงินสูงสุด</span>
+              <template v-if="loading || topItemsLoading">
+                <div class="skeleton mt-xs" style="height: 22px; width: 140px; border-radius: 6px;"></div>
+                <div class="skeleton mt-xs" style="height: 14px; width: 110px; border-radius: 4px;"></div>
+              </template>
+              <template v-else>
+                <span class="stat-clean-val tabular-nums" style="color: #b45309; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ topRevenueItem ? topRevenueItem.item_name : '-' }}
+                </span>
+                <div v-if="topRevenueItem" class="flex align-center gap-xs text-xs tabular-nums" style="margin-top: 4px; color: var(--text-secondary);">
+                  <span style="font-weight: 600; color: var(--primary);">{{ formatCurrency(topRevenueItem.total_sales) }}</span>
+                  <span>({{ getTopItemSalesPct(topRevenueItem.total_sales) }}% ของยอดรวม)</span>
                 </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skeleton Loading for top items (Matching exact Ranked Item Card structure) -->
+        <div v-if="loading || topItemsLoading" class="ranked-items-grid">
+          <div v-for="n in 6" :key="'sk-top-' + n" class="ranked-item-card">
+            <div class="ranked-card-header">
+              <div class="skeleton" style="height: 24px; width: 85px; border-radius: 999px;"></div>
+              <div class="skeleton" style="height: 20px; width: 50px; border-radius: 999px;"></div>
+            </div>
+            <div class="ranked-card-single-body">
+              <div class="ranked-image-wrapper">
+                <div class="skeleton" style="width: 100%; height: 100%; border-radius: var(--radius-sm);"></div>
+              </div>
+              <div class="skeleton" style="height: 18px; width: 65%; border-radius: 4px; margin: 6px 0;"></div>
+              <div class="ranked-stats-2boxes">
+                <div class="ranked-stat-box-half">
+                  <div class="skeleton mx-auto mb-xs" style="height: 10px; width: 55px; border-radius: 4px;"></div>
+                  <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                </div>
+                <div class="ranked-stat-box-half">
+                  <div class="skeleton mx-auto mb-xs" style="height: 10px; width: 55px; border-radius: 4px;"></div>
+                  <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
+                <div class="flex flex-between align-center" style="margin-bottom: 4px;">
+                  <div class="skeleton" style="height: 10px; width: 70px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 10px; width: 32px; border-radius: 4px;"></div>
+                </div>
+                <div class="skeleton" style="height: 6px; width: 100%; border-radius: 999px;"></div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Empty state -->
-        <div v-if="topItems.length === 0 && !topItemsLoading" class="card" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: #ffffff !important;">
+        <div v-else-if="topItems.length === 0" class="card" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: #ffffff !important;">
           <i class="fa-solid fa-folder-open mb-sm" style="font-size: 2.5rem; opacity: 0.25; display: block; color: var(--text-primary);"></i>
           ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
 
-        <!-- Skeleton Loading for top items -->
-        <div v-else-if="topItems.length === 0 && topItemsLoading" class="ranked-items-grid">
-          <div v-for="n in 4" :key="'sk-top-' + n" class="ranked-item-card">
-            <div class="ranked-card-header">
-              <div class="skeleton" style="height: 24px; width: 85px; border-radius: 999px;"></div>
-              <div class="skeleton" style="height: 20px; width: 55px; border-radius: 999px;"></div>
-            </div>
-            <div class="skeleton my-sm" style="height: 18px; width: 70%; border-radius: 4px;"></div>
-            <div class="skeleton mb-xs" style="height: 14px; width: 50%; border-radius: 4px;"></div>
-            <div class="skeleton" style="height: 8px; width: 100%; border-radius: 999px;"></div>
-          </div>
-        </div>
-
-        <!-- Grid Cards of Ranked Items -->
+        <!-- Uniform Grid Cards of Ranked Items (Equal Size for Every Rank) -->
         <div v-else class="ranked-items-grid">
           <div 
             v-for="(item, index) in topItems" 
             :key="item.menu_item_id || item.item_name"
             class="ranked-item-card"
-            :class="{ 'ranked-item-card-first': index === 0 }"
           >
             <!-- Card Header: Rank Badge & Category/Type Tag -->
             <div class="ranked-card-header">
@@ -960,48 +1085,8 @@
               <span v-else class="badge-type main">ทั่วไป</span>
             </div>
 
-            <!-- Rank 1 Special Layout (Image Left, Title + Stacked Boxes Right) -->
-            <div v-if="index === 0" class="ranked-card-first-body">
-              <!-- Left: Image Full Height -->
-              <div class="ranked-image-wrapper-first">
-                <img 
-                  v-if="item.image_url" 
-                  :src="item.image_url" 
-                  :alt="item.item_name" 
-                  class="ranked-img"
-                  @error="item.image_url = null"
-                />
-                <div v-else class="ranked-img-placeholder">
-                  <i class="fa-solid fa-utensils"></i>
-                </div>
-              </div>
-
-              <!-- Right: Details & 2 Stacked Full-Width Boxes -->
-              <div class="ranked-details-first">
-                <h3 class="ranked-item-title-first" :title="item.item_name">{{ item.item_name }}</h3>
-                
-                <div class="ranked-stats-first-stacked">
-                  <!-- Box 1: จำนวนขาย (บน) -->
-                  <div class="ranked-stat-box-first">
-                    <span class="stat-label">จำนวนขาย</span>
-                    <div class="stat-value-lg font-bold text-primary">
-                      {{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}
-                      <span class="stat-unit">{{ item.unit || 'ชิ้น' }}</span>
-                    </div>
-                  </div>
-                  <!-- Box 2: ยอดขายรวม (ล่าง) -->
-                  <div class="ranked-stat-box-first">
-                    <span class="stat-label">ยอดขายรวม</span>
-                    <div class="stat-value-lg font-bold text-accent">
-                      {{ formatCurrency(item.total_sales) }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Rank 2..N Single Column Card Layout -->
-            <div v-else class="ranked-card-single-body">
+            <!-- Uniform Single Column Card Body for All Ranks -->
+            <div class="ranked-card-single-body">
               <!-- Product Image -->
               <div class="ranked-image-wrapper">
                 <img 
@@ -1023,16 +1108,34 @@
               <div class="ranked-stats-2boxes">
                 <div class="ranked-stat-box-half">
                   <span class="stat-label">จำนวนขาย</span>
-                  <div class="stat-value font-bold text-primary">
+                  <div class="stat-value font-bold text-primary tabular-nums">
                     {{ Number(Number(item.total_qty).toFixed(2)).toLocaleString() }}
                     <span class="stat-unit">{{ item.unit || 'ชิ้น' }}</span>
                   </div>
                 </div>
                 <div class="ranked-stat-box-half">
                   <span class="stat-label">ยอดขายรวม</span>
-                  <div class="stat-value font-bold text-accent">
+                  <div class="stat-value font-bold text-accent tabular-nums">
                     {{ formatCurrency(item.total_sales) }}
                   </div>
+                </div>
+              </div>
+
+              <!-- Sales Share Percentage Bar -->
+              <div style="margin-top: 8px;">
+                <div class="flex flex-between align-center text-xs tabular-nums" style="margin-bottom: 4px; color: var(--text-secondary);">
+                  <span>สัดส่วนยอดขาย</span>
+                  <span style="font-weight: 700; color: var(--primary);">{{ getTopItemSalesPct(item.total_sales) }}%</span>
+                </div>
+                <div style="height: 6px; width: 100%; background: var(--bg-secondary); border-radius: 999px; overflow: hidden;">
+                  <div
+                    :style="{
+                      width: Math.min(100, Math.max(2, Number(getTopItemSalesPct(item.total_sales)))) + '%',
+                      height: '100%',
+                      background: index === 0 ? 'linear-gradient(90deg, #d97706, #f59e0b)' : 'var(--primary)',
+                      borderRadius: '999px'
+                    }"
+                  ></div>
                 </div>
               </div>
             </div>
@@ -1042,111 +1145,152 @@
       </div>
 
       <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
-      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
+      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" class="flex flex-col gap-md">
         
-        <!-- Filter dropdowns in a 2-column grid -->
-        <div class="grid grid-2 gap-md mb-md">
-          
-          <!-- Category Filter -->
-          <div class="form-group">
-            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภท:</label>
-            <div class="custom-select-wrapper" @click.stop>
-              <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isFilterActionDropdownOpen }" 
-                @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
-              >
-                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
-                  <i :class="getFilterActionIcon(filterAction)"></i>
-                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ selectedFilterActionLabel }}</span>
-                </span>
+        <!-- Filter Card: Separate Box between Date Filter and Activity Logs -->
+        <div class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex align-center gap-md" style="flex-wrap: wrap;">
+            <!-- Category Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">ประเภท:</span>
+              <div class="custom-select-wrapper" style="width: 210px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isFilterActionDropdownOpen }" 
+                  @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ selectedFilterActionLabel }}
+                  </span>
+                </div>
+                <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')" style="padding: 6px 12px; font-size: var(--font-sm);">เข้าสู่ระบบ</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')" style="padding: 6px 12px; font-size: var(--font-sm);">ขายสำเร็จ</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')" style="padding: 6px 12px; font-size: var(--font-sm);">ยกเลิกบิล</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')" style="padding: 6px 12px; font-size: var(--font-sm);">ค่าใช้จ่าย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'restock_ck' }" @click="selectFilterAction('restock_ck')" style="padding: 6px 12px; font-size: var(--font-sm);">เติมสต็อก (ครัวกลาง)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'restock' }" @click="selectFilterAction('restock')" style="padding: 6px 12px; font-size: var(--font-sm);">เติมสต็อก (POS)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')" style="padding: 6px 12px; font-size: var(--font-sm);">ปรับสต็อก</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cook' }" @click="selectFilterAction('cook')" style="padding: 6px 12px; font-size: var(--font-sm);">ทอด/ปรุงสุกพร้อมขาย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'waste' }" @click="selectFilterAction('waste')" style="padding: 6px 12px; font-size: var(--font-sm);">ของเสีย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')" style="padding: 6px 12px; font-size: var(--font-sm);">เครดิตพนักงาน</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')" style="padding: 6px 12px; font-size: var(--font-sm);">ลิ้นชักเงินสด</div>
+                </div>
               </div>
-              <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับปรุงยอด / ของเสีย (Stock & Waste)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+            </div>
+
+            <!-- Staff Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">พนักงาน:</span>
+              <div class="custom-select-wrapper" style="width: 150px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isActivityStaffDropdownOpen }" 
+                  @click="isActivityStaffDropdownOpen = !isActivityStaffDropdownOpen; isFilterActionDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text">
+                    {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
+                  </span>
+                </div>
+                <div v-if="isActivityStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; overflow-y: auto; top: calc(100% + 2px);">
+                  <div class="custom-select-option" :class="{ 'selected': activityStaffFilter === 'all' }" @click="activityStaffFilter = 'all'; isActivityStaffDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div 
+                    v-for="staff in staffList" 
+                    :key="staff.id" 
+                    class="custom-select-option" 
+                    :class="{ 'selected': activityStaffFilter === staff.name }" 
+                    @click="activityStaffFilter = staff.name; isActivityStaffDropdownOpen = false;"
+                    style="padding: 6px 12px; font-size: var(--font-sm);"
+                  >
+                    {{ staff.name }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Staff Filter -->
-          <div class="form-group">
-            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-user" style="margin-right: 6px;"></i> กรองพนักงาน:</label>
-            <div class="custom-select-wrapper" @click.stop>
-              <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isActivityStaffDropdownOpen }" 
-                @click="isActivityStaffDropdownOpen = !isActivityStaffDropdownOpen; isFilterActionDropdownOpen = false;"
-              >
-                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
-                  <i class="fa-solid fa-user"></i>
-                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-                    {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
-                  </span>
-                </span>
+        <!-- Activity Logs Card -->
+        <div ref="activityCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color); flex-wrap: wrap; gap: 8px;">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0; flex-wrap: wrap;">
+              <span class="flex align-center gap-xs"><i class="fa-solid fa-user-shield"></i><span>ประวัติกิจกรรมพนักงาน</span></span>
+              <span class="top-menus-period-sub">({{ summaryCardTitle.replace('สรุปยอด', '').trim() }})</span>
+            </div>
+            <span class="text-xs text-secondary font-medium tabular-nums" v-if="filteredActivityLogs.length > 0 && !loading && !activityLogsLoading">
+              รวม {{ filteredActivityLogs.length }} รายการ
+            </span>
+          </div>
+
+          <!-- Skeleton Loading for Activity Logs -->
+          <div v-if="loading || activityLogsLoading" class="activity-logs-list">
+            <div v-for="n in 5" :key="'sk-act-log-' + n" class="activity-log-item">
+              <div class="log-badge-wrapper">
+                <div class="skeleton" style="width: 36px; height: 36px; border-radius: 50%;"></div>
               </div>
-              <div v-if="isActivityStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; overflow-y: auto; top: calc(100% + 2px);">
-                <div class="custom-select-option" :class="{ 'selected': activityStaffFilter === 'all' }" @click="activityStaffFilter = 'all'; isActivityStaffDropdownOpen = false;"><i class="fa-solid fa-users" style="margin-right: 4px;"></i> ทั้งหมด</div>
-                <div 
-                  v-for="staff in staffList" 
-                  :key="staff.id" 
-                  class="custom-select-option" 
-                  :class="{ 'selected': activityStaffFilter === staff.name }" 
-                  @click="activityStaffFilter = staff.name; isActivityStaffDropdownOpen = false;"
-                >
-                  <i class="fa-solid fa-user" style="margin-right: 4px;"></i> {{ staff.name }}
+              <div class="log-content-wrapper" style="flex: 1;">
+                <div class="skeleton mb-xs" style="height: 16px; width: 75%; border-radius: 4px;"></div>
+                <div class="flex align-center gap-md">
+                  <div class="skeleton" style="height: 12px; width: 90px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 12px; width: 110px; border-radius: 4px;"></div>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
-
-        <div v-if="filteredActivityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
-          ยังไม่มีกิจกรรมที่ตรงตามตัวกรองในวันนี้
-        </div>
-        <div v-else class="activity-logs-list">
-          <div v-for="log in paginatedActivityLogs" :key="log.id" class="activity-log-item">
-            <div class="log-badge-wrapper">
-              <div class="log-badge" :class="log.action">
-                <i :class="getActionIconClass(log.action)"></i>
+          <div v-else-if="filteredActivityLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
+            ไม่มีกิจกรรมที่ตรงตามตัวกรองในช่วงเวลาที่เลือก
+          </div>
+          <div v-else class="activity-logs-list">
+            <div v-for="log in paginatedActivityLogs" :key="log.id" class="activity-log-item">
+              <div class="log-badge-wrapper">
+                <div class="log-badge" :class="resolveActivityAction(log)">
+                  <i :class="getActionIconClass(resolveActivityAction(log))"></i>
+                </div>
               </div>
-            </div>
-            <div class="log-content-wrapper">
-              <div class="log-details">{{ log.details }}</div>
-              <div class="log-meta">
-                <span class="log-user"><i class="fa-solid fa-user" style="margin-right: 4px;"></i>{{ log.staff_name || 'ระบบ' }}</span>
-                <span class="log-time"><i class="fa-solid fa-clock" style="margin-right: 4px;"></i>{{ formatTime(log.created_at) }}</span>
+              <div class="log-content-wrapper">
+                <div class="flex align-center gap-xs flex-wrap">
+                  <span class="log-title">{{ getActivityCardTitle(log) }}</span>
+                  <span 
+                    v-if="getActivityStockTypeBadge(log)" 
+                    class="stock-type-pill" 
+                    :class="getActivityStockTypeBadge(log).type"
+                  >
+                    {{ getActivityStockTypeBadge(log).label }}
+                  </span>
+                </div>
+                <div class="log-details tabular-nums">{{ formatActivityDetails(log) }}</div>
+                <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                  <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-user" style="font-size: 0.75rem;"></i><span>{{ log.staff_name || 'ระบบ' }}</span></span>
+                  <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i><span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span></span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Pagination UI for Activity Logs -->
-        <div v-if="totalActivityPages > 1" class="pagination-bar flex flex-center align-center gap-md">
-          <button 
-            class="pagination-btn" 
-            :disabled="activityCurrentPage === 1" 
-            @click="activityCurrentPage--"
-          >
-            <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-          </button>
-          <span class="pagination-info">
-            หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
-          </span>
-          <button 
-            class="pagination-btn" 
-            :disabled="activityCurrentPage === totalActivityPages" 
-            @click="activityCurrentPage++"
-          >
-            ถัดไป <i class="fa-solid fa-chevron-right"></i>
-          </button>
+          <!-- Pagination UI for Activity Logs -->
+          <div v-if="!loading && !activityLogsLoading && totalActivityPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
+            <button 
+              class="pagination-btn" 
+              :disabled="activityCurrentPage === 1" 
+              @click="changeActivityPage(activityCurrentPage - 1)"
+            >
+              <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+            </button>
+            <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalActivityPages >= 10 }">
+              หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
+            </span>
+            <button 
+              class="pagination-btn" 
+              :disabled="activityCurrentPage === totalActivityPages" 
+              @click="changeActivityPage(activityCurrentPage + 1)"
+            >
+              ถัดไป <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
         </div>
       </div>
     </template>
@@ -1208,58 +1352,195 @@
       <!-- Summary Stat Cards for Stock History (Waste, Credit, Restock) -->
       <div class="stock-summary-cards-grid gap-md">
         <!-- Waste Summary Card -->
-        <div class="card p-md" style="position:relative; overflow:hidden; border-left: 4px solid #dc3545; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">
+        <div 
+          class="card p-md sales-kpi-card" 
+          style="position: relative; overflow: hidden; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #dc2626; cursor: pointer;"
+          :style="stockReasonFilter === 'waste' ? 'border-color: #dc2626; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.12);' : ''"
+          @click="stockReasonFilter = stockReasonFilter === 'waste' ? 'all' : 'waste'"
+        >
           <div class="flex flex-between align-center mb-xs">
-            <span class="text-sm font-bold" style="color: var(--text-secondary);">🗑️ สินค้าเสีย / ทิ้ง</span>
-            <span class="badge badge-danger" style="font-size: var(--font-xxs);">{{ stockWasteCount }} รายการ</span>
+            <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
+              <span class="sales-kpi-icon-badge" style="background: rgba(220, 38, 38, 0.1); color: #dc2626;"><i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i></span>
+              สินค้าเสีย / ทิ้ง
+            </span>
+            <span class="badge badge-danger tabular-nums" style="font-size: var(--font-xxs);">{{ stockWasteCount }} รายการ</span>
           </div>
-          <div class="text-2xl font-bold text-danger">{{ stockWasteTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
-          <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
-            <i class="fa-solid fa-circle-info text-muted"></i>
-            <span class="truncate">{{ stockWasteSummaryText }}</span>
-          </div>
+          <template v-if="loading || stockHistoryLoading">
+            <div class="skeleton my-xs" style="height: 28px; width: 100px; border-radius: 6px;"></div>
+            <div class="skeleton mt-xs" style="height: 14px; width: 160px; border-radius: 4px;"></div>
+          </template>
+          <template v-else>
+            <div class="flex flex-between align-baseline gap-sm tabular-nums">
+              <div class="text-2xl font-bold text-danger">{{ stockWasteTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
+              <div class="text-base font-bold text-danger">฿{{ formatMoney(totalWasteValue) }}</div>
+            </div>
+            <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
+              <i class="fa-solid fa-circle-info text-muted"></i>
+              <span class="truncate">{{ stockWasteSummaryText }}</span>
+            </div>
+          </template>
         </div>
 
         <!-- Staff Credit Summary Card -->
-        <div class="card p-md" style="position:relative; overflow:hidden; border-left: 4px solid #fd7e14; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); cursor: pointer;" @click="stockReasonFilter = stockReasonFilter === 'staff_benefit' ? 'all' : 'staff_benefit'">
+        <div 
+          class="card p-md sales-kpi-card" 
+          style="position: relative; overflow: hidden; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #ea580c; cursor: pointer;"
+          :style="stockReasonFilter === 'staff_benefit' ? 'border-color: #ea580c; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.12);' : ''"
+          @click="stockReasonFilter = stockReasonFilter === 'staff_benefit' ? 'all' : 'staff_benefit'"
+        >
           <div class="flex flex-between align-center mb-xs">
-            <span class="text-sm font-bold" style="color: var(--text-secondary);">🍴 เครดิตพนักงาน / สวัสดิการ</span>
-            <span class="badge" style="background: rgba(253, 126, 20, 0.12); color: #fd7e14; font-size: var(--font-xxs);">{{ stockStaffCreditCount }} รายการ</span>
+            <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
+              <span class="sales-kpi-icon-badge" style="background: rgba(234, 88, 12, 0.1); color: #ea580c;"><i class="fa-solid fa-utensils" style="font-size: 0.75rem;"></i></span>
+              เครดิตพนักงาน / สวัสดิการ
+            </span>
+            <span class="badge tabular-nums" style="background: rgba(234, 88, 12, 0.12); color: #ea580c; font-size: var(--font-xxs);">{{ stockStaffCreditCount }} รายการ</span>
           </div>
-          <div class="flex align-baseline gap-sm">
-            <div class="text-2xl font-bold" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
-            <div v-if="totalStaffCreditValue > 0" class="text-base font-bold text-danger">({{ formatMoney(totalStaffCreditValue) }} ฿)</div>
-          </div>
-          <div class="text-xs text-secondary mt-xs flex flex-between align-center" style="color: var(--text-tertiary);">
-            <span class="truncate"><i class="fa-solid fa-user-check text-muted mr-xs"></i> {{ stockStaffCreditSummaryText }}</span>
-            <span class="text-xs font-bold" style="color: #fd7e14; white-space: nowrap;">ดูสรุปรายคน <i class="fa-solid fa-chevron-right ml-xs"></i></span>
-          </div>
+          <template v-if="loading || stockHistoryLoading">
+            <div class="skeleton my-xs" style="height: 28px; width: 110px; border-radius: 6px;"></div>
+            <div class="skeleton mt-xs" style="height: 14px; width: 180px; border-radius: 4px;"></div>
+          </template>
+          <template v-else>
+            <div class="flex flex-between align-baseline gap-sm tabular-nums">
+              <div class="text-2xl font-bold" style="color: #ea580c;">{{ stockStaffCreditTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
+              <div class="text-base font-bold" style="color: #ea580c;">฿{{ formatMoney(totalStaffCreditValue) }}</div>
+            </div>
+            <div class="text-xs text-secondary mt-xs flex flex-between align-center" style="color: var(--text-tertiary);">
+              <span class="truncate"><i class="fa-solid fa-user-check text-muted mr-xs"></i> {{ stockStaffCreditSummaryText }}</span>
+              <span class="text-xs font-bold" style="color: #ea580c; white-space: nowrap;">ดูสรุปรายคน <i class="fa-solid fa-chevron-right ml-xs"></i></span>
+            </div>
+          </template>
         </div>
 
         <!-- Restock Summary Card -->
-        <div class="card p-md" style="position:relative; overflow:hidden; border-left: 4px solid #28a745; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">
+        <div 
+          class="card p-md sales-kpi-card" 
+          style="position: relative; overflow: visible; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #10b981; cursor: pointer;"
+          :style="stockReasonFilter === 'restock_all' || stockReasonFilter === 'restock' || stockReasonFilter === 'restock_ck' ? 'border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);' : ''"
+          @click="stockReasonFilter = stockReasonFilter === 'restock_all' ? 'all' : 'restock_all'"
+        >
           <div class="flex flex-between align-center mb-xs">
-            <span class="text-sm font-bold" style="color: var(--text-secondary);">📦 การเติมสต็อกรวม</span>
-            <span class="badge badge-success" style="font-size: var(--font-xxs);">{{ stockRestockCount }} รายการ</span>
+            <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
+              <span class="sales-kpi-icon-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-boxes-packing" style="font-size: 0.75rem;"></i></span>
+              การเติมสต็อกรวม
+            </span>
+            <div class="flex align-center gap-xs">
+              <span class="badge badge-success tabular-nums" style="font-size: var(--font-xxs);">{{ stockRestockCount }} รายการ</span>
+              <div style="position: relative; display: inline-flex; align-items: center;" @mouseenter="showRestockValueInfo = true" @mouseleave="showRestockValueInfo = false" @click.stop>
+                <button
+                  type="button"
+                  @click="showRestockValueInfo = !showRestockValueInfo"
+                  aria-label="ดูที่มาของมูลค่าเติมสต็อก"
+                  style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                  :style="showRestockValueInfo ? { color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' } : {}"
+                >
+                  <i class="fa-solid fa-circle-info"></i>
+                </button>
+                <div
+                  v-if="showRestockValueInfo"
+                  class="text-xs"
+                  style="position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: min(290px, 82vw); padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14); white-space: normal; text-align: left;"
+                >
+                  <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(16, 185, 129, 0.25); border-left: 1px solid rgba(16, 185, 129, 0.25); transform: rotate(45deg);"></div>
+                  <div style="font-weight: 700; color: #059669; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
+                    <span>ที่มาของมูลค่าเติมสต็อก</span>
+                  </div>
+                  <div>คำนวณจาก <strong>ราคาขายหน้าร้าน × จำนวนชิ้นที่เติม</strong> ไม่ใช่ราคาทุนวัตถุดิบ</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="text-2xl font-bold text-success">+{{ stockRestockTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
-          <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
-            <i class="fa-solid fa-boxes-packing text-muted"></i>
-            <span>เติมสินค้าเข้าคลังสาขา</span>
-          </div>
+          <template v-if="loading || stockHistoryLoading">
+            <div class="skeleton my-xs" style="height: 28px; width: 100px; border-radius: 6px;"></div>
+            <div class="skeleton mt-xs" style="height: 14px; width: 150px; border-radius: 4px;"></div>
+          </template>
+          <template v-else>
+            <div class="flex flex-between align-baseline gap-sm tabular-nums">
+              <div class="text-2xl font-bold text-success">+{{ stockRestockTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
+              <div class="text-base font-bold text-success">฿{{ formatMoney(totalRestockValue) }}</div>
+            </div>
+            <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
+              <i class="fa-solid fa-boxes-packing text-muted"></i>
+              <span>มูลค่าสินค้าที่เติมเข้าคลังสาขา</span>
+            </div>
+          </template>
         </div>
       </div>
 
-      <!-- Stock Logs Main Card -->
-      <div class="card p-md">
-        <div class="card-header-clean mb-md" style="padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-color);">
-          <div class="card-title card-title-clean">
-            <i class="fa-solid fa-boxes-stacked mr-xs"></i> ประวัติสต็อกและการปรับปรุง
+      <!-- Standalone Filter Card for Stock History -->
+      <div class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+        <div class="flex flex-between align-center flex-wrap gap-md">
+          <!-- Quick Reason Filter Pills -->
+          <div class="flex flex-wrap align-center gap-xs">
+            <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-right: 4px;">ประเภท:</span>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active': stockReasonFilter === 'all' }" 
+              @click="stockReasonFilter = 'all'"
+            >
+              ทั้งหมด ({{ stockHistoryLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-success': stockReasonFilter === 'restock_ck' }" 
+              @click="stockReasonFilter = 'restock_ck'"
+            >
+              เติมสต็อก (ครัวกลาง) ({{ stockCkRestockLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-success': stockReasonFilter === 'restock' }" 
+              @click="stockReasonFilter = 'restock'"
+            >
+              เติมสต็อก (POS) ({{ stockGeneralRestockLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-warning': stockReasonFilter === 'cook' || stockReasonFilter === 'cook_deduct' || stockReasonFilter === 'cook_ready' }" 
+              @click="stockReasonFilter = 'cook'"
+            >
+              ตัดของสด/ปรุงสุก ({{ stockCookLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active': stockReasonFilter === 'adjustment' }" 
+              @click="stockReasonFilter = 'adjustment'"
+            >
+              ปรับปรุงยอด ({{ stockAdjustmentLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active': stockReasonFilter === 'sale' }" 
+              @click="stockReasonFilter = 'sale'"
+            >
+              หักจากการขาย ({{ stockSaleLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active': stockReasonFilter === 'cancel_restore' }" 
+              @click="stockReasonFilter = 'cancel_restore'"
+            >
+              คืนสต็อก (ยกเลิกบิล) ({{ stockCancelRestoreLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-danger': stockReasonFilter === 'waste' }" 
+              @click="stockReasonFilter = 'waste'"
+            >
+              ของเสีย/ทิ้ง ({{ stockWasteCount }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-warning': stockReasonFilter === 'staff_benefit' }" 
+              @click="stockReasonFilter = 'staff_benefit'"
+            >
+              เครดิตพนักงาน ({{ stockStaffCreditCount }})
+            </button>
           </div>
 
           <!-- Menu Item Filter -->
           <div class="flex align-center gap-xs">
-            <span style="font-size: var(--font-xs); font-weight:bold; color:var(--text-secondary);">เลือกสินค้า:</span>
+            <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">สินค้า:</span>
             <div class="custom-select-wrapper" style="width: 220px;" @click.stop>
               <div 
                 class="custom-select-trigger" 
@@ -1271,14 +1552,14 @@
                   {{ selectedStockItemName }}
                 </span>
               </div>
-              <div v-if="isStockItemDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 250px; overflow-y: auto; z-index:1001;">
+              <div v-if="isStockItemDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px); max-height: 250px; overflow-y: auto; z-index: 1001;">
                 <div 
                   class="custom-select-option" 
                   :class="{ 'selected': selectedReportsStockItemId === 'all' }" 
                   @click="selectReportsStockItem({ id: 'all', name: 'สินค้าทั้งหมด (รวมทั้งร้าน)' })" 
                   style="padding: 6px 12px; font-size: var(--font-sm); font-weight: bold; border-bottom: 1px dashed var(--border-color);"
                 >
-                  📦 สินค้าทั้งหมด (รวมทั้งร้าน)
+                  สินค้าทั้งหมด (รวมทั้งร้าน)
                 </div>
                 <div 
                   v-for="item in reportsStockItems" 
@@ -1294,275 +1575,191 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Quick Reason Filter Pills -->
-        <div class="flex flex-wrap align-center gap-xs mb-md" style="padding-bottom: var(--space-xs); border-bottom: 1px dashed var(--border-color);">
-          <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-right: 4px;">กรองกิจกรรม:</span>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active': stockReasonFilter === 'all' }" 
-            @click="stockReasonFilter = 'all'"
-          >
-            ทั้งหมด ({{ stockHistoryLogs.length }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active-danger': stockReasonFilter === 'waste' }" 
-            @click="stockReasonFilter = 'waste'"
-          >
-            <i class="fa-solid fa-trash-can"></i> ของเสีย/ทิ้ง ({{ stockWasteCount }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active-warning': stockReasonFilter === 'staff_benefit' }" 
-            @click="stockReasonFilter = 'staff_benefit'"
-          >
-            <i class="fa-solid fa-utensils"></i> เครดิตพนักงาน ({{ stockStaffCreditCount }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active-success': stockReasonFilter === 'restock' }" 
-            @click="stockReasonFilter = 'restock'"
-          >
-            <i class="fa-solid fa-boxes-packing"></i> เติมสต็อก ({{ stockRestockCount }})
-          </button>
-          <button 
-            class="stock-pill-btn" 
-            :class="{ 'active': stockReasonFilter === 'adjustment' }" 
-            @click="stockReasonFilter = 'adjustment'"
-          >
-            <i class="fa-solid fa-sliders"></i> ปรับปรุงยอด ({{ stockAdjustmentLogs.length }})
-          </button>
-        </div>
-
-        <!-- Per-Staff Credit Breakdown Table (Visible when staff_benefit filter active) -->
-        <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md mb-md" style="background: rgba(253, 126, 20, 0.03); border: 1px solid rgba(253, 126, 20, 0.25); border-radius: var(--radius-md);">
-          <div class="flex flex-between align-center mb-sm flex-wrap gap-xs">
-            <div class="font-bold text-sm flex align-center gap-xs" style="color: #fd7e14;">
-              <i class="fa-solid fa-users-viewfinder"></i> สรุปเครดิตพนักงานรายคน
-            </div>
-            <div class="text-xs font-bold" style="color: var(--text-secondary);">
-              รวม: <span class="font-bold mr-xs" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} ชิ้น</span>
-              <span v-if="totalStaffCreditValue > 0">| <span class="text-danger font-bold">{{ formatMoney(totalStaffCreditValue) }} ฿</span></span>
-            </div>
+      <!-- Per-Staff Credit Breakdown Card (Visible when staff_benefit filter active) -->
+      <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color); border-radius: var(--radius-md);">
+        <div class="flex flex-between align-center mb-sm pb-xs flex-wrap gap-xs" style="border-bottom: 1px solid var(--border-color);">
+          <div class="font-bold text-sm flex align-center gap-xs" style="color: var(--text-primary);">
+            <i class="fa-solid fa-users-viewfinder" style="color: #ea580c;"></i>
+            <span>สรุปเครดิตพนักงานรายคน ({{ staffCreditBreakdown.length }} คน)</span>
           </div>
-
-          <!-- Desktop Table (Desktop Only) -->
-          <div class="hide-mobile" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-primary);">
-            <table class="table" style="width: 100%; border-collapse: collapse; font-size: var(--font-xs);">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(253, 126, 20, 0.08);">
-                  <th style="padding: 8px 12px; text-align: left;">พนักงาน</th>
-                  <th style="padding: 8px 12px; text-align: center;">จำนวนครั้ง</th>
-                  <th style="padding: 8px 12px; text-align: center;">จำนวนชิ้น</th>
-                  <th style="padding: 8px 12px; text-align: right;">มูลค่า (บาท)</th>
-                  <th style="padding: 8px 12px; text-align: left;">เมนูที่เบิก/ทาน</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="staff in staffCreditBreakdown" :key="staff.name" style="border-bottom: 1px solid var(--border-color);" class="table-row-hover">
-                  <td style="padding: 8px 12px; font-weight: bold; color: var(--text-primary);">
-                    <i class="fa-solid fa-user-circle mr-xs" style="color: #fd7e14;"></i> {{ staff.name }}
-                  </td>
-                  <td style="padding: 8px 12px; text-align: center; color: var(--text-secondary);">{{ staff.log_count }} ครั้ง</td>
-                  <td style="padding: 8px 12px; text-align: center; font-weight: bold; color: #fd7e14;">{{ staff.total_qty }} ชิ้น</td>
-                  <td style="padding: 8px 12px; text-align: right; font-weight: bold; color: var(--danger-color, #dc3545);">
-                    {{ staff.total_value > 0 ? `${formatMoney(staff.total_value)} ฿` : '-' }}
-                  </td>
-                  <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 300px;" class="truncate">
-                    {{ staff.items_summary }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile Cards List (Mobile Only) -->
-          <div class="show-mobile-flex flex-col gap-xs">
-            <div 
-              v-for="staff in staffCreditBreakdown" 
-              :key="staff.name" 
-              class="card p-sm"
-              style="background: #ffffff; border: 1px solid var(--border-color); border-left: 3.5px solid #fd7e14; border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,0.03);"
-            >
-              <!-- Row 1: Staff Name & Badges -->
-              <div class="flex flex-between align-center mb-xs">
-                <div class="font-bold text-sm text-primary flex align-center gap-xs">
-                  <i class="fa-solid fa-user-circle text-warning"></i>
-                  <span>{{ staff.name }}</span>
-                </div>
-                <div class="flex align-center gap-xs">
-                  <span class="capsule-badge badge-warning text-xs font-bold">{{ staff.total_qty }} ชิ้น</span>
-                  <span v-if="staff.total_value > 0" class="capsule-badge badge-danger text-xs font-bold">{{ formatMoney(staff.total_value) }} ฿</span>
-                </div>
-              </div>
-
-              <!-- Row 2: Frequency & Menu list -->
-              <div class="flex flex-between align-center text-xs text-secondary mt-xs" style="background: rgba(253, 126, 20, 0.05); border-radius: 6px; padding: 6px 10px;">
-                <span class="text-tertiary font-medium">{{ staff.log_count }} ครั้ง</span>
-                <span class="font-medium text-primary text-right truncate ml-sm" style="max-width: 70%;" :title="staff.items_summary">
-                  {{ staff.items_summary }}
-                </span>
-              </div>
-            </div>
+          <div class="flex align-center gap-xs text-xs font-bold tabular-nums" style="color: var(--text-secondary);">
+            <span>รวม <span style="color: #ea580c;">{{ stockStaffCreditTotalQty }} ชิ้น</span></span>
+            <span v-if="totalStaffCreditValue > 0">| <span class="text-danger">฿{{ formatMoney(totalStaffCreditValue) }}</span></span>
           </div>
         </div>
 
-        <div v-if="stockHistoryLoading" class="flex flex-col gap-sm">
-          <div v-for="n in 4" :key="'sk-sh-' + n" class="card p-md flex flex-between align-center">
+        <div class="flex flex-col">
+          <div 
+            v-for="(staff, idx) in staffCreditBreakdown" 
+            :key="staff.name" 
+            class="flex flex-col gap-xs"
+            :style="{
+              padding: '10px 2px',
+              borderBottom: idx < staffCreditBreakdown.length - 1 ? '1px dashed var(--border-color)' : 'none'
+            }"
+          >
+            <div class="flex flex-between align-center gap-xs flex-wrap">
+              <div class="flex align-center gap-xs" style="min-width: 0;">
+                <span class="text-xs font-bold tabular-nums" style="color: #ea580c; min-width: 18px;">{{ idx + 1 }}.</span>
+                <span class="font-bold text-sm text-primary">{{ staff.name }}</span>
+                <span class="text-xs text-muted tabular-nums">({{ staff.log_count }} ครั้ง)</span>
+              </div>
+              <div class="flex align-center gap-xs text-xs font-bold tabular-nums" style="flex-shrink: 0;">
+                <span style="color: #c2410c;">{{ staff.total_qty }} ชิ้น</span>
+                <span v-if="staff.total_value > 0" class="text-danger">| ฿{{ formatMoney(staff.total_value) }}</span>
+              </div>
+            </div>
+            <div class="text-xs text-secondary tabular-nums" style="padding-left: 24px; line-height: 1.5;">
+              {{ staff.items_summary }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Logs Main Card -->
+      <div ref="stockLogsCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+        <div class="card-header-clean mb-md" style="padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-color);">
+          <div class="card-title card-title-clean">
+            <i class="fa-solid fa-boxes-stacked mr-xs" style="color: var(--primary);"></i> ประวัติสต็อกและการปรับปรุง
+          </div>
+          <span class="text-xs text-muted font-bold tabular-nums">{{ filteredStockLogs.length }} รายการ</span>
+        </div>
+
+        <div v-if="loading || stockHistoryLoading" class="activity-logs-list">
+          <div v-for="n in 5" :key="'sk-sh-' + n" class="activity-log-item" style="align-items: center;">
+            <div class="skeleton" style="width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;"></div>
             <div style="flex: 1;">
-              <div class="skeleton mb-xs" style="height: 16px; width: 45%; border-radius: 4px;"></div>
-              <div class="skeleton" style="height: 12px; width: 30%; border-radius: 4px;"></div>
+              <div class="skeleton mb-xs" style="height: 15px; width: 45%; border-radius: 4px;"></div>
+              <div class="skeleton mb-xs" style="height: 12px; width: 65%; border-radius: 4px;"></div>
+              <div class="skeleton" style="height: 11px; width: 35%; border-radius: 4px;"></div>
             </div>
-            <div class="skeleton" style="height: 20px; width: 70px; border-radius: 6px;"></div>
+            <div style="text-align: right; flex-shrink: 0;">
+              <div class="skeleton mb-xs" style="height: 18px; width: 55px; border-radius: 6px; margin-left: auto;"></div>
+              <div class="skeleton" style="height: 12px; width: 70px; border-radius: 4px;"></div>
+            </div>
           </div>
         </div>
-        <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl); background: rgba(0,0,0,0.01); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
-          <div class="mb-xs font-bold text-base" style="color: var(--text-primary);">
-            <i class="fa-solid fa-folder-open text-muted mr-xs"></i> ไม่พบประวัติกิจกรรมสต็อกในช่วงเวลาที่เลือก ({{ periodMode === 'daily' ? formatDate(selectedDate) : (periodMode === 'monthly' ? selectedMonth : selectedYear) }})
+        <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-lg text-sm" style="padding: var(--space-lg); background: #ffffff; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(139, 3, 19, 0.06); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <i class="fa-solid fa-box-open" style="font-size: 1rem;"></i>
+          </div>
+          <div class="font-bold text-sm mb-xs" style="color: var(--text-primary);">
+            ไม่พบประวัติสต็อก ({{ periodMode === 'daily' ? formatDate(selectedDate) : (periodMode === 'monthly' ? selectedMonth : selectedYear) }})
           </div>
           <div class="text-xs text-muted mb-md">
-            ยังไม่มีการบันทึกเติมสต็อก ของเสีย หรือเครดิตพนักงานในช่วงเวลานี้
+            ไม่มีรายการตามตัวกรองหรือช่วงเวลาที่เลือก
           </div>
           <div class="flex justify-center gap-xs flex-wrap">
-            <button class="stock-pill-btn" @click="selectYesterdayDate">
-              <i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i> ดูประวัติสต็อกเมื่อวาน ({{ getYesterdayLabel() }})
+            <button
+              v-if="stockReasonFilter !== 'all' || selectedReportsStockItemId !== 'all'"
+              class="stock-pill-btn"
+              @click="stockReasonFilter = 'all'; selectReportsStockItem({ id: 'all', name: 'สินค้าทั้งหมด (รวมทั้งร้าน)' })"
+            >
+              <i class="fa-solid fa-rotate-left" style="color: var(--primary);"></i> ล้างตัวกรอง
             </button>
-            <button class="stock-pill-btn" @click="switchToMonthlyStock">
-              <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> ดูประวัติสต็อกรายเดือน ({{ selectedMonth }})
+            <button class="stock-pill-btn" @click="selectYesterdayDate">
+              <i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i> ดูเมื่อวาน ({{ getYesterdayLabel() }})
+            </button>
+            <button v-if="periodMode !== 'monthly'" class="stock-pill-btn" @click="switchToMonthlyStock">
+              <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> ดูรายเดือน ({{ selectedMonth }})
             </button>
           </div>
         </div>
         <div v-else>
-          <!-- Desktop Table (Desktop Only) -->
-          <div class="hide-mobile" style="display: block; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-            <table class="table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th style="padding: var(--space-md); text-align: left;">สินค้า</th>
-                  <th class="text-center" style="padding: var(--space-md);">ชื่อพนักงาน</th>
-                  <th style="padding: var(--space-md); text-align: left;">กิจกรรม</th>
-                  <th class="text-center" style="padding: var(--space-md);">เวลา</th>
-                  <th class="text-center" style="padding: var(--space-md);">จำนวนก่อนปรับ</th>
-                  <th class="text-center" style="padding: var(--space-md);">จำนวนที่ปรับ</th>
-                  <th class="text-center" style="padding: var(--space-md);">จำนวนหลังปรับ</th>
-                  <th style="padding: var(--space-md); text-align: left;">หมายเหตุ / เหตุผล</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="log in paginatedStockLogs" 
-                  :key="log.id"
-                  style="border-bottom: 1px solid var(--border-color);"
-                  class="table-row-hover"
-                >
-                  <td style="padding: var(--space-sm) var(--space-md); font-weight: 500;">
-                    {{ log.item_name || selectedStockItemName }}
-                  </td>
-                  <td class="text-center" style="padding: var(--space-sm) var(--space-md);">
-                    {{ log.staff_name || 'ระบบ' }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md);">
-                    <div class="flex align-center gap-xs flex-wrap">
-                      <span 
-                        class="badge" 
-                        :style="isRawStockLog(log) 
-                          ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;' 
-                          : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;'"
-                      >
-                        <i :class="isRawStockLog(log) ? 'fa-solid fa-box' : 'fa-solid fa-drumstick-bite'" style="font-size: 9px;"></i>
-                        {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
-                      </span>
-                      <span class="font-bold flex align-center" style="gap: 4px;">
-                        <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
-                        <span>{{ getStockReportActionLabel(log) }}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-sm) var(--space-md); color:var(--text-secondary);">
-                    {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
-                    {{ log.previous_stock }}
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center;" :class="log.change_qty > 0 ? 'text-success' : 'text-danger'">
-                    <strong>{{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}</strong>
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); text-align: center; font-weight:bold; font-variant-numeric: tabular-nums;">
-                    {{ log.new_stock }}
-                    <div class="text-xs text-muted" style="font-weight: normal; font-size: 10px;">{{ isRawStockLog(log) ? '(ของสด)' : '(พร้อมขาย)' }}</div>
-                  </td>
-                  <td style="padding: var(--space-sm) var(--space-md); font-size: var(--font-xs); color: var(--text-secondary); max-width: 250px;" class="truncate">
-                    {{ formatReportLogNote(log, isRawStockLog(log)) || '-' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile List View (Mobile Only) -->
-          <div class="show-mobile-only">
-            <div class="flex flex-col gap-md">
+          <!-- Unified Clean White Cards for Desktop & Mobile -->
+          <div class="activity-logs-list" style="gap: 0;">
+            <template v-for="(log, idx) in paginatedStockLogs" :key="log.id">
               <div 
-                v-for="log in paginatedStockLogs" 
-                :key="log.id" 
-                class="card p-md flex flex-between align-center gap-md"
-                style="font-size: var(--font-sm); background: var(--bg-primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);"
+                class="activity-log-item stock-log-card"
+                :class="{
+                  'cook-pair-top': isReportCookPair(log, paginatedStockLogs[idx + 1]),
+                  'cook-pair-bottom': idx > 0 && isReportCookPair(paginatedStockLogs[idx - 1], log)
+                }"
               >
-                <div class="flex-1 min-w-0" style="text-align: left;">
-                  <div class="font-bold mb-xs" style="color: var(--text-primary);">
-                    {{ log.item_name || selectedStockItemName }}
+                <!-- Left Reason Badge -->
+                <div class="log-badge-wrapper">
+                  <div class="log-badge" :class="'stock-reason-' + getStockLogCategory(log)">
+                    <i :class="getStockCategoryIconClass(log)"></i>
                   </div>
-                  <div class="font-bold mb-xs" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                </div>
+
+                <!-- Center Info -->
+                <div class="log-content-wrapper">
+                  <div class="flex align-center gap-xs flex-wrap">
+                    <span class="log-title">{{ log.item_name || selectedStockItemName }}</span>
                     <span 
-                      class="badge" 
-                      :style="isRawStockLog(log) 
-                        ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;' 
-                        : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px;'"
+                      class="stock-type-pill" 
+                      :class="isRawStockLog(log) ? 'raw' : 'cooked'"
                     >
-                      <i :class="isRawStockLog(log) ? 'fa-solid fa-box' : 'fa-solid fa-drumstick-bite'" style="font-size: 9px;"></i>
                       {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
                     </span>
-                    <i :class="getStockReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
-                    <span>{{ getStockReportActionLabel(log) }}</span>
-                    <span 
-                      :class="log.change_qty > 0 ? 'text-success' : 'text-danger'"
-                      style="margin-left: 4px; font-variant-numeric: tabular-nums;"
-                    >
-                      {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }}
-                    </span>
+                    <span class="stock-action-tag">{{ getStockReportActionLabel(log) }}</span>
                   </div>
-                  <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-xs);">
-                    โดย: {{ log.staff_name || 'ระบบ' }} <span style="margin: 0 4px; color: var(--border-color);">|</span> {{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}
-                  </div>
-                  <div v-if="formatReportLogNote(log, isRawStockLog(log))" style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 6px; border-left: 3px solid var(--primary-light); padding-left: 8px; background: rgba(139, 3, 19, 0.01); padding-top: 4px; padding-bottom: 4px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; line-height: 1.4; word-break: break-word;">
+
+                  <div v-if="formatReportLogNote(log, isRawStockLog(log))" class="log-details tabular-nums">
                     {{ formatReportLogNote(log, isRawStockLog(log)) }}
                   </div>
+
+                  <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
+                      <span>{{ log.staff_name || 'ระบบ' }}</span>
+                    </span>
+                    <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span>
+                    </span>
+                  </div>
                 </div>
-                <div style="text-align: right; flex-shrink: 0; min-width: 80px; display: flex; flex-direction: column; gap: 2px;">
-                  <div style="font-size: var(--font-xxs); color: var(--text-tertiary); letter-spacing: 0.5px;">{{ isRawStockLog(log) ? 'ยอดของสดหลังปรับ' : 'ยอดพร้อมขายหลังปรับ' }}</div>
-                  <div class="font-bold text-base" style="color: var(--text-primary); font-variant-numeric: tabular-nums;">{{ log.new_stock }}</div>
+
+                <!-- Right Stock Change & Balance -->
+                <div class="stock-log-right tabular-nums">
+                  <div class="stock-delta-badge" :class="log.change_qty > 0 ? 'positive' : 'negative'">
+                    {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} ชิ้น
+                  </div>
+                  <div v-if="log.previous_stock !== null && log.previous_stock !== undefined" class="stock-balance-flow">
+                    <span>{{ log.previous_stock }}</span>
+                    <i class="fa-solid fa-arrow-right" style="font-size: 9px; opacity: 0.6;"></i>
+                    <strong style="color: var(--text-primary);">{{ log.new_stock }}</strong>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <!-- Downward Arrow Connector for Paired Cooking Cards -->
+              <div 
+                v-if="isReportCookPair(log, paginatedStockLogs[idx + 1])" 
+                class="flex flex-center align-center cook-pair-connector" 
+                style="margin: -11px 0; z-index: 3; position: relative; pointer-events: none;"
+              >
+                <div 
+                  class="cook-pair-pill"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: border-color var(--transition-base), box-shadow var(--transition-base);"
+                >
+                  <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
+                  <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- Pagination UI -->
-          <div v-if="totalStockLogsPages > 1" class="pagination-bar flex flex-center align-center gap-md">
+          <div v-if="totalStockLogsPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
             <button 
               class="pagination-btn" 
               :disabled="stockLogsCurrentPage === 1" 
-              @click="stockLogsCurrentPage--"
+              @click="changeStockLogsPage(stockLogsCurrentPage - 1)"
             >
               <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
             </button>
-            <span class="pagination-info">
+            <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalStockLogsPages >= 10 }">
               หน้า {{ stockLogsCurrentPage }} / {{ totalStockLogsPages }}
             </span>
             <button 
               class="pagination-btn" 
               :disabled="stockLogsCurrentPage === totalStockLogsPages" 
-              @click="stockLogsCurrentPage++"
+              @click="changeStockLogsPage(stockLogsCurrentPage + 1)"
             >
               ถัดไป <i class="fa-solid fa-chevron-right"></i>
             </button>
@@ -1919,7 +2116,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import DatePeriodFilter from '../components/DatePeriodFilter.vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange, isAdmin, isManagerOrAdmin, getUser } from '../helpers';
@@ -1942,6 +2139,8 @@ const currentUser = getUser();
 const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') !== null && sessionStorage.getItem('selected_branch_id') !== 'all' ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
 
 const activeTab = ref('sales');
+const showAvgBillInfo = ref(false);
+const showRestockValueInfo = ref(false);
 
 // New Filters State & Helpers
 const customStartTime = ref('00.00');
@@ -2154,6 +2353,7 @@ const applyDataFromStore = () => {
       total_sales: data.total_revenue || 0,
       total_orders: data.total_orders || 0,
       average_bill: data.avg_order_value || 0,
+      historical_avg_bill: data.historical_avg_value || 0,
       cash_sales: data.payment_breakdown?.cash_total || 0,
       cash_orders: data.payment_breakdown?.cash_count || 0,
       qr_sales: data.payment_breakdown?.qr_total || 0,
@@ -2166,7 +2366,7 @@ const applyDataFromStore = () => {
     };
   }
   
-  if (store.reportTopItems && topItemsDays.value === 7) {
+  if (store.reportTopItems && !topItems.value.length) {
     topItems.value = store.reportTopItems.map(item => ({
       ...item,
       total_sales: item.total_revenue || 0
@@ -2260,6 +2460,16 @@ const availableYears = ref([2024, 2025, 2026, 2027, 2028]);
 // Order History States
 const historyStatusFilter = ref('all');
 const historyOrders = ref([]);
+const historyOrdersLoading = ref(false);
+let historyFilterSkeletonTimer = null;
+const triggerHistoryFilterSkeleton = () => {
+  historyCurrentPage.value = 1;
+  historyOrdersLoading.value = true;
+  if (historyFilterSkeletonTimer) clearTimeout(historyFilterSkeletonTimer);
+  historyFilterSkeletonTimer = setTimeout(() => {
+    historyOrdersLoading.value = false;
+  }, 220);
+};
 const historyCurrentPage = ref(1);
 const historyOrdersPerPage = 20;
 
@@ -2299,8 +2509,12 @@ watch(activeTab, (newVal) => {
     loadOrderHistory();
   } else if (newVal === 'cash_audit') {
     fetchCashDrawerSummary();
-  } else if (newVal === 'stock_history') {
+  } else if (newVal === 'stock_history' || newVal === 'activity_logs') {
     loadStockHistoryLogs();
+    if (newVal === 'activity_logs') {
+      loadActivityLogsForPeriod();
+      loadExpensesForPeriod();
+    }
   } else if (newVal === 'top_menus') {
     loadTopItems();
   }
@@ -2308,6 +2522,13 @@ watch(activeTab, (newVal) => {
 
 watch(historyStatusFilter, () => {
   historyCurrentPage.value = 1;
+});
+
+watch([historyStaffFilter, historyPaymentFilter, customStartTime, customEndTime], () => {
+  triggerHistoryFilterSkeleton();
+  if (activeTab.value === 'top_menus' && periodMode.value === 'daily') {
+    loadTopItems();
+  }
 });
 
 const loading = ref(true);
@@ -2336,17 +2557,41 @@ const topItemsDays = ref(7); // default 7 days
 const topItemsCache = ref({});
 const topItemsLoading = ref(false);
 
-const setTopItemsDays = (days) => {
-  topItemsDays.value = days;
-  const cacheKey = `${selectedBranchId.value || 'all'}_${days}`;
-  if (topItemsCache.value[cacheKey]) {
-    topItems.value = topItemsCache.value[cacheKey];
-  }
-  loadTopItems();
+const topItemsTotalSales = computed(() => {
+  return topItems.value.reduce((sum, item) => sum + (Number(item.total_sales) || 0), 0);
+});
+
+const topRevenueItem = computed(() => {
+  if (!topItems.value || topItems.value.length === 0) return null;
+  return [...topItems.value].sort((a, b) => (Number(b.total_sales) || 0) - (Number(a.total_sales) || 0))[0];
+});
+
+const getTopItemSalesPct = (sales) => {
+  const total = topItemsTotalSales.value;
+  if (!total || total <= 0) return 0;
+  const pct = ((Number(sales) || 0) / total) * 100;
+  return pct >= 10 ? Math.round(pct) : Number(pct.toFixed(1));
 };
 const expenses = ref([]);
 const activityLogs = ref([]);
+const activityLogsLoading = ref(false);
+const stockHistoryLogs = ref([]);
+const allStockHistoryLogs = ref([]);
+const stockHistoryLoading = ref(false);
+let activityFilterSkeletonTimer = null;
+const triggerActivityFilterSkeleton = () => {
+  activityCurrentPage.value = 1;
+  activityLogsLoading.value = true;
+  if (activityFilterSkeletonTimer) clearTimeout(activityFilterSkeletonTimer);
+  activityFilterSkeletonTimer = setTimeout(() => {
+    activityLogsLoading.value = false;
+  }, 220);
+};
 const filterAction = ref('all');
+
+watch([filterAction, activityStaffFilter], () => {
+  triggerActivityFilterSkeleton();
+});
 
 const getExpenseCategoryLabel = (cat) => {
   const map = {
@@ -2367,23 +2612,158 @@ const getExpenseCategoryLabel = (cat) => {
   return map[cat] || cat;
 };
 
+const resolveActivityAction = (log) => {
+  const act = log?.action || '';
+  const raw = String(log?.details || '');
+  if (act === 'restock_ck' || ((act.startsWith('restock_') || act.startsWith('adjust_')) && raw.includes('ครัวกลาง'))) {
+    return 'restock_ck';
+  }
+  if ((act === 'restock_stock' || act === 'restock_raw_stock' || act === 'restock_modifier') && raw.includes('[สาเหตุ:')) {
+    return act === 'restock_raw_stock' ? 'adjust_raw_stock' : 'adjust_stock';
+  }
+  return act;
+};
+
+const getActivityStockTypeBadge = (log) => {
+  const act = resolveActivityAction(log);
+  const stockActions = [
+    'restock_ck', 'restock_stock', 'restock_raw_stock', 'restock_modifier',
+    'adjust_stock', 'adjust_raw_stock', 'adjust_modifier',
+    'record_waste', 'record_raw_waste', 'staff_credit', 'staff_raw_credit'
+  ];
+  if (!stockActions.includes(act)) return null;
+  if (log?.stock_kind === 'raw') return { label: 'ของสด', type: 'raw' };
+  if (log?.stock_kind === 'cooked') return { label: 'พร้อมขาย', type: 'cooked' };
+  const raw = String(log?.details || '');
+  if (act.includes('_modifier') || raw.includes('เครื่องปรุง')) {
+    return { label: 'เครื่องปรุง', type: 'raw' };
+  }
+  if (act.includes('_raw_') || raw.includes('ของสด') || raw.includes('วัตถุดิบ')) {
+    return { label: 'ของสด', type: 'raw' };
+  }
+  return { label: 'พร้อมขาย', type: 'cooked' };
+};
+
+const getActivityCardTitle = (log) => {
+  const act = resolveActivityAction(log);
+  const raw = String(log?.details || '');
+  if (act === 'fry_chicken') {
+    const m = raw.match(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)/);
+    return m ? `${m[1]}สินค้าพร้อมขาย` : 'ทอด/ปรุงสุกพร้อมขาย';
+  }
+  const map = {
+    login: 'เข้าสู่ระบบ',
+    complete_order: 'ขายสำเร็จ',
+    cancel_order: 'ยกเลิกบิล',
+    log_expense: 'บันทึกค่าใช้จ่าย',
+    delete_expense: 'ยกเลิกค่าใช้จ่าย',
+    reverse_expense: 'ยกเลิกค่าใช้จ่าย',
+    restock_ck: 'เติมสต็อก (ครัวกลาง)',
+    restock_stock: 'เติมสต็อก (POS)',
+    restock_raw_stock: 'เติมสต็อก (POS)',
+    restock_modifier: 'เติมสต็อกเครื่องปรุง (POS)',
+    adjust_stock: 'ปรับสต็อก',
+    adjust_raw_stock: 'ปรับสต็อก',
+    adjust_modifier: 'ปรับสต็อกเครื่องปรุง',
+    reverse_stock_log: 'ยกเลิกรายการสต็อก',
+    record_waste: 'บันทึกของเสีย',
+    record_raw_waste: 'บันทึกของเสีย',
+    staff_credit: 'เครดิตพนักงาน',
+    staff_raw_credit: 'เครดิตพนักงาน',
+    cash_opening_set: 'ตั้งเงินทอนเริ่มต้น',
+    cash_audit: 'ตรวจนับลิ้นชักเงินสด',
+    setting_change: 'เปลี่ยนการตั้งค่า'
+  };
+  return map[act] || 'กิจกรรมระบบ';
+};
+
+const formatActivityDetails = (log) => {
+  const raw = String(log?.details || '').trim();
+  if (!raw) return '-';
+  const badge = getActivityStockTypeBadge(log);
+  const kindPrefix = badge ? `${badge.label} • ` : '';
+  const formatted = raw
+    .replace(/^(.+?)\s*เข้าสู่ระบบ(?:สำเร็จ)?\s*\(สาขา:\s*(.+)\)$/, '$1\nสาขา: $2')
+    .replace(/^สร้าง(?:ออเดอร์และชำระเงินสำเร็จ|และชำระเงินออเดอร์)\s*เลขที่\s*#?(\S+)\s*ยอดรวม\s*([\d,.]+)\s*บาท$/, 'เลขที่ #$1\nยอดรวม ฿$2')
+    .replace(/^ยกเลิก(?:บิล|ออเดอร์)\s*#?(\S+)\s*สำเร็จ\s*\(เหตุผล:\s*(.+)\)$/, 'เลขที่ #$1\nเหตุผล: $2')
+    .replace(/^รายจ่าย:\s*/, '')
+    .replace(/^บันทึกค่าใช้จ่าย\s*หมวดหมู่\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*บาท(?:\s*\(บันทึกเพิ่มเติม:\s*(.+)\))?$/, (_, cat, amt, note) => `${cat}\n฿${amt}${note ? ` (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')})` : ''}`)
+    .replace(/\(เบิกของจากครัวกลาง\s*/g, '(')
+    .replace(/^ยกเลิก(?:และคืนยอดค่าใช้จ่าย|รายการเบิกของจากครัวกลาง)\s*(#\S+)\s*\((.+?)\)\s*จำนวน\s*([\d,.]+)\s*บาท.*$/, (_, id, note, amt) => `รายการ ${id} (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')})\n฿${amt}`)
+    .replace(/^(?:ปรับปรุง|เติม)สต็อก(?:ของสด|ของทอด|ของนึ่ง|ของปิ้ง|ของห่อ|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก|เครื่องปรุง|วัตถุดิบอัตโนมัติจากครัวกลาง)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[(?:สาเหตุ:\s*)?(.+?)\])?$/, (_, name, qty, prev, next, r) => `${kindPrefix}${name} ${qty}\nคงเหลือ ${prev} → ${next}${r && r !== 'อื่นๆ' ? ` (${r})` : ''}`)
+    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(ของสดคงเหลือ:\s*([\d,.]+),\s*.+?พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, 'นำของสดมา$1: $2 +$3 $4\nหลัง$1: ของสดเหลือ $5 / พร้อมขาย $6')
+    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1เพิ่ม: $2 +$3 $4\nหลัง$1: พร้อมขาย $5')
+    .replace(/^ยกเลิกบันทึกสต็อก\s*(#\S+)\s*\((.+?)\).*$/, 'รายการ $1\n$2')
+    .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? `\n${note}` : ''}`)
+    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => {
+      const cleanStaffNote = String(note || '').replace(/^\[.*?\]\s*/, '').trim();
+      const staffName = String(log?.staff_name || '').trim();
+      const showNote = cleanStaffNote && cleanStaffNote !== 'แจกพนักงานรับประทาน' && (!staffName || cleanStaffNote !== staffName);
+      return `${kindPrefix}${name} ${qty}${showNote ? `\n${cleanStaffNote}` : ''}`;
+    })
+    .replace(/^.+?บันทึกเงินทอนตั้งต้น(?:กะ)?วันที่\s*(\S+)\s*(?:เป็นเงิน|จำนวน)\s*([\d,.]+)\s*บาท$/, 'วันที่ $1\nเป็นเงิน ฿$2')
+    .replace(/^.+?ตรวจสอบเงินสด(?:กะ)?วันที่\s*(\S+)\s*\(นับจริง:\s*([\d,.]+)\s*บาท,\s*คาดการณ์:\s*([\d,.]+)\s*บาท,\s*ผลต่าง:\s*([+-]?[\d,.]+)\s*บาท\)$/, 'วันที่ $1\nนับจริง ฿$2 • คาดการณ์ ฿$3 (ผลต่าง ฿$4)')
+    .replace(/\s*\(สาขา:\s*(.+)\)$/, '\nสาขา: $1');
+
+  const staffName = String(log?.staff_name || '').trim();
+  if (staffName && log?.action !== 'login' && !raw.includes('ครัวกลาง')) {
+    return formatted.split('\n').filter(line => line.trim() !== staffName).join('\n');
+  }
+  return formatted;
+};
+
 const filteredActivityLogs = computed(() => {
-  // 1. Get database activity logs, filtering out database log_expense to avoid duplicates with actual expenses
-  let dbLogs = activityLogs.value.filter(log => log.action !== 'log_expense');
+  // 1. Get database activity logs, filtering out database log_expense (avoid duplicates) and create_order (keep only completed orders)
+  let dbLogs = activityLogs.value.filter(log => log.action !== 'log_expense' && log.action !== 'create_order');
   
   // 2. Map actual expense records dynamically to mock activity logs
-  const mappedExpenses = expenses.value.map(e => ({
-    id: `expense-${e.id}`,
-    branch_id: e.branch_id,
-    user_id: e.staff_id,
-    action: 'log_expense',
-    details: `บันทึกค่าใช้จ่าย หมวดหมู่ ${getExpenseCategoryLabel(e.category)} จำนวน ${e.amount} บาท${e.note ? ` (บันทึกเพิ่มเติม: ${e.note})` : ''}`,
-    created_at: e.created_at,
-    staff_name: e.staff_name || 'ผู้ดูแลระบบ'
-  }));
+  const mappedExpenses = expenses.value.map(e => {
+    const cleanNote = e.note ? String(e.note).replace(/^เบิกของจากครัวกลาง\s*/, '').trim() : '';
+    const amountStr = `฿${Number(e.amount || 0).toLocaleString()}`;
+    const ckMatch = cleanNote.match(/^(\[[^\]]+\])\s*(ใบเบิก\s*#\S+)(?:\s*\((.+)\))?$/);
+    let details = `${getExpenseCategoryLabel(e.category)}\n${amountStr}`;
+    if (ckMatch) {
+      details = `${getExpenseCategoryLabel(e.category)}\n${amountStr} ${ckMatch[1]}\n${ckMatch[2]}${ckMatch[3] ? ` (${ckMatch[3]})` : ''}`;
+    } else if (cleanNote) {
+      details += `\n${cleanNote}`;
+    }
+    return {
+      id: `expense-${e.id}`,
+      branch_id: e.branch_id,
+      user_id: e.staff_id,
+      action: 'log_expense',
+      details,
+      created_at: e.created_at,
+      staff_name: e.staff_name || 'ผู้ดูแลระบบ'
+    };
+  });
 
-  // 3. Combine both lists
-  let combined = [...dbLogs, ...mappedExpenses];
+  // 2.5 Map Central Kitchen auto-restocks from allStockHistoryLogs / stockHistoryLogs into activity logs
+  const sourceStockLogs = Array.isArray(allStockHistoryLogs.value) && allStockHistoryLogs.value.length > 0
+    ? allStockHistoryLogs.value
+    : (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : []);
+  const mappedCkRestocks = sourceStockLogs
+    .filter(s => s.reason === 'restock' && String(s.note || '').includes('ครัวกลาง'))
+    .map(s => {
+      const reqMatch = String(s.note || '').match(/ใบเบิก\s*(#\S+)/);
+      const byMatch = String(s.note || '').match(/โดย\s*(.+)$/);
+      const qtySign = Number(s.change_qty) >= 0 ? '+' : '';
+      const isRaw = isRawStockLog(s);
+      const kindLabel = isRaw ? 'ของสด' : 'พร้อมขาย';
+      return {
+        id: `ck-restock-${s.id}`,
+        branch_id: s.branch_id,
+        user_id: s.staff_id,
+        action: 'restock_ck',
+        stock_kind: isRaw ? 'raw' : 'cooked',
+        details: `${kindLabel} • ${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น\nคงเหลือ ${s.previous_stock} → ${s.new_stock}${reqMatch ? `\nใบเบิก ${reqMatch[1]}` : ''}`,
+        created_at: s.created_at,
+        staff_name: s.staff_name || (byMatch ? byMatch[1].trim() : 'ครัวกลาง')
+      };
+    });
+
+  // 3. Combine all lists
+  let combined = [...dbLogs, ...mappedExpenses, ...mappedCkRestocks];
 
   // 4. Sort by created_at descending
   combined.sort((a, b) => new Date(b.created_at.replace(' ', 'T')) - new Date(a.created_at.replace(' ', 'T')));
@@ -2391,13 +2771,17 @@ const filteredActivityLogs = computed(() => {
   // 5. Apply activity category filter
   if (filterAction.value !== 'all') {
     combined = combined.filter(log => {
-      const act = log.action;
+      const act = resolveActivityAction(log);
       if (filterAction.value === 'login') return act === 'login';
-      if (filterAction.value === 'sales') return act === 'complete_order' || act === 'create_order';
+      if (filterAction.value === 'sales') return act === 'complete_order';
       if (filterAction.value === 'cancel') return act === 'cancel_order';
-      if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense';
-      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'record_waste';
-      if (filterAction.value === 'credit') return act === 'staff_credit';
+      if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense' || act === 'reverse_expense';
+      if (filterAction.value === 'restock_ck') return act === 'restock_ck';
+      if (filterAction.value === 'restock') return act === 'restock_stock' || act === 'restock_raw_stock' || act === 'restock_modifier';
+      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'adjust_raw_stock' || act === 'adjust_modifier' || act === 'reverse_stock_log';
+      if (filterAction.value === 'cook') return act === 'fry_chicken';
+      if (filterAction.value === 'waste') return act === 'record_waste' || act === 'record_raw_waste';
+      if (filterAction.value === 'credit') return act === 'staff_credit' || act === 'staff_raw_credit';
       if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
       return true;
     });
@@ -2475,15 +2859,29 @@ const filteredLedgerTransactions = computed(() => {
 const displayedDailyReport = computed(() => {
   const rep = dailyReport.value || { orders: [] };
   const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
-  if (periodMode.value !== 'daily' || !isTimeFilterActive) return rep;
+  if (periodMode.value !== 'daily' || !isTimeFilterActive) {
+    const allOrders = rep.orders || [];
+    const completedCount = Number(rep.total_orders) || allOrders.filter(o => o.status === 'completed').length;
+    const cancelledCount = allOrders.filter(o => o.status === 'cancelled').length;
+    return {
+      ...rep,
+      total_orders: completedCount,
+      cancelled_orders: cancelledCount,
+      all_orders: completedCount + cancelledCount,
+      historical_avg_bill: Number(rep.historical_avg_bill) || 0
+    };
+  }
 
   const orders = (rep.orders || []).filter(o => isTimeInRange(o.created_at, customStartTime.value, customEndTime.value));
   const completed = orders.filter(o => o.status === 'completed');
+  const cancelled = orders.filter(o => o.status === 'cancelled');
   const sumBy = (pm) => completed.filter(o => o.payment_method === pm);
   const sumAmt = (arr) => arr.reduce((s, o) => s + (Number(o.total) || 0), 0);
 
   const total_sales = sumAmt(completed);
   const total_orders = completed.length;
+  const cancelled_orders = cancelled.length;
+  const all_orders = total_orders + cancelled_orders;
   const cash = sumBy('cash');
   const qr = completed.filter(o => o.payment_method === 'qr' || o.payment_method === 'promptpay');
   const gov = sumBy('gov');
@@ -2492,7 +2890,10 @@ const displayedDailyReport = computed(() => {
   return {
     total_sales,
     total_orders,
+    cancelled_orders,
+    all_orders,
     average_bill: total_orders > 0 ? total_sales / total_orders : 0,
+    historical_avg_bill: Number(rep.historical_avg_bill) || 0,
     cash_sales: sumAmt(cash),
     cash_orders: cash.length,
     qr_sales: sumAmt(qr),
@@ -2505,7 +2906,47 @@ const displayedDailyReport = computed(() => {
   };
 });
 
+const getPaymentPct = (sales) => {
+  const total = Number(displayedDailyReport.value?.total_sales) || 0;
+  if (total <= 0) return 0;
+  return Math.round(((Number(sales) || 0) / total) * 100);
+};
+
+const scrollToRef = (refEl) => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+  nextTick(() => {
+    const el = refEl?.value;
+    if (!el) return;
+    const isMobile = window.innerWidth < 1024;
+    const card = el.closest('.card') || el;
+    card.style.minHeight = isMobile ? 'calc(100dvh - 130px)' : 'calc(100dvh - 24px)';
+    const offset = isMobile ? 64 : 12;
+    el.style.scrollMarginTop = `${offset}px`;
+    requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect();
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      const targetY = Math.max(0, rect.top + currentScroll - offset);
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
+    });
+  });
+};
+
+const dailyOrdersCardRef = ref(null);
 const dailyOrdersCurrentPage = ref(1);
+const changeDailyOrdersPage = (newPage) => {
+  if (newPage < 1 || newPage > totalDailyOrdersPages.value) return;
+  dailyOrdersCurrentPage.value = newPage;
+  scrollToRef(dailyOrdersCardRef);
+};
+
+const historyOrdersCardRef = ref(null);
+const changeHistoryOrdersPage = (newPage) => {
+  if (newPage < 1 || newPage > totalPages.value) return;
+  historyCurrentPage.value = newPage;
+  scrollToRef(historyOrdersCardRef);
+};
 const dailyOrdersPerPage = 15;
 const totalDailyOrdersPages = computed(() => {
   const count = (displayedDailyReport.value.orders || []).length;
@@ -2519,12 +2960,18 @@ const paginatedDailyReportOrders = computed(() => {
 });
 
 // Pagination States for Ledger Transactions
+const ledgerCardRef = ref(null);
 const ledgerCurrentPage = ref(1);
 const ledgerPerPage = 15;
 const totalLedgerPages = computed(() => {
   const count = filteredLedgerTransactions.value.length;
   return Math.ceil(count / ledgerPerPage) || 1;
 });
+const changeLedgerPage = (newPage) => {
+  if (newPage < 1 || newPage > totalLedgerPages.value) return;
+  ledgerCurrentPage.value = newPage;
+  scrollToRef(ledgerCardRef);
+};
 const paginatedLedgerTransactions = computed(() => {
   const start = (ledgerCurrentPage.value - 1) * ledgerPerPage;
   const end = start + ledgerPerPage;
@@ -2532,12 +2979,18 @@ const paginatedLedgerTransactions = computed(() => {
 });
 
 // Pagination States for Activity Logs
+const activityCardRef = ref(null);
 const activityCurrentPage = ref(1);
 const activityPerPage = 15;
 const totalActivityPages = computed(() => {
   const count = filteredActivityLogs.value.length;
   return Math.ceil(count / activityPerPage) || 1;
 });
+const changeActivityPage = (newPage) => {
+  if (newPage < 1 || newPage > totalActivityPages.value) return;
+  activityCurrentPage.value = newPage;
+  scrollToRef(activityCardRef);
+};
 const paginatedActivityLogs = computed(() => {
   const start = (activityCurrentPage.value - 1) * activityPerPage;
   const end = start + activityPerPage;
@@ -2546,33 +2999,261 @@ const paginatedActivityLogs = computed(() => {
 
 // Pagination & Filtering States for Stock Logs
 const stockLogsCurrentPage = ref(1);
-const stockLogsPerPage = 15;
-const stockHistoryLogs = ref([]);
-const stockHistoryLoading = ref(false);
+const stockLogsPerPage = 16;
 const stockReasonFilter = ref('all'); // 'all', 'waste', 'staff_benefit', 'restock', 'adjustment'
+let stockFilterSkeletonTimer = null;
+watch(stockReasonFilter, () => {
+  stockLogsCurrentPage.value = 1;
+  stockHistoryLoading.value = true;
+  if (stockFilterSkeletonTimer) clearTimeout(stockFilterSkeletonTimer);
+  stockFilterSkeletonTimer = setTimeout(() => {
+    stockHistoryLoading.value = false;
+  }, 220);
+});
+
+const normalizeLinkedName = (str) => String(str || '').replace(/ไส้/g, '').replace(/หมั่นโถว/g, 'หมั่นโถ').replace(/ไขเค็ม/g, 'ไข่เค็ม').replace(/\s+/g, '').trim();
+
+const isLinkedRecipeCookPair = (deductLog, readyLog) => {
+  if (!deductLog || !readyLog || deductLog.id === readyLog.id) return false;
+  if (readyLog._syntheticPartnerId === deductLog.id || deductLog._syntheticForId === readyLog.id) return true;
+  const dNote = String(deductLog.note || '');
+  const m = dNote.match(/หักอัตโนมัติจากการ\S+\s+(.+?)\s+\+([\d,.]+)\s*ชิ้น/);
+  if (!m) return false;
+  const targetName = normalizeLinkedName(m[1]);
+  const targetQty = Number(m[2].replace(/,/g, ''));
+  const rName = normalizeLinkedName(readyLog.item_name);
+  if (!rName || rName !== targetName || Number(readyLog.change_qty) <= 0) return false;
+  if (!isNaN(targetQty) && Math.abs(Number(readyLog.change_qty) - targetQty) > 0.01) return false;
+  const t1 = new Date(deductLog.created_at).getTime();
+  const t2 = new Date(readyLog.created_at).getTime();
+  return Math.abs(t1 - t2) <= 120000;
+};
+
+const buildSyntheticCookDeductPartner = (readyLog) => {
+  if (!readyLog) return null;
+  const name = String(readyLog.item_name || '').trim();
+  const qty = Math.abs(Number(readyLog.change_qty) || 0);
+  if (qty <= 0) return null;
+  if (name.includes('แร็ป')) {
+    const deductQty = Math.round(qty * 1.5 * 100) / 100;
+    return {
+      id: `syn-deduct-${readyLog.id}`,
+      _syntheticForId: readyLog.id,
+      branch_id: readyLog.branch_id,
+      menu_item_id: null,
+      item_name: 'ไก่ไร้กระดูก',
+      change_qty: -deductQty,
+      previous_stock: null,
+      new_stock: null,
+      reason: 'adjustment',
+      staff_name: readyLog.staff_name,
+      stock_type: 'cooked',
+      note: `หักอัตโนมัติจากการเพิ่มสต็อก ${name} +${qty} ชิ้น (ใช้ไก่ไร้กระดูก ${deductQty} ชิ้น)`,
+      created_at: readyLog.created_at
+    };
+  }
+  if (name.includes('เปาทอด') || name.includes('เปาปิ้ง')) {
+    let sourceName = 'ซาลาเปานึ่ง';
+    if (name.includes('ไข่เค็ม') || name.includes('ไขเค็ม')) sourceName = 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
+    else if (name.includes('หมู')) sourceName = 'ซาลาเปาไส้หมูสับ';
+    else if (name.includes('ถั่วดำ')) sourceName = 'ซาลาเปาไส้ถั่วดำ';
+    else if (name.includes('ครีม')) sourceName = 'ซาลาเปาไส้ครีม';
+    else if (name.includes('หมั่นโถ')) sourceName = 'หมั่นโถว';
+    return {
+      id: `syn-deduct-${readyLog.id}`,
+      _syntheticForId: readyLog.id,
+      branch_id: readyLog.branch_id,
+      menu_item_id: null,
+      item_name: sourceName,
+      change_qty: -qty,
+      previous_stock: null,
+      new_stock: null,
+      reason: 'adjustment',
+      staff_name: readyLog.staff_name,
+      stock_type: 'cooked',
+      note: `หักอัตโนมัติจากการเพิ่มสต็อก ${name} +${qty} ชิ้น`,
+      created_at: readyLog.created_at
+    };
+  }
+  return null;
+};
+
+const getStockLogCategory = (log) => {
+  if (!log) return 'other';
+  const note = String(log.note || '');
+  const isRaw = isRawStockLog(log);
+  if (log.reason === 'waste') return 'waste';
+  if (log.reason === 'staff_benefit') return 'staff_benefit';
+  if (log.reason === 'cancel_restore') return 'cancel_restore';
+  if (log.reason === 'sale') return 'sale';
+  const itemName = String(log.item_name || '').trim();
+  const pool = Array.isArray(allStockHistoryLogs.value) && allStockHistoryLogs.value.length > 0
+    ? allStockHistoryLogs.value
+    : (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : []);
+  const isLinkedTarget = !isRaw && Number(log.change_qty) > 0 && !note.includes('ครัวกลาง') && (
+    itemName.includes('แร็ป') || itemName.includes('เปาทอด') || itemName.includes('เปาปิ้ง') ||
+    pool.some(other => isLinkedRecipeCookPair(other, log))
+  );
+  if (log.reason === 'adjustment') {
+    if (note.includes('หักอัตโนมัติจากการ') || (isRaw && Number(log.change_qty) < 0 && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('หัก')))) {
+      return 'cook_deduct';
+    }
+    if (isLinkedTarget) return 'cook_ready';
+    return 'adjustment';
+  }
+  if (log.reason === 'restock') {
+    if (note.includes('ครัวกลาง')) {
+      return 'restock_ck';
+    }
+    if (isLinkedTarget || (!isRaw && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('สุก')) && !note.includes('(Relative)') && !note.includes('เติมสต็อกของ'))) {
+      return 'cook_ready';
+    }
+    return 'restock';
+  }
+  return log.reason || 'other';
+};
+
+const isReportCookPair = (topLog, bottomLog) => {
+  if (!topLog || !bottomLog || topLog.id === bottomLog.id) return false;
+  if (getStockLogCategory(topLog) !== 'cook_deduct' || getStockLogCategory(bottomLog) !== 'cook_ready') return false;
+  if (isLinkedRecipeCookPair(topLog, bottomLog)) return true;
+  const sameItem = (topLog.menu_item_id && topLog.menu_item_id === bottomLog.menu_item_id) ||
+    (topLog.item_name && topLog.item_name === bottomLog.item_name);
+  if (!sameItem) return false;
+  const sameQty = Math.abs(Number(topLog.change_qty)) === Math.abs(Number(bottomLog.change_qty));
+  const timeClose = Math.abs(new Date(topLog.created_at).getTime() - new Date(bottomLog.created_at).getTime()) <= 120000;
+  return sameQty && timeClose;
+};
+
+const orderStockLogsWithCookPairs = (logs) => {
+  if (!Array.isArray(logs) || logs.length === 0) return logs;
+  const pool = Array.isArray(allStockHistoryLogs.value) && allStockHistoryLogs.value.length > 0
+    ? allStockHistoryLogs.value
+    : (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : logs);
+  const expanded = [...logs];
+  const expandedIds = new Set(expanded.map(l => l?.id));
+  for (const item of logs) {
+    if (!item) continue;
+    const cat = getStockLogCategory(item);
+    if (cat === 'cook_deduct') {
+      const partner = pool.find(other => other && !expandedIds.has(other.id) && isReportCookPair(item, other));
+      if (partner) {
+        expandedIds.add(partner.id);
+        expanded.push(partner);
+      }
+    } else if (cat === 'cook_ready') {
+      const partner = pool.find(other => other && !expandedIds.has(other.id) && isReportCookPair(other, item));
+      if (partner) {
+        expandedIds.add(partner.id);
+        expanded.push(partner);
+      }
+    }
+  }
+  if (expanded.length < 2) {
+    if (expanded.length === 1 && getStockLogCategory(expanded[0]) === 'cook_ready') {
+      const syn = buildSyntheticCookDeductPartner(expanded[0]);
+      if (syn) return [syn, expanded[0]];
+    }
+    return expanded;
+  }
+  const usedIds = new Set();
+  const result = [];
+  for (let i = 0; i < expanded.length; i++) {
+    const current = expanded[i];
+    if (!current || usedIds.has(current.id)) continue;
+    const cat = getStockLogCategory(current);
+    if (cat === 'cook_deduct') {
+      const partner = expanded.find(other => !usedIds.has(other.id) && isReportCookPair(current, other));
+      usedIds.add(current.id);
+      result.push(current);
+      if (partner) {
+        usedIds.add(partner.id);
+        result.push(partner);
+      }
+    } else if (cat === 'cook_ready') {
+      let partner = expanded.find(other => !usedIds.has(other.id) && isReportCookPair(other, current));
+      if (!partner) {
+        partner = buildSyntheticCookDeductPartner(current);
+      }
+      if (partner) {
+        usedIds.add(partner.id);
+        usedIds.add(current.id);
+        result.push(partner, current);
+      } else {
+        usedIds.add(current.id);
+        result.push(current);
+      }
+    } else {
+      usedIds.add(current.id);
+      result.push(current);
+    }
+  }
+  return result;
+};
+
+const getStockCategoryIconClass = (log) => {
+  const cat = getStockLogCategory(log);
+  const map = {
+    restock_ck: 'fa-solid fa-truck-ramp-box',
+    restock: 'fa-solid fa-boxes-packing',
+    adjustment: 'fa-solid fa-sliders',
+    cook_deduct: 'fa-solid fa-fire-burner',
+    cook_ready: 'fa-solid fa-fire-burner',
+    waste: 'fa-solid fa-trash-can',
+    staff_benefit: 'fa-solid fa-utensils',
+    cancel_restore: 'fa-solid fa-rotate-left',
+    sale: 'fa-solid fa-cart-shopping'
+  };
+  return map[cat] || 'fa-solid fa-box';
+};
 
 const filteredStockLogs = computed(() => {
   try {
     let list = Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : [];
     if (stockReasonFilter.value && stockReasonFilter.value !== 'all') {
-      list = list.filter(log => log && log.reason === stockReasonFilter.value);
+      if (stockReasonFilter.value === 'restock_all') {
+        list = list.filter(log => {
+          const cat = getStockLogCategory(log);
+          return cat === 'restock_ck' || cat === 'restock';
+        });
+      } else if (stockReasonFilter.value === 'cook') {
+        list = list.filter(log => {
+          const cat = getStockLogCategory(log);
+          return cat === 'cook_deduct' || cat === 'cook_ready';
+        });
+      } else {
+        list = list.filter(log => getStockLogCategory(log) === stockReasonFilter.value);
+      }
     }
     const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
     if (periodMode.value === 'daily' && isTimeFilterActive) {
       list = list.filter(log => log && isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
     }
-    return list;
+    return orderStockLogsWithCookPairs(list);
   } catch (e) {
     console.error('filteredStockLogs error:', e);
     return [];
   }
 });
 
-// Category log lists for stat cards
-const stockWasteLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'waste') : []);
-const stockStaffCreditLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'staff_benefit') : []);
-const stockRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'restock') : []);
-const stockAdjustmentLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'adjustment') : []);
+// Category log lists for stat cards & filter pills
+const stockWasteLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'waste') : []);
+const stockStaffCreditLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'staff_benefit') : []);
+const stockCkRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'restock_ck') : []);
+const stockGeneralRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'restock') : []);
+const stockRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => {
+  const cat = getStockLogCategory(l);
+  return cat === 'restock_ck' || cat === 'restock';
+}) : []);
+const stockAdjustmentLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'adjustment') : []);
+const stockCookDeductLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cook_deduct') : []);
+const stockCookReadyLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cook_ready') : []);
+const stockCookLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => {
+  const cat = getStockLogCategory(l);
+  return cat === 'cook_deduct' || cat === 'cook_ready';
+}) : []);
+const stockSaleLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'sale') : []);
+const stockCancelRestoreLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cancel_restore') : []);
 
 // Stat Card Calculations
 const stockWasteCount = computed(() => Array.isArray(stockWasteLogs.value) ? stockWasteLogs.value.length : 0);
@@ -2603,15 +3284,30 @@ const stockStaffCreditTotalQty = computed(() => {
   if (!Array.isArray(stockStaffCreditLogs.value)) return 0;
   return stockStaffCreditLogs.value.reduce((sum, l) => sum + Math.abs(Number(l?.change_qty) || 0), 0);
 });
+const extractStaffCreditName = (log) => {
+  if (!log) return 'พนักงาน';
+  const raw = String(log.note || log.staff_name || '').replace(/^\[.*?\]\s*/, '').trim();
+  return raw || String(log.staff_name || '').trim() || 'พนักงาน';
+};
+
+const getStockLogMonetaryValue = (log) => {
+  if (!log) return 0;
+  const qty = Math.abs(Number(log.change_qty) || 0);
+  let price = Number(log.item_price) || 0;
+  if (!price && Array.isArray(store.stockItems)) {
+    const found = store.stockItems.find(item => item && (item.id === log.menu_item_id || item.name === log.item_name));
+    if (found && found.price) price = Number(found.price) || 0;
+  }
+  return qty * price;
+};
+
 const stockStaffCreditSummaryText = computed(() => {
   try {
     if (!Array.isArray(stockStaffCreditLogs.value) || stockStaffCreditLogs.value.length === 0) return 'ไม่มีบันทึกแจกพนักงานในช่วงเวลานี้';
     const staffMap = {};
     stockStaffCreditLogs.value.forEach(l => {
       if (!l) return;
-      let staff = l.note || l.staff_name || 'พนักงาน';
-      if (!staff || typeof staff !== 'string' || staff.trim() === '') staff = 'พนักงาน';
-      staff = staff.trim();
+      const staff = extractStaffCreditName(l);
       staffMap[staff] = (staffMap[staff] || 0) + Math.abs(Number(l.change_qty) || 0);
     });
     const sorted = Object.entries(staffMap).sort((a, b) => b[1] - a[1]);
@@ -2627,23 +3323,12 @@ const staffCreditBreakdown = computed(() => {
   try {
     if (!Array.isArray(stockStaffCreditLogs.value) || stockStaffCreditLogs.value.length === 0) return [];
     const staffMap = {};
-    const stockItems = Array.isArray(store.stockItems) ? store.stockItems : [];
 
     stockStaffCreditLogs.value.forEach(log => {
       if (!log) return;
-      let staffName = log.note || log.staff_name || 'พนักงาน';
-      if (!staffName || typeof staffName !== 'string' || staffName.trim() === '') staffName = 'พนักงาน';
-      staffName = staffName.trim();
-
+      const staffName = extractStaffCreditName(log);
       const qty = Math.abs(Number(log.change_qty) || 0);
-
-      let price = 0;
-      const foundItem = stockItems.find(item => item && (item.id === log.menu_item_id || item.name === log.item_name));
-      if (foundItem && foundItem.price) {
-        price = Number(foundItem.price) || 0;
-      }
-
-      const logValue = qty * price;
+      const logValue = getStockLogMonetaryValue(log);
 
       if (!staffMap[staffName]) {
         staffMap[staffName] = {
@@ -2664,13 +3349,11 @@ const staffCreditBreakdown = computed(() => {
     });
 
     const result = Object.values(staffMap).map(s => {
-      const sortedItems = Object.entries(s.item_counts || {})
-        .sort((a, b) => b[1] - a[1])
-        .map(([name, qty]) => `${name} x${qty}`)
-        .join(', ');
+      const sortedEntries = Object.entries(s.item_counts || {}).sort((a, b) => b[1] - a[1]);
       return {
         ...s,
-        items_summary: sortedItems
+        items_list: sortedEntries.map(([name, qty]) => ({ name, qty })),
+        items_summary: sortedEntries.map(([name, qty]) => `${name} x${qty}`).join(', ')
       };
     });
 
@@ -2682,10 +3365,15 @@ const staffCreditBreakdown = computed(() => {
   }
 });
 
+const totalWasteValue = computed(() => {
+  if (!Array.isArray(stockWasteLogs.value)) return 0;
+  return stockWasteLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+});
+
 const totalStaffCreditValue = computed(() => {
   try {
-    if (!Array.isArray(staffCreditBreakdown.value)) return 0;
-    return staffCreditBreakdown.value.reduce((sum, s) => sum + (Number(s?.total_value) || 0), 0);
+    if (!Array.isArray(stockStaffCreditLogs.value)) return 0;
+    return stockStaffCreditLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
   } catch (e) {
     console.error('totalStaffCreditValue error:', e);
     return 0;
@@ -2697,16 +3385,47 @@ const stockRestockTotalQty = computed(() => {
   if (!Array.isArray(stockRestockLogs.value)) return 0;
   return stockRestockLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
 });
-
-const totalStockLogsPages = computed(() => {
-  const count = Array.isArray(filteredStockLogs.value) ? filteredStockLogs.value.length : 0;
-  return Math.ceil(count / stockLogsPerPage) || 1;
+const totalRestockValue = computed(() => {
+  if (!Array.isArray(stockRestockLogs.value)) return 0;
+  return stockRestockLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
 });
+
+const stockLogsCardRef = ref(null);
+const stockLogPages = computed(() => {
+  const list = Array.isArray(filteredStockLogs.value) ? filteredStockLogs.value : [];
+  if (list.length === 0) return [];
+  const pages = [];
+  let currentPage = [];
+  let i = 0;
+  while (i < list.length) {
+    const isPair = i + 1 < list.length && isReportCookPair(list[i], list[i + 1]);
+    if (isPair) {
+      if (currentPage.length + 2 > stockLogsPerPage && currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+      }
+      currentPage.push(list[i], list[i + 1]);
+      i += 2;
+    } else {
+      if (currentPage.length + 1 > stockLogsPerPage && currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+      }
+      currentPage.push(list[i]);
+      i += 1;
+    }
+  }
+  if (currentPage.length > 0) pages.push(currentPage);
+  return pages;
+});
+const totalStockLogsPages = computed(() => stockLogPages.value.length || 1);
+const changeStockLogsPage = (newPage) => {
+  if (newPage < 1 || newPage > totalStockLogsPages.value) return;
+  stockLogsCurrentPage.value = newPage;
+  scrollToRef(stockLogsCardRef);
+};
 const paginatedStockLogs = computed(() => {
-  if (!Array.isArray(filteredStockLogs.value)) return [];
-  const start = (stockLogsCurrentPage.value - 1) * stockLogsPerPage;
-  const end = start + stockLogsPerPage;
-  return filteredStockLogs.value.slice(start, end);
+  return stockLogPages.value[stockLogsCurrentPage.value - 1] || [];
 });
 
 const loadStockHistoryLogs = async () => {
@@ -2726,14 +3445,27 @@ const loadStockHistoryLogs = async () => {
     }
 
     let logs = [];
+    const allRes = await api.stock.getAllLogs(params);
+    const allLogs = Array.isArray(allRes.data) ? allRes.data : (Array.isArray(allRes) ? allRes : []);
+    allStockHistoryLogs.value = allLogs;
+
     if (selectedReportsStockItemId.value && selectedReportsStockItemId.value !== 'all') {
       const res = await api.stock.getLogs(selectedReportsStockItemId.value, params);
       const rawLogs = res.data?.logs || res.data || [];
       const itemName = selectedStockItemName.value;
-      logs = Array.isArray(rawLogs) ? rawLogs.map(l => ({ ...l, item_name: l.item_name || itemName })) : [];
+      const baseLogs = Array.isArray(rawLogs) ? rawLogs.map(l => ({ ...l, item_name: l.item_name || itemName })) : [];
+      const includedIds = new Set(baseLogs.map(l => l.id));
+      const partnerLogs = [];
+      for (const bLog of baseLogs) {
+        const partner = allLogs.find(other => other && !includedIds.has(other.id) && (isLinkedRecipeCookPair(bLog, other) || isLinkedRecipeCookPair(other, bLog)));
+        if (partner) {
+          includedIds.add(partner.id);
+          partnerLogs.push(partner);
+        }
+      }
+      logs = [...baseLogs, ...partnerLogs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || b.id - a.id);
     } else {
-      const res = await api.stock.getAllLogs(params);
-      logs = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
+      logs = allLogs;
     }
     stockHistoryLogs.value = logs;
   } catch (e) {
@@ -2779,9 +3511,19 @@ const selectReportsStockItem = (item) => {
 };
 
 const isRawStockLog = (log) => {
+  const note = String(log?.note || '');
+  if (note.includes('ครัวกลาง')) {
+    if (note.includes('พร้อมขาย')) return false;
+    if (note.includes('ของสด')) return true;
+    if (log.item_raw_quantity !== undefined) return log.item_raw_quantity !== null;
+    const stockItems = Array.isArray(store.stockItems) ? store.stockItems : [];
+    const found = stockItems.find(i => i && (Number(i.id) === Number(log.menu_item_id) || i.name === log.item_name));
+    if (found) return found.raw_quantity !== null && found.raw_quantity !== undefined;
+    if (/ข้าวเหนียว|น้ำจิ้ม|เครื่องดื่ม|น้ำอัดลม|โค้ก|เป๊ปซี่/.test(String(log.item_name || ''))) return false;
+    return true;
+  }
   if (log.stock_type === 'raw') return true;
   if (log.stock_type === 'cooked') return false;
-  const note = log.note || '';
   if (note.includes('ของสด') || note.includes('วัตถุดิบ') || note.includes('[ของสด]')) return true;
   if (note.includes('สุก') || note.includes('พร้อมขาย') || note.includes('[พร้อมขาย]')) return false;
   if ((note.includes('ปรุง') || note.includes('ทอด') || note.includes('ปิ้ง')) && log.change_qty < 0 && log.reason === 'adjustment') {
@@ -2792,18 +3534,14 @@ const isRawStockLog = (log) => {
 
 const getStockReportActionLabel = (log) => {
   const isRaw = isRawStockLog(log);
-  if (log.reason === 'adjustment') {
-    if (isRaw && log.change_qty < 0 && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('หัก'))) {
-      return 'ตัดของสดไปปรุง';
-    }
-    return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกพร้อมขาย';
+  const cat = getStockLogCategory(log);
+  if (cat === 'cook_deduct') {
+    return String(log?.note || '').includes('หักอัตโนมัติจากการ') ? 'ตัดสต็อกไปปรุง' : 'ตัดของสดไปปรุง';
   }
-  if (log.reason === 'restock') {
-    if (!isRaw && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('สุก'))) {
-      return 'ปรุงสุกพร้อมขาย';
-    }
-    return isRaw ? 'เติมสต็อกของสด' : 'เติมสต็อกสินค้า';
-  }
+  if (cat === 'cook_ready') return 'ปรุงสุกพร้อมขาย';
+  if (cat === 'restock_ck') return 'เติมสต็อก (ครัวกลาง)';
+  if (cat === 'restock') return 'เติมสต็อก (POS)';
+  if (cat === 'adjustment') return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกพร้อมขาย';
   return getStockReasonLabel(log.reason);
 };
 
@@ -2812,6 +3550,10 @@ const formatReportLogNote = (log, isRaw) => {
   let note = log.note.trim();
   note = note.replace(/^\|(.*)$/, '$1').trim();
   note = note.replace(/^\[(ของสด|พร้อมขาย|.*สุก\/พร้อมขาย|.*\/พร้อมขาย)\]\s*/i, '').trim();
+
+  if (log.reason === 'staff_benefit' && note && note === String(log.staff_name || '').trim()) {
+    return '';
+  }
 
   if (/^ปรุงพร้อมกัน\s*\([^)]*\)$/.test(note)) {
     return isRaw ? 'ตัดของสดเพื่อนำไปปรุง' : 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
@@ -2837,7 +3579,12 @@ const formatReportLogNote = (log, isRaw) => {
     return 'ทอดสุกเรียบร้อย เติมเข้าสต็อกพร้อมขาย';
   }
 
-  return note;
+  return note
+    .replace(/^(ขาย\s+.+?)\s+(\([^)]+\))$/, '$1\n$2')
+    .replace(/^(ยกเลิกออเดอร์\s+\S+)\s*—\s*(คืน(?:สต็อก|วัตถุดิบ)\s+.+?)\s*(\(เหตุผล:[^)]+\))$/, '$1\n$2\n$3')
+    .replace(/^ปรับปรุงสต็อก.*?\(Absolute\):\s*ปรับจาก\s*[\d,.]+\s*เป็น\s*[\d,.]+\s*\S+\s*\[สาเหตุ:\s*(.+?)\](?:\s*\((.+)\))?$/, (_, r, n) => `สาเหตุ: ${r}${n && n !== 'ไม่ระบุโน้ต' ? ` (${n})` : ''}`)
+    .replace(/^เติมสต็อก.*?\(Relative\)\s*[+-]?[\d,.]+\s*\S+$/, 'เติมสต็อกเพิ่มเข้าคลัง')
+    .replace(/^เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง\s*ใบเบิก\s*(#\S+)\s*\((.+?)\)(?:\s*\((.+?)\))?(?:\s*โดย\s*(.+))?$/, (_, reqNo, ckName, formula) => `เติมจากครัวกลาง\nใบเบิก ${reqNo}${formula ? ` (${formula})` : ''}`);
 };
 
 const getStockReasonLabel = (reason) => {
@@ -2948,13 +3695,17 @@ const isFilterActionDropdownOpen = ref(false);
 const selectedFilterActionLabel = computed(() => {
   const filterLabels = {
     all: 'ทั้งหมด',
-    login: 'การลงชื่อเข้าใช้งาน (Login)',
-    sales: 'การขาย / ออกบิล (Sales)',
-    cancel: 'การยกเลิกบิล (Void)',
-    expenses: 'บันทึกค่าใช้จ่าย (Expenses)',
-    stock: 'ปรับปรุงยอด / ของเสีย (Stock & Waste)',
-    credit: 'เครดิตพนักงาน (Staff Credit)',
-    cash_drawer: 'การจัดการลิ้นชักเงินสด (Cash Drawer)'
+    login: 'เข้าสู่ระบบ',
+    sales: 'ขายสำเร็จ',
+    cancel: 'ยกเลิกบิล',
+    expenses: 'ค่าใช้จ่าย',
+    restock_ck: 'เติมสต็อก (ครัวกลาง)',
+    restock: 'เติมสต็อก (POS)',
+    stock: 'ปรับสต็อก',
+    cook: 'ทอด/ปรุงสุกพร้อมขาย',
+    waste: 'ของเสีย',
+    credit: 'เครดิตพนักงาน',
+    cash_drawer: 'ลิ้นชักเงินสด'
   };
   return filterLabels[filterAction.value] || 'ทั้งหมด';
 });
@@ -2962,10 +3713,11 @@ const getFilterActionIcon = (action) => {
   const map = {
     all: 'fa-solid fa-folder-open',
     login: 'fa-solid fa-key',
-    sales: 'fa-solid fa-cart-shopping',
+    sales: 'fa-solid fa-circle-check',
     cancel: 'fa-solid fa-ban',
     expenses: 'fa-solid fa-wallet',
     stock: 'fa-solid fa-boxes-stacked',
+    waste: 'fa-solid fa-trash-can',
     credit: 'fa-solid fa-user-check',
     cash_drawer: 'fa-solid fa-cash-register'
   };
@@ -3088,6 +3840,8 @@ const closeReportsDropdowns = () => {
   isHistoryPaymentDropdownOpen.value = false;
   isActivityStaffDropdownOpen.value = false;
   isStockItemDropdownOpen.value = false;
+  showAvgBillInfo.value = false;
+  showRestockValueInfo.value = false;
 };
 
 const computeLedgerTransactions = () => {
@@ -3252,8 +4006,13 @@ const loadExpensesForPeriod = async () => {
 };
 
 const loadActivityLogsForPeriod = async () => {
+  if (activityFilterSkeletonTimer) clearTimeout(activityFilterSkeletonTimer);
+  activityLogsLoading.value = true;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
+    activityFilterSkeletonTimer = setTimeout(() => {
+      activityLogsLoading.value = false;
+    }, 180);
     return;
   }
   try {
@@ -3279,12 +4038,19 @@ const loadActivityLogsForPeriod = async () => {
     }
   } catch (e) {
     console.warn(e);
+  } finally {
+    activityLogsLoading.value = false;
   }
 };
 
 const loadOrderHistory = async () => {
+  if (historyFilterSkeletonTimer) clearTimeout(historyFilterSkeletonTimer);
+  historyOrdersLoading.value = true;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
+    historyFilterSkeletonTimer = setTimeout(() => {
+      historyOrdersLoading.value = false;
+    }, 180);
     return;
   }
   try {
@@ -3320,6 +4086,8 @@ const loadOrderHistory = async () => {
   } catch (e) {
     console.error('❌ Failed to load order history:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลประวัติออเดอร์ได้', 'error');
+  } finally {
+    historyOrdersLoading.value = false;
   }
 };
 
@@ -3334,6 +4102,9 @@ const loadReportData = async () => {
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
     loading.value = false;
+    if (isAdmin()) {
+      loadTopItems().catch(e => console.warn('Background top items load error:', e));
+    }
     
     if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
       fetchCashDrawerSummary();
@@ -3373,6 +4144,7 @@ const loadReportData = async () => {
           total_sales: data.total_revenue || 0,
           total_orders: data.total_orders || 0,
           average_bill: data.avg_order_value || 0,
+          historical_avg_bill: data.historical_avg_value || 0,
           cash_sales: data.payment_breakdown?.cash_total || 0,
           cash_orders: data.payment_breakdown?.cash_count || 0,
           qr_sales: data.payment_breakdown?.qr_total || 0,
@@ -3388,6 +4160,7 @@ const loadReportData = async () => {
           total_sales: 0,
           total_orders: 0,
           average_bill: 0,
+          historical_avg_bill: 0,
           cash_sales: 0,
           cash_orders: 0,
           qr_sales: 0,
@@ -3401,11 +4174,30 @@ const loadReportData = async () => {
       }
     };
     // โหลดรายงานยอดขายหลักก่อนเพื่อให้พนักงานเห็นยอดสรุปได้ทันทีโดยไม่ติดหน้าจอโหลดนิ่ง
-    await loadMainReport();
+    try {
+      await loadMainReport();
+    } catch (err) {
+      console.warn('loadMainReport background warning:', err);
+      dailyReport.value = {
+        total_sales: 0,
+        total_orders: 0,
+        average_bill: 0,
+        cash_sales: 0,
+        cash_orders: 0,
+        qr_sales: 0,
+        qr_orders: 0,
+        gov_sales: 0,
+        gov_orders: 0,
+        delivery_sales: 0,
+        delivery_orders: 0,
+        orders: []
+      };
+    }
     loading.value = false; // ปิดสถานะการโหลดหลักทันที เพื่อให้แสดง Dashboard เร็วสุด (<0.5 วิ)
 
     // สั่งโหลดข้อมูลตารางประวัติอื่นๆ เบื้องหลังแบบขนานโดยไม่ขัดจังหวะผู้ใช้ (Background Async Load)
     if (isAdmin()) {
+      loadTopItems().catch(e => console.warn('Background top items load error:', e));
       // โหลดค่าใช้จ่ายให้เสร็จก่อนรันสมุดรายวัน เพื่อหลีกเลี่ยงการเรียก API รายจ่ายซ้ำซ้อน
       (async () => {
         await loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
@@ -3414,11 +4206,12 @@ const loadReportData = async () => {
     }
     if (isManagerOrAdmin()) {
       loadActivityLogsForPeriod().catch(e => console.warn('Background activities load error:', e));
+      loadStockHistoryLogs().catch(e => console.warn('Background stock logs load error:', e));
+      if (!isAdmin()) {
+        loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
+      }
       if (activeTab.value === 'cash_audit') {
         fetchCashDrawerSummary().catch(e => console.warn('Background cash drawer load error:', e));
-      }
-      if (activeTab.value === 'stock_history') {
-        loadStockHistoryLogs().catch(e => console.warn('Background stock logs load error:', e));
       }
     }
     loadOrderHistory().catch(e => console.warn('Background order history load error:', e));
@@ -3430,24 +4223,24 @@ const loadReportData = async () => {
 };
 
 const loadTopItems = async () => {
-  const cacheKey = `${selectedBranchId.value || 'all'}_${topItemsDays.value}`;
-  
-  if (topItemsDays.value === 7 && isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value && store.reportTopItems) {
-    const mapped = store.reportTopItems.map(item => ({
-      ...item,
-      total_sales: item.total_revenue || 0
-    }));
-    topItems.value = mapped;
-    topItemsCache.value[cacheKey] = mapped;
-    return;
+  const periodParams = {};
+  if (periodMode.value === 'daily') {
+    periodParams.date = selectedDate.value;
+    if (customStartTime.value !== '00.00' || customEndTime.value !== '23.59') {
+      periodParams.start_time = customStartTime.value;
+      periodParams.end_time = customEndTime.value;
+    }
+  } else if (periodMode.value === 'monthly') {
+    periodParams.month = selectedMonth.value;
+  } else {
+    periodParams.year = selectedYear.value;
   }
 
-  if (!topItemsCache.value[cacheKey]) {
-    topItemsLoading.value = true;
-  }
+  const cacheKey = `${selectedBranchId.value || 'all'}_${periodMode.value}_${periodParams.date || periodParams.month || periodParams.year}_${periodParams.start_time || ''}_${periodParams.end_time || ''}`;
+  topItemsLoading.value = true;
   
   try {
-    const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value);
+    const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value, periodParams);
     if (res.success && Array.isArray(res.data)) {
       const mapped = res.data.map(item => ({
         ...item,
@@ -3614,10 +4407,21 @@ const getActionIconClass = (action) => {
     'complete_order': 'fa-solid fa-circle-check text-success',
     'cancel_order': 'fa-solid fa-ban text-danger',
     'adjust_stock': 'fa-solid fa-boxes-stacked text-accent',
+    'adjust_raw_stock': 'fa-solid fa-boxes-stacked text-accent',
+    'adjust_modifier': 'fa-solid fa-boxes-stacked text-accent',
+    'restock_ck': 'fa-solid fa-truck-ramp-box text-success',
+    'restock_stock': 'fa-solid fa-boxes-packing text-success',
+    'restock_raw_stock': 'fa-solid fa-boxes-packing text-success',
+    'restock_modifier': 'fa-solid fa-boxes-packing text-success',
+    'fry_chicken': 'fa-solid fa-fire-burner text-warning',
+    'reverse_stock_log': 'fa-solid fa-rotate-left text-accent',
     'record_waste': 'fa-solid fa-trash-can text-danger',
+    'record_raw_waste': 'fa-solid fa-trash-can text-danger',
     'staff_credit': 'fa-solid fa-user-check text-warning',
+    'staff_raw_credit': 'fa-solid fa-user-check text-warning',
     'log_expense': 'fa-solid fa-wallet text-danger',
     'delete_expense': 'fa-solid fa-trash-can text-danger',
+    'reverse_expense': 'fa-solid fa-rotate-left text-danger',
     'cash_opening_set': 'fa-solid fa-cash-register text-success',
     'cash_audit': 'fa-solid fa-cash-register text-success',
     'setting_change': 'fa-solid fa-gear text-warning'
@@ -3918,24 +4722,23 @@ select.reports-filter-control,
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  max-height: 480px;
-  overflow-y: auto;
-  padding-right: 4px;
 }
 
 .activity-log-item {
   display: flex;
   gap: var(--space-md);
   padding: var(--space-md);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
+  box-shadow: 0 2px 6px rgba(61, 27, 17, 0.03);
   transition: all var(--transition-base);
 }
 
 .activity-log-item:hover {
-  background: var(--bg-secondary);
-  border-color: var(--border-color-focus);
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.06);
 }
 
 .log-badge-wrapper {
@@ -3960,10 +4763,13 @@ select.reports-filter-control,
 .log-badge.login { background: rgba(255, 171, 43, 0.1); color: #f4a261; }
 .log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
 .log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); color: #e63946; }
-.log-badge.log_expense, .log-badge.delete_expense { background: rgba(173, 40, 30, 0.08); color: #e63946; }
-.log-badge.adjust_stock, .log-badge.record_waste { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
-.log-badge.staff_credit { background: rgba(139, 3, 19, 0.08); color: #8b0313; }
-.log-badge.cash_opening_set, .log-badge.cash_audit { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
+.log-badge.log_expense, .log-badge.delete_expense, .log-badge.reverse_expense { background: rgba(173, 40, 30, 0.08); color: #e63946; }
+.log-badge.adjust_stock, .log-badge.adjust_raw_stock, .log-badge.adjust_modifier, .log-badge.reverse_stock_log { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
+.log-badge.restock_ck, .log-badge.restock_stock, .log-badge.restock_raw_stock, .log-badge.restock_modifier { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
+.log-badge.fry_chicken { background: rgba(255, 171, 43, 0.12); color: #f4a261; }
+.log-badge.record_waste, .log-badge.record_raw_waste { background: rgba(173, 40, 30, 0.1); color: #e63946; }
+.log-badge.staff_credit, .log-badge.staff_raw_credit { background: rgba(139, 3, 19, 0.08); color: #8b0313; }
+.log-badge.cash_opening_set, .log-badge.cash_audit, .log-badge.setting_change { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
 
 .log-content-wrapper {
   flex: 1;
@@ -3971,12 +4777,19 @@ select.reports-filter-control,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
+}
+
+.log-title {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .log-details {
-  font-size: var(--font-sm);
-  color: var(--text-primary);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
   font-weight: 500;
   line-height: 1.4;
   word-break: break-word;
@@ -3987,6 +4800,45 @@ select.reports-filter-control,
   gap: var(--space-md);
   font-size: var(--font-xs);
   color: var(--text-tertiary);
+}
+
+@media (max-width: 640px) {
+  .activity-log-item {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .stock-log-card {
+    align-items: flex-start;
+  }
+
+  .stock-log-card.cook-pair-top {
+    padding-bottom: 20px;
+  }
+
+  .stock-log-card.cook-pair-bottom {
+    padding-top: 22px;
+  }
+
+  .log-content-wrapper {
+    gap: 6px;
+  }
+
+  .log-details {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    white-space: pre-line;
+  }
+
+  .log-meta {
+    gap: 6px 12px !important;
+    margin-top: 2px;
+  }
+
+  .stock-log-right {
+    min-width: 68px;
+    gap: 5px;
+  }
 }
 
 .log-user, .log-time {
@@ -4500,6 +5352,93 @@ select.reports-filter-control,
   box-shadow: 0 2px 6px rgba(139,3,19,0.2) !important;
 }
 
+/* --- Sales Tab Elevated Styling --- */
+.sales-kpi-card {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.sales-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 3, 19, 0.08) !important;
+}
+.sales-kpi-icon-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Clean 3-Metric Stats Grid (Pure White, No Cream) */
+.sales-clean-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  gap: var(--space-md);
+}
+@media (max-width: 640px) {
+  .top-menus-period-sub {
+    display: block;
+    width: 100%;
+    font-size: var(--font-sm);
+    margin-top: 2px;
+  }
+  .sales-clean-summary-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+  .sales-clean-stat.border-sides {
+    border-left: none !important;
+    border-right: none !important;
+    border-top: 1px dashed var(--border-color);
+    border-bottom: 1px dashed var(--border-color);
+    padding: var(--space-xs) 0 !important;
+  }
+}
+.sales-clean-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.sales-clean-stat.border-sides {
+  border-left: 1px dashed var(--border-color);
+  border-right: 1px dashed var(--border-color);
+  padding: 0 var(--space-lg);
+}
+.stat-clean-label {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.stat-clean-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+/* Payment Ratio Multi-Color Bar */
+.payment-ratio-bar {
+  display: flex;
+  height: 10px;
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: transparent;
+}
+.ratio-seg {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.ratio-seg.seg-cash { background: #10b981; }
+.ratio-seg.seg-qr { background: var(--primary, #8b0313); }
+.ratio-seg.seg-gov { background: #3b82f6; }
+.ratio-seg.seg-delivery { background: #ea580c; }
+
 /* Payment Methods Grid */
 .payment-methods-grid {
   display: grid;
@@ -4512,6 +5451,160 @@ select.reports-filter-control,
   .payment-methods-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+}
+
+.pay-card {
+  border: 1.5px solid var(--border-color) !important;
+  background: #ffffff !important;
+  transition: all var(--transition-base);
+}
+.pay-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.pay-card.pay-card-cash { border-left: 3px solid #10b981 !important; }
+.pay-card.pay-card-qr { border-left: 3px solid var(--primary, #8b0313) !important; }
+.pay-card.pay-card-gov { border-left: 3px solid #3b82f6 !important; }
+.pay-card.pay-card-delivery { border-left: 3px solid #ea580c !important; }
+
+.pay-card .pay-title {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.pay-card .pay-pct-badge {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+.pay-card .pay-amount {
+  font-size: var(--font-base);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+.pay-card .pay-count {
+  font-size: var(--font-xs);
+}
+
+/* Order Report Cards */
+.order-report-card {
+  background: #ffffff !important;
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+.order-report-card:hover {
+  border-color: rgba(139, 3, 19, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.06);
+}
+.order-report-card.cancelled-order {
+  background: #fafafa !important;
+  opacity: 0.75;
+}
+.order-id-badge {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  font-weight: 800;
+  font-size: var(--font-sm);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+.order-id-badge.cancelled {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.order-pay-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.order-pay-pill.pay-cash { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.order-pay-pill.pay-qr { background: rgba(139, 3, 19, 0.08); color: var(--primary); }
+.order-pay-pill.pay-gov { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+.order-pay-pill.pay-delivery { background: rgba(234, 88, 12, 0.1); color: #ea580c; }
+
+.order-status-pill.pill-cancelled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.order-discount-pill {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed rgba(239, 68, 68, 0.3);
+}
+.order-total-amount {
+  font-size: var(--font-base);
+  font-weight: 800;
+}
+.order-total-amount.strike {
+  text-decoration: line-through;
+}
+.order-chevron-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+.order-chevron-btn.rotate {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+.order-cancel-reason-box {
+  background: rgba(239, 68, 68, 0.06);
+  border-left: 3px solid #dc2626;
+  padding: 6px 10px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: var(--font-xs);
+  color: #dc2626;
+}
+.order-drawer-content {
+  border-top: 1px dashed var(--border-color);
+}
+.order-item-qty {
+  background: rgba(139, 3, 19, 0.06);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+.order-void-btn {
+  border: 1.5px solid rgba(239, 68, 68, 0.3) !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+  color: #dc2626 !important;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 8px var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+.order-void-btn:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
 }
 
 .btn-delete-action {
@@ -4535,7 +5628,109 @@ select.reports-filter-control,
   width: 180px !important;
 }
 
-/* Custom Stock Quick Filter Pills */
+/* Custom Stock Quick Filter Pills & Stock Log Cards */
+.stock-log-card {
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.stock-log-card.cook-pair-top {
+  margin-bottom: 0;
+  border-bottom-style: dashed;
+  border-bottom-color: rgba(234, 88, 12, 0.45);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.stock-log-card.cook-pair-bottom {
+  margin-top: -1.5px;
+  border-top-style: dashed;
+  border-top-color: rgba(16, 185, 129, 0.45);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.stock-log-card.cook-pair-top:hover,
+.stock-log-card.cook-pair-top:has(+ .cook-pair-connector + .stock-log-card.cook-pair-bottom:hover),
+.stock-log-card.cook-pair-bottom:hover,
+.stock-log-card.cook-pair-top:hover + .cook-pair-connector + .stock-log-card.cook-pair-bottom {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.06);
+}
+
+.stock-log-card.cook-pair-top:hover + .cook-pair-connector .cook-pair-pill,
+.cook-pair-connector:has(+ .stock-log-card.cook-pair-bottom:hover) .cook-pair-pill {
+  border-color: var(--primary) !important;
+  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.14) !important;
+}
+
+.log-badge.stock-reason-restock, .log-badge.stock-reason-restock_ck, .log-badge.stock-reason-cook_ready { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.log-badge.stock-reason-adjustment { background: rgba(139, 3, 19, 0.08); color: var(--primary); }
+.log-badge.stock-reason-cook_deduct { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
+.log-badge.stock-reason-waste { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+.log-badge.stock-reason-staff_benefit { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
+.log-badge.stock-reason-sale, .log-badge.stock-reason-cancel_restore { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+
+.stock-type-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+}
+.stock-type-pill.raw {
+  background: rgba(234, 88, 12, 0.1);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.25);
+}
+.stock-type-pill.cooked {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.stock-action-tag {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.stock-log-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 78px;
+}
+
+.stock-delta-badge {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.stock-delta-badge.positive {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+.stock-delta-badge.negative {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.stock-balance-flow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .stock-pill-btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -4544,8 +5739,8 @@ select.reports-filter-control,
   font-size: var(--font-xs, 12px) !important;
   font-weight: 600 !important;
   border-radius: 9999px !important;
-  border: 1px solid var(--border-color, #e2e8f0) !important;
-  background: var(--bg-primary, #ffffff) !important;
+  border: 1.5px solid var(--border-color, #e2e8f0) !important;
+  background: #ffffff !important;
   color: var(--text-secondary, #64748b) !important;
   cursor: pointer !important;
   transition: all 0.2s ease-in-out !important;

@@ -31,7 +31,8 @@ async function getDailyReport(date, branchId = null) {
   }
 
   // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
-  const [totals, cashStats, qrStats, govStats, deliveryStats, hourlyBreakdown, orders] = await Promise.all([
+  const paramsHist = branchId ? [startDate, branchId] : [startDate];
+  const [totals, cashStats, qrStats, govStats, deliveryStats, hourlyBreakdown, orders, histStats] = await Promise.all([
     db.prepare(`
       SELECT 
         COUNT(*) as total_orders,
@@ -86,7 +87,12 @@ async function getDailyReport(date, branchId = null) {
       LEFT JOIN users u ON u.id = o.staff_id
       WHERE o.created_at >= ? AND o.created_at <= ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
       ORDER BY o.id DESC
-    `).all(params5)
+    `).all(params5),
+    db.prepare(`
+      SELECT COALESCE(AVG(CASE WHEN created_at < ? THEN total END), AVG(total), 0) as avg_order_value
+      FROM orders
+      WHERE status = 'completed'${branchFilter}
+    `).get(paramsHist)
   ]);
  
   const breakdownData = {
@@ -105,6 +111,7 @@ async function getDailyReport(date, branchId = null) {
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
+    historical_avg_value: Math.round((histStats?.avg_order_value || 0) * 100) / 100,
     payment_breakdown: breakdownData,
     payment: breakdownData,
     hourly_breakdown: hourlyBreakdown,
@@ -134,16 +141,18 @@ async function getMonthlyReport(month, branchId = null) {
   const params1 = [startStr, endStr];
   const params2 = [startStr, endStr];
   const paramsOrders = [startStr, endStr];
+  const paramsHist = [startStr];
 
   if (branchId) {
     branchFilter = ' AND branch_id = ?';
     params1.push(branchId);
     params2.push(branchId);
     paramsOrders.push(branchId);
+    paramsHist.push(branchId);
   }
 
   // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
-  const [dailyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders] = await Promise.all([
+  const [dailyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders, histStats] = await Promise.all([
     db.prepare(`
       SELECT 
         date(created_at) as date,
@@ -190,8 +199,34 @@ async function getMonthlyReport(month, branchId = null) {
       LEFT JOIN users u ON u.id = o.staff_id
       WHERE o.created_at >= ? AND o.created_at < ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
       ORDER BY o.id DESC
-    `).all(paramsOrders)
+    `).all(paramsOrders),
+    db.prepare(`
+      SELECT COALESCE(AVG(CASE WHEN created_at < ? THEN total END), AVG(total), 0) as avg_order_value
+      FROM orders
+      WHERE status = 'completed'${branchFilter}
+    `).get(paramsHist)
   ]);
+
+  if (orders && orders.length > 0) {
+    try {
+      const orderIds = orders.map(o => o.id);
+      const placeholders = orderIds.map(() => '?').join(',');
+      const allItems = await db.prepare(`SELECT * FROM order_items WHERE order_id IN (${placeholders})`).all(orderIds);
+      const itemsByOrderId = {};
+      for (const item of allItems) {
+        if (!itemsByOrderId[item.order_id]) itemsByOrderId[item.order_id] = [];
+        itemsByOrderId[item.order_id].push({
+          ...item,
+          options: item.options ? (typeof item.options === 'string' ? JSON.parse(item.options) : item.options) : null
+        });
+      }
+      for (const o of orders) {
+        o.items = itemsByOrderId[o.id] || [];
+      }
+    } catch (e) {
+      console.warn('⚠️ Error batch loading items in reports.js:', e.message);
+    }
+  }
   const breakdownData = {
     cash_count: cashStats.count,
     cash_total: cashStats.total,
@@ -208,6 +243,7 @@ async function getMonthlyReport(month, branchId = null) {
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
+    historical_avg_value: Math.round((histStats?.avg_order_value || 0) * 100) / 100,
     payment_breakdown: breakdownData,
     payment: breakdownData,
     daily_breakdown: dailyBreakdown,
@@ -230,16 +266,18 @@ async function getYearlyReport(year, branchId = null) {
   const params1 = [startStr, endStr];
   const params2 = [startStr, endStr];
   const paramsOrders = [startStr, endStr];
+  const paramsHist = [startStr];
 
   if (branchId) {
     branchFilter = ' AND branch_id = ?';
     params1.push(branchId);
     params2.push(branchId);
     paramsOrders.push(branchId);
+    paramsHist.push(branchId);
   }
 
   // รันคำสั่งคิวรีข้อมูลทั้งหมดพร้อมกันเพื่อลดดีเลย์
-  const [monthlyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders] = await Promise.all([
+  const [monthlyBreakdown, totals, cashStats, qrStats, govStats, deliveryStats, orders, histStats] = await Promise.all([
     db.prepare(`
       SELECT 
         strftime('%Y-%m', created_at) as month,
@@ -286,7 +324,12 @@ async function getYearlyReport(year, branchId = null) {
       LEFT JOIN users u ON u.id = o.staff_id
       WHERE o.created_at >= ? AND o.created_at < ? AND o.status IN ('completed', 'cancelled')${branchFilter.replace(/branch_id/g, 'o.branch_id')}
       ORDER BY o.id DESC
-    `).all(paramsOrders)
+    `).all(paramsOrders),
+    db.prepare(`
+      SELECT COALESCE(AVG(CASE WHEN created_at < ? THEN total END), AVG(total), 0) as avg_order_value
+      FROM orders
+      WHERE status = 'completed'${branchFilter}
+    `).get(paramsHist)
   ]);
   const breakdownData = {
     cash_count: cashStats.count,
@@ -304,6 +347,7 @@ async function getYearlyReport(year, branchId = null) {
     total_orders: totals.total_orders,
     total_revenue: totals.total_revenue,
     avg_order_value: Math.round(totals.avg_order_value * 100) / 100,
+    historical_avg_value: Math.round((histStats?.avg_order_value || 0) * 100) / 100,
     payment_breakdown: breakdownData,
     payment: breakdownData,
     monthly_breakdown: monthlyBreakdown,
@@ -315,16 +359,37 @@ async function getYearlyReport(year, branchId = null) {
  * สินค้าขายดี
  * @param {number} days - จำนวนวันย้อนหลัง
  * @param {number} [branchId] - รหัสสาขา
+ * @param {object} [periodOpts] - ตัวเลือกช่วงเวลา { date, month, year, start_time, end_time }
  */
-async function getTopItems(days = 7, branchId = null) {
+async function getTopItems(days = 7, branchId = null, periodOpts = {}) {
   const db = getDb();
   let branchFilter = '';
-  const offsetDays = days - 1;
-  const params = [`-${offsetDays} days`];
+  const params = [];
 
   if (branchId) {
     branchFilter = ' AND o.branch_id = ?';
-    params.unshift(branchId);
+    params.push(branchId);
+  }
+
+  let dateFilterSql = '';
+  if (periodOpts.date) {
+    const startTime = periodOpts.start_time ? periodOpts.start_time.replace('.', ':') + ':00' : '00:00:00';
+    const endTime = periodOpts.end_time ? periodOpts.end_time.replace('.', ':') + ':59' : '23:59:59';
+    dateFilterSql = ' AND o.created_at >= ? AND o.created_at <= ?';
+    params.push(`${periodOpts.date} ${startTime}`, `${periodOpts.date} ${endTime}`);
+  } else if (periodOpts.month) {
+    const [y, m] = periodOpts.month.split('-').map(Number);
+    const nextMonthDate = new Date(Date.UTC(y, m, 1));
+    const endStr = nextMonthDate.toISOString().split('T')[0] + ' 00:00:00';
+    dateFilterSql = ' AND o.created_at >= ? AND o.created_at < ?';
+    params.push(`${periodOpts.month}-01 00:00:00`, endStr);
+  } else if (periodOpts.year) {
+    dateFilterSql = ' AND o.created_at >= ? AND o.created_at < ?';
+    params.push(`${periodOpts.year}-01-01 00:00:00`, `${Number(periodOpts.year) + 1}-01-01 00:00:00`);
+  } else {
+    const offsetDays = (Number(days) || 7) - 1;
+    dateFilterSql = " AND o.created_at >= datetime('now', 'localtime', 'start of day', ?)";
+    params.push(`-${offsetDays} days`);
   }
 
   const sql = `
@@ -338,7 +403,7 @@ async function getTopItems(days = 7, branchId = null) {
     JOIN orders o ON o.id = oi.order_id
     WHERE o.status = 'completed'
       ${branchFilter}
-      AND o.created_at >= datetime('now', 'localtime', 'start of day', ?)
+      ${dateFilterSql}
   `;
 
   const allOrderItems = await db.prepare(sql).all(params);

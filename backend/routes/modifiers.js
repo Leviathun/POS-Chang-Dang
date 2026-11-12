@@ -509,7 +509,7 @@ router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
           `).run(
             itemBranchId,
             req.user.id,
-            deltaServings > 0 ? 'restock_modifier' : 'adjust_modifier',
+            mode === 'relative' && deltaServings > 0 ? 'restock_modifier' : 'adjust_modifier',
             `ปรับปรุงสต็อกเครื่องปรุง ${modifier.name} ${deltaServings >= 0 ? '+' : ''}${deltaServings} รอบ (ก่อนปรับ: ${currentServings}, หลังปรับ: ${newServings})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
           );
         }
