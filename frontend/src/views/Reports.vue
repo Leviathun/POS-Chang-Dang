@@ -229,7 +229,7 @@
             <div class="p-sm card pay-card pay-card-qr">
               <div class="flex flex-between align-center mb-xs">
                 <span class="pay-title inline-flex align-center gap-xs">
-                  <i class="fa-solid fa-qrcode text-primary"></i>
+                  <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i>
                   <span class="hide-mobile">QR Code</span>
                   <span class="show-mobile-inline">QR</span>
                 </span>
@@ -325,7 +325,7 @@
                     </span>
                     <!-- 3. ประเภทการชำระเงิน -->
                     <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
-                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: #ea580c;' : ''"></i>
                       <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
                       <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
                     </span>
@@ -555,7 +555,7 @@
                     </span>
                     <!-- Payment Method -->
                     <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
-                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: #ea580c;' : ''"></i>
                       <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
                       <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
                     </span>
@@ -1990,7 +1990,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import DatePeriodFilter from '../components/DatePeriodFilter.vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange, isAdmin, isManagerOrAdmin, getUser } from '../helpers';
@@ -2583,15 +2583,22 @@ const getPaymentPct = (sales) => {
 };
 
 const scrollToRef = (refEl) => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
   nextTick(() => {
     const el = refEl?.value;
     if (!el) return;
     const isMobile = window.innerWidth < 1024;
     const card = el.closest('.card') || el;
     card.style.minHeight = isMobile ? 'calc(100dvh - 130px)' : 'calc(100dvh - 24px)';
-    el.style.scrollMarginTop = isMobile ? '64px' : '12px';
+    const offset = isMobile ? 64 : 12;
+    el.style.scrollMarginTop = `${offset}px`;
     requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const rect = el.getBoundingClientRect();
+      const currentScroll = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      const targetY = Math.max(0, rect.top + currentScroll - offset);
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
     });
   });
 };
