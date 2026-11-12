@@ -1685,11 +1685,12 @@
               <!-- Downward Arrow Connector for Paired Cooking Cards -->
               <div 
                 v-if="isReportCookPair(log, paginatedStockLogs[idx + 1])" 
-                class="flex flex-center align-center" 
+                class="flex flex-center align-center cook-pair-connector" 
                 style="margin: -11px 0; z-index: 3; position: relative; pointer-events: none;"
               >
                 <div 
-                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.08);"
+                  class="cook-pair-pill"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: border-color var(--transition-base), box-shadow var(--transition-base);"
                 >
                   <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
                   <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
@@ -5403,6 +5404,20 @@ select.reports-filter-control,
   border-top-color: rgba(16, 185, 129, 0.45);
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+
+.stock-log-card.cook-pair-top:hover,
+.stock-log-card.cook-pair-top:has(+ .cook-pair-connector + .stock-log-card.cook-pair-bottom:hover),
+.stock-log-card.cook-pair-bottom:hover,
+.stock-log-card.cook-pair-top:hover + .cook-pair-connector + .stock-log-card.cook-pair-bottom {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.06);
+}
+
+.stock-log-card.cook-pair-top:hover + .cook-pair-connector .cook-pair-pill,
+.cook-pair-connector:has(+ .stock-log-card.cook-pair-bottom:hover) .cook-pair-pill {
+  border-color: var(--primary) !important;
+  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.14) !important;
 }
 
 .log-badge.stock-reason-restock, .log-badge.stock-reason-restock_ck, .log-badge.stock-reason-cook_ready { background: rgba(16, 185, 129, 0.12); color: #10b981; }
