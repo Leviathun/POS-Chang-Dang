@@ -87,8 +87,8 @@
       </div>
     </DatePeriodFilter>
 
-    <!-- Skeleton Loading for reports -->
-    <div v-if="loading" class="flex flex-col gap-lg">
+    <!-- Skeleton Loading for Sales tab only -->
+    <div v-if="loading && activeTab === 'sales'" class="flex flex-col gap-lg">
       <div class="grid grid-2 gap-md">
         <div v-for="n in 2" :key="'sk-rep-kpi-' + n" class="card text-center p-md">
           <div class="skeleton mx-auto mb-xs" style="height: 12px; width: 90px; border-radius: 4px;"></div>
@@ -572,7 +572,7 @@
           </div>
 
           <!-- Skeleton Loading for Order History -->
-          <div v-if="historyOrdersLoading" class="flex flex-col gap-sm">
+          <div v-if="loading || historyOrdersLoading" class="flex flex-col gap-sm">
             <div v-for="n in 4" :key="'sk-hist-ord-' + n" class="p-md card order-report-card">
               <div class="flex flex-between align-center gap-sm mb-xs">
                 <div class="flex align-center gap-md" style="flex-wrap: wrap;">
@@ -986,9 +986,9 @@
         <!-- Summary Overview Card -->
         <div class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
           <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color); flex-wrap: wrap; gap: 8px;">
-            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
-              <i class="fa-solid fa-fire"></i>
-              <span>สรุปภาพรวมอันดับสินค้าขายดี ({{ summaryCardTitle.replace('สรุปยอด', '') }})</span>
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0; flex-wrap: wrap;">
+              <span class="flex align-center gap-xs"><i class="fa-solid fa-fire"></i><span>สรุปภาพรวมอันดับสินค้าขายดี</span></span>
+              <span class="top-menus-period-sub">({{ summaryCardTitle.replace('สรุปยอด', '').trim() }})</span>
             </div>
             <span class="text-xs text-secondary font-medium tabular-nums">
               แสดงทั้งหมด {{ topItems.length }} รายการ
@@ -998,37 +998,65 @@
           <div class="sales-clean-summary-grid">
             <div class="sales-clean-stat">
               <span class="stat-clean-label">ยอดขายรวมทุกเมนู</span>
-              <span class="stat-clean-val text-primary tabular-nums">{{ formatCurrency(topItemsTotalSales) }}</span>
+              <div v-if="loading || topItemsLoading" class="skeleton mt-xs" style="height: 28px; width: 120px; border-radius: 6px;"></div>
+              <span v-else class="stat-clean-val text-primary tabular-nums">{{ formatCurrency(topItemsTotalSales) }}</span>
             </div>
             <div class="sales-clean-stat border-sides">
               <span class="stat-clean-label">จำนวนเมนูที่ขายได้</span>
-              <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
+              <div v-if="loading || topItemsLoading" class="skeleton mt-xs" style="height: 28px; width: 90px; border-radius: 6px;"></div>
+              <span v-else class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
                 {{ topItems.length }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">รายการ</small>
               </span>
             </div>
             <div class="sales-clean-stat">
               <span class="stat-clean-label">เมนูทำเงินสูงสุด</span>
-              <span class="stat-clean-val tabular-nums" style="color: #b45309; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {{ topRevenueItem ? topRevenueItem.item_name : '-' }}
-              </span>
-              <div v-if="topRevenueItem" class="flex align-center gap-xs text-xs tabular-nums" style="margin-top: 4px; color: var(--text-secondary);">
-                <span style="font-weight: 600; color: var(--primary);">{{ formatCurrency(topRevenueItem.total_sales) }}</span>
-                <span>({{ getTopItemSalesPct(topRevenueItem.total_sales) }}% ของยอดรวม)</span>
-              </div>
+              <template v-if="loading || topItemsLoading">
+                <div class="skeleton mt-xs" style="height: 22px; width: 140px; border-radius: 6px;"></div>
+                <div class="skeleton mt-xs" style="height: 14px; width: 110px; border-radius: 4px;"></div>
+              </template>
+              <template v-else>
+                <span class="stat-clean-val tabular-nums" style="color: #b45309; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ topRevenueItem ? topRevenueItem.item_name : '-' }}
+                </span>
+                <div v-if="topRevenueItem" class="flex align-center gap-xs text-xs tabular-nums" style="margin-top: 4px; color: var(--text-secondary);">
+                  <span style="font-weight: 600; color: var(--primary);">{{ formatCurrency(topRevenueItem.total_sales) }}</span>
+                  <span>({{ getTopItemSalesPct(topRevenueItem.total_sales) }}% ของยอดรวม)</span>
+                </div>
+              </template>
             </div>
           </div>
         </div>
 
-        <!-- Skeleton Loading for top items -->
-        <div v-if="topItemsLoading" class="ranked-items-grid">
+        <!-- Skeleton Loading for top items (Matching exact Ranked Item Card structure) -->
+        <div v-if="loading || topItemsLoading" class="ranked-items-grid">
           <div v-for="n in 6" :key="'sk-top-' + n" class="ranked-item-card">
             <div class="ranked-card-header">
               <div class="skeleton" style="height: 24px; width: 85px; border-radius: 999px;"></div>
-              <div class="skeleton" style="height: 20px; width: 55px; border-radius: 999px;"></div>
+              <div class="skeleton" style="height: 20px; width: 50px; border-radius: 999px;"></div>
             </div>
-            <div class="skeleton my-sm" style="height: 140px; width: 100%; border-radius: 8px;"></div>
-            <div class="skeleton mb-xs" style="height: 18px; width: 70%; border-radius: 4px;"></div>
-            <div class="skeleton" style="height: 44px; width: 100%; border-radius: 8px;"></div>
+            <div class="ranked-card-single-body">
+              <div class="ranked-image-wrapper">
+                <div class="skeleton" style="width: 100%; height: 100%; border-radius: var(--radius-sm);"></div>
+              </div>
+              <div class="skeleton" style="height: 18px; width: 65%; border-radius: 4px; margin: 6px 0;"></div>
+              <div class="ranked-stats-2boxes">
+                <div class="ranked-stat-box-half">
+                  <div class="skeleton mx-auto mb-xs" style="height: 10px; width: 55px; border-radius: 4px;"></div>
+                  <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                </div>
+                <div class="ranked-stat-box-half">
+                  <div class="skeleton mx-auto mb-xs" style="height: 10px; width: 55px; border-radius: 4px;"></div>
+                  <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
+                <div class="flex flex-between align-center" style="margin-bottom: 4px;">
+                  <div class="skeleton" style="height: 10px; width: 70px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 10px; width: 32px; border-radius: 4px;"></div>
+                </div>
+                <div class="skeleton" style="height: 6px; width: 100%; border-radius: 999px;"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -4736,6 +4764,12 @@ select.reports-filter-control,
   gap: var(--space-md);
 }
 @media (max-width: 640px) {
+  .top-menus-period-sub {
+    display: block;
+    width: 100%;
+    font-size: var(--font-sm);
+    margin-top: 2px;
+  }
   .sales-clean-summary-grid {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
