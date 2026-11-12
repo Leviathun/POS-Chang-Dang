@@ -1145,111 +1145,139 @@
       </div>
 
       <!-- Tab 4: Activity Logs (ประวัติกิจกรรมพนักงาน) -->
-      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" ref="activityCardRef" class="card">
-        <div class="card-title" style="font-size: var(--font-sm);"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> ประวัติกิจกรรมพนักงาน</div>
+      <div v-if="activeTab === 'activity_logs' && isManagerOrAdminUser" class="flex flex-col gap-md">
         
-        <!-- Filter dropdowns in a 2-column grid -->
-        <div class="grid grid-2 gap-md mb-md">
-          
-          <!-- Category Filter -->
-          <div class="form-group">
-            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> กรองประเภท:</label>
-            <div class="custom-select-wrapper" @click.stop>
-              <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isFilterActionDropdownOpen }" 
-                @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
-              >
-                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
-                  <i :class="getFilterActionIcon(filterAction)"></i>
-                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ selectedFilterActionLabel }}</span>
-                </span>
+        <!-- Filter Card: Separate Box between Date Filter and Activity Logs -->
+        <div class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex align-center gap-md" style="flex-wrap: wrap;">
+            <!-- Category Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">ประเภท:</span>
+              <div class="custom-select-wrapper" style="width: 210px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isFilterActionDropdownOpen }" 
+                  @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
+                    <i :class="getFilterActionIcon(filterAction)"></i>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ selectedFilterActionLabel }}</span>
+                  </span>
+                </div>
+                <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับปรุงยอด / ของเสีย (Stock & Waste)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+                </div>
               </div>
-              <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown">
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> การลงชื่อเข้าใช้งาน (Login)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')"><i class="fa-solid fa-cart-shopping" style="margin-right: 4px;"></i> การขาย / ออกบิล (Sales)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> การยกเลิกบิล (Void)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> บันทึกค่าใช้จ่าย (Expenses)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับปรุงยอด / ของเสีย (Stock & Waste)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน (Staff Credit)</div>
-                <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> การจัดการลิ้นชักเงินสด (Cash Drawer)</div>
+            </div>
+
+            <!-- Staff Filter -->
+            <div class="flex align-center gap-xs">
+              <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary);">พนักงาน:</span>
+              <div class="custom-select-wrapper" style="width: 150px;" @click.stop>
+                <div 
+                  class="custom-select-trigger" 
+                  :class="{ 'active': isActivityStaffDropdownOpen }" 
+                  @click="isActivityStaffDropdownOpen = !isActivityStaffDropdownOpen; isFilterActionDropdownOpen = false;"
+                  style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
+                >
+                  <span class="custom-select-text">
+                    {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
+                  </span>
+                </div>
+                <div v-if="isActivityStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; overflow-y: auto; top: calc(100% + 2px);">
+                  <div class="custom-select-option" :class="{ 'selected': activityStaffFilter === 'all' }" @click="activityStaffFilter = 'all'; isActivityStaffDropdownOpen = false;" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div 
+                    v-for="staff in staffList" 
+                    :key="staff.id" 
+                    class="custom-select-option" 
+                    :class="{ 'selected': activityStaffFilter === staff.name }" 
+                    @click="activityStaffFilter = staff.name; isActivityStaffDropdownOpen = false;"
+                    style="padding: 6px 12px; font-size: var(--font-sm);"
+                  >
+                    {{ staff.name }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Staff Filter -->
-          <div class="form-group">
-            <label class="form-label font-bold" style="font-size: var(--font-sm);"><i class="fa-solid fa-user" style="margin-right: 6px;"></i> กรองพนักงาน:</label>
-            <div class="custom-select-wrapper" @click.stop>
-              <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isActivityStaffDropdownOpen }" 
-                @click="isActivityStaffDropdownOpen = !isActivityStaffDropdownOpen; isFilterActionDropdownOpen = false;"
-              >
-                <span class="custom-select-text" style="font-size: var(--font-sm); display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
-                  <i class="fa-solid fa-user"></i>
-                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-                    {{ activityStaffFilter === 'all' ? 'ทั้งหมด' : activityStaffFilter }}
-                  </span>
-                </span>
+        <!-- Activity Logs Card -->
+        <div ref="activityCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color); flex-wrap: wrap; gap: 8px;">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0; flex-wrap: wrap;">
+              <span class="flex align-center gap-xs"><i class="fa-solid fa-user-shield"></i><span>ประวัติกิจกรรมพนักงาน</span></span>
+              <span class="top-menus-period-sub">({{ summaryCardTitle.replace('สรุปยอด', '').trim() }})</span>
+            </div>
+            <span class="text-xs text-secondary font-medium tabular-nums" v-if="filteredActivityLogs.length > 0 && !loading && !activityLogsLoading">
+              รวม {{ filteredActivityLogs.length }} รายการ
+            </span>
+          </div>
+
+          <!-- Skeleton Loading for Activity Logs -->
+          <div v-if="loading || activityLogsLoading" class="activity-logs-list">
+            <div v-for="n in 5" :key="'sk-act-log-' + n" class="activity-log-item">
+              <div class="log-badge-wrapper">
+                <div class="skeleton" style="width: 36px; height: 36px; border-radius: 50%;"></div>
               </div>
-              <div v-if="isActivityStaffDropdownOpen" class="custom-select-dropdown" style="max-height: 200px; overflow-y: auto; top: calc(100% + 2px);">
-                <div class="custom-select-option" :class="{ 'selected': activityStaffFilter === 'all' }" @click="activityStaffFilter = 'all'; isActivityStaffDropdownOpen = false;"><i class="fa-solid fa-users" style="margin-right: 4px;"></i> ทั้งหมด</div>
-                <div 
-                  v-for="staff in staffList" 
-                  :key="staff.id" 
-                  class="custom-select-option" 
-                  :class="{ 'selected': activityStaffFilter === staff.name }" 
-                  @click="activityStaffFilter = staff.name; isActivityStaffDropdownOpen = false;"
-                >
-                  <i class="fa-solid fa-user" style="margin-right: 4px;"></i> {{ staff.name }}
+              <div class="log-content-wrapper" style="flex: 1;">
+                <div class="skeleton mb-xs" style="height: 16px; width: 75%; border-radius: 4px;"></div>
+                <div class="flex align-center gap-md">
+                  <div class="skeleton" style="height: 12px; width: 90px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 12px; width: 110px; border-radius: 4px;"></div>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
-
-        <div v-if="filteredActivityLogs.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding:var(--space-md);">
-          ยังไม่มีกิจกรรมที่ตรงตามตัวกรองในวันนี้
-        </div>
-        <div v-else class="activity-logs-list">
-          <div v-for="log in paginatedActivityLogs" :key="log.id" class="activity-log-item">
-            <div class="log-badge-wrapper">
-              <div class="log-badge" :class="log.action">
-                <i :class="getActionIconClass(log.action)"></i>
+          <div v-else-if="filteredActivityLogs.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
+            ไม่มีกิจกรรมที่ตรงตามตัวกรองในช่วงเวลาที่เลือก
+          </div>
+          <div v-else class="activity-logs-list">
+            <div v-for="log in paginatedActivityLogs" :key="log.id" class="activity-log-item">
+              <div class="log-badge-wrapper">
+                <div class="log-badge" :class="log.action">
+                  <i :class="getActionIconClass(log.action)"></i>
+                </div>
               </div>
-            </div>
-            <div class="log-content-wrapper">
-              <div class="log-details">{{ log.details }}</div>
-              <div class="log-meta">
-                <span class="log-user"><i class="fa-solid fa-user" style="margin-right: 4px;"></i>{{ log.staff_name || 'ระบบ' }}</span>
-                <span class="log-time"><i class="fa-solid fa-clock" style="margin-right: 4px;"></i>{{ formatTime(log.created_at) }}</span>
+              <div class="log-content-wrapper">
+                <div class="log-details">{{ log.details }}</div>
+                <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                  <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-user" style="font-size: 0.75rem;"></i><span>{{ log.staff_name || 'ระบบ' }}</span></span>
+                  <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i><span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span></span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Pagination UI for Activity Logs -->
-        <div v-if="totalActivityPages > 1" class="pagination-bar flex flex-center align-center gap-md">
-          <button 
-            class="pagination-btn" 
-            :disabled="activityCurrentPage === 1" 
-            @click="changeActivityPage(activityCurrentPage - 1)"
-          >
-            <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-          </button>
-          <span class="pagination-info tabular-nums">
-            หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
-          </span>
-          <button 
-            class="pagination-btn" 
-            :disabled="activityCurrentPage === totalActivityPages" 
-            @click="changeActivityPage(activityCurrentPage + 1)"
-          >
-            ถัดไป <i class="fa-solid fa-chevron-right"></i>
-          </button>
+          <!-- Pagination UI for Activity Logs -->
+          <div v-if="!loading && !activityLogsLoading && totalActivityPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
+            <button 
+              class="pagination-btn" 
+              :disabled="activityCurrentPage === 1" 
+              @click="changeActivityPage(activityCurrentPage - 1)"
+            >
+              <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+            </button>
+            <span class="pagination-info tabular-nums">
+              หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
+            </span>
+            <button 
+              class="pagination-btn" 
+              :disabled="activityCurrentPage === totalActivityPages" 
+              @click="changeActivityPage(activityCurrentPage + 1)"
+            >
+              ถัดไป <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
         </div>
       </div>
     </template>
@@ -1316,11 +1344,17 @@
             <span class="text-sm font-bold" style="color: var(--text-secondary);">🗑️ สินค้าเสีย / ทิ้ง</span>
             <span class="badge badge-danger" style="font-size: var(--font-xxs);">{{ stockWasteCount }} รายการ</span>
           </div>
-          <div class="text-2xl font-bold text-danger">{{ stockWasteTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
-          <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
-            <i class="fa-solid fa-circle-info text-muted"></i>
-            <span class="truncate">{{ stockWasteSummaryText }}</span>
-          </div>
+          <template v-if="loading || stockHistoryLoading">
+            <div class="skeleton my-xs" style="height: 28px; width: 100px; border-radius: 6px;"></div>
+            <div class="skeleton mt-xs" style="height: 14px; width: 160px; border-radius: 4px;"></div>
+          </template>
+          <template v-else>
+            <div class="text-2xl font-bold text-danger tabular-nums">{{ stockWasteTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
+            <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
+              <i class="fa-solid fa-circle-info text-muted"></i>
+              <span class="truncate">{{ stockWasteSummaryText }}</span>
+            </div>
+          </template>
         </div>
 
         <!-- Staff Credit Summary Card -->
@@ -1329,14 +1363,20 @@
             <span class="text-sm font-bold" style="color: var(--text-secondary);">🍴 เครดิตพนักงาน / สวัสดิการ</span>
             <span class="badge" style="background: rgba(253, 126, 20, 0.12); color: #fd7e14; font-size: var(--font-xxs);">{{ stockStaffCreditCount }} รายการ</span>
           </div>
-          <div class="flex align-baseline gap-sm">
-            <div class="text-2xl font-bold" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
-            <div v-if="totalStaffCreditValue > 0" class="text-base font-bold text-danger">({{ formatMoney(totalStaffCreditValue) }} ฿)</div>
-          </div>
-          <div class="text-xs text-secondary mt-xs flex flex-between align-center" style="color: var(--text-tertiary);">
-            <span class="truncate"><i class="fa-solid fa-user-check text-muted mr-xs"></i> {{ stockStaffCreditSummaryText }}</span>
-            <span class="text-xs font-bold" style="color: #fd7e14; white-space: nowrap;">ดูสรุปรายคน <i class="fa-solid fa-chevron-right ml-xs"></i></span>
-          </div>
+          <template v-if="loading || stockHistoryLoading">
+            <div class="skeleton my-xs" style="height: 28px; width: 110px; border-radius: 6px;"></div>
+            <div class="skeleton mt-xs" style="height: 14px; width: 180px; border-radius: 4px;"></div>
+          </template>
+          <template v-else>
+            <div class="flex align-baseline gap-sm tabular-nums">
+              <div class="text-2xl font-bold" style="color: #fd7e14;">{{ stockStaffCreditTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น</span></div>
+              <div v-if="totalStaffCreditValue > 0" class="text-base font-bold text-danger">({{ formatMoney(totalStaffCreditValue) }} ฿)</div>
+            </div>
+            <div class="text-xs text-secondary mt-xs flex flex-between align-center" style="color: var(--text-tertiary);">
+              <span class="truncate"><i class="fa-solid fa-user-check text-muted mr-xs"></i> {{ stockStaffCreditSummaryText }}</span>
+              <span class="text-xs font-bold" style="color: #fd7e14; white-space: nowrap;">ดูสรุปรายคน <i class="fa-solid fa-chevron-right ml-xs"></i></span>
+            </div>
+          </template>
         </div>
 
         <!-- Restock Summary Card -->
@@ -1345,11 +1385,17 @@
             <span class="text-sm font-bold" style="color: var(--text-secondary);">📦 การเติมสต็อกรวม</span>
             <span class="badge badge-success" style="font-size: var(--font-xxs);">{{ stockRestockCount }} รายการ</span>
           </div>
-          <div class="text-2xl font-bold text-success">+{{ stockRestockTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
-          <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
-            <i class="fa-solid fa-boxes-packing text-muted"></i>
-            <span>เติมสินค้าเข้าคลังสาขา</span>
-          </div>
+          <template v-if="loading || stockHistoryLoading">
+            <div class="skeleton my-xs" style="height: 28px; width: 100px; border-radius: 6px;"></div>
+            <div class="skeleton mt-xs" style="height: 14px; width: 150px; border-radius: 4px;"></div>
+          </template>
+          <template v-else>
+            <div class="text-2xl font-bold text-success tabular-nums">+{{ stockRestockTotalQty }} <span class="text-xs text-muted font-normal">ชิ้น/รายการ</span></div>
+            <div class="text-xs text-secondary mt-xs flex align-center gap-xs" style="color: var(--text-tertiary);">
+              <i class="fa-solid fa-boxes-packing text-muted"></i>
+              <span>เติมสินค้าเข้าคลังสาขา</span>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -1511,7 +1557,7 @@
           </div>
         </div>
 
-        <div v-if="stockHistoryLoading" class="flex flex-col gap-sm">
+        <div v-if="loading || stockHistoryLoading" class="flex flex-col gap-sm">
           <div v-for="n in 4" :key="'sk-sh-' + n" class="card p-md flex flex-between align-center">
             <div style="flex: 1;">
               <div class="skeleton mb-xs" style="height: 16px; width: 45%; border-radius: 4px;"></div>
@@ -2475,7 +2521,21 @@ const getTopItemSalesPct = (sales) => {
 };
 const expenses = ref([]);
 const activityLogs = ref([]);
+const activityLogsLoading = ref(false);
+let activityFilterSkeletonTimer = null;
+const triggerActivityFilterSkeleton = () => {
+  activityCurrentPage.value = 1;
+  activityLogsLoading.value = true;
+  if (activityFilterSkeletonTimer) clearTimeout(activityFilterSkeletonTimer);
+  activityFilterSkeletonTimer = setTimeout(() => {
+    activityLogsLoading.value = false;
+  }, 220);
+};
 const filterAction = ref('all');
+
+watch([filterAction, activityStaffFilter], () => {
+  triggerActivityFilterSkeleton();
+});
 
 const getExpenseCategoryLabel = (cat) => {
   const map = {
@@ -3457,8 +3517,13 @@ const loadExpensesForPeriod = async () => {
 };
 
 const loadActivityLogsForPeriod = async () => {
+  if (activityFilterSkeletonTimer) clearTimeout(activityFilterSkeletonTimer);
+  activityLogsLoading.value = true;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
+    activityFilterSkeletonTimer = setTimeout(() => {
+      activityLogsLoading.value = false;
+    }, 180);
     return;
   }
   try {
@@ -3484,6 +3549,8 @@ const loadActivityLogsForPeriod = async () => {
     }
   } catch (e) {
     console.warn(e);
+  } finally {
+    activityLogsLoading.value = false;
   }
 };
 
