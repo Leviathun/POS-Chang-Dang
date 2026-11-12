@@ -1553,57 +1553,41 @@
       </div>
 
       <!-- Per-Staff Credit Breakdown Card (Visible when staff_benefit filter active) -->
-      <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md" style="background: #ffffff; border: 1.5px solid rgba(234, 88, 12, 0.3); border-radius: var(--radius-md); box-shadow: 0 2px 10px rgba(234, 88, 12, 0.05);">
-        <div class="flex flex-between align-center mb-md pb-xs flex-wrap gap-xs" style="border-bottom: 1px dashed rgba(234, 88, 12, 0.25);">
-          <div class="font-bold text-sm flex align-center gap-xs" style="color: #ea580c;">
-            <span class="flex align-center justify-center" style="width: 28px; height: 28px; border-radius: 8px; background: rgba(234, 88, 12, 0.12); color: #ea580c;">
-              <i class="fa-solid fa-users-viewfinder"></i>
-            </span>
+      <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md" style="background: #ffffff; border: 1.5px solid var(--border-color); border-radius: var(--radius-md);">
+        <div class="flex flex-between align-center mb-sm pb-xs flex-wrap gap-xs" style="border-bottom: 1px solid var(--border-color);">
+          <div class="font-bold text-sm flex align-center gap-xs" style="color: var(--text-primary);">
+            <i class="fa-solid fa-users-viewfinder" style="color: #ea580c;"></i>
             <span>สรุปเครดิตพนักงานรายคน ({{ staffCreditBreakdown.length }} คน)</span>
           </div>
-          <div class="flex align-center gap-xs text-xs font-bold tabular-nums">
-            <span class="capsule-badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 3px 10px;">
-              รวม {{ stockStaffCreditTotalQty }} ชิ้น
-            </span>
-            <span v-if="totalStaffCreditValue > 0" class="capsule-badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 3px 10px;">
-              ฿{{ formatMoney(totalStaffCreditValue) }}
-            </span>
+          <div class="flex align-center gap-xs text-xs font-bold tabular-nums" style="color: var(--text-secondary);">
+            <span>รวม <span style="color: #ea580c;">{{ stockStaffCreditTotalQty }} ชิ้น</span></span>
+            <span v-if="totalStaffCreditValue > 0">| <span class="text-danger">฿{{ formatMoney(totalStaffCreditValue) }}</span></span>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-sm);">
+        <div class="flex flex-col">
           <div 
             v-for="(staff, idx) in staffCreditBreakdown" 
             :key="staff.name" 
-            class="card p-sm flex flex-col justify-between"
-            style="background: #fffaf5; border: 1.5px solid #fed7aa; border-left: 4px solid #ea580c; border-radius: var(--radius-md); box-shadow: 0 1px 4px rgba(234, 88, 12, 0.05); gap: 8px;"
+            class="flex flex-col gap-xs"
+            :style="{
+              padding: '10px 2px',
+              borderBottom: idx < staffCreditBreakdown.length - 1 ? '1px dashed var(--border-color)' : 'none'
+            }"
           >
-            <div class="flex flex-between align-center gap-xs">
+            <div class="flex flex-between align-center gap-xs flex-wrap">
               <div class="flex align-center gap-xs" style="min-width: 0;">
-                <span class="flex align-center justify-center font-bold text-xs tabular-nums" style="width: 26px; height: 26px; border-radius: 50%; background: #ea580c; color: #ffffff; flex-shrink: 0;">
-                  {{ idx + 1 }}
-                </span>
-                <div style="min-width: 0;">
-                  <div class="font-bold text-sm text-primary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {{ staff.name }}
-                  </div>
-                  <div class="text-xs text-muted tabular-nums">เบิก {{ staff.log_count }} ครั้ง</div>
-                </div>
+                <span class="text-xs font-bold tabular-nums" style="color: #ea580c; min-width: 18px;">{{ idx + 1 }}.</span>
+                <span class="font-bold text-sm text-primary">{{ staff.name }}</span>
+                <span class="text-xs text-muted tabular-nums">({{ staff.log_count }} ครั้ง)</span>
               </div>
-              <div class="flex align-center gap-xs tabular-nums" style="flex-shrink: 0;">
-                <span class="capsule-badge text-xs font-bold" style="background: #ffedd5; color: #9a3412; border: 1px solid #fdba74;">{{ staff.total_qty }} ชิ้น</span>
-                <span v-if="staff.total_value > 0" class="capsule-badge text-xs font-bold" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;">฿{{ formatMoney(staff.total_value) }}</span>
+              <div class="flex align-center gap-xs text-xs font-bold tabular-nums" style="flex-shrink: 0;">
+                <span style="color: #c2410c;">{{ staff.total_qty }} ชิ้น</span>
+                <span v-if="staff.total_value > 0" class="text-danger">| ฿{{ formatMoney(staff.total_value) }}</span>
               </div>
             </div>
-            <div class="flex flex-wrap gap-xs pt-xs" style="border-top: 1px dashed rgba(234, 88, 12, 0.18);">
-              <span
-                v-for="item in staff.items_list"
-                :key="item.name"
-                class="text-xs tabular-nums"
-                style="background: #ffffff; color: var(--text-primary); border: 1px solid #fed7aa; border-radius: 6px; padding: 2px 8px; font-weight: 600;"
-              >
-                {{ item.name }} <span style="color: #ea580c; font-weight: 700;">x{{ item.qty }}</span>
-              </span>
+            <div class="text-xs text-secondary tabular-nums" style="padding-left: 24px; line-height: 1.5;">
+              {{ staff.items_summary }}
             </div>
           </div>
         </div>
@@ -3566,6 +3550,8 @@ const formatReportLogNote = (log, isRaw) => {
   }
 
   return note
+    .replace(/^(ขาย\s+.+?)\s+(\([^)]+\))$/, '$1\n$2')
+    .replace(/^(ยกเลิกออเดอร์\s+\S+)\s*—\s*(คืน(?:สต็อก|วัตถุดิบ)\s+.+?)\s*(\(เหตุผล:[^)]+\))$/, '$1\n$2\n$3')
     .replace(/^ปรับปรุงสต็อก.*?\(Absolute\):\s*ปรับจาก\s*[\d,.]+\s*เป็น\s*[\d,.]+\s*\S+\s*\[สาเหตุ:\s*(.+?)\](?:\s*\((.+)\))?$/, (_, r, n) => `สาเหตุ: ${r}${n && n !== 'ไม่ระบุโน้ต' ? ` (${n})` : ''}`)
     .replace(/^เติมสต็อก.*?\(Relative\)\s*[+-]?[\d,.]+\s*\S+$/, 'เติมสต็อกเพิ่มเข้าคลัง')
     .replace(/^เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง\s*ใบเบิก\s*(#\S+)\s*\((.+?)\)(?:\s*\((.+?)\))?(?:\s*โดย\s*(.+))?$/, (_, reqNo, ckName, formula) => `เติมจากครัวกลาง\nใบเบิก ${reqNo}${formula ? ` (${formula})` : ''}`);
@@ -4793,6 +4779,14 @@ select.reports-filter-control,
 
   .stock-log-card {
     align-items: flex-start;
+  }
+
+  .stock-log-card.cook-pair-top {
+    padding-bottom: 20px;
+  }
+
+  .stock-log-card.cook-pair-bottom {
+    padding-top: 22px;
   }
 
   .log-content-wrapper {
