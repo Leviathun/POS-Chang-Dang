@@ -270,7 +270,8 @@
               <div class="flex flex-between align-center mb-xs">
                 <span class="pay-title inline-flex align-center gap-xs">
                   <i class="fa-solid fa-motorcycle" style="color: #ea580c;"></i>
-                  <span>เดลิเวอรี</span>
+                  <span class="hide-mobile">เดลิเวอรี</span>
+                  <span class="show-mobile-inline">เดลี่</span>
                 </span>
                 <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
                   {{ getPaymentPct(displayedDailyReport.delivery_sales) }}%
@@ -287,7 +288,7 @@
         </div>
 
         <!-- Today's Transaction Logs (ALL ROLES) -->
-        <div class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+        <div ref="dailyOrdersCardRef" class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
           <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color);">
             <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
               <i class="fa-solid fa-list-check"></i>
@@ -325,7 +326,7 @@
                     <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
                       <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
-                      <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
+                      <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
                     </span>
                     <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
                       <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
@@ -360,12 +361,12 @@
                   <i class="fa-solid fa-spinner fa-spin mr-xs"></i> กำลังโหลดรายการอาหาร...
                 </div>
                 <div v-else class="order-items-table">
-                  <div v-for="item in expandedItems" :key="item.id" class="order-item-row flex flex-between align-center py-xs">
-                    <div class="flex align-center gap-xs">
-                      <span class="order-item-qty tabular-nums">x{{ item.quantity }}</span>
-                      <span class="order-item-name font-medium">{{ item.item_name }}</span>
+                  <div v-for="item in expandedItems" :key="item.id" class="order-item-row flex flex-between py-xs" style="align-items: flex-start;">
+                    <div class="flex gap-xs" style="align-items: flex-start; flex: 1; min-width: 0;">
+                      <span class="order-item-qty tabular-nums" style="margin-top: 1px; flex-shrink: 0;">x{{ item.quantity }}</span>
+                      <span class="order-item-name font-medium" style="word-break: break-word;">{{ item.item_name }}</span>
                     </div>
-                    <span class="order-item-subtotal tabular-nums font-semibold">{{ formatCurrency(item.subtotal) }}</span>
+                    <span class="order-item-subtotal tabular-nums font-semibold" style="margin-left: var(--space-sm); flex-shrink: 0;">{{ formatCurrency(item.subtotal) }}</span>
                   </div>
 
                   <!-- Subtotal & Discount Info if applied -->
@@ -404,7 +405,7 @@
               <button 
                 class="pagination-btn" 
                 :disabled="dailyOrdersCurrentPage === 1" 
-                @click="dailyOrdersCurrentPage--"
+                @click="changeDailyOrdersPage(dailyOrdersCurrentPage - 1)"
               >
                 <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
               </button>
@@ -414,7 +415,7 @@
               <button 
                 class="pagination-btn" 
                 :disabled="dailyOrdersCurrentPage === totalDailyOrdersPages" 
-                @click="dailyOrdersCurrentPage++"
+                @click="changeDailyOrdersPage(dailyOrdersCurrentPage + 1)"
               >
                 ถัดไป <i class="fa-solid fa-chevron-right"></i>
               </button>
@@ -2652,7 +2653,17 @@ const getPaymentPct = (sales) => {
   return Math.round(((Number(sales) || 0) / total) * 100);
 };
 
+const dailyOrdersCardRef = ref(null);
 const dailyOrdersCurrentPage = ref(1);
+const changeDailyOrdersPage = (newPage) => {
+  if (newPage < 1 || newPage > totalDailyOrdersPages.value) return;
+  dailyOrdersCurrentPage.value = newPage;
+  nextTick(() => {
+    if (dailyOrdersCardRef.value) {
+      dailyOrdersCardRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+};
 const dailyOrdersPerPage = 15;
 const totalDailyOrdersPages = computed(() => {
   const count = (displayedDailyReport.value.orders || []).length;
