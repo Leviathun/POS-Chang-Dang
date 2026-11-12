@@ -2672,7 +2672,7 @@ const formatActivityDetails = (log) => {
   if (!raw) return '-';
   const badge = getActivityStockTypeBadge(log);
   const kindPrefix = badge ? `${badge.label} • ` : '';
-  return raw
+  const formatted = raw
     .replace(/^(.+?)\s*เข้าสู่ระบบ(?:สำเร็จ)?\s*\(สาขา:\s*(.+)\)$/, '$1\nสาขา: $2')
     .replace(/^สร้าง(?:ออเดอร์และชำระเงินสำเร็จ|และชำระเงินออเดอร์)\s*เลขที่\s*#?(\S+)\s*ยอดรวม\s*([\d,.]+)\s*บาท$/, 'เลขที่ #$1\nยอดรวม ฿$2')
     .replace(/^ยกเลิก(?:บิล|ออเดอร์)\s*#?(\S+)\s*สำเร็จ\s*\(เหตุผล:\s*(.+)\)$/, 'เลขที่ #$1\nเหตุผล: $2')
@@ -2685,10 +2685,21 @@ const formatActivityDetails = (log) => {
     .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1เพิ่ม: $2 +$3 $4\nหลัง$1: พร้อมขาย $5')
     .replace(/^ยกเลิกบันทึกสต็อก\s*(#\S+)\s*\((.+?)\).*$/, 'รายการ $1\n$2')
     .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? `\n${note}` : ''}`)
-    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'แจกพนักงานรับประทาน' ? `\n${note}` : ''}`)
+    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => {
+      const cleanStaffNote = String(note || '').replace(/^\[.*?\]\s*/, '').trim();
+      const staffName = String(log?.staff_name || '').trim();
+      const showNote = cleanStaffNote && cleanStaffNote !== 'แจกพนักงานรับประทาน' && (!staffName || cleanStaffNote !== staffName);
+      return `${kindPrefix}${name} ${qty}${showNote ? `\n${cleanStaffNote}` : ''}`;
+    })
     .replace(/^.+?บันทึกเงินทอนตั้งต้นกะวันที่\s*(\S+)\s*จำนวน\s*([\d,.]+)\s*บาท$/, 'กะวันที่ $1\n฿$2')
-    .replace(/^.+?ตรวจสอบเงินสดกะวันที่\s*(\S+)\s*\(นับจริง:\s*([\d,.]+)\s*บาท,\s*คาดการณ์:\s*([\d,.]+)\s*บาท,\s*ผลต่าง:\s*([+-]?[\d,.]+)\s*บาท\)$/, 'นับจริง ฿$2\nคาดการณ์ ฿$3 (ผลต่าง ฿$4)')
+    .replace(/^.+?ตรวจสอบเงินสดกะวันที่\s*(\S+)\s*\(นับจริง:\s*([\d,.]+)\s*บาท,\s*คาดการณ์:\s*([\d,.]+)\s*บาท,\s*ผลต่าง:\s*([+-]?[\d,.]+)\s*บาท\)$/, 'กะวันที่ $1\nนับจริง ฿$2 • คาดการณ์ ฿$3 (ผลต่าง ฿$4)')
     .replace(/\s*\(สาขา:\s*(.+)\)$/, '\nสาขา: $1');
+
+  const staffName = String(log?.staff_name || '').trim();
+  if (staffName && log?.action !== 'login' && !raw.includes('ครัวกลาง')) {
+    return formatted.split('\n').filter(line => line.trim() !== staffName).join('\n');
+  }
+  return formatted;
 };
 
 const filteredActivityLogs = computed(() => {
@@ -2698,12 +2709,20 @@ const filteredActivityLogs = computed(() => {
   // 2. Map actual expense records dynamically to mock activity logs
   const mappedExpenses = expenses.value.map(e => {
     const cleanNote = e.note ? String(e.note).replace(/^เบิกของจากครัวกลาง\s*/, '').trim() : '';
+    const amountStr = `฿${Number(e.amount || 0).toLocaleString()}`;
+    const ckMatch = cleanNote.match(/^(\[[^\]]+\])\s*(ใบเบิก\s*#\S+)(?:\s*\((.+)\))?$/);
+    let details = `${getExpenseCategoryLabel(e.category)}\n${amountStr}`;
+    if (ckMatch) {
+      details = `${getExpenseCategoryLabel(e.category)}\n${amountStr} ${ckMatch[1]}\n${ckMatch[2]}${ckMatch[3] ? ` (${ckMatch[3]})` : ''}`;
+    } else if (cleanNote) {
+      details += `\n${cleanNote}`;
+    }
     return {
       id: `expense-${e.id}`,
       branch_id: e.branch_id,
       user_id: e.staff_id,
       action: 'log_expense',
-      details: `${getExpenseCategoryLabel(e.category)}\n฿${Number(e.amount || 0).toLocaleString()}${cleanNote ? ` (${cleanNote})` : ''}`,
+      details,
       created_at: e.created_at,
       staff_name: e.staff_name || 'ผู้ดูแลระบบ'
     };
@@ -2727,7 +2746,7 @@ const filteredActivityLogs = computed(() => {
         user_id: s.staff_id,
         action: 'restock_ck',
         stock_kind: isRaw ? 'raw' : 'cooked',
-        details: `${kindLabel} • ${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น\nคงเหลือ ${s.previous_stock} → ${s.new_stock}${reqMatch ? ` • ใบเบิก ${reqMatch[1]}` : ''}`,
+        details: `${kindLabel} • ${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น\nคงเหลือ ${s.previous_stock} → ${s.new_stock}${reqMatch ? `\nใบเบิก ${reqMatch[1]}` : ''}`,
         created_at: s.created_at,
         staff_name: s.staff_name || (byMatch ? byMatch[1].trim() : 'ครัวกลาง')
       };
