@@ -158,7 +158,18 @@
             </div>
             <div class="sales-clean-stat border-sides">
               <span class="stat-clean-label">จำนวนคำสั่งซื้อ</span>
-              <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">{{ displayedDailyReport.total_orders }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">บิล</small></span>
+              <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
+                {{ displayedDailyReport.all_orders }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">บิลทั้งหมด</small>
+              </span>
+              <div class="flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
+                <span style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-circle-check" style="font-size: 0.7rem;"></i> ชำระแล้ว {{ displayedDailyReport.total_orders }} บิล
+                </span>
+                <span style="color: var(--border-color-light);">|</span>
+                <span style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-ban" style="font-size: 0.7rem;"></i> ยกเลิก {{ displayedDailyReport.cancelled_orders }} บิล
+                </span>
+              </div>
             </div>
             <div class="sales-clean-stat">
               <span class="stat-clean-label">เฉลี่ยต่อบิล</span>
@@ -2546,15 +2557,28 @@ const filteredLedgerTransactions = computed(() => {
 const displayedDailyReport = computed(() => {
   const rep = dailyReport.value || { orders: [] };
   const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
-  if (periodMode.value !== 'daily' || !isTimeFilterActive) return rep;
+  if (periodMode.value !== 'daily' || !isTimeFilterActive) {
+    const allOrders = rep.orders || [];
+    const completedCount = Number(rep.total_orders) || allOrders.filter(o => o.status === 'completed').length;
+    const cancelledCount = allOrders.filter(o => o.status === 'cancelled').length;
+    return {
+      ...rep,
+      total_orders: completedCount,
+      cancelled_orders: cancelledCount,
+      all_orders: completedCount + cancelledCount
+    };
+  }
 
   const orders = (rep.orders || []).filter(o => isTimeInRange(o.created_at, customStartTime.value, customEndTime.value));
   const completed = orders.filter(o => o.status === 'completed');
+  const cancelled = orders.filter(o => o.status === 'cancelled');
   const sumBy = (pm) => completed.filter(o => o.payment_method === pm);
   const sumAmt = (arr) => arr.reduce((s, o) => s + (Number(o.total) || 0), 0);
 
   const total_sales = sumAmt(completed);
   const total_orders = completed.length;
+  const cancelled_orders = cancelled.length;
+  const all_orders = total_orders + cancelled_orders;
   const cash = sumBy('cash');
   const qr = completed.filter(o => o.payment_method === 'qr' || o.payment_method === 'promptpay');
   const gov = sumBy('gov');
@@ -2563,6 +2587,8 @@ const displayedDailyReport = computed(() => {
   return {
     total_sales,
     total_orders,
+    cancelled_orders,
+    all_orders,
     average_bill: total_orders > 0 ? total_sales / total_orders : 0,
     cash_sales: sumAmt(cash),
     cash_orders: cash.length,
