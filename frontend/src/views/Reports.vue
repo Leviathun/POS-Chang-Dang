@@ -390,9 +390,11 @@
                 </div>
 
                 <!-- Void Button (Aligned to the far right) -->
-                <div v-if="order.status === 'completed'" class="flex justify-end mt-md">
+                <div v-if="order.status === 'completed'" style="display: flex; justify-content: flex-end; width: 100%; margin-top: var(--space-md);">
                   <button 
+                    type="button"
                     class="btn order-void-btn" 
+                    style="margin-left: auto;"
                     @click.stop="openVoidModal(order)"
                   >
                     <i class="fa-solid fa-trash-can mr-xs"></i> ลบบิลนี้

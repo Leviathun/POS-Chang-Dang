@@ -1206,6 +1206,7 @@ ul, ol { list-style: none; }
 .flex-col { flex-direction: column; }
 .flex-center { align-items: center; justify-content: center; }
 .flex-between { justify-content: space-between; }
+.flex-end, .justify-end { justify-content: flex-end; }
 .flex-wrap { flex-wrap: wrap; }
 .gap-sm { gap: var(--space-sm); }
 .gap-md { gap: var(--space-md); }
