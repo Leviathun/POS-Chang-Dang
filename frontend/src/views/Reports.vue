@@ -1160,21 +1160,23 @@
                   @click="isFilterActionDropdownOpen = !isFilterActionDropdownOpen; isActivityStaffDropdownOpen = false;"
                   style="height: 32px; padding: 4px 32px 4px 12px; font-size: var(--font-sm); display: flex; align-items: center; border-radius: var(--radius-sm); background-position: right 10px center;"
                 >
-                  <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden;">
-                    <i :class="getFilterActionIcon(filterAction)"></i>
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ selectedFilterActionLabel }}</span>
+                  <span class="custom-select-text" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ selectedFilterActionLabel }}
                   </span>
                 </div>
                 <div v-if="isFilterActionDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-folder-open" style="margin-right: 4px;"></i> ทั้งหมด</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-key" style="margin-right: 4px;"></i> เข้าสู่ระบบ</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i> ขายสำเร็จ</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-ban" style="margin-right: 4px;"></i> ยกเลิกบิล</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-wallet" style="margin-right: 4px;"></i> ค่าใช้จ่าย</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> ปรับสต็อก</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'waste' }" @click="selectFilterAction('waste')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> ของเสีย</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> เครดิตพนักงาน</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')" style="padding: 6px 12px; font-size: var(--font-sm);"><i class="fa-solid fa-cash-register" style="margin-right: 4px;"></i> ลิ้นชักเงินสด</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'all' }" @click="selectFilterAction('all')" style="padding: 6px 12px; font-size: var(--font-sm);">ทั้งหมด</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'login' }" @click="selectFilterAction('login')" style="padding: 6px 12px; font-size: var(--font-sm);">เข้าสู่ระบบ</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'sales' }" @click="selectFilterAction('sales')" style="padding: 6px 12px; font-size: var(--font-sm);">ขายสำเร็จ</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')" style="padding: 6px 12px; font-size: var(--font-sm);">ยกเลิกบิล</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')" style="padding: 6px 12px; font-size: var(--font-sm);">ค่าใช้จ่าย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'restock_ck' }" @click="selectFilterAction('restock_ck')" style="padding: 6px 12px; font-size: var(--font-sm);">เติมสต็อก (ครัวกลาง)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'restock' }" @click="selectFilterAction('restock')" style="padding: 6px 12px; font-size: var(--font-sm);">เติมสต็อก (ทั่วไป)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')" style="padding: 6px 12px; font-size: var(--font-sm);">ปรับสต็อก</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cook' }" @click="selectFilterAction('cook')" style="padding: 6px 12px; font-size: var(--font-sm);">ทอด/ปรุงสุกพร้อมขาย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'waste' }" @click="selectFilterAction('waste')" style="padding: 6px 12px; font-size: var(--font-sm);">ของเสีย</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'credit' }" @click="selectFilterAction('credit')" style="padding: 6px 12px; font-size: var(--font-sm);">เครดิตพนักงาน</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'cash_drawer' }" @click="selectFilterAction('cash_drawer')" style="padding: 6px 12px; font-size: var(--font-sm);">ลิ้นชักเงินสด</div>
                 </div>
               </div>
             </div>
@@ -1245,8 +1247,8 @@
           <div v-else class="activity-logs-list">
             <div v-for="log in paginatedActivityLogs" :key="log.id" class="activity-log-item">
               <div class="log-badge-wrapper">
-                <div class="log-badge" :class="log.action">
-                  <i :class="getActionIconClass(log.action)"></i>
+                <div class="log-badge" :class="resolveActivityAction(log)">
+                  <i :class="getActionIconClass(resolveActivityAction(log))"></i>
                 </div>
               </div>
               <div class="log-content-wrapper">
@@ -2558,7 +2560,25 @@ const getExpenseCategoryLabel = (cat) => {
   return map[cat] || cat;
 };
 
+const resolveActivityAction = (log) => {
+  const act = log?.action || '';
+  const raw = String(log?.details || '');
+  if (act === 'restock_ck' || ((act.startsWith('restock_') || act.startsWith('adjust_')) && raw.includes('ครัวกลาง'))) {
+    return 'restock_ck';
+  }
+  if ((act === 'restock_stock' || act === 'restock_raw_stock' || act === 'restock_modifier') && raw.includes('[สาเหตุ:')) {
+    return act === 'restock_raw_stock' ? 'adjust_raw_stock' : 'adjust_stock';
+  }
+  return act;
+};
+
 const getActivityCardTitle = (log) => {
+  const act = resolveActivityAction(log);
+  const raw = String(log?.details || '');
+  if (act === 'fry_chicken') {
+    const m = raw.match(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)/);
+    return m ? `${m[1]}สินค้าพร้อมขาย` : 'ทอด/ปรุงสุกพร้อมขาย';
+  }
   const map = {
     login: 'เข้าสู่ระบบ',
     complete_order: 'ขายสำเร็จ',
@@ -2566,11 +2586,13 @@ const getActivityCardTitle = (log) => {
     log_expense: 'บันทึกค่าใช้จ่าย',
     delete_expense: 'ยกเลิกค่าใช้จ่าย',
     reverse_expense: 'ยกเลิกค่าใช้จ่าย',
+    restock_ck: 'เติมสต็อก (ครัวกลาง)',
+    restock_stock: 'เติมสต็อก (ทั่วไป)',
+    restock_raw_stock: 'เติมสต็อกวัตถุดิบ (ทั่วไป)',
+    restock_modifier: 'เติมสต็อกเครื่องปรุง (ทั่วไป)',
     adjust_stock: 'ปรับสต็อก',
     adjust_raw_stock: 'ปรับสต็อกวัตถุดิบ',
-    restock_stock: 'เติมสต็อก',
-    restock_raw_stock: 'เติมสต็อกวัตถุดิบ',
-    fry_chicken: 'ทอด/ปรุงสินค้า',
+    adjust_modifier: 'ปรับสต็อกเครื่องปรุง',
     reverse_stock_log: 'ยกเลิกรายการสต็อก',
     record_waste: 'บันทึกของเสีย',
     record_raw_waste: 'บันทึกของเสียวัตถุดิบ',
@@ -2580,7 +2602,7 @@ const getActivityCardTitle = (log) => {
     cash_audit: 'ตรวจนับลิ้นชักเงินสด',
     setting_change: 'เปลี่ยนการตั้งค่า'
   };
-  return map[log?.action] || 'กิจกรรมระบบ';
+  return map[act] || 'กิจกรรมระบบ';
 };
 
 const formatActivityDetails = (log) => {
@@ -2591,10 +2613,12 @@ const formatActivityDetails = (log) => {
     .replace(/^สร้าง(?:ออเดอร์และชำระเงินสำเร็จ|และชำระเงินออเดอร์)\s*เลขที่\s*#?(\S+)\s*ยอดรวม\s*([\d,.]+)\s*บาท$/, 'เลขที่ #$1 • ยอดรวม ฿$2')
     .replace(/^ยกเลิก(?:บิล|ออเดอร์)\s*#?(\S+)\s*สำเร็จ\s*\(เหตุผล:\s*(.+)\)$/, 'เลขที่ #$1 • เหตุผล: $2')
     .replace(/^รายจ่าย:\s*/, '')
-    .replace(/^บันทึกค่าใช้จ่าย\s*หมวดหมู่\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*บาท(?:\s*\(บันทึกเพิ่มเติม:\s*(.+)\))?$/, (_, cat, amt, note) => `${cat} • ฿${amt}${note ? ` (${note})` : ''}`)
-    .replace(/^ยกเลิก(?:และคืนยอดค่าใช้จ่าย|รายการเบิกของจากครัวกลาง)\s*(#\S+)\s*\((.+?)\)\s*จำนวน\s*([\d,.]+)\s*บาท.*$/, 'รายการ $1 ($2) • ฿$3')
-    .replace(/^ปรับปรุงสต็อก(?:ของสด|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[สาเหตุ:\s*(.+)\])?$/, (_, name, qty, prev, next, r) => `${name} ${qty} (${prev} → ${next})${r && r !== 'อื่นๆ' ? ` • ${r}` : ''}`)
-    .replace(/^ทำการ(?:ทอด|ย่าง|ต้ม|นึ่ง)\s*(.+?)\s*จำนวน\s*([\d,.]+\s*\S+)\s*\(ของสดคงเหลือ:\s*([\d,.]+),\s*.+?พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1 $2 (ของสดเหลือ $3 / พร้อมขาย $4)')
+    .replace(/^บันทึกค่าใช้จ่าย\s*หมวดหมู่\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*บาท(?:\s*\(บันทึกเพิ่มเติม:\s*(.+)\))?$/, (_, cat, amt, note) => `${cat} • ฿${amt}${note ? ` (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')})` : ''}`)
+    .replace(/\(เบิกของจากครัวกลาง\s*/g, '(')
+    .replace(/^ยกเลิก(?:และคืนยอดค่าใช้จ่าย|รายการเบิกของจากครัวกลาง)\s*(#\S+)\s*\((.+?)\)\s*จำนวน\s*([\d,.]+)\s*บาท.*$/, (_, id, note, amt) => `รายการ ${id} (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')}) • ฿${amt}`)
+    .replace(/^(?:ปรับปรุง|เติม)สต็อก(?:ของสด|ของทอด|ของนึ่ง|ของปิ้ง|ของห่อ|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก|เครื่องปรุง|วัตถุดิบอัตโนมัติจากครัวกลาง)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[(?:สาเหตุ:\s*)?(.+?)\])?$/, (_, name, qty, prev, next, r) => `${name} ${qty} (${prev} → ${next})${r && r !== 'อื่นๆ' ? ` • ${r}` : ''}`)
+    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(ของสดคงเหลือ:\s*([\d,.]+),\s*.+?พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, 'นำของสดมา$1: $2 +$3 $4 (หลัง$1: ของสดเหลือ $5 / พร้อมขาย $6)')
+    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1เพิ่ม: $2 +$3 $4 (หลัง$1: พร้อมขาย $5)')
     .replace(/^ยกเลิกบันทึกสต็อก\s*(#\S+)\s*\((.+?)\).*$/, 'รายการ $1 • $2')
     .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? ` (${note})` : ''}`)
     .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${name} ${qty}${note && note !== 'แจกพนักงานรับประทาน' ? ` (${note})` : ''}`)
@@ -2608,18 +2632,39 @@ const filteredActivityLogs = computed(() => {
   let dbLogs = activityLogs.value.filter(log => log.action !== 'log_expense' && log.action !== 'create_order');
   
   // 2. Map actual expense records dynamically to mock activity logs
-  const mappedExpenses = expenses.value.map(e => ({
-    id: `expense-${e.id}`,
-    branch_id: e.branch_id,
-    user_id: e.staff_id,
-    action: 'log_expense',
-    details: `${getExpenseCategoryLabel(e.category)} • ฿${Number(e.amount || 0).toLocaleString()}${e.note ? ` (${e.note})` : ''}`,
-    created_at: e.created_at,
-    staff_name: e.staff_name || 'ผู้ดูแลระบบ'
-  }));
+  const mappedExpenses = expenses.value.map(e => {
+    const cleanNote = e.note ? String(e.note).replace(/^เบิกของจากครัวกลาง\s*/, '').trim() : '';
+    return {
+      id: `expense-${e.id}`,
+      branch_id: e.branch_id,
+      user_id: e.staff_id,
+      action: 'log_expense',
+      details: `${getExpenseCategoryLabel(e.category)} • ฿${Number(e.amount || 0).toLocaleString()}${cleanNote ? ` (${cleanNote})` : ''}`,
+      created_at: e.created_at,
+      staff_name: e.staff_name || 'ผู้ดูแลระบบ'
+    };
+  });
 
-  // 3. Combine both lists
-  let combined = [...dbLogs, ...mappedExpenses];
+  // 2.5 Map Central Kitchen auto-restocks from stockLogs into activity logs
+  const mappedCkRestocks = (Array.isArray(stockLogs.value) ? stockLogs.value : [])
+    .filter(s => s.reason === 'restock' && String(s.note || '').includes('ครัวกลาง'))
+    .map(s => {
+      const reqMatch = String(s.note || '').match(/ใบเบิก\s*(#\S+)/);
+      const byMatch = String(s.note || '').match(/โดย\s*(.+)$/);
+      const qtySign = Number(s.change_qty) >= 0 ? '+' : '';
+      return {
+        id: `ck-restock-${s.id}`,
+        branch_id: s.branch_id,
+        user_id: s.staff_id,
+        action: 'restock_ck',
+        details: `${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น (${s.previous_stock} → ${s.new_stock})${reqMatch ? ` • ใบเบิก ${reqMatch[1]}` : ''}`,
+        created_at: s.created_at,
+        staff_name: s.staff_name || (byMatch ? byMatch[1].trim() : 'ครัวกลาง')
+      };
+    });
+
+  // 3. Combine all lists
+  let combined = [...dbLogs, ...mappedExpenses, ...mappedCkRestocks];
 
   // 4. Sort by created_at descending
   combined.sort((a, b) => new Date(b.created_at.replace(' ', 'T')) - new Date(a.created_at.replace(' ', 'T')));
@@ -2627,12 +2672,15 @@ const filteredActivityLogs = computed(() => {
   // 5. Apply activity category filter
   if (filterAction.value !== 'all') {
     combined = combined.filter(log => {
-      const act = log.action;
+      const act = resolveActivityAction(log);
       if (filterAction.value === 'login') return act === 'login';
       if (filterAction.value === 'sales') return act === 'complete_order';
       if (filterAction.value === 'cancel') return act === 'cancel_order';
       if (filterAction.value === 'expenses') return act === 'log_expense' || act === 'delete_expense' || act === 'reverse_expense';
-      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'adjust_raw_stock' || act === 'restock_stock' || act === 'restock_raw_stock' || act === 'fry_chicken' || act === 'reverse_stock_log';
+      if (filterAction.value === 'restock_ck') return act === 'restock_ck';
+      if (filterAction.value === 'restock') return act === 'restock_stock' || act === 'restock_raw_stock' || act === 'restock_modifier';
+      if (filterAction.value === 'stock') return act === 'adjust_stock' || act === 'adjust_raw_stock' || act === 'adjust_modifier' || act === 'reverse_stock_log';
+      if (filterAction.value === 'cook') return act === 'fry_chicken';
       if (filterAction.value === 'waste') return act === 'record_waste' || act === 'record_raw_waste';
       if (filterAction.value === 'credit') return act === 'staff_credit' || act === 'staff_raw_credit';
       if (filterAction.value === 'cash_drawer') return act === 'cash_opening_set' || act === 'cash_audit' || act === 'setting_change';
@@ -3264,7 +3312,10 @@ const selectedFilterActionLabel = computed(() => {
     sales: 'ขายสำเร็จ',
     cancel: 'ยกเลิกบิล',
     expenses: 'ค่าใช้จ่าย',
+    restock_ck: 'เติมสต็อก (ครัวกลาง)',
+    restock: 'เติมสต็อก (ทั่วไป)',
     stock: 'ปรับสต็อก',
+    cook: 'ทอด/ปรุงสุกพร้อมขาย',
     waste: 'ของเสีย',
     credit: 'เครดิตพนักงาน',
     cash_drawer: 'ลิ้นชักเงินสด'
@@ -3968,8 +4019,11 @@ const getActionIconClass = (action) => {
     'cancel_order': 'fa-solid fa-ban text-danger',
     'adjust_stock': 'fa-solid fa-boxes-stacked text-accent',
     'adjust_raw_stock': 'fa-solid fa-boxes-stacked text-accent',
+    'adjust_modifier': 'fa-solid fa-boxes-stacked text-accent',
+    'restock_ck': 'fa-solid fa-truck-ramp-box text-success',
     'restock_stock': 'fa-solid fa-boxes-packing text-success',
     'restock_raw_stock': 'fa-solid fa-boxes-packing text-success',
+    'restock_modifier': 'fa-solid fa-boxes-packing text-success',
     'fry_chicken': 'fa-solid fa-fire-burner text-warning',
     'reverse_stock_log': 'fa-solid fa-rotate-left text-accent',
     'record_waste': 'fa-solid fa-trash-can text-danger',
@@ -3978,6 +4032,7 @@ const getActionIconClass = (action) => {
     'staff_raw_credit': 'fa-solid fa-user-check text-warning',
     'log_expense': 'fa-solid fa-wallet text-danger',
     'delete_expense': 'fa-solid fa-trash-can text-danger',
+    'reverse_expense': 'fa-solid fa-rotate-left text-danger',
     'cash_opening_set': 'fa-solid fa-cash-register text-success',
     'cash_audit': 'fa-solid fa-cash-register text-success',
     'setting_change': 'fa-solid fa-gear text-warning'
@@ -4320,7 +4375,9 @@ select.reports-filter-control,
 .log-badge.create_order, .log-badge.complete_order { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
 .log-badge.cancel_order { background: rgba(173, 40, 30, 0.1); color: #e63946; }
 .log-badge.log_expense, .log-badge.delete_expense, .log-badge.reverse_expense { background: rgba(173, 40, 30, 0.08); color: #e63946; }
-.log-badge.adjust_stock, .log-badge.adjust_raw_stock, .log-badge.restock_stock, .log-badge.restock_raw_stock, .log-badge.fry_chicken, .log-badge.reverse_stock_log { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
+.log-badge.adjust_stock, .log-badge.adjust_raw_stock, .log-badge.adjust_modifier, .log-badge.reverse_stock_log { background: rgba(139, 3, 19, 0.06); color: #8b0313; }
+.log-badge.restock_ck, .log-badge.restock_stock, .log-badge.restock_raw_stock, .log-badge.restock_modifier { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }
+.log-badge.fry_chicken { background: rgba(255, 171, 43, 0.12); color: #f4a261; }
 .log-badge.record_waste, .log-badge.record_raw_waste { background: rgba(173, 40, 30, 0.1); color: #e63946; }
 .log-badge.staff_credit, .log-badge.staff_raw_credit { background: rgba(139, 3, 19, 0.08); color: #8b0313; }
 .log-badge.cash_opening_set, .log-badge.cash_audit, .log-badge.setting_change { background: rgba(42, 157, 143, 0.1); color: #2a9d8f; }

@@ -796,7 +796,7 @@ router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
           `).run(
             itemBranchId,
             req.user.id,
-            deltaCooked > 0 ? 'restock_stock' : 'adjust_stock',
+            mode === 'relative' && deltaCooked > 0 ? 'restock_stock' : 'adjust_stock',
             `ปรับปรุงสต็อก${getCookMethodLabel(menuItem.name)} ${menuItem.name} ${deltaCooked >= 0 ? '+' : ''}${deltaCooked} ชิ้น (ก่อนปรับ: ${currentCooked}, หลังปรับ: ${newCooked})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
           );
 
@@ -842,7 +842,7 @@ router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
           `).run(
             itemBranchId,
             req.user.id,
-            deltaRaw > 0 ? 'restock_raw_stock' : 'adjust_raw_stock',
+            mode === 'relative' && deltaRaw > 0 ? 'restock_raw_stock' : 'adjust_raw_stock',
             `ปรับปรุงสต็อกของสด ${menuItem.name} ${deltaRaw >= 0 ? '+' : ''}${deltaRaw} ชิ้น (ก่อนปรับ: ${currentRaw}, หลังปรับ: ${newRaw})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
           );
         }
