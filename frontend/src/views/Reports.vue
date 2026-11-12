@@ -170,44 +170,48 @@
                 </span>
               </div>
             </div>
-            <div class="sales-clean-stat">
-              <div class="stat-clean-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="sales-clean-stat" style="position: relative;">
+              <div class="stat-clean-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%; position: relative;">
                 <span>เฉลี่ยต่อบิล</span>
-                <button
-                  type="button"
-                  @click="showAvgBillInfo = !showAvgBillInfo"
-                  title="ดูสูตรการคำนวณ"
-                  style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
-                  :style="showAvgBillInfo ? { color: 'var(--primary)', background: 'rgba(139, 3, 19, 0.08)' } : {}"
-                >
-                  <i class="fa-solid fa-circle-info"></i>
-                </button>
+                <div style="position: relative; display: inline-flex; align-items: center;" @mouseenter="showAvgBillInfo = true" @mouseleave="showAvgBillInfo = false" @click.stop>
+                  <button
+                    type="button"
+                    @click="showAvgBillInfo = !showAvgBillInfo"
+                    aria-label="ดูสูตรการคำนวณ"
+                    style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                    :style="showAvgBillInfo ? { color: 'var(--primary)', background: 'rgba(139, 3, 19, 0.08)' } : {}"
+                  >
+                    <i class="fa-solid fa-circle-info"></i>
+                  </button>
+                  <!-- Floating Tooltip Card -->
+                  <div
+                    v-if="showAvgBillInfo"
+                    class="text-xs"
+                    style="position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: min(300px, 82vw); padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(139, 3, 19, 0.18); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14); white-space: normal; text-align: left;"
+                  >
+                    <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(139, 3, 19, 0.18); border-left: 1px solid rgba(139, 3, 19, 0.18); transform: rotate(45deg);"></div>
+                    <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
+                      <span>สูตรการคำนวณ</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <div>• <strong style="color: var(--text-primary);">เฉลี่ยต่อบิล:</strong> ยอดขายสุทธิ ÷ จำนวนบิลที่ชำระแล้ว</div>
+                      <div>• <strong style="color: var(--text-primary);">เกณฑ์เฉลี่ยสาขา:</strong> ยอดขายสะสมทั้งหมด ÷ จำนวนบิลสะสมทั้งหมด <span style="color: var(--text-muted);">(ตั้งแต่เปิดสาขาถึงวันก่อนหน้า)</span></div>
+                      <div>• <strong style="color: var(--text-primary);">ผลต่าง:</strong> เฉลี่ยต่อบิล − เกณฑ์เฉลี่ยสาขา</div>
+                    </div>
+                  </div>
+                </div>
               </div>
               <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
-              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 4px; margin-top: 4px; font-size: clamp(0.62rem, 2.4vw, 0.74rem); letter-spacing: -0.01em;">
+              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center text-xs tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 5px; margin-top: 4px; font-size: 0.78rem;">
                 <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
                 <span style="color: var(--border-color-light);">|</span>
-                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">
-                  <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.65rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
+                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                  <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.72rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
                 </span>
-                <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">
-                  <i class="fa-solid fa-arrow-trend-down" style="font-size: 0.65rem;"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
+                <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                  <i class="fa-solid fa-arrow-trend-down" style="font-size: 0.72rem;"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
                 </span>
-              </div>
-              <div
-                v-if="showAvgBillInfo"
-                class="text-xs"
-                style="margin-top: 8px; padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(139, 3, 19, 0.15); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 2px 6px rgba(61, 27, 17, 0.04);"
-              >
-                <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                  <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
-                  <span>สูตรการคำนวณ</span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 3px;">
-                  <div>• <strong style="color: var(--text-primary);">เฉลี่ยต่อบิล:</strong> ยอดขายสุทธิ ÷ จำนวนบิลที่ชำระแล้ว</div>
-                  <div>• <strong style="color: var(--text-primary);">เกณฑ์เฉลี่ยสาขา:</strong> ยอดขายสะสมในอดีต ÷ จำนวนบิลสะสมในอดีต <span style="color: var(--text-muted);">(เฉพาะสาขานี้)</span></div>
-                  <div>• <strong style="color: var(--text-primary);">ผลต่าง:</strong> เฉลี่ยต่อบิล − เกณฑ์เฉลี่ยสาขา</div>
-                </div>
               </div>
             </div>
           </div>
@@ -3260,6 +3264,7 @@ const closeReportsDropdowns = () => {
   isHistoryPaymentDropdownOpen.value = false;
   isActivityStaffDropdownOpen.value = false;
   isStockItemDropdownOpen.value = false;
+  showAvgBillInfo.value = false;
 };
 
 const computeLedgerTransactions = () => {
