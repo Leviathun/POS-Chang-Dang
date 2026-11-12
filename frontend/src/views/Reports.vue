@@ -1171,7 +1171,7 @@
                   <div class="custom-select-option" :class="{ 'selected': filterAction === 'cancel' }" @click="selectFilterAction('cancel')" style="padding: 6px 12px; font-size: var(--font-sm);">ยกเลิกบิล</div>
                   <div class="custom-select-option" :class="{ 'selected': filterAction === 'expenses' }" @click="selectFilterAction('expenses')" style="padding: 6px 12px; font-size: var(--font-sm);">ค่าใช้จ่าย</div>
                   <div class="custom-select-option" :class="{ 'selected': filterAction === 'restock_ck' }" @click="selectFilterAction('restock_ck')" style="padding: 6px 12px; font-size: var(--font-sm);">เติมสต็อก (ครัวกลาง)</div>
-                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'restock' }" @click="selectFilterAction('restock')" style="padding: 6px 12px; font-size: var(--font-sm);">เติมสต็อก (ทั่วไป)</div>
+                  <div class="custom-select-option" :class="{ 'selected': filterAction === 'restock' }" @click="selectFilterAction('restock')" style="padding: 6px 12px; font-size: var(--font-sm);">เติมสต็อก (POS)</div>
                   <div class="custom-select-option" :class="{ 'selected': filterAction === 'stock' }" @click="selectFilterAction('stock')" style="padding: 6px 12px; font-size: var(--font-sm);">ปรับสต็อก</div>
                   <div class="custom-select-option" :class="{ 'selected': filterAction === 'cook' }" @click="selectFilterAction('cook')" style="padding: 6px 12px; font-size: var(--font-sm);">ทอด/ปรุงสุกพร้อมขาย</div>
                   <div class="custom-select-option" :class="{ 'selected': filterAction === 'waste' }" @click="selectFilterAction('waste')" style="padding: 6px 12px; font-size: var(--font-sm);">ของเสีย</div>
@@ -1461,7 +1461,14 @@
               :class="{ 'active-success': stockReasonFilter === 'restock' }" 
               @click="stockReasonFilter = 'restock'"
             >
-              เติมสต็อก (ทั่วไป) ({{ stockGeneralRestockLogs.length }})
+              เติมสต็อก (POS) ({{ stockGeneralRestockLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-warning': stockReasonFilter === 'cook' || stockReasonFilter === 'cook_deduct' || stockReasonFilter === 'cook_ready' }" 
+              @click="stockReasonFilter = 'cook'"
+            >
+              ตัดของสด/ปรุงสุก ({{ stockCookLogs.length }})
             </button>
             <button 
               class="stock-pill-btn tabular-nums" 
@@ -1472,17 +1479,17 @@
             </button>
             <button 
               class="stock-pill-btn tabular-nums" 
-              :class="{ 'active-warning': stockReasonFilter === 'cook_deduct' }" 
-              @click="stockReasonFilter = 'cook_deduct'"
+              :class="{ 'active': stockReasonFilter === 'sale' }" 
+              @click="stockReasonFilter = 'sale'"
             >
-              ตัดของสดไปปรุง ({{ stockCookDeductLogs.length }})
+              หักจากการขาย ({{ stockSaleLogs.length }})
             </button>
             <button 
               class="stock-pill-btn tabular-nums" 
-              :class="{ 'active-success': stockReasonFilter === 'cook_ready' }" 
-              @click="stockReasonFilter = 'cook_ready'"
+              :class="{ 'active': stockReasonFilter === 'cancel_restore' }" 
+              @click="stockReasonFilter = 'cancel_restore'"
             >
-              ปรุงสุกพร้อมขาย ({{ stockCookReadyLogs.length }})
+              คืนสต็อก (ยกเลิกบิล) ({{ stockCancelRestoreLogs.length }})
             </button>
             <button 
               class="stock-pill-btn tabular-nums" 
@@ -1618,59 +1625,71 @@
         <div v-else>
           <!-- Unified Clean White Cards for Desktop & Mobile -->
           <div class="activity-logs-list">
-            <div 
-              v-for="log in paginatedStockLogs" 
-              :key="log.id" 
-              class="activity-log-item stock-log-card"
-            >
-              <!-- Left Reason Badge -->
-              <div class="log-badge-wrapper">
-                <div class="log-badge" :class="'stock-reason-' + getStockLogCategory(log)">
-                  <i :class="getStockCategoryIconClass(log)"></i>
+            <template v-for="(log, idx) in paginatedStockLogs" :key="log.id">
+              <div class="activity-log-item stock-log-card">
+                <!-- Left Reason Badge -->
+                <div class="log-badge-wrapper">
+                  <div class="log-badge" :class="'stock-reason-' + getStockLogCategory(log)">
+                    <i :class="getStockCategoryIconClass(log)"></i>
+                  </div>
+                </div>
+
+                <!-- Center Info -->
+                <div class="log-content-wrapper">
+                  <div class="flex align-center gap-xs flex-wrap">
+                    <span class="log-title">{{ log.item_name || selectedStockItemName }}</span>
+                    <span 
+                      class="stock-type-pill" 
+                      :class="isRawStockLog(log) ? 'raw' : 'cooked'"
+                    >
+                      {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
+                    </span>
+                    <span class="stock-action-tag">{{ getStockReportActionLabel(log) }}</span>
+                  </div>
+
+                  <div v-if="formatReportLogNote(log, isRawStockLog(log))" class="log-details tabular-nums">
+                    {{ formatReportLogNote(log, isRawStockLog(log)) }}
+                  </div>
+
+                  <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
+                      <span>{{ log.staff_name || 'ระบบ' }}</span>
+                    </span>
+                    <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Right Stock Change & Balance -->
+                <div class="stock-log-right tabular-nums">
+                  <div class="stock-delta-badge" :class="log.change_qty > 0 ? 'positive' : 'negative'">
+                    {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} ชิ้น
+                  </div>
+                  <div class="stock-balance-flow">
+                    <span>{{ log.previous_stock }}</span>
+                    <i class="fa-solid fa-arrow-right" style="font-size: 9px; opacity: 0.6;"></i>
+                    <strong style="color: var(--text-primary);">{{ log.new_stock }}</strong>
+                  </div>
                 </div>
               </div>
 
-              <!-- Center Info -->
-              <div class="log-content-wrapper">
-                <div class="flex align-center gap-xs flex-wrap">
-                  <span class="log-title">{{ log.item_name || selectedStockItemName }}</span>
-                  <span 
-                    class="stock-type-pill" 
-                    :class="isRawStockLog(log) ? 'raw' : 'cooked'"
-                  >
-                    {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
-                  </span>
-                  <span class="stock-action-tag">{{ getStockReportActionLabel(log) }}</span>
-                </div>
-
-                <div v-if="formatReportLogNote(log, isRawStockLog(log))" class="log-details tabular-nums">
-                  {{ formatReportLogNote(log, isRawStockLog(log)) }}
-                </div>
-
-                <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-                  <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
-                    <span>{{ log.staff_name || 'ระบบ' }}</span>
-                  </span>
-                  <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
-                    <span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span>
-                  </span>
+              <!-- Downward Arrow Connector for Paired Cooking Cards -->
+              <div 
+                v-if="isReportCookPair(log, paginatedStockLogs[idx + 1])" 
+                class="flex flex-center align-center" 
+                style="margin: -6px 0; z-index: 2; position: relative;"
+              >
+                <div 
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.06);"
+                >
+                  <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
+                  <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
                 </div>
               </div>
-
-              <!-- Right Stock Change & Balance -->
-              <div class="stock-log-right tabular-nums">
-                <div class="stock-delta-badge" :class="log.change_qty > 0 ? 'positive' : 'negative'">
-                  {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} ชิ้น
-                </div>
-                <div class="stock-balance-flow">
-                  <span>{{ log.previous_stock }}</span>
-                  <i class="fa-solid fa-arrow-right" style="font-size: 9px; opacity: 0.6;"></i>
-                  <strong style="color: var(--text-primary);">{{ log.new_stock }}</strong>
-                </div>
-              </div>
-            </div>
+            </template>
           </div>
 
           <!-- Pagination UI -->
@@ -2587,9 +2606,9 @@ const getActivityCardTitle = (log) => {
     delete_expense: 'ยกเลิกค่าใช้จ่าย',
     reverse_expense: 'ยกเลิกค่าใช้จ่าย',
     restock_ck: 'เติมสต็อก (ครัวกลาง)',
-    restock_stock: 'เติมสต็อก (ทั่วไป)',
-    restock_raw_stock: 'เติมสต็อก (ทั่วไป)',
-    restock_modifier: 'เติมสต็อกเครื่องปรุง (ทั่วไป)',
+    restock_stock: 'เติมสต็อก (POS)',
+    restock_raw_stock: 'เติมสต็อก (POS)',
+    restock_modifier: 'เติมสต็อกเครื่องปรุง (POS)',
     adjust_stock: 'ปรับสต็อก',
     adjust_raw_stock: 'ปรับสต็อก',
     adjust_modifier: 'ปรับสต็อกเครื่องปรุง',
@@ -2920,6 +2939,18 @@ watch(stockReasonFilter, () => {
   }, 220);
 });
 
+const isLinkedRecipeCookPair = (deductLog, readyLog) => {
+  if (!deductLog || !readyLog || deductLog.id === readyLog.id) return false;
+  const dNote = String(deductLog.note || '');
+  if (!dNote.includes('หักอัตโนมัติจากการ')) return false;
+  const rName = String(readyLog.item_name || '').trim();
+  if (!rName || Number(readyLog.change_qty) <= 0) return false;
+  if (!dNote.includes(rName)) return false;
+  const t1 = new Date(deductLog.created_at).getTime();
+  const t2 = new Date(readyLog.created_at).getTime();
+  return Math.abs(t1 - t2) <= 120000;
+};
+
 const getStockLogCategory = (log) => {
   if (!log) return 'other';
   const note = String(log.note || '');
@@ -2928,22 +2959,73 @@ const getStockLogCategory = (log) => {
   if (log.reason === 'staff_benefit') return 'staff_benefit';
   if (log.reason === 'cancel_restore') return 'cancel_restore';
   if (log.reason === 'sale') return 'sale';
+  const isLinkedTarget = !isRaw && Number(log.change_qty) > 0 && !note.includes('ครัวกลาง') && (
+    ['แร็ปไก่', 'เปาทอด', 'เปาปิ้ง'].includes(String(log.item_name || '').trim()) ||
+    (Array.isArray(stockHistoryLogs.value) && stockHistoryLogs.value.some(other => isLinkedRecipeCookPair(other, log)))
+  );
   if (log.reason === 'adjustment') {
-    if (isRaw && Number(log.change_qty) < 0 && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('หัก'))) {
+    if (note.includes('หักอัตโนมัติจากการ') || (isRaw && Number(log.change_qty) < 0 && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('หัก')))) {
       return 'cook_deduct';
     }
+    if (isLinkedTarget) return 'cook_ready';
     return 'adjustment';
   }
   if (log.reason === 'restock') {
     if (note.includes('ครัวกลาง')) {
       return 'restock_ck';
     }
-    if (!isRaw && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('สุก')) && !note.includes('(Relative)') && !note.includes('เติมสต็อกของ')) {
+    if (isLinkedTarget || (!isRaw && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('สุก')) && !note.includes('(Relative)') && !note.includes('เติมสต็อกของ'))) {
       return 'cook_ready';
     }
     return 'restock';
   }
   return log.reason || 'other';
+};
+
+const isReportCookPair = (topLog, bottomLog) => {
+  if (!topLog || !bottomLog || topLog.id === bottomLog.id) return false;
+  if (getStockLogCategory(topLog) !== 'cook_deduct' || getStockLogCategory(bottomLog) !== 'cook_ready') return false;
+  if (isLinkedRecipeCookPair(topLog, bottomLog)) return true;
+  const sameItem = (topLog.menu_item_id && topLog.menu_item_id === bottomLog.menu_item_id) ||
+    (topLog.item_name && topLog.item_name === bottomLog.item_name);
+  if (!sameItem) return false;
+  const sameQty = Math.abs(Number(topLog.change_qty)) === Math.abs(Number(bottomLog.change_qty));
+  const timeClose = Math.abs(new Date(topLog.created_at).getTime() - new Date(bottomLog.created_at).getTime()) <= 120000;
+  return sameQty && timeClose;
+};
+
+const orderStockLogsWithCookPairs = (logs) => {
+  if (!Array.isArray(logs) || logs.length < 2) return logs;
+  const usedIds = new Set();
+  const result = [];
+  for (let i = 0; i < logs.length; i++) {
+    const current = logs[i];
+    if (!current || usedIds.has(current.id)) continue;
+    const cat = getStockLogCategory(current);
+    if (cat === 'cook_deduct') {
+      const partner = logs.find(other => !usedIds.has(other.id) && isReportCookPair(current, other));
+      usedIds.add(current.id);
+      result.push(current);
+      if (partner) {
+        usedIds.add(partner.id);
+        result.push(partner);
+      }
+    } else if (cat === 'cook_ready') {
+      const partner = logs.find(other => !usedIds.has(other.id) && isReportCookPair(other, current));
+      if (partner) {
+        usedIds.add(partner.id);
+        usedIds.add(current.id);
+        result.push(partner, current);
+      } else {
+        usedIds.add(current.id);
+        result.push(current);
+      }
+    } else {
+      usedIds.add(current.id);
+      result.push(current);
+    }
+  }
+  return result;
 };
 
 const getStockCategoryIconClass = (log) => {
@@ -2971,6 +3053,11 @@ const filteredStockLogs = computed(() => {
           const cat = getStockLogCategory(log);
           return cat === 'restock_ck' || cat === 'restock';
         });
+      } else if (stockReasonFilter.value === 'cook') {
+        list = list.filter(log => {
+          const cat = getStockLogCategory(log);
+          return cat === 'cook_deduct' || cat === 'cook_ready';
+        });
       } else {
         list = list.filter(log => getStockLogCategory(log) === stockReasonFilter.value);
       }
@@ -2979,7 +3066,7 @@ const filteredStockLogs = computed(() => {
     if (periodMode.value === 'daily' && isTimeFilterActive) {
       list = list.filter(log => log && isTimeInRange(log.created_at, customStartTime.value, customEndTime.value));
     }
-    return list;
+    return orderStockLogsWithCookPairs(list);
   } catch (e) {
     console.error('filteredStockLogs error:', e);
     return [];
@@ -2998,6 +3085,12 @@ const stockRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? 
 const stockAdjustmentLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'adjustment') : []);
 const stockCookDeductLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cook_deduct') : []);
 const stockCookReadyLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cook_ready') : []);
+const stockCookLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => {
+  const cat = getStockLogCategory(l);
+  return cat === 'cook_deduct' || cat === 'cook_ready';
+}) : []);
+const stockSaleLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'sale') : []);
+const stockCancelRestoreLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cancel_restore') : []);
 
 // Stat Card Calculations
 const stockWasteCount = computed(() => Array.isArray(stockWasteLogs.value) ? stockWasteLogs.value.length : 0);
@@ -3237,10 +3330,12 @@ const isRawStockLog = (log) => {
 const getStockReportActionLabel = (log) => {
   const isRaw = isRawStockLog(log);
   const cat = getStockLogCategory(log);
-  if (cat === 'cook_deduct') return 'ตัดของสดไปปรุง';
+  if (cat === 'cook_deduct') {
+    return String(log?.note || '').includes('หักอัตโนมัติจากการ') ? 'ตัดสต็อกไปปรุง' : 'ตัดของสดไปปรุง';
+  }
   if (cat === 'cook_ready') return 'ปรุงสุกพร้อมขาย';
   if (cat === 'restock_ck') return 'เติมสต็อก (ครัวกลาง)';
-  if (cat === 'restock') return 'เติมสต็อก (ทั่วไป)';
+  if (cat === 'restock') return 'เติมสต็อก (POS)';
   if (cat === 'adjustment') return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกพร้อมขาย';
   return getStockReasonLabel(log.reason);
 };
@@ -3394,7 +3489,7 @@ const selectedFilterActionLabel = computed(() => {
     cancel: 'ยกเลิกบิล',
     expenses: 'ค่าใช้จ่าย',
     restock_ck: 'เติมสต็อก (ครัวกลาง)',
-    restock: 'เติมสต็อก (ทั่วไป)',
+    restock: 'เติมสต็อก (POS)',
     stock: 'ปรับสต็อก',
     cook: 'ทอด/ปรุงสุกพร้อมขาย',
     waste: 'ของเสีย',
