@@ -1414,7 +1414,7 @@
         <!-- Restock Summary Card -->
         <div 
           class="card p-md sales-kpi-card" 
-          style="position: relative; overflow: hidden; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #10b981; cursor: pointer;"
+          style="position: relative; overflow: visible; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #10b981; cursor: pointer;"
           :style="stockReasonFilter === 'restock_all' || stockReasonFilter === 'restock' || stockReasonFilter === 'restock_ck' ? 'border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);' : ''"
           @click="stockReasonFilter = stockReasonFilter === 'restock_all' ? 'all' : 'restock_all'"
         >
@@ -1423,7 +1423,32 @@
               <span class="sales-kpi-icon-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-boxes-packing" style="font-size: 0.75rem;"></i></span>
               การเติมสต็อกรวม
             </span>
-            <span class="badge badge-success tabular-nums" style="font-size: var(--font-xxs);">{{ stockRestockCount }} รายการ</span>
+            <div class="flex align-center gap-xs">
+              <span class="badge badge-success tabular-nums" style="font-size: var(--font-xxs);">{{ stockRestockCount }} รายการ</span>
+              <div style="position: relative; display: inline-flex; align-items: center;" @mouseenter="showRestockValueInfo = true" @mouseleave="showRestockValueInfo = false" @click.stop>
+                <button
+                  type="button"
+                  @click="showRestockValueInfo = !showRestockValueInfo"
+                  aria-label="ดูที่มาของมูลค่าเติมสต็อก"
+                  style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                  :style="showRestockValueInfo ? { color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' } : {}"
+                >
+                  <i class="fa-solid fa-circle-info"></i>
+                </button>
+                <div
+                  v-if="showRestockValueInfo"
+                  class="text-xs"
+                  style="position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: min(290px, 82vw); padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14); white-space: normal; text-align: left;"
+                >
+                  <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(16, 185, 129, 0.25); border-left: 1px solid rgba(16, 185, 129, 0.25); transform: rotate(45deg);"></div>
+                  <div style="font-weight: 700; color: #059669; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
+                    <span>ที่มาของมูลค่าเติมสต็อก</span>
+                  </div>
+                  <div>คำนวณจาก <strong>ราคาขายหน้าร้าน (menu_items.price) × จำนวนชิ้นที่เติม</strong> ไม่ใช่ราคาทุนวัตถุดิบ</div>
+                </div>
+              </div>
+            </div>
           </div>
           <template v-if="loading || stockHistoryLoading">
             <div class="skeleton my-xs" style="height: 28px; width: 100px; border-radius: 6px;"></div>
@@ -2115,6 +2140,7 @@ const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') !== nu
 
 const activeTab = ref('sales');
 const showAvgBillInfo = ref(false);
+const showRestockValueInfo = ref(false);
 
 // New Filters State & Helpers
 const customStartTime = ref('00.00');
@@ -3815,6 +3841,7 @@ const closeReportsDropdowns = () => {
   isActivityStaffDropdownOpen.value = false;
   isStockItemDropdownOpen.value = false;
   showAvgBillInfo.value = false;
+  showRestockValueInfo.value = false;
 };
 
 const computeLedgerTransactions = () => {
