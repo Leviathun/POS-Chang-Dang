@@ -1748,26 +1748,56 @@ onUnmounted(() => {
 
   .sidebar-footer {
     padding-top: var(--space-md);
+    margin-top: auto;
+    border-top: 1px dashed rgba(139, 3, 19, 0.12);
   }
 
   .sidebar-logout-btn {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
+    padding: 10px var(--space-md);
     width: 100%;
-    color: var(--danger-light);
-    font-size: var(--font-base);
+    color: var(--primary);
+    font-size: var(--font-sm);
     font-weight: var(--font-weight-semibold);
     border-radius: var(--radius-md);
-    background: rgba(173, 40, 30, 0.05);
-    border: 1px solid rgba(173, 40, 30, 0.1);
+    background: #ffffff;
+    border: 1.5px solid rgba(139, 3, 19, 0.15);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: all var(--transition-base);
   }
 
+  .sidebar-logout-btn .logout-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: rgba(139, 3, 19, 0.08);
+    color: var(--primary);
+    font-size: var(--font-base);
+    transition: all var(--transition-base);
+    flex-shrink: 0;
+  }
+
   .sidebar-logout-btn:hover {
-    background: rgba(173, 40, 30, 0.12);
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(139, 3, 19, 0.2);
     transform: translateY(-2px);
+  }
+
+  .sidebar-logout-btn:hover .logout-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+
+  .sidebar-logout-btn:active {
+    transform: translateY(0);
   }
 
   /* Content header on Desktop */

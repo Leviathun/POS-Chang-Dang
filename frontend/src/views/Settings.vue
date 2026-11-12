@@ -154,30 +154,6 @@
             </router-link>
           </div>
         </div>
-
-        <!-- 3. Logout (ออกจากระบบสำหรับทุกระดับ) -->
-        <div class="card p-md mb-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
-          <div class="flex flex-between align-center flex-wrap gap-md">
-            <div class="flex align-center gap-md">
-              <div class="p-sm rounded-circle" style="background: rgba(173, 40, 30, 0.08); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="fa-solid fa-right-from-bracket" style="font-size: 1.25rem; color: var(--danger, #ad281e);"></i>
-              </div>
-              <div>
-                <div class="font-bold text-base" style="color: var(--danger, #ad281e);">ออกจากระบบ (Logout)</div>
-                <div class="text-xs text-secondary">ออกจากระบบ POS เพื่อเปลี่ยนกะ หรือเปลี่ยนผู้ใช้งาน</div>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              class="btn btn-secondary inline-flex align-center gap-xs"
-              @click="handleLogout"
-              style="padding: 8px 16px; font-size: var(--font-sm); color: var(--danger, #ad281e); border-color: rgba(173, 40, 30, 0.3);"
-            >
-              <i class="fa-solid fa-right-from-bracket"></i>
-              <span>ออกจากระบบ</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       <!-- Stock Notification & Save (Admin only) -->
