@@ -1252,7 +1252,16 @@
                 </div>
               </div>
               <div class="log-content-wrapper">
-                <div class="log-title">{{ getActivityCardTitle(log) }}</div>
+                <div class="flex align-center gap-xs flex-wrap">
+                  <span class="log-title">{{ getActivityCardTitle(log) }}</span>
+                  <span 
+                    v-if="getActivityStockTypeBadge(log)" 
+                    class="stock-type-pill" 
+                    :class="getActivityStockTypeBadge(log).type"
+                  >
+                    {{ getActivityStockTypeBadge(log).label }}
+                  </span>
+                </div>
                 <div class="log-details tabular-nums">{{ formatActivityDetails(log) }}</div>
                 <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                   <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-user" style="font-size: 0.75rem;"></i><span>{{ log.staff_name || 'ระบบ' }}</span></span>
@@ -1403,8 +1412,8 @@
         <div 
           class="card p-md sales-kpi-card" 
           style="position: relative; overflow: hidden; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #10b981; cursor: pointer;"
-          :style="stockReasonFilter === 'restock' ? 'border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);' : ''"
-          @click="stockReasonFilter = stockReasonFilter === 'restock' ? 'all' : 'restock'"
+          :style="stockReasonFilter === 'restock_all' || stockReasonFilter === 'restock' || stockReasonFilter === 'restock_ck' ? 'border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);' : ''"
+          @click="stockReasonFilter = stockReasonFilter === 'restock_all' ? 'all' : 'restock_all'"
         >
           <div class="flex flex-between align-center mb-xs">
             <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
@@ -1442,10 +1451,17 @@
             </button>
             <button 
               class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-success': stockReasonFilter === 'restock_ck' }" 
+              @click="stockReasonFilter = 'restock_ck'"
+            >
+              เติมสต็อก (ครัวกลาง) ({{ stockCkRestockLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
               :class="{ 'active-success': stockReasonFilter === 'restock' }" 
               @click="stockReasonFilter = 'restock'"
             >
-              เติมสต็อก ({{ stockRestockCount }})
+              เติมสต็อก (ทั่วไป) ({{ stockGeneralRestockLogs.length }})
             </button>
             <button 
               class="stock-pill-btn tabular-nums" 
@@ -1453,6 +1469,20 @@
               @click="stockReasonFilter = 'adjustment'"
             >
               ปรับปรุงยอด ({{ stockAdjustmentLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-warning': stockReasonFilter === 'cook_deduct' }" 
+              @click="stockReasonFilter = 'cook_deduct'"
+            >
+              ตัดของสดไปปรุง ({{ stockCookDeductLogs.length }})
+            </button>
+            <button 
+              class="stock-pill-btn tabular-nums" 
+              :class="{ 'active-success': stockReasonFilter === 'cook_ready' }" 
+              @click="stockReasonFilter = 'cook_ready'"
+            >
+              ปรุงสุกพร้อมขาย ({{ stockCookReadyLogs.length }})
             </button>
             <button 
               class="stock-pill-btn tabular-nums" 
@@ -1595,8 +1625,8 @@
             >
               <!-- Left Reason Badge -->
               <div class="log-badge-wrapper">
-                <div class="log-badge" :class="'stock-reason-' + log.reason">
-                  <i :class="getStockReasonIconClass(log.reason)"></i>
+                <div class="log-badge" :class="'stock-reason-' + getStockLogCategory(log)">
+                  <i :class="getStockCategoryIconClass(log)"></i>
                 </div>
               </div>
 
@@ -1608,7 +1638,7 @@
                     class="stock-type-pill" 
                     :class="isRawStockLog(log) ? 'raw' : 'cooked'"
                   >
-                    {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
+                    {{ isRawStockLog(log) ? 'ของสด' : 'ของทอด' }}
                   </span>
                   <span class="stock-action-tag">{{ getStockReportActionLabel(log) }}</span>
                 </div>
@@ -2407,8 +2437,12 @@ watch(activeTab, (newVal) => {
     loadOrderHistory();
   } else if (newVal === 'cash_audit') {
     fetchCashDrawerSummary();
-  } else if (newVal === 'stock_history') {
+  } else if (newVal === 'stock_history' || newVal === 'activity_logs') {
     loadStockHistoryLogs();
+    if (newVal === 'activity_logs') {
+      loadActivityLogsForPeriod();
+      loadExpensesForPeriod();
+    }
   } else if (newVal === 'top_menus') {
     loadTopItems();
   }
@@ -2470,6 +2504,7 @@ const expenses = ref([]);
 const activityLogs = ref([]);
 const activityLogsLoading = ref(false);
 const stockHistoryLogs = ref([]);
+const allStockHistoryLogs = ref([]);
 const stockHistoryLoading = ref(false);
 let activityFilterSkeletonTimer = null;
 const triggerActivityFilterSkeleton = () => {
@@ -2517,6 +2552,26 @@ const resolveActivityAction = (log) => {
   return act;
 };
 
+const getActivityStockTypeBadge = (log) => {
+  const act = resolveActivityAction(log);
+  const stockActions = [
+    'restock_ck', 'restock_stock', 'restock_raw_stock', 'restock_modifier',
+    'adjust_stock', 'adjust_raw_stock', 'adjust_modifier',
+    'record_waste', 'record_raw_waste', 'staff_credit', 'staff_raw_credit'
+  ];
+  if (!stockActions.includes(act)) return null;
+  if (log?.stock_kind === 'raw') return { label: 'ของสด', type: 'raw' };
+  if (log?.stock_kind === 'cooked') return { label: 'ของทอด', type: 'cooked' };
+  const raw = String(log?.details || '');
+  if (act.includes('_modifier') || raw.includes('เครื่องปรุง')) {
+    return { label: 'เครื่องปรุง', type: 'raw' };
+  }
+  if (act.includes('_raw_') || raw.includes('ของสด') || raw.includes('วัตถุดิบ')) {
+    return { label: 'ของสด', type: 'raw' };
+  }
+  return { label: 'ของทอด', type: 'cooked' };
+};
+
 const getActivityCardTitle = (log) => {
   const act = resolveActivityAction(log);
   const raw = String(log?.details || '');
@@ -2533,14 +2588,14 @@ const getActivityCardTitle = (log) => {
     reverse_expense: 'ยกเลิกค่าใช้จ่าย',
     restock_ck: 'เติมสต็อก (ครัวกลาง)',
     restock_stock: 'เติมสต็อก (ทั่วไป)',
-    restock_raw_stock: 'เติมสต็อกวัตถุดิบ (ทั่วไป)',
+    restock_raw_stock: 'เติมสต็อก (ทั่วไป)',
     restock_modifier: 'เติมสต็อกเครื่องปรุง (ทั่วไป)',
     adjust_stock: 'ปรับสต็อก',
-    adjust_raw_stock: 'ปรับสต็อกวัตถุดิบ',
+    adjust_raw_stock: 'ปรับสต็อก',
     adjust_modifier: 'ปรับสต็อกเครื่องปรุง',
     reverse_stock_log: 'ยกเลิกรายการสต็อก',
     record_waste: 'บันทึกของเสีย',
-    record_raw_waste: 'บันทึกของเสียวัตถุดิบ',
+    record_raw_waste: 'บันทึกของเสีย',
     staff_credit: 'เครดิตพนักงาน',
     staff_raw_credit: 'เครดิตพนักงาน',
     cash_opening_set: 'ตั้งเงินทอนเริ่มต้น',
@@ -2553,6 +2608,8 @@ const getActivityCardTitle = (log) => {
 const formatActivityDetails = (log) => {
   const raw = String(log?.details || '').trim();
   if (!raw) return '-';
+  const badge = getActivityStockTypeBadge(log);
+  const kindPrefix = badge ? `${badge.label} • ` : '';
   return raw
     .replace(/^(.+?)\s*เข้าสู่ระบบ(?:สำเร็จ)?\s*\(สาขา:\s*(.+)\)$/, '$1 • $2')
     .replace(/^สร้าง(?:ออเดอร์และชำระเงินสำเร็จ|และชำระเงินออเดอร์)\s*เลขที่\s*#?(\S+)\s*ยอดรวม\s*([\d,.]+)\s*บาท$/, 'เลขที่ #$1 • ยอดรวม ฿$2')
@@ -2561,12 +2618,12 @@ const formatActivityDetails = (log) => {
     .replace(/^บันทึกค่าใช้จ่าย\s*หมวดหมู่\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*บาท(?:\s*\(บันทึกเพิ่มเติม:\s*(.+)\))?$/, (_, cat, amt, note) => `${cat} • ฿${amt}${note ? ` (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')})` : ''}`)
     .replace(/\(เบิกของจากครัวกลาง\s*/g, '(')
     .replace(/^ยกเลิก(?:และคืนยอดค่าใช้จ่าย|รายการเบิกของจากครัวกลาง)\s*(#\S+)\s*\((.+?)\)\s*จำนวน\s*([\d,.]+)\s*บาท.*$/, (_, id, note, amt) => `รายการ ${id} (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')}) • ฿${amt}`)
-    .replace(/^(?:ปรับปรุง|เติม)สต็อก(?:ของสด|ของทอด|ของนึ่ง|ของปิ้ง|ของห่อ|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก|เครื่องปรุง|วัตถุดิบอัตโนมัติจากครัวกลาง)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[(?:สาเหตุ:\s*)?(.+?)\])?$/, (_, name, qty, prev, next, r) => `${name} ${qty} (${prev} → ${next})${r && r !== 'อื่นๆ' ? ` • ${r}` : ''}`)
+    .replace(/^(?:ปรับปรุง|เติม)สต็อก(?:ของสด|ของทอด|ของนึ่ง|ของปิ้ง|ของห่อ|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก|เครื่องปรุง|วัตถุดิบอัตโนมัติจากครัวกลาง)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[(?:สาเหตุ:\s*)?(.+?)\])?$/, (_, name, qty, prev, next, r) => `${kindPrefix}${name} ${qty} (${prev} → ${next})${r && r !== 'อื่นๆ' ? ` • ${r}` : ''}`)
     .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(ของสดคงเหลือ:\s*([\d,.]+),\s*.+?พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, 'นำของสดมา$1: $2 +$3 $4 (หลัง$1: ของสดเหลือ $5 / พร้อมขาย $6)')
     .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1เพิ่ม: $2 +$3 $4 (หลัง$1: พร้อมขาย $5)')
     .replace(/^ยกเลิกบันทึกสต็อก\s*(#\S+)\s*\((.+?)\).*$/, 'รายการ $1 • $2')
-    .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? ` (${note})` : ''}`)
-    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${name} ${qty}${note && note !== 'แจกพนักงานรับประทาน' ? ` (${note})` : ''}`)
+    .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? ` (${note})` : ''}`)
+    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'แจกพนักงานรับประทาน' ? ` (${note})` : ''}`)
     .replace(/^.+?บันทึกเงินทอนตั้งต้นกะวันที่\s*(\S+)\s*จำนวน\s*([\d,.]+)\s*บาท$/, 'กะวันที่ $1 • ฿$2')
     .replace(/^.+?ตรวจสอบเงินสดกะวันที่\s*(\S+)\s*\(นับจริง:\s*([\d,.]+)\s*บาท,\s*คาดการณ์:\s*([\d,.]+)\s*บาท,\s*ผลต่าง:\s*([+-]?[\d,.]+)\s*บาท\)$/, 'นับจริง ฿$2 • คาดการณ์ ฿$3 (ผลต่าง ฿$4)')
     .replace(/\s*\(สาขา:\s*(.+)\)$/, ' • $1');
@@ -2590,19 +2647,25 @@ const filteredActivityLogs = computed(() => {
     };
   });
 
-  // 2.5 Map Central Kitchen auto-restocks from stockHistoryLogs into activity logs
-  const mappedCkRestocks = (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : [])
+  // 2.5 Map Central Kitchen auto-restocks from allStockHistoryLogs / stockHistoryLogs into activity logs
+  const sourceStockLogs = Array.isArray(allStockHistoryLogs.value) && allStockHistoryLogs.value.length > 0
+    ? allStockHistoryLogs.value
+    : (Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : []);
+  const mappedCkRestocks = sourceStockLogs
     .filter(s => s.reason === 'restock' && String(s.note || '').includes('ครัวกลาง'))
     .map(s => {
       const reqMatch = String(s.note || '').match(/ใบเบิก\s*(#\S+)/);
       const byMatch = String(s.note || '').match(/โดย\s*(.+)$/);
       const qtySign = Number(s.change_qty) >= 0 ? '+' : '';
+      const isRaw = isRawStockLog(s);
+      const kindLabel = isRaw ? 'ของสด' : 'ของทอด';
       return {
         id: `ck-restock-${s.id}`,
         branch_id: s.branch_id,
         user_id: s.staff_id,
         action: 'restock_ck',
-        details: `${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น (${s.previous_stock} → ${s.new_stock})${reqMatch ? ` • ใบเบิก ${reqMatch[1]}` : ''}`,
+        stock_kind: isRaw ? 'raw' : 'cooked',
+        details: `${kindLabel} • ${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น (${s.previous_stock} → ${s.new_stock})${reqMatch ? ` • ใบเบิก ${reqMatch[1]}` : ''}`,
         created_at: s.created_at,
         staff_name: s.staff_name || (byMatch ? byMatch[1].trim() : 'ครัวกลาง')
       };
@@ -2857,11 +2920,60 @@ watch(stockReasonFilter, () => {
   }, 220);
 });
 
+const getStockLogCategory = (log) => {
+  if (!log) return 'other';
+  const note = String(log.note || '');
+  const isRaw = isRawStockLog(log);
+  if (log.reason === 'waste') return 'waste';
+  if (log.reason === 'staff_benefit') return 'staff_benefit';
+  if (log.reason === 'cancel_restore') return 'cancel_restore';
+  if (log.reason === 'sale') return 'sale';
+  if (log.reason === 'adjustment') {
+    if (isRaw && Number(log.change_qty) < 0 && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('หัก'))) {
+      return 'cook_deduct';
+    }
+    return 'adjustment';
+  }
+  if (log.reason === 'restock') {
+    if (note.includes('ครัวกลาง')) {
+      return 'restock_ck';
+    }
+    if (!isRaw && (note.includes('ปรุง') || note.includes('ทอด') || note.includes('สุก')) && !note.includes('(Relative)') && !note.includes('เติมสต็อกของ')) {
+      return 'cook_ready';
+    }
+    return 'restock';
+  }
+  return log.reason || 'other';
+};
+
+const getStockCategoryIconClass = (log) => {
+  const cat = getStockLogCategory(log);
+  const map = {
+    restock_ck: 'fa-solid fa-truck-ramp-box',
+    restock: 'fa-solid fa-boxes-packing',
+    adjustment: 'fa-solid fa-sliders',
+    cook_deduct: 'fa-solid fa-fire-burner',
+    cook_ready: 'fa-solid fa-fire-burner',
+    waste: 'fa-solid fa-trash-can',
+    staff_benefit: 'fa-solid fa-utensils',
+    cancel_restore: 'fa-solid fa-rotate-left',
+    sale: 'fa-solid fa-cart-shopping'
+  };
+  return map[cat] || 'fa-solid fa-box';
+};
+
 const filteredStockLogs = computed(() => {
   try {
     let list = Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value : [];
     if (stockReasonFilter.value && stockReasonFilter.value !== 'all') {
-      list = list.filter(log => log && log.reason === stockReasonFilter.value);
+      if (stockReasonFilter.value === 'restock_all') {
+        list = list.filter(log => {
+          const cat = getStockLogCategory(log);
+          return cat === 'restock_ck' || cat === 'restock';
+        });
+      } else {
+        list = list.filter(log => getStockLogCategory(log) === stockReasonFilter.value);
+      }
     }
     const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
     if (periodMode.value === 'daily' && isTimeFilterActive) {
@@ -2874,11 +2986,18 @@ const filteredStockLogs = computed(() => {
   }
 });
 
-// Category log lists for stat cards
-const stockWasteLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'waste') : []);
-const stockStaffCreditLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'staff_benefit') : []);
-const stockRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'restock') : []);
-const stockAdjustmentLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => l && l.reason === 'adjustment') : []);
+// Category log lists for stat cards & filter pills
+const stockWasteLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'waste') : []);
+const stockStaffCreditLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'staff_benefit') : []);
+const stockCkRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'restock_ck') : []);
+const stockGeneralRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'restock') : []);
+const stockRestockLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => {
+  const cat = getStockLogCategory(l);
+  return cat === 'restock_ck' || cat === 'restock';
+}) : []);
+const stockAdjustmentLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'adjustment') : []);
+const stockCookDeductLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cook_deduct') : []);
+const stockCookReadyLogs = computed(() => Array.isArray(stockHistoryLogs.value) ? stockHistoryLogs.value.filter(l => getStockLogCategory(l) === 'cook_ready') : []);
 
 // Stat Card Calculations
 const stockWasteCount = computed(() => Array.isArray(stockWasteLogs.value) ? stockWasteLogs.value.length : 0);
@@ -3038,14 +3157,17 @@ const loadStockHistoryLogs = async () => {
     }
 
     let logs = [];
+    const allRes = await api.stock.getAllLogs(params);
+    const allLogs = Array.isArray(allRes.data) ? allRes.data : (Array.isArray(allRes) ? allRes : []);
+    allStockHistoryLogs.value = allLogs;
+
     if (selectedReportsStockItemId.value && selectedReportsStockItemId.value !== 'all') {
       const res = await api.stock.getLogs(selectedReportsStockItemId.value, params);
       const rawLogs = res.data?.logs || res.data || [];
       const itemName = selectedStockItemName.value;
       logs = Array.isArray(rawLogs) ? rawLogs.map(l => ({ ...l, item_name: l.item_name || itemName })) : [];
     } else {
-      const res = await api.stock.getAllLogs(params);
-      logs = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
+      logs = allLogs;
     }
     stockHistoryLogs.value = logs;
   } catch (e) {
@@ -3104,18 +3226,12 @@ const isRawStockLog = (log) => {
 
 const getStockReportActionLabel = (log) => {
   const isRaw = isRawStockLog(log);
-  if (log.reason === 'adjustment') {
-    if (isRaw && log.change_qty < 0 && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('หัก'))) {
-      return 'ตัดของสดไปปรุง';
-    }
-    return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกพร้อมขาย';
-  }
-  if (log.reason === 'restock') {
-    if (!isRaw && (log.note?.includes('ปรุง') || log.note?.includes('ทอด') || log.note?.includes('สุก'))) {
-      return 'ปรุงสุกพร้อมขาย';
-    }
-    return isRaw ? 'เติมสต็อกของสด' : 'เติมสต็อกสินค้า';
-  }
+  const cat = getStockLogCategory(log);
+  if (cat === 'cook_deduct') return 'ตัดของสดไปปรุง';
+  if (cat === 'cook_ready') return 'ปรุงสุกพร้อมขาย';
+  if (cat === 'restock_ck') return 'เติมสต็อก (ครัวกลาง)';
+  if (cat === 'restock') return 'เติมสต็อก (ทั่วไป)';
+  if (cat === 'adjustment') return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกของทอด';
   return getStockReasonLabel(log.reason);
 };
 
@@ -3773,11 +3889,12 @@ const loadReportData = async () => {
     }
     if (isManagerOrAdmin()) {
       loadActivityLogsForPeriod().catch(e => console.warn('Background activities load error:', e));
+      loadStockHistoryLogs().catch(e => console.warn('Background stock logs load error:', e));
+      if (!isAdmin()) {
+        loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
+      }
       if (activeTab.value === 'cash_audit') {
         fetchCashDrawerSummary().catch(e => console.warn('Background cash drawer load error:', e));
-      }
-      if (activeTab.value === 'stock_history') {
-        loadStockHistoryLogs().catch(e => console.warn('Background stock logs load error:', e));
       }
     }
     loadOrderHistory().catch(e => console.warn('Background order history load error:', e));
@@ -5160,8 +5277,9 @@ select.reports-filter-control,
   align-items: center;
 }
 
-.log-badge.stock-reason-restock { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.log-badge.stock-reason-restock, .log-badge.stock-reason-restock_ck, .log-badge.stock-reason-cook_ready { background: rgba(16, 185, 129, 0.12); color: #10b981; }
 .log-badge.stock-reason-adjustment { background: rgba(139, 3, 19, 0.08); color: var(--primary); }
+.log-badge.stock-reason-cook_deduct { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
 .log-badge.stock-reason-waste { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
 .log-badge.stock-reason-staff_benefit { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
 .log-badge.stock-reason-sale, .log-badge.stock-reason-cancel_restore { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
