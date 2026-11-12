@@ -2673,22 +2673,22 @@ const formatActivityDetails = (log) => {
   const badge = getActivityStockTypeBadge(log);
   const kindPrefix = badge ? `${badge.label} • ` : '';
   return raw
-    .replace(/^(.+?)\s*เข้าสู่ระบบ(?:สำเร็จ)?\s*\(สาขา:\s*(.+)\)$/, '$1 • $2')
-    .replace(/^สร้าง(?:ออเดอร์และชำระเงินสำเร็จ|และชำระเงินออเดอร์)\s*เลขที่\s*#?(\S+)\s*ยอดรวม\s*([\d,.]+)\s*บาท$/, 'เลขที่ #$1 • ยอดรวม ฿$2')
-    .replace(/^ยกเลิก(?:บิล|ออเดอร์)\s*#?(\S+)\s*สำเร็จ\s*\(เหตุผล:\s*(.+)\)$/, 'เลขที่ #$1 • เหตุผล: $2')
+    .replace(/^(.+?)\s*เข้าสู่ระบบ(?:สำเร็จ)?\s*\(สาขา:\s*(.+)\)$/, '$1\nสาขา: $2')
+    .replace(/^สร้าง(?:ออเดอร์และชำระเงินสำเร็จ|และชำระเงินออเดอร์)\s*เลขที่\s*#?(\S+)\s*ยอดรวม\s*([\d,.]+)\s*บาท$/, 'เลขที่ #$1\nยอดรวม ฿$2')
+    .replace(/^ยกเลิก(?:บิล|ออเดอร์)\s*#?(\S+)\s*สำเร็จ\s*\(เหตุผล:\s*(.+)\)$/, 'เลขที่ #$1\nเหตุผล: $2')
     .replace(/^รายจ่าย:\s*/, '')
-    .replace(/^บันทึกค่าใช้จ่าย\s*หมวดหมู่\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*บาท(?:\s*\(บันทึกเพิ่มเติม:\s*(.+)\))?$/, (_, cat, amt, note) => `${cat} • ฿${amt}${note ? ` (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')})` : ''}`)
+    .replace(/^บันทึกค่าใช้จ่าย\s*หมวดหมู่\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*บาท(?:\s*\(บันทึกเพิ่มเติม:\s*(.+)\))?$/, (_, cat, amt, note) => `${cat}\n฿${amt}${note ? ` (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')})` : ''}`)
     .replace(/\(เบิกของจากครัวกลาง\s*/g, '(')
-    .replace(/^ยกเลิก(?:และคืนยอดค่าใช้จ่าย|รายการเบิกของจากครัวกลาง)\s*(#\S+)\s*\((.+?)\)\s*จำนวน\s*([\d,.]+)\s*บาท.*$/, (_, id, note, amt) => `รายการ ${id} (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')}) • ฿${amt}`)
-    .replace(/^(?:ปรับปรุง|เติม)สต็อก(?:ของสด|ของทอด|ของนึ่ง|ของปิ้ง|ของห่อ|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก|เครื่องปรุง|วัตถุดิบอัตโนมัติจากครัวกลาง)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[(?:สาเหตุ:\s*)?(.+?)\])?$/, (_, name, qty, prev, next, r) => `${kindPrefix}${name} ${qty} (${prev} → ${next})${r && r !== 'อื่นๆ' ? ` • ${r}` : ''}`)
-    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(ของสดคงเหลือ:\s*([\d,.]+),\s*.+?พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, 'นำของสดมา$1: $2 +$3 $4 (หลัง$1: ของสดเหลือ $5 / พร้อมขาย $6)')
-    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1เพิ่ม: $2 +$3 $4 (หลัง$1: พร้อมขาย $5)')
-    .replace(/^ยกเลิกบันทึกสต็อก\s*(#\S+)\s*\((.+?)\).*$/, 'รายการ $1 • $2')
-    .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? ` (${note})` : ''}`)
-    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'แจกพนักงานรับประทาน' ? ` (${note})` : ''}`)
-    .replace(/^.+?บันทึกเงินทอนตั้งต้นกะวันที่\s*(\S+)\s*จำนวน\s*([\d,.]+)\s*บาท$/, 'กะวันที่ $1 • ฿$2')
-    .replace(/^.+?ตรวจสอบเงินสดกะวันที่\s*(\S+)\s*\(นับจริง:\s*([\d,.]+)\s*บาท,\s*คาดการณ์:\s*([\d,.]+)\s*บาท,\s*ผลต่าง:\s*([+-]?[\d,.]+)\s*บาท\)$/, 'นับจริง ฿$2 • คาดการณ์ ฿$3 (ผลต่าง ฿$4)')
-    .replace(/\s*\(สาขา:\s*(.+)\)$/, ' • $1');
+    .replace(/^ยกเลิก(?:และคืนยอดค่าใช้จ่าย|รายการเบิกของจากครัวกลาง)\s*(#\S+)\s*\((.+?)\)\s*จำนวน\s*([\d,.]+)\s*บาท.*$/, (_, id, note, amt) => `รายการ ${id} (${note.replace(/^เบิกของจากครัวกลาง\s*/, '')})\n฿${amt}`)
+    .replace(/^(?:ปรับปรุง|เติม)สต็อก(?:ของสด|ของทอด|ของนึ่ง|ของปิ้ง|ของห่อ|ทอดสุก|ย่างสุก|ต้มสุก|นึ่งสุก|สุก|เครื่องปรุง|วัตถุดิบอัตโนมัติจากครัวกลาง)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\(ก่อนปรับ:\s*([\d,.]+),\s*หลังปรับ:\s*([\d,.]+)\)(?:\s*\[(?:สาเหตุ:\s*)?(.+?)\])?$/, (_, name, qty, prev, next, r) => `${kindPrefix}${name} ${qty}\nคงเหลือ ${prev} → ${next}${r && r !== 'อื่นๆ' ? ` (${r})` : ''}`)
+    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(ของสดคงเหลือ:\s*([\d,.]+),\s*.+?พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, 'นำของสดมา$1: $2 +$3 $4\nหลัง$1: ของสดเหลือ $5 / พร้อมขาย $6')
+    .replace(/^ทำการ(ทอด|ย่าง|ต้ม|นึ่ง|ปิ้ง|ห่อ)\s*(.+?)\s*จำนวน\s*([\d,.]+)\s*(\S+)\s*\(พร้อมขายคงเหลือ:\s*([\d,.]+)\)$/, '$1เพิ่ม: $2 +$3 $4\nหลัง$1: พร้อมขาย $5')
+    .replace(/^ยกเลิกบันทึกสต็อก\s*(#\S+)\s*\((.+?)\).*$/, 'รายการ $1\n$2')
+    .replace(/^บันทึกของเสีย(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'ไม่ระบุรายละเอียดเพิ่มเติม' ? `\n${note}` : ''}`)
+    .replace(/^บันทึกของกินพนักงาน\/เครดิต(?:ของสด)?\s*(.+?)\s*([+-]?[\d,.]+\s*\S+)\s*\((.+)\)$/, (_, name, qty, note) => `${kindPrefix}${name} ${qty}${note && note !== 'แจกพนักงานรับประทาน' ? `\n${note}` : ''}`)
+    .replace(/^.+?บันทึกเงินทอนตั้งต้นกะวันที่\s*(\S+)\s*จำนวน\s*([\d,.]+)\s*บาท$/, 'กะวันที่ $1\n฿$2')
+    .replace(/^.+?ตรวจสอบเงินสดกะวันที่\s*(\S+)\s*\(นับจริง:\s*([\d,.]+)\s*บาท,\s*คาดการณ์:\s*([\d,.]+)\s*บาท,\s*ผลต่าง:\s*([+-]?[\d,.]+)\s*บาท\)$/, 'นับจริง ฿$2\nคาดการณ์ ฿$3 (ผลต่าง ฿$4)')
+    .replace(/\s*\(สาขา:\s*(.+)\)$/, '\nสาขา: $1');
 };
 
 const filteredActivityLogs = computed(() => {
@@ -2703,7 +2703,7 @@ const filteredActivityLogs = computed(() => {
       branch_id: e.branch_id,
       user_id: e.staff_id,
       action: 'log_expense',
-      details: `${getExpenseCategoryLabel(e.category)} • ฿${Number(e.amount || 0).toLocaleString()}${cleanNote ? ` (${cleanNote})` : ''}`,
+      details: `${getExpenseCategoryLabel(e.category)}\n฿${Number(e.amount || 0).toLocaleString()}${cleanNote ? ` (${cleanNote})` : ''}`,
       created_at: e.created_at,
       staff_name: e.staff_name || 'ผู้ดูแลระบบ'
     };
@@ -2727,7 +2727,7 @@ const filteredActivityLogs = computed(() => {
         user_id: s.staff_id,
         action: 'restock_ck',
         stock_kind: isRaw ? 'raw' : 'cooked',
-        details: `${kindLabel} • ${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น (${s.previous_stock} → ${s.new_stock})${reqMatch ? ` • ใบเบิก ${reqMatch[1]}` : ''}`,
+        details: `${kindLabel} • ${s.item_name || 'สินค้า'} ${qtySign}${s.change_qty} ชิ้น\nคงเหลือ ${s.previous_stock} → ${s.new_stock}${reqMatch ? ` • ใบเบิก ${reqMatch[1]}` : ''}`,
         created_at: s.created_at,
         staff_name: s.staff_name || (byMatch ? byMatch[1].trim() : 'ครัวกลาง')
       };
@@ -3549,7 +3549,7 @@ const formatReportLogNote = (log, isRaw) => {
   return note
     .replace(/^ปรับปรุงสต็อก.*?\(Absolute\):\s*ปรับจาก\s*[\d,.]+\s*เป็น\s*[\d,.]+\s*\S+\s*\[สาเหตุ:\s*(.+?)\](?:\s*\((.+)\))?$/, (_, r, n) => `สาเหตุ: ${r}${n && n !== 'ไม่ระบุโน้ต' ? ` (${n})` : ''}`)
     .replace(/^เติมสต็อก.*?\(Relative\)\s*[+-]?[\d,.]+\s*\S+$/, 'เติมสต็อกเพิ่มเข้าคลัง')
-    .replace(/^เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง\s*ใบเบิก\s*(#\S+)\s*\((.+?)\)(?:\s*\((.+?)\))?(?:\s*โดย\s*(.+))?$/, (_, reqNo, ckName, formula) => `เติมจากครัวกลาง • ใบเบิก ${reqNo}${formula ? ` (${formula})` : ''}`);
+    .replace(/^เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง\s*ใบเบิก\s*(#\S+)\s*\((.+?)\)(?:\s*\((.+?)\))?(?:\s*โดย\s*(.+))?$/, (_, reqNo, ckName, formula) => `เติมจากครัวกลาง\nใบเบิก ${reqNo}${formula ? ` (${formula})` : ''}`);
 };
 
 const getStockReasonLabel = (reason) => {
@@ -4741,21 +4741,22 @@ select.reports-filter-control,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
+  gap: 5px;
 }
 
 .log-title {
   font-size: var(--font-sm);
   color: var(--text-primary);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .log-details {
   font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.55;
+  white-space: pre-line;
   word-break: break-word;
 }
 
@@ -4764,6 +4765,36 @@ select.reports-filter-control,
   gap: var(--space-md);
   font-size: var(--font-xs);
   color: var(--text-tertiary);
+}
+
+@media (max-width: 640px) {
+  .activity-log-item {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .stock-log-card {
+    align-items: flex-start;
+  }
+
+  .log-content-wrapper {
+    gap: 6px;
+  }
+
+  .log-details {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+
+  .log-meta {
+    gap: 6px 12px !important;
+    margin-top: 2px;
+  }
+
+  .stock-log-right {
+    min-width: 68px;
+    gap: 5px;
+  }
 }
 
 .log-user, .log-time {
