@@ -1638,7 +1638,7 @@
                     class="stock-type-pill" 
                     :class="isRawStockLog(log) ? 'raw' : 'cooked'"
                   >
-                    {{ isRawStockLog(log) ? 'ของสด' : 'ของทอด' }}
+                    {{ isRawStockLog(log) ? 'ของสด' : 'พร้อมขาย' }}
                   </span>
                   <span class="stock-action-tag">{{ getStockReportActionLabel(log) }}</span>
                 </div>
@@ -2561,7 +2561,7 @@ const getActivityStockTypeBadge = (log) => {
   ];
   if (!stockActions.includes(act)) return null;
   if (log?.stock_kind === 'raw') return { label: 'ของสด', type: 'raw' };
-  if (log?.stock_kind === 'cooked') return { label: 'ของทอด', type: 'cooked' };
+  if (log?.stock_kind === 'cooked') return { label: 'พร้อมขาย', type: 'cooked' };
   const raw = String(log?.details || '');
   if (act.includes('_modifier') || raw.includes('เครื่องปรุง')) {
     return { label: 'เครื่องปรุง', type: 'raw' };
@@ -2569,7 +2569,7 @@ const getActivityStockTypeBadge = (log) => {
   if (act.includes('_raw_') || raw.includes('ของสด') || raw.includes('วัตถุดิบ')) {
     return { label: 'ของสด', type: 'raw' };
   }
-  return { label: 'ของทอด', type: 'cooked' };
+  return { label: 'พร้อมขาย', type: 'cooked' };
 };
 
 const getActivityCardTitle = (log) => {
@@ -2658,7 +2658,7 @@ const filteredActivityLogs = computed(() => {
       const byMatch = String(s.note || '').match(/โดย\s*(.+)$/);
       const qtySign = Number(s.change_qty) >= 0 ? '+' : '';
       const isRaw = isRawStockLog(s);
-      const kindLabel = isRaw ? 'ของสด' : 'ของทอด';
+      const kindLabel = isRaw ? 'ของสด' : 'พร้อมขาย';
       return {
         id: `ck-restock-${s.id}`,
         branch_id: s.branch_id,
@@ -3213,9 +3213,19 @@ const selectReportsStockItem = (item) => {
 };
 
 const isRawStockLog = (log) => {
+  const note = String(log?.note || '');
+  if (note.includes('ครัวกลาง')) {
+    if (note.includes('พร้อมขาย')) return false;
+    if (note.includes('ของสด')) return true;
+    if (log.item_raw_quantity !== undefined) return log.item_raw_quantity !== null;
+    const stockItems = Array.isArray(store.stockItems) ? store.stockItems : [];
+    const found = stockItems.find(i => i && (Number(i.id) === Number(log.menu_item_id) || i.name === log.item_name));
+    if (found) return found.raw_quantity !== null && found.raw_quantity !== undefined;
+    if (/ข้าวเหนียว|น้ำจิ้ม|เครื่องดื่ม|น้ำอัดลม|โค้ก|เป๊ปซี่/.test(String(log.item_name || ''))) return false;
+    return true;
+  }
   if (log.stock_type === 'raw') return true;
   if (log.stock_type === 'cooked') return false;
-  const note = log.note || '';
   if (note.includes('ของสด') || note.includes('วัตถุดิบ') || note.includes('[ของสด]')) return true;
   if (note.includes('สุก') || note.includes('พร้อมขาย') || note.includes('[พร้อมขาย]')) return false;
   if ((note.includes('ปรุง') || note.includes('ทอด') || note.includes('ปิ้ง')) && log.change_qty < 0 && log.reason === 'adjustment') {
@@ -3231,7 +3241,7 @@ const getStockReportActionLabel = (log) => {
   if (cat === 'cook_ready') return 'ปรุงสุกพร้อมขาย';
   if (cat === 'restock_ck') return 'เติมสต็อก (ครัวกลาง)';
   if (cat === 'restock') return 'เติมสต็อก (ทั่วไป)';
-  if (cat === 'adjustment') return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกของทอด';
+  if (cat === 'adjustment') return isRaw ? 'ปรับสต็อกของสด' : 'ปรับสต็อกพร้อมขาย';
   return getStockReasonLabel(log.reason);
 };
 
