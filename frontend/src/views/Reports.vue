@@ -174,6 +174,16 @@
             <div class="sales-clean-stat">
               <span class="stat-clean-label">เฉลี่ยต่อบิล</span>
               <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
+              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
+                <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
+                <span style="color: var(--border-color-light);">|</span>
+                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.7rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
+                </span>
+                <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-arrow-trend-down" style="font-size: 0.7rem;"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
+                </span>
+              </div>
             </div>
           </div>
 
@@ -2236,6 +2246,7 @@ const applyDataFromStore = () => {
       total_sales: data.total_revenue || 0,
       total_orders: data.total_orders || 0,
       average_bill: data.avg_order_value || 0,
+      historical_avg_bill: data.historical_avg_value || 0,
       cash_sales: data.payment_breakdown?.cash_total || 0,
       cash_orders: data.payment_breakdown?.cash_count || 0,
       qr_sales: data.payment_breakdown?.qr_total || 0,
@@ -2565,7 +2576,8 @@ const displayedDailyReport = computed(() => {
       ...rep,
       total_orders: completedCount,
       cancelled_orders: cancelledCount,
-      all_orders: completedCount + cancelledCount
+      all_orders: completedCount + cancelledCount,
+      historical_avg_bill: Number(rep.historical_avg_bill) || 0
     };
   }
 
@@ -2590,6 +2602,7 @@ const displayedDailyReport = computed(() => {
     cancelled_orders,
     all_orders,
     average_bill: total_orders > 0 ? total_sales / total_orders : 0,
+    historical_avg_bill: Number(rep.historical_avg_bill) || 0,
     cash_sales: sumAmt(cash),
     cash_orders: cash.length,
     qr_sales: sumAmt(qr),
@@ -3528,6 +3541,7 @@ const loadReportData = async () => {
           total_sales: data.total_revenue || 0,
           total_orders: data.total_orders || 0,
           average_bill: data.avg_order_value || 0,
+          historical_avg_bill: data.historical_avg_value || 0,
           cash_sales: data.payment_breakdown?.cash_total || 0,
           cash_orders: data.payment_breakdown?.cash_count || 0,
           qr_sales: data.payment_breakdown?.qr_total || 0,
@@ -3543,6 +3557,7 @@ const loadReportData = async () => {
           total_sales: 0,
           total_orders: 0,
           average_bill: 0,
+          historical_avg_bill: 0,
           cash_sales: 0,
           cash_orders: 0,
           qr_sales: 0,
