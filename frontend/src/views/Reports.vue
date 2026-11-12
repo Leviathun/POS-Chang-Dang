@@ -171,18 +171,18 @@
               </div>
             </div>
             <div class="sales-clean-stat">
-              <span class="stat-clean-label" style="display: inline-flex; align-items: center; gap: 6px;">
-                เฉลี่ยต่อบิล
+              <div class="stat-clean-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>เฉลี่ยต่อบิล</span>
                 <button
                   type="button"
                   @click="showAvgBillInfo = !showAvgBillInfo"
-                  title="ดูวิธีคำนวณเกณฑ์เฉลี่ยสาขา"
-                  style="background: none; border: none; padding: 0; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; display: inline-flex; align-items: center; transition: color 0.15s;"
-                  :style="showAvgBillInfo ? { color: 'var(--primary)' } : {}"
+                  title="ดูสูตรการคำนวณ"
+                  style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                  :style="showAvgBillInfo ? { color: 'var(--primary)', background: 'rgba(139, 3, 19, 0.08)' } : {}"
                 >
                   <i class="fa-solid fa-circle-info"></i>
                 </button>
-              </span>
+              </div>
               <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
               <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 4px; margin-top: 4px; font-size: clamp(0.62rem, 2.4vw, 0.74rem); letter-spacing: -0.01em;">
                 <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
@@ -197,14 +197,17 @@
               <div
                 v-if="showAvgBillInfo"
                 class="text-xs"
-                style="margin-top: 8px; padding: 8px 10px; background: var(--bg-secondary); border: 1px solid var(--border-color-light); border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.5;"
+                style="margin-top: 8px; padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(139, 3, 19, 0.15); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 2px 6px rgba(61, 27, 17, 0.04);"
               >
-                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
-                  <i class="fa-solid fa-calculator text-primary" style="margin-right: 4px;"></i> วิธีคำนวณและที่มาของเกณฑ์
+                <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
+                  <span>สูตรการคำนวณ</span>
                 </div>
-                <div>• <strong>เฉลี่ยต่อบิล:</strong> ยอดขายสุทธิ ÷ จำนวนบิลที่ชำระแล้ว</div>
-                <div>• <strong>เกณฑ์เฉลี่ยสาขา:</strong> ค่าเฉลี่ยต่อบิลจากประวัติออเดอร์ที่ชำระสำเร็จทั้งหมดในอดีต (ก่อนช่วงเวลาที่เลือก) เฉพาะของสาขานี้</div>
-                <div>• <strong>ผลต่าง:</strong> นำยอดเฉลี่ยต่อบิลปัจจุบัน ลบด้วย เกณฑ์เฉลี่ยสาขา</div>
+                <div style="display: flex; flex-direction: column; gap: 3px;">
+                  <div>• <strong style="color: var(--text-primary);">เฉลี่ยต่อบิล:</strong> ยอดขายสุทธิ ÷ จำนวนบิลที่ชำระแล้ว</div>
+                  <div>• <strong style="color: var(--text-primary);">เกณฑ์เฉลี่ยสาขา:</strong> ยอดขายสะสมในอดีต ÷ จำนวนบิลสะสมในอดีต <span style="color: var(--text-muted);">(เฉพาะสาขานี้)</span></div>
+                  <div>• <strong style="color: var(--text-primary);">ผลต่าง:</strong> เฉลี่ยต่อบิล − เกณฑ์เฉลี่ยสาขา</div>
+                </div>
               </div>
             </div>
           </div>
