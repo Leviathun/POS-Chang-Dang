@@ -1445,7 +1445,7 @@
                     <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
                     <span>ที่มาของมูลค่าเติมสต็อก</span>
                   </div>
-                  <div>คำนวณจาก <strong>ราคาขายหน้าร้าน (menu_items.price) × จำนวนชิ้นที่เติม</strong> ไม่ใช่ราคาทุนวัตถุดิบ</div>
+                  <div>คำนวณจาก <strong>ราคาขายหน้าร้าน × จำนวนชิ้นที่เติม</strong> ไม่ใช่ราคาทุนวัตถุดิบ</div>
                 </div>
               </div>
             </div>
