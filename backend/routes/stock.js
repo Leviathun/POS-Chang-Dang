@@ -522,7 +522,7 @@ router.get('/logs/all', async (req, res) => {
     const branchId = await resolveBranchId(db, req, true);
 
     let query = `
-      SELECT sl.*, u.name as staff_name, mi.name as item_name, mi.price as item_price, mi.uom as item_uom
+      SELECT sl.*, u.name as staff_name, mi.name as item_name, mi.price as item_price, mi.uom as item_uom, mi.raw_quantity as item_raw_quantity
       FROM stock_logs sl
       LEFT JOIN users u ON u.id = sl.staff_id
       LEFT JOIN menu_items mi ON mi.id = sl.menu_item_id
@@ -678,7 +678,7 @@ router.get('/:id/logs', async (req, res) => {
     }
 
     let query = `
-      SELECT sl.*, u.name as staff_name, mi.name as item_name, mi.price as item_price, mi.uom as item_uom
+      SELECT sl.*, u.name as staff_name, mi.name as item_name, mi.price as item_price, mi.uom as item_uom, mi.raw_quantity as item_raw_quantity
       FROM stock_logs sl
       LEFT JOIN users u ON u.id = sl.staff_id
       LEFT JOIN menu_items mi ON mi.id = sl.menu_item_id
@@ -796,7 +796,7 @@ router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
           `).run(
             itemBranchId,
             req.user.id,
-            deltaCooked > 0 ? 'restock_stock' : 'adjust_stock',
+            mode === 'relative' && deltaCooked > 0 ? 'restock_stock' : 'adjust_stock',
             `ปรับปรุงสต็อก${getCookMethodLabel(menuItem.name)} ${menuItem.name} ${deltaCooked >= 0 ? '+' : ''}${deltaCooked} ชิ้น (ก่อนปรับ: ${currentCooked}, หลังปรับ: ${newCooked})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
           );
 
@@ -842,7 +842,7 @@ router.post('/bulk-adjust', requireManagerOrAdmin, async (req, res) => {
           `).run(
             itemBranchId,
             req.user.id,
-            deltaRaw > 0 ? 'restock_raw_stock' : 'adjust_raw_stock',
+            mode === 'relative' && deltaRaw > 0 ? 'restock_raw_stock' : 'adjust_raw_stock',
             `ปรับปรุงสต็อกของสด ${menuItem.name} ${deltaRaw >= 0 ? '+' : ''}${deltaRaw} ชิ้น (ก่อนปรับ: ${currentRaw}, หลังปรับ: ${newRaw})${mode === 'absolute' ? ` [สาเหตุ: ${reason_preset || 'อื่นๆ'}]` : ''}`
           );
         }

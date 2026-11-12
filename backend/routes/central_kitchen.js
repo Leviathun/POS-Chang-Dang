@@ -101,12 +101,12 @@ async function syncRestockToBranchMenu(db, branchId, ckItem, qty, transferNo, us
     const formulaStr = multiplier > 1 ? ` (${qty} ${ckItem.unit || 'หน่วย'} x ${multiplier} = ${convertedQty} ${menuItem.unit || 'ชิ้น'})` : '';
     const logNote = isReverse 
       ? `ปรับลดคืนวัตถุดิบครัวกลาง ใบเบิก #${transferNo} (${ckItem.name})${formulaStr} โดย ${userName}`
-      : `เติมสต็อกวัตถุดิบอัตโนมัติจากครัวกลาง ใบเบิก #${transferNo} (${ckItem.name})${formulaStr} โดย ${userName}`;
+      : `เติมสต็อก${stockField === 'quantity' ? 'พร้อมขาย' : 'ของสด'}อัตโนมัติจากครัวกลาง ใบเบิก #${transferNo} (${ckItem.name})${formulaStr} โดย ${userName}`;
 
     await db.prepare(`
-      INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, note, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(branchId, menuItem.id, changeQty, currentStock, newStock, logReason, logNote, nowLocal);
+      INSERT INTO stock_logs (branch_id, menu_item_id, change_qty, previous_stock, new_stock, reason, note, stock_type, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(branchId, menuItem.id, changeQty, currentStock, newStock, logReason, logNote, stockField === 'quantity' ? 'cooked' : 'raw', nowLocal);
 
     return {
       synced: true,
