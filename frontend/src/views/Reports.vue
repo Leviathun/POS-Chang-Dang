@@ -120,9 +120,9 @@
             <div class="font-bold text-primary tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px;">
               {{ formatCurrency(summary.today_sales) }}
             </div>
-            <div class="inline-flex align-center gap-xs text-xs text-muted font-medium">
+            <div class="inline-flex align-center gap-xs text-xs text-muted font-medium" style="white-space: nowrap;">
               <i class="fa-solid fa-receipt"></i>
-              <span class="tabular-nums">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</span>
+              <span class="tabular-nums">{{ summary.today_orders }} บิลสำเร็จ</span>
             </div>
           </div>
 
@@ -172,17 +172,40 @@
               </div>
             </div>
             <div class="sales-clean-stat">
-              <span class="stat-clean-label">เฉลี่ยต่อบิล</span>
+              <span class="stat-clean-label" style="display: inline-flex; align-items: center; gap: 6px;">
+                เฉลี่ยต่อบิล
+                <button
+                  type="button"
+                  @click="showAvgBillInfo = !showAvgBillInfo"
+                  title="ดูวิธีคำนวณเกณฑ์เฉลี่ยสาขา"
+                  style="background: none; border: none; padding: 0; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; display: inline-flex; align-items: center; transition: color 0.15s;"
+                  :style="showAvgBillInfo ? { color: 'var(--primary)' } : {}"
+                >
+                  <i class="fa-solid fa-circle-info"></i>
+                </button>
+              </span>
               <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
-              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
+              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 4px; margin-top: 4px; font-size: clamp(0.62rem, 2.4vw, 0.74rem); letter-spacing: -0.01em;">
                 <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
                 <span style="color: var(--border-color-light);">|</span>
-                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.7rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
+                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">
+                  <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.65rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
                 </span>
-                <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-arrow-trend-down" style="font-size: 0.7rem;"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
+                <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">
+                  <i class="fa-solid fa-arrow-trend-down" style="font-size: 0.65rem;"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
                 </span>
+              </div>
+              <div
+                v-if="showAvgBillInfo"
+                class="text-xs"
+                style="margin-top: 8px; padding: 8px 10px; background: var(--bg-secondary); border: 1px solid var(--border-color-light); border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.5;"
+              >
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
+                  <i class="fa-solid fa-calculator text-primary" style="margin-right: 4px;"></i> วิธีคำนวณและที่มาของเกณฑ์
+                </div>
+                <div>• <strong>เฉลี่ยต่อบิล:</strong> ยอดขายสุทธิ ÷ จำนวนบิลที่ชำระแล้ว</div>
+                <div>• <strong>เกณฑ์เฉลี่ยสาขา:</strong> ค่าเฉลี่ยต่อบิลจากประวัติออเดอร์ที่ชำระสำเร็จทั้งหมดในอดีต (ก่อนช่วงเวลาที่เลือก) เฉพาะของสาขานี้</div>
+                <div>• <strong>ผลต่าง:</strong> นำยอดเฉลี่ยต่อบิลปัจจุบัน ลบด้วย เกณฑ์เฉลี่ยสาขา</div>
               </div>
             </div>
           </div>
@@ -542,7 +565,22 @@
             </span>
           </div>
 
-          <div v-if="filteredHistoryOrders.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
+          <!-- Skeleton Loading for Order History -->
+          <div v-if="historyOrdersLoading" class="flex flex-col gap-sm">
+            <div v-for="n in 4" :key="'sk-hist-ord-' + n" class="p-md card order-report-card">
+              <div class="flex flex-between align-center gap-sm mb-xs">
+                <div class="flex align-center gap-md" style="flex-wrap: wrap;">
+                  <div class="skeleton" style="height: 18px; width: 85px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 14px; width: 160px; border-radius: 4px;"></div>
+                  <div class="skeleton" style="height: 14px; width: 90px; border-radius: 4px;"></div>
+                </div>
+                <div class="skeleton" style="height: 20px; width: 75px; border-radius: 4px;"></div>
+              </div>
+              <div class="skeleton mt-xs" style="height: 30px; width: 100%; border-radius: 6px;"></div>
+            </div>
+          </div>
+
+          <div v-else-if="filteredHistoryOrders.length === 0" class="text-center text-secondary py-xl text-sm" style="padding: var(--space-xl);">
             ไม่มีรายการออเดอร์ในช่วงเวลาที่เลือก
           </div>
           <div v-else class="flex flex-col gap-sm">
@@ -1013,14 +1051,8 @@
           </div>
         </div>
 
-        <!-- Empty state -->
-        <div v-if="topItems.length === 0 && !topItemsLoading" class="card" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: #ffffff !important;">
-          <i class="fa-solid fa-folder-open mb-sm" style="font-size: 2.5rem; opacity: 0.25; display: block; color: var(--text-primary);"></i>
-          ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
-        </div>
-
         <!-- Skeleton Loading for top items -->
-        <div v-else-if="topItems.length === 0 && topItemsLoading" class="ranked-items-grid">
+        <div v-if="topItemsLoading" class="ranked-items-grid">
           <div v-for="n in 4" :key="'sk-top-' + n" class="ranked-item-card">
             <div class="ranked-card-header">
               <div class="skeleton" style="height: 24px; width: 85px; border-radius: 999px;"></div>
@@ -1030,6 +1062,12 @@
             <div class="skeleton mb-xs" style="height: 14px; width: 50%; border-radius: 4px;"></div>
             <div class="skeleton" style="height: 8px; width: 100%; border-radius: 999px;"></div>
           </div>
+        </div>
+
+        <!-- Empty state -->
+        <div v-else-if="topItems.length === 0" class="card" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-3xl); background: #ffffff !important;">
+          <i class="fa-solid fa-folder-open mb-sm" style="font-size: 2.5rem; opacity: 0.25; display: block; color: var(--text-primary);"></i>
+          ยังไม่มีข้อมูลการขายในระยะเวลาที่เลือก
         </div>
 
         <!-- Grid Cards of Ranked Items -->
@@ -2034,6 +2072,7 @@ const currentUser = getUser();
 const selectedBranchId = ref(sessionStorage.getItem('selected_branch_id') !== null && sessionStorage.getItem('selected_branch_id') !== 'all' ? Number(sessionStorage.getItem('selected_branch_id')) : (currentUser ? currentUser.branch_id : null));
 
 const activeTab = ref('sales');
+const showAvgBillInfo = ref(false);
 
 // New Filters State & Helpers
 const customStartTime = ref('00.00');
@@ -2353,6 +2392,16 @@ const availableYears = ref([2024, 2025, 2026, 2027, 2028]);
 // Order History States
 const historyStatusFilter = ref('all');
 const historyOrders = ref([]);
+const historyOrdersLoading = ref(false);
+let historyFilterSkeletonTimer = null;
+const triggerHistoryFilterSkeleton = () => {
+  historyCurrentPage.value = 1;
+  historyOrdersLoading.value = true;
+  if (historyFilterSkeletonTimer) clearTimeout(historyFilterSkeletonTimer);
+  historyFilterSkeletonTimer = setTimeout(() => {
+    historyOrdersLoading.value = false;
+  }, 220);
+};
 const historyCurrentPage = ref(1);
 const historyOrdersPerPage = 20;
 
@@ -2401,6 +2450,10 @@ watch(activeTab, (newVal) => {
 
 watch(historyStatusFilter, () => {
   historyCurrentPage.value = 1;
+});
+
+watch([historyStaffFilter, historyPaymentFilter, customStartTime, customEndTime], () => {
+  triggerHistoryFilterSkeleton();
 });
 
 const loading = ref(true);
@@ -3451,8 +3504,13 @@ const loadActivityLogsForPeriod = async () => {
 };
 
 const loadOrderHistory = async () => {
+  if (historyFilterSkeletonTimer) clearTimeout(historyFilterSkeletonTimer);
+  historyOrdersLoading.value = true;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
+    historyFilterSkeletonTimer = setTimeout(() => {
+      historyOrdersLoading.value = false;
+    }, 180);
     return;
   }
   try {
@@ -3488,6 +3546,8 @@ const loadOrderHistory = async () => {
   } catch (e) {
     console.error('❌ Failed to load order history:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลประวัติออเดอร์ได้', 'error');
+  } finally {
+    historyOrdersLoading.value = false;
   }
 };
 
@@ -3619,6 +3679,7 @@ const loadReportData = async () => {
 
 const loadTopItems = async () => {
   const cacheKey = `${selectedBranchId.value || 'all'}_${topItemsDays.value}`;
+  topItemsLoading.value = true;
   
   if (topItemsDays.value === 7 && isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value && store.reportTopItems) {
     const mapped = store.reportTopItems.map(item => ({
@@ -3627,11 +3688,10 @@ const loadTopItems = async () => {
     }));
     topItems.value = mapped;
     topItemsCache.value[cacheKey] = mapped;
+    setTimeout(() => {
+      topItemsLoading.value = false;
+    }, 180);
     return;
-  }
-
-  if (!topItemsCache.value[cacheKey]) {
-    topItemsLoading.value = true;
   }
   
   try {
