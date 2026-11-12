@@ -1624,9 +1624,15 @@
         </div>
         <div v-else>
           <!-- Unified Clean White Cards for Desktop & Mobile -->
-          <div class="activity-logs-list">
+          <div class="activity-logs-list" style="gap: 0;">
             <template v-for="(log, idx) in paginatedStockLogs" :key="log.id">
-              <div class="activity-log-item stock-log-card">
+              <div 
+                class="activity-log-item stock-log-card"
+                :class="{
+                  'cook-pair-top': isReportCookPair(log, paginatedStockLogs[idx + 1]),
+                  'cook-pair-bottom': idx > 0 && isReportCookPair(paginatedStockLogs[idx - 1], log)
+                }"
+              >
                 <!-- Left Reason Badge -->
                 <div class="log-badge-wrapper">
                   <div class="log-badge" :class="'stock-reason-' + getStockLogCategory(log)">
@@ -1680,10 +1686,10 @@
               <div 
                 v-if="isReportCookPair(log, paginatedStockLogs[idx + 1])" 
                 class="flex flex-center align-center" 
-                style="margin: -6px 0; z-index: 2; position: relative;"
+                style="margin: -11px 0; z-index: 3; position: relative; pointer-events: none;"
               >
                 <div 
-                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.06);"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.08);"
                 >
                   <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
                   <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
@@ -5380,6 +5386,23 @@ select.reports-filter-control,
 /* Custom Stock Quick Filter Pills & Stock Log Cards */
 .stock-log-card {
   align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.stock-log-card.cook-pair-top {
+  margin-bottom: 0;
+  border-bottom-style: dashed;
+  border-bottom-color: rgba(234, 88, 12, 0.45);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.stock-log-card.cook-pair-bottom {
+  margin-top: -1.5px;
+  border-top-style: dashed;
+  border-top-color: rgba(16, 185, 129, 0.45);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .log-badge.stock-reason-restock, .log-badge.stock-reason-restock_ck, .log-badge.stock-reason-cook_ready { background: rgba(16, 185, 129, 0.12); color: #10b981; }
