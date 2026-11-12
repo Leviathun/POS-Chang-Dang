@@ -157,36 +157,19 @@
             </span>
           </div>
           
-          <!-- 3-Metric Stat Strip -->
-          <div class="sales-metrics-strip mb-lg">
-            <div class="sales-metric-box">
-              <div class="metric-icon" style="background: rgba(139, 3, 19, 0.08); color: var(--primary);">
-                <i class="fa-solid fa-coins"></i>
-              </div>
-              <div class="metric-info">
-                <div class="metric-label">ยอดขายทั้งหมด (สุทธิ)</div>
-                <div class="metric-val text-primary tabular-nums">{{ formatCurrency(displayedDailyReport.total_sales) }}</div>
-              </div>
+          <!-- Clean 3-Metric Stats Bar (No colored boxes, clean white theme) -->
+          <div class="sales-clean-summary-grid mb-lg">
+            <div class="sales-clean-stat">
+              <span class="stat-clean-label">ยอดขายทั้งหมด (สุทธิ)</span>
+              <span class="stat-clean-val text-primary tabular-nums">{{ formatCurrency(displayedDailyReport.total_sales) }}</span>
             </div>
-
-            <div class="sales-metric-box">
-              <div class="metric-icon" style="background: rgba(42, 157, 143, 0.1); color: var(--success, #2a9d8f);">
-                <i class="fa-solid fa-receipt"></i>
-              </div>
-              <div class="metric-info">
-                <div class="metric-label">จำนวนคำสั่งซื้อ</div>
-                <div class="metric-val text-success tabular-nums">{{ displayedDailyReport.total_orders }} <span style="font-size: var(--font-sm); font-weight: normal; color: var(--text-secondary);">บิล</span></div>
-              </div>
+            <div class="sales-clean-stat border-sides">
+              <span class="stat-clean-label">จำนวนคำสั่งซื้อ</span>
+              <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">{{ displayedDailyReport.total_orders }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">บิล</small></span>
             </div>
-
-            <div class="sales-metric-box">
-              <div class="metric-icon" style="background: rgba(255, 171, 43, 0.15); color: #d97706;">
-                <i class="fa-solid fa-calculator"></i>
-              </div>
-              <div class="metric-info">
-                <div class="metric-label">เฉลี่ยต่อบิล</div>
-                <div class="metric-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</div>
-              </div>
+            <div class="sales-clean-stat">
+              <span class="stat-clean-label">เฉลี่ยต่อบิล</span>
+              <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
             </div>
           </div>
 
@@ -321,9 +304,7 @@
           </div>
           
           <div v-if="displayedDailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-xl) var(--space-md);">
-            <div class="p-md rounded-circle mx-auto mb-sm" style="background: rgba(139, 3, 19, 0.05); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-              <i class="fa-regular fa-clipboard text-muted" style="font-size: 1.5rem;"></i>
-            </div>
+            <i class="fa-regular fa-clipboard" style="font-size: 2.25rem; color: var(--text-tertiary); opacity: 0.45; margin-bottom: 8px; display: inline-block;"></i>
             <div>{{ dailyOrdersEmptyLabel }}</div>
           </div>
           <div v-else class="flex flex-col gap-sm">
@@ -334,29 +315,26 @@
               :class="{ 'expanded': expandedOrderId === order.id, 'cancelled-order': order.status === 'cancelled' }"
               @click="toggleExpandOrder(order.id)"
             >
-              <!-- Order Header Row -->
+              <!-- Order Header Row (Clean, no clunky boxes) -->
               <div class="flex flex-between align-center gap-sm">
-                <div class="flex align-center gap-sm">
-                  <div class="order-id-badge" :class="order.status === 'cancelled' ? 'cancelled' : ''">
+                <div class="flex align-center gap-md">
+                  <span class="font-bold text-base tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
                     #{{ order.order_number }}
-                  </div>
-                  <div class="flex flex-col">
-                    <div class="flex align-center gap-xs" style="flex-wrap: wrap;">
-                      <span class="order-pay-pill" :class="'pay-' + order.payment_method">
-                        <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
-                        {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
-                      </span>
-                      <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
-                        <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
-                      </span>
-                      <span v-if="order.discount > 0" class="order-discount-pill tabular-nums">
-                        ลด -{{ formatCurrency(order.discount) }}
-                      </span>
-                    </div>
-                    <div class="text-xs text-muted mt-2xs flex align-center gap-xs tabular-nums">
-                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
-                      <span>{{ formatTime(order.created_at) }}</span>
-                    </div>
+                  </span>
+                  <div class="flex align-center gap-xs" style="flex-wrap: wrap;">
+                    <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
+                      <span>{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
+                    </span>
+                    <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
+                      <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
+                    </span>
+                    <span v-if="order.discount > 0" class="order-discount-pill tabular-nums">
+                      ลด -{{ formatCurrency(order.discount) }}
+                    </span>
+                    <span class="text-xs text-muted tabular-nums ml-xs">
+                      <i class="fa-regular fa-clock mr-2xs" style="font-size: 0.7rem;"></i>{{ formatTime(order.created_at) }}
+                    </span>
                   </div>
                 </div>
 
@@ -3569,7 +3547,25 @@ const loadReportData = async () => {
       }
     };
     // โหลดรายงานยอดขายหลักก่อนเพื่อให้พนักงานเห็นยอดสรุปได้ทันทีโดยไม่ติดหน้าจอโหลดนิ่ง
-    await loadMainReport();
+    try {
+      await loadMainReport();
+    } catch (err) {
+      console.warn('loadMainReport background warning:', err);
+      dailyReport.value = {
+        total_sales: 0,
+        total_orders: 0,
+        average_bill: 0,
+        cash_sales: 0,
+        cash_orders: 0,
+        qr_sales: 0,
+        qr_orders: 0,
+        gov_sales: 0,
+        gov_orders: 0,
+        delivery_sales: 0,
+        delivery_orders: 0,
+        orders: []
+      };
+    }
     loading.value = false; // ปิดสถานะการโหลดหลักทันที เพื่อให้แสดง Dashboard เร็วสุด (<0.5 วิ)
 
     // สั่งโหลดข้อมูลตารางประวัติอื่นๆ เบื้องหลังแบบขนานโดยไม่ขัดจังหวะผู้ใช้ (Background Async Load)
@@ -4685,51 +4681,50 @@ select.reports-filter-control,
   justify-content: center;
 }
 
-/* 3-Metric Stat Strip */
-.sales-metrics-strip {
+/* Clean 3-Metric Stats Grid (Pure White, No Cream) */
+.sales-clean-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
   gap: var(--space-md);
 }
 @media (max-width: 640px) {
-  .sales-metrics-strip {
+  .sales-clean-summary-grid {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+  .sales-clean-stat.border-sides {
+    border-left: none !important;
+    border-right: none !important;
+    border-top: 1px dashed var(--border-color);
+    border-bottom: 1px dashed var(--border-color);
+    padding: var(--space-xs) 0 !important;
   }
 }
-.sales-metric-box {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  background: var(--bg-primary, #fffdfa);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-}
-.sales-metric-box .metric-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-.sales-metric-box .metric-info {
+.sales-clean-stat {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
-.sales-metric-box .metric-label {
+.sales-clean-stat.border-sides {
+  border-left: 1px dashed var(--border-color);
+  border-right: 1px dashed var(--border-color);
+  padding: 0 var(--space-lg);
+}
+.stat-clean-label {
   font-size: var(--font-xs);
   color: var(--text-secondary);
+  margin-bottom: 4px;
   font-weight: 500;
 }
-.sales-metric-box .metric-val {
-  font-size: var(--font-lg);
+.stat-clean-val {
+  font-size: 1.4rem;
   font-weight: 800;
   line-height: 1.2;
-  margin-top: 2px;
 }
 
 /* Payment Ratio Multi-Color Bar */
