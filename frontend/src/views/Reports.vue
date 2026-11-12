@@ -1553,37 +1553,57 @@
       </div>
 
       <!-- Per-Staff Credit Breakdown Card (Visible when staff_benefit filter active) -->
-      <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md" style="background: #ffffff; border: 1.5px solid rgba(234, 88, 12, 0.35); border-radius: var(--radius-md);">
-        <div class="flex flex-between align-center mb-sm flex-wrap gap-xs">
+      <div v-if="stockReasonFilter === 'staff_benefit' && staffCreditBreakdown.length > 0" class="card p-md" style="background: #ffffff; border: 1.5px solid rgba(234, 88, 12, 0.3); border-radius: var(--radius-md); box-shadow: 0 2px 10px rgba(234, 88, 12, 0.05);">
+        <div class="flex flex-between align-center mb-md pb-xs flex-wrap gap-xs" style="border-bottom: 1px dashed rgba(234, 88, 12, 0.25);">
           <div class="font-bold text-sm flex align-center gap-xs" style="color: #ea580c;">
-            <i class="fa-solid fa-users-viewfinder"></i> สรุปเครดิตพนักงานรายคน
+            <span class="flex align-center justify-center" style="width: 28px; height: 28px; border-radius: 8px; background: rgba(234, 88, 12, 0.12); color: #ea580c;">
+              <i class="fa-solid fa-users-viewfinder"></i>
+            </span>
+            <span>สรุปเครดิตพนักงานรายคน ({{ staffCreditBreakdown.length }} คน)</span>
           </div>
-          <div class="text-xs font-bold tabular-nums" style="color: var(--text-secondary);">
-            รวม: <span class="font-bold mr-xs" style="color: #ea580c;">{{ stockStaffCreditTotalQty }} ชิ้น</span>
-            <span v-if="totalStaffCreditValue > 0">| <span class="text-danger font-bold">{{ formatMoney(totalStaffCreditValue) }} ฿</span></span>
+          <div class="flex align-center gap-xs text-xs font-bold tabular-nums">
+            <span class="capsule-badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 3px 10px;">
+              รวม {{ stockStaffCreditTotalQty }} ชิ้น
+            </span>
+            <span v-if="totalStaffCreditValue > 0" class="capsule-badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 3px 10px;">
+              ฿{{ formatMoney(totalStaffCreditValue) }}
+            </span>
           </div>
         </div>
 
-        <div class="flex flex-col gap-xs">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-sm);">
           <div 
-            v-for="staff in staffCreditBreakdown" 
+            v-for="(staff, idx) in staffCreditBreakdown" 
             :key="staff.name" 
-            class="card p-sm"
-            style="background: #ffffff; border: 1.5px solid var(--border-color); border-left: 3.5px solid #ea580c; border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,0.03);"
+            class="card p-sm flex flex-col justify-between"
+            style="background: #fffaf5; border: 1.5px solid #fed7aa; border-left: 4px solid #ea580c; border-radius: var(--radius-md); box-shadow: 0 1px 4px rgba(234, 88, 12, 0.05); gap: 8px;"
           >
-            <div class="flex flex-between align-center flex-wrap gap-xs">
-              <div class="font-bold text-sm text-primary flex align-center gap-xs">
-                <i class="fa-solid fa-user-circle" style="color: #ea580c;"></i>
-                <span>{{ staff.name }}</span>
-                <span class="text-xs text-muted font-normal tabular-nums">({{ staff.log_count }} ครั้ง)</span>
+            <div class="flex flex-between align-center gap-xs">
+              <div class="flex align-center gap-xs" style="min-width: 0;">
+                <span class="flex align-center justify-center font-bold text-xs tabular-nums" style="width: 26px; height: 26px; border-radius: 50%; background: #ea580c; color: #ffffff; flex-shrink: 0;">
+                  {{ idx + 1 }}
+                </span>
+                <div style="min-width: 0;">
+                  <div class="font-bold text-sm text-primary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ staff.name }}
+                  </div>
+                  <div class="text-xs text-muted tabular-nums">เบิก {{ staff.log_count }} ครั้ง</div>
+                </div>
               </div>
-              <div class="flex align-center gap-xs tabular-nums">
-                <span class="capsule-badge badge-warning text-xs font-bold">{{ staff.total_qty }} ชิ้น</span>
-                <span v-if="staff.total_value > 0" class="capsule-badge badge-danger text-xs font-bold">{{ formatMoney(staff.total_value) }} ฿</span>
+              <div class="flex align-center gap-xs tabular-nums" style="flex-shrink: 0;">
+                <span class="capsule-badge text-xs font-bold" style="background: #ffedd5; color: #9a3412; border: 1px solid #fdba74;">{{ staff.total_qty }} ชิ้น</span>
+                <span v-if="staff.total_value > 0" class="capsule-badge text-xs font-bold" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;">฿{{ formatMoney(staff.total_value) }}</span>
               </div>
             </div>
-            <div class="text-xs text-secondary mt-xs" style="line-height: 1.4;">
-              {{ staff.items_summary }}
+            <div class="flex flex-wrap gap-xs pt-xs" style="border-top: 1px dashed rgba(234, 88, 12, 0.18);">
+              <span
+                v-for="item in staff.items_list"
+                :key="item.name"
+                class="text-xs tabular-nums"
+                style="background: #ffffff; color: var(--text-primary); border: 1px solid #fed7aa; border-radius: 6px; padding: 2px 8px; font-weight: 600;"
+              >
+                {{ item.name }} <span style="color: #ea580c; font-weight: 700;">x{{ item.qty }}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -2950,7 +2970,7 @@ const paginatedActivityLogs = computed(() => {
 
 // Pagination & Filtering States for Stock Logs
 const stockLogsCurrentPage = ref(1);
-const stockLogsPerPage = 15;
+const stockLogsPerPage = 16;
 const stockReasonFilter = ref('all'); // 'all', 'waste', 'staff_benefit', 'restock', 'adjustment'
 let stockFilterSkeletonTimer = null;
 watch(stockReasonFilter, () => {
@@ -3235,15 +3255,30 @@ const stockStaffCreditTotalQty = computed(() => {
   if (!Array.isArray(stockStaffCreditLogs.value)) return 0;
   return stockStaffCreditLogs.value.reduce((sum, l) => sum + Math.abs(Number(l?.change_qty) || 0), 0);
 });
+const extractStaffCreditName = (log) => {
+  if (!log) return 'พนักงาน';
+  const raw = String(log.note || log.staff_name || '').replace(/^\[.*?\]\s*/, '').trim();
+  return raw || String(log.staff_name || '').trim() || 'พนักงาน';
+};
+
+const getStockLogMonetaryValue = (log) => {
+  if (!log) return 0;
+  const qty = Math.abs(Number(log.change_qty) || 0);
+  let price = Number(log.item_price) || 0;
+  if (!price && Array.isArray(store.stockItems)) {
+    const found = store.stockItems.find(item => item && (item.id === log.menu_item_id || item.name === log.item_name));
+    if (found && found.price) price = Number(found.price) || 0;
+  }
+  return qty * price;
+};
+
 const stockStaffCreditSummaryText = computed(() => {
   try {
     if (!Array.isArray(stockStaffCreditLogs.value) || stockStaffCreditLogs.value.length === 0) return 'ไม่มีบันทึกแจกพนักงานในช่วงเวลานี้';
     const staffMap = {};
     stockStaffCreditLogs.value.forEach(l => {
       if (!l) return;
-      let staff = l.note || l.staff_name || 'พนักงาน';
-      if (!staff || typeof staff !== 'string' || staff.trim() === '') staff = 'พนักงาน';
-      staff = staff.trim();
+      const staff = extractStaffCreditName(l);
       staffMap[staff] = (staffMap[staff] || 0) + Math.abs(Number(l.change_qty) || 0);
     });
     const sorted = Object.entries(staffMap).sort((a, b) => b[1] - a[1]);
@@ -3259,23 +3294,12 @@ const staffCreditBreakdown = computed(() => {
   try {
     if (!Array.isArray(stockStaffCreditLogs.value) || stockStaffCreditLogs.value.length === 0) return [];
     const staffMap = {};
-    const stockItems = Array.isArray(store.stockItems) ? store.stockItems : [];
 
     stockStaffCreditLogs.value.forEach(log => {
       if (!log) return;
-      let staffName = log.note || log.staff_name || 'พนักงาน';
-      if (!staffName || typeof staffName !== 'string' || staffName.trim() === '') staffName = 'พนักงาน';
-      staffName = staffName.trim();
-
+      const staffName = extractStaffCreditName(log);
       const qty = Math.abs(Number(log.change_qty) || 0);
-
-      let price = 0;
-      const foundItem = stockItems.find(item => item && (item.id === log.menu_item_id || item.name === log.item_name));
-      if (foundItem && foundItem.price) {
-        price = Number(foundItem.price) || 0;
-      }
-
-      const logValue = qty * price;
+      const logValue = getStockLogMonetaryValue(log);
 
       if (!staffMap[staffName]) {
         staffMap[staffName] = {
@@ -3296,13 +3320,11 @@ const staffCreditBreakdown = computed(() => {
     });
 
     const result = Object.values(staffMap).map(s => {
-      const sortedItems = Object.entries(s.item_counts || {})
-        .sort((a, b) => b[1] - a[1])
-        .map(([name, qty]) => `${name} x${qty}`)
-        .join(', ');
+      const sortedEntries = Object.entries(s.item_counts || {}).sort((a, b) => b[1] - a[1]);
       return {
         ...s,
-        items_summary: sortedItems
+        items_list: sortedEntries.map(([name, qty]) => ({ name, qty })),
+        items_summary: sortedEntries.map(([name, qty]) => `${name} x${qty}`).join(', ')
       };
     });
 
@@ -3313,17 +3335,6 @@ const staffCreditBreakdown = computed(() => {
     return [];
   }
 });
-
-const getStockLogMonetaryValue = (log) => {
-  if (!log) return 0;
-  const qty = Math.abs(Number(log.change_qty) || 0);
-  let price = Number(log.item_price) || 0;
-  if (!price && Array.isArray(store.stockItems)) {
-    const found = store.stockItems.find(item => item && (item.id === log.menu_item_id || item.name === log.item_name));
-    if (found && found.price) price = Number(found.price) || 0;
-  }
-  return qty * price;
-};
 
 const totalWasteValue = computed(() => {
   if (!Array.isArray(stockWasteLogs.value)) return 0;
@@ -3351,20 +3362,41 @@ const totalRestockValue = computed(() => {
 });
 
 const stockLogsCardRef = ref(null);
-const totalStockLogsPages = computed(() => {
-  const count = Array.isArray(filteredStockLogs.value) ? filteredStockLogs.value.length : 0;
-  return Math.ceil(count / stockLogsPerPage) || 1;
+const stockLogPages = computed(() => {
+  const list = Array.isArray(filteredStockLogs.value) ? filteredStockLogs.value : [];
+  if (list.length === 0) return [];
+  const pages = [];
+  let currentPage = [];
+  let i = 0;
+  while (i < list.length) {
+    const isPair = i + 1 < list.length && isReportCookPair(list[i], list[i + 1]);
+    if (isPair) {
+      if (currentPage.length + 2 > stockLogsPerPage && currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+      }
+      currentPage.push(list[i], list[i + 1]);
+      i += 2;
+    } else {
+      if (currentPage.length + 1 > stockLogsPerPage && currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+      }
+      currentPage.push(list[i]);
+      i += 1;
+    }
+  }
+  if (currentPage.length > 0) pages.push(currentPage);
+  return pages;
 });
+const totalStockLogsPages = computed(() => stockLogPages.value.length || 1);
 const changeStockLogsPage = (newPage) => {
   if (newPage < 1 || newPage > totalStockLogsPages.value) return;
   stockLogsCurrentPage.value = newPage;
   scrollToRef(stockLogsCardRef);
 };
 const paginatedStockLogs = computed(() => {
-  if (!Array.isArray(filteredStockLogs.value)) return [];
-  const start = (stockLogsCurrentPage.value - 1) * stockLogsPerPage;
-  const end = start + stockLogsPerPage;
-  return filteredStockLogs.value.slice(start, end);
+  return stockLogPages.value[stockLogsCurrentPage.value - 1] || [];
 });
 
 const loadStockHistoryLogs = async () => {
