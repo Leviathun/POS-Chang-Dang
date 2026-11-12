@@ -110,156 +110,318 @@
       <!-- Tab 1: Sales (ยอดขาย) -->
       <div v-if="activeTab === 'sales'" class="flex flex-col gap-lg">
         
-        <!-- Top summary widgets (moved inside Tab 1) -->
+        <!-- Top summary widgets (Elevated Retro Cards) -->
         <div class="grid grid-2 gap-md">
-          <div class="card text-center p-md">
-            <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดขายวันนี้</div>
-            <div class="font-bold text-primary text-xl">{{ formatCurrency(summary.today_sales) }}</div>
-            <div class="text-xs text-muted" style="margin-top: 2px;">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</div>
+          <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(139, 3, 19, 0.15); background: #ffffff; position: relative; overflow: hidden;">
+            <div class="flex flex-center align-center gap-xs text-xs text-secondary mb-xs font-semibold">
+              <span class="sales-kpi-icon-badge" style="background: rgba(139, 3, 19, 0.08); color: var(--primary);">
+                <i class="fa-solid fa-sun"></i>
+              </span>
+              <span>ยอดขายวันนี้</span>
+            </div>
+            <div class="font-bold text-primary tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px;">
+              {{ formatCurrency(summary.today_sales) }}
+            </div>
+            <div class="inline-flex align-center gap-xs px-sm py-2xs rounded-pill" style="background: rgba(139, 3, 19, 0.06); color: var(--primary); font-size: var(--font-xs); font-weight: 600;">
+              <i class="fa-solid fa-receipt"></i>
+              <span class="tabular-nums">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</span>
+            </div>
           </div>
-          <div class="card text-center p-md">
-            <div class="text-xs text-secondary" style="margin-bottom: 2px;">ยอดรวมเดือนนี้</div>
-            <div class="font-bold text-accent text-xl">{{ formatCurrency(summary.month_sales) }}</div>
-            <div class="text-xs text-muted" style="margin-top: 2px;">{{ summary.month_orders }} รายการขาย</div>
+
+          <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(217, 119, 6, 0.2); background: #ffffff; position: relative; overflow: hidden;">
+            <div class="flex flex-center align-center gap-xs text-xs text-secondary mb-xs font-semibold">
+              <span class="sales-kpi-icon-badge" style="background: rgba(217, 119, 6, 0.1); color: #d97706;">
+                <i class="fa-solid fa-calendar-check"></i>
+              </span>
+              <span>ยอดรวมเดือนนี้</span>
+            </div>
+            <div class="font-bold tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px; color: #b45309;">
+              {{ formatCurrency(summary.month_sales) }}
+            </div>
+            <div class="inline-flex align-center gap-xs px-sm py-2xs rounded-pill" style="background: rgba(217, 119, 6, 0.08); color: #b45309; font-size: var(--font-xs); font-weight: 600;">
+              <i class="fa-solid fa-bag-shopping"></i>
+              <span class="tabular-nums">{{ summary.month_orders }} รายการขาย</span>
+            </div>
           </div>
         </div>
 
-        <!-- Daily Summary Card -->
-        <div class="card">
-          <div class="card-title text-sm"><i class="fa-solid fa-chart-simple" style="margin-right: 6px;"></i> {{ summaryCardTitle }}</div>
+        <!-- Daily / Period Summary Card -->
+        <div class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color);">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
+              <i class="fa-solid fa-chart-pie"></i>
+              <span>{{ summaryCardTitle }}</span>
+            </div>
+            <span class="badge tabular-nums" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); font-size: var(--font-xs); font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+              {{ displayedDailyReport.total_orders }} ออเดอร์
+            </span>
+          </div>
           
-          <div class="flex flex-between mb-sm text-sm">
-            <span>ยอดขายทั้งหมด (สุทธิ):</span>
-            <strong class="text-accent text-md">{{ formatCurrency(displayedDailyReport.total_sales) }}</strong>
-          </div>
-          <div class="flex flex-between mb-sm text-sm">
-            <span>จำนวนคำสั่งซื้อ:</span>
-            <span>{{ displayedDailyReport.total_orders }} บิล</span>
-          </div>
-          <div class="flex flex-between mb-sm text-sm">
-            <span>เฉลี่ยต่อบิล:</span>
-            <span>{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
+          <!-- 3-Metric Stat Strip -->
+          <div class="sales-metrics-strip mb-lg">
+            <div class="sales-metric-box">
+              <div class="metric-icon" style="background: rgba(139, 3, 19, 0.08); color: var(--primary);">
+                <i class="fa-solid fa-coins"></i>
+              </div>
+              <div class="metric-info">
+                <div class="metric-label">ยอดขายทั้งหมด (สุทธิ)</div>
+                <div class="metric-val text-primary tabular-nums">{{ formatCurrency(displayedDailyReport.total_sales) }}</div>
+              </div>
+            </div>
+
+            <div class="sales-metric-box">
+              <div class="metric-icon" style="background: rgba(42, 157, 143, 0.1); color: var(--success, #2a9d8f);">
+                <i class="fa-solid fa-receipt"></i>
+              </div>
+              <div class="metric-info">
+                <div class="metric-label">จำนวนคำสั่งซื้อ</div>
+                <div class="metric-val text-success tabular-nums">{{ displayedDailyReport.total_orders }} <span style="font-size: var(--font-sm); font-weight: normal; color: var(--text-secondary);">บิล</span></div>
+              </div>
+            </div>
+
+            <div class="sales-metric-box">
+              <div class="metric-icon" style="background: rgba(255, 171, 43, 0.15); color: #d97706;">
+                <i class="fa-solid fa-calculator"></i>
+              </div>
+              <div class="metric-info">
+                <div class="metric-label">เฉลี่ยต่อบิล</div>
+                <div class="metric-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</div>
+              </div>
+            </div>
           </div>
 
-          <div class="divider"></div>
+          <!-- Payment Proportion Progress Bar -->
+          <div class="payment-ratio-section mb-md" v-if="displayedDailyReport.total_sales > 0">
+            <div class="flex flex-between align-center mb-xs text-xs text-secondary font-semibold">
+              <span class="flex align-center gap-xs">
+                <i class="fa-solid fa-chart-bar text-primary"></i>
+                <span>สัดส่วนช่องทางชำระเงิน</span>
+              </span>
+              <span class="tabular-nums font-bold text-primary">{{ formatCurrency(displayedDailyReport.total_sales) }}</span>
+            </div>
+            <!-- Multi-Color Visual Ratio Bar -->
+            <div class="payment-ratio-bar">
+              <div 
+                v-if="displayedDailyReport.cash_sales > 0" 
+                class="ratio-seg seg-cash" 
+                :style="{ width: getPaymentPct(displayedDailyReport.cash_sales) + '%' }"
+                :title="'เงินสด: ' + getPaymentPct(displayedDailyReport.cash_sales) + '%'"
+              ></div>
+              <div 
+                v-if="displayedDailyReport.qr_sales > 0" 
+                class="ratio-seg seg-qr" 
+                :style="{ width: getPaymentPct(displayedDailyReport.qr_sales) + '%' }"
+                :title="'QR Code: ' + getPaymentPct(displayedDailyReport.qr_sales) + '%'"
+              ></div>
+              <div 
+                v-if="displayedDailyReport.gov_sales > 0" 
+                class="ratio-seg seg-gov" 
+                :style="{ width: getPaymentPct(displayedDailyReport.gov_sales) + '%' }"
+                :title="'โครงการรัฐ: ' + getPaymentPct(displayedDailyReport.gov_sales) + '%'"
+              ></div>
+              <div 
+                v-if="displayedDailyReport.delivery_sales > 0" 
+                class="ratio-seg seg-delivery" 
+                :style="{ width: getPaymentPct(displayedDailyReport.delivery_sales) + '%' }"
+                :title="'เดลิเวอรี: ' + getPaymentPct(displayedDailyReport.delivery_sales) + '%'"
+              ></div>
+            </div>
+          </div>
           
-          <!-- Payment Methods Breakdowns -->
+          <!-- Payment Methods 4 Cards Grid -->
           <div class="payment-methods-grid">
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-money-bill-wave" style="color: var(--success);"></i> เงินสด</div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            <!-- 1. Cash -->
+            <div class="p-sm card pay-card pay-card-cash">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-money-bill-wave" style="color: #10b981;"></i>
+                  <span>เงินสด</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.cash_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.cash_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.cash_orders }} บิล</div>
-            </div>
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i>
-                <span class="hide-mobile">QR Code</span>
-                <span class="show-mobile-inline">QR</span>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.cash_orders }} บิล
               </div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            </div>
+
+            <!-- 2. QR Code -->
+            <div class="p-sm card pay-card pay-card-qr">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-qrcode text-primary"></i>
+                  <span>QR Code</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.qr_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.qr_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.qr_orders }} บิล</div>
-            </div>
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-landmark" style="color: var(--accent);"></i>
-                <span class="hide-mobile">โครงการรัฐ</span>
-                <span class="show-mobile-inline">รัฐ</span>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.qr_orders }} บิล
               </div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            </div>
+
+            <!-- 3. Gov -->
+            <div class="p-sm card pay-card pay-card-gov">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-landmark" style="color: #3b82f6;"></i>
+                  <span>โครงการรัฐ</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.gov_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.gov_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.gov_orders }} บิล</div>
-            </div>
-            <div class="p-xs card card-flat-secondary">
-              <div style="color:var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-motorcycle" style="color: #ff9500;"></i>
-                <span class="hide-mobile">เดลิเวอรี</span>
-                <span class="show-mobile-inline">เดลิ</span>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.gov_orders }} บิล
               </div>
-              <div class="font-bold" style="font-size:var(--font-base); margin-top:2px;">
+            </div>
+
+            <!-- 4. Delivery -->
+            <div class="p-sm card pay-card pay-card-delivery">
+              <div class="flex flex-between align-center mb-xs">
+                <span class="pay-title inline-flex align-center gap-xs">
+                  <i class="fa-solid fa-motorcycle" style="color: #ea580c;"></i>
+                  <span>เดลิเวอรี</span>
+                </span>
+                <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
+                  {{ getPaymentPct(displayedDailyReport.delivery_sales) }}%
+                </span>
+              </div>
+              <div class="pay-amount tabular-nums">
                 {{ formatCurrency(displayedDailyReport.delivery_sales) }}
               </div>
-              <div style="color:var(--text-tertiary);">{{ displayedDailyReport.delivery_orders }} บิล</div>
+              <div class="pay-count text-muted tabular-nums">
+                {{ displayedDailyReport.delivery_orders }} บิล
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Today's Transaction Logs (ALL ROLES) -->
-        <div class="card">
-          <div class="card-header-clean">
-            <div class="card-title card-title-clean"><i class="fa-solid fa-list mr-xs"></i> {{ dailyOrdersListTitle }}</div>
+        <div class="card p-lg" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+          <div class="flex flex-between align-center mb-md pb-xs" style="border-bottom: 1.5px dashed var(--border-color);">
+            <div class="card-title text-base font-bold flex align-center gap-xs" style="color: var(--primary); margin-bottom: 0;">
+              <i class="fa-solid fa-list-check"></i>
+              <span>{{ dailyOrdersListTitle }}</span>
+            </div>
+            <span class="text-xs text-secondary font-medium tabular-nums" v-if="displayedDailyReport.orders?.length > 0">
+              รวม {{ displayedDailyReport.orders.length }} รายการ
+            </span>
           </div>
           
-          <div v-if="displayedDailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-md);">
-            {{ dailyOrdersEmptyLabel }}
+          <div v-if="displayedDailyReport.orders?.length === 0" style="font-size:var(--font-sm); color:var(--text-tertiary); text-align:center; padding: var(--space-xl) var(--space-md);">
+            <div class="p-md rounded-circle mx-auto mb-sm" style="background: rgba(139, 3, 19, 0.05); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+              <i class="fa-regular fa-clipboard text-muted" style="font-size: 1.5rem;"></i>
+            </div>
+            <div>{{ dailyOrdersEmptyLabel }}</div>
           </div>
           <div v-else class="flex flex-col gap-sm">
             <div 
               v-for="order in paginatedDailyReportOrders" 
               :key="order.id" 
-              class="p-sm card"
-              style="font-size:var(--font-sm); background: var(--bg-primary); display:flex; flex-direction:column; gap:2px; cursor:pointer;"
+              class="p-md card order-report-card"
+              :class="{ 'expanded': expandedOrderId === order.id, 'cancelled-order': order.status === 'cancelled' }"
               @click="toggleExpandOrder(order.id)"
             >
-              <div class="flex flex-between font-bold">
-                <span :style="order.status === 'cancelled' ? 'text-decoration:line-through; opacity:0.5;' : ''">
-                  #{{ order.order_number }}
-                </span>
-                <div>
-                  <span v-if="order.status === 'cancelled'" class="text-danger" style="font-size:var(--font-xs); margin-right:4px;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 4px;"></i> ยกเลิก</span>
-                  <span v-if="order.discount > 0" class="badge animate-fade-in" style="font-size:var(--font-xs); background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.2); padding: 2px 6px; border-radius: var(--radius-sm); margin-right: 6px; font-weight: normal;">ลด -{{ formatCurrency(order.discount) }}</span>
-                  <span :class="order.status === 'cancelled' ? 'text-danger' : 'text-accent'">{{ formatCurrency(order.total) }}</span>
+              <!-- Order Header Row -->
+              <div class="flex flex-between align-center gap-sm">
+                <div class="flex align-center gap-sm">
+                  <div class="order-id-badge" :class="order.status === 'cancelled' ? 'cancelled' : ''">
+                    #{{ order.order_number }}
+                  </div>
+                  <div class="flex flex-col">
+                    <div class="flex align-center gap-xs" style="flex-wrap: wrap;">
+                      <span class="order-pay-pill" :class="'pay-' + order.payment_method">
+                        <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
+                        {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
+                      </span>
+                      <span v-if="order.status === 'cancelled'" class="order-status-pill pill-cancelled">
+                        <i class="fa-solid fa-ban mr-xs"></i> ยกเลิก
+                      </span>
+                      <span v-if="order.discount > 0" class="order-discount-pill tabular-nums">
+                        ลด -{{ formatCurrency(order.discount) }}
+                      </span>
+                    </div>
+                    <div class="text-xs text-muted mt-2xs flex align-center gap-xs tabular-nums">
+                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <span>{{ formatTime(order.created_at) }}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="flex flex-between" style="font-size:var(--font-xs); color:var(--text-secondary); margin-top:2px;">
-                <span style="display: inline-flex; align-items: center; gap: 4px;">
-                  <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'"></i>
-                  {{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}
-                </span>
-                <span>เวลา: {{ formatTime(order.created_at) }}</span>
-              </div>
-              <div v-if="order.cancel_reason" style="font-size: var(--font-xs); color: #ff3b30; border-left: 2px solid #ff3b30; padding-left:6px; margin-top:4px;">
-                เหตุผลยกเลิก: {{ order.cancel_reason }}
+
+                <div class="flex align-center gap-sm">
+                  <div class="text-right">
+                    <div class="order-total-amount tabular-nums" :class="order.status === 'cancelled' ? 'text-muted strike' : 'text-primary'">
+                      {{ formatCurrency(order.total) }}
+                    </div>
+                  </div>
+                  <div class="order-chevron-btn" :class="{ 'rotate': expandedOrderId === order.id }">
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </div>
+                </div>
               </div>
 
-              <!-- Expandable: Order Items Detail -->
-              <div v-if="expandedOrderId === order.id" style="margin-top:var(--space-sm); padding-top:var(--space-sm); border-top:1px dashed var(--border-color);">
-                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center;">กำลังโหลด...</div>
-                <div v-else>
-                  <div v-for="item in expandedItems" :key="item.id" class="flex flex-between" style="font-size:var(--font-sm); padding:2px 0;">
-                    <span>{{ item.item_name }} x{{ item.quantity }}</span>
-                    <span>{{ formatCurrency(item.subtotal) }}</span>
-                  </div>
-                  <!-- Discount Info if applied -->
-                  <div v-if="order.discount > 0" style="margin-top: 6px; border-top: 1px dashed var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: var(--font-xs); color: var(--text-secondary);">
-                    <div class="flex flex-between">
-                      <span>ยอดรวม (ก่อนหัก):</span>
-                      <span>{{ formatCurrency(order.subtotal) }}</span>
+              <!-- Cancel Reason Box -->
+              <div v-if="order.cancel_reason" class="order-cancel-reason-box mt-xs">
+                <i class="fa-solid fa-triangle-exclamation mr-xs"></i>
+                <span>เหตุผลยกเลิก: {{ order.cancel_reason }}</span>
+              </div>
+
+              <!-- Expandable: Order Items Detail Drawer -->
+              <div v-if="expandedOrderId === order.id" class="order-drawer-content mt-sm pt-sm" @click.stop>
+                <div v-if="expandedItems.length === 0" style="font-size:var(--font-xs); color:var(--text-tertiary); text-align:center; padding: var(--space-sm);">
+                  <i class="fa-solid fa-spinner fa-spin mr-xs"></i> กำลังโหลดรายการอาหาร...
+                </div>
+                <div v-else class="order-items-table">
+                  <div v-for="item in expandedItems" :key="item.id" class="order-item-row flex flex-between align-center py-xs">
+                    <div class="flex align-center gap-xs">
+                      <span class="order-item-qty tabular-nums">x{{ item.quantity }}</span>
+                      <span class="order-item-name font-medium">{{ item.item_name }}</span>
                     </div>
-                    <div class="flex flex-between font-bold" style="color: #ff3b30;">
+                    <span class="order-item-subtotal tabular-nums font-semibold">{{ formatCurrency(item.subtotal) }}</span>
+                  </div>
+
+                  <!-- Subtotal & Discount Info if applied -->
+                  <div v-if="order.discount > 0" class="order-drawer-summary pt-xs mt-xs">
+                    <div class="flex flex-between text-xs text-secondary py-2xs">
+                      <span>ยอดรวมสินค้า:</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.subtotal) }}</span>
+                    </div>
+                    <div class="flex flex-between text-xs text-danger font-semibold py-2xs">
                       <span>ส่วนลด:</span>
-                      <span>-{{ formatCurrency(order.discount) }}</span>
+                      <span class="tabular-nums">-{{ formatCurrency(order.discount) }}</span>
+                    </div>
+                    <div class="flex flex-between text-sm font-bold text-primary pt-2xs" style="border-top: 1px dashed var(--border-color);">
+                      <span>ยอดสุทธิ:</span>
+                      <span class="tabular-nums">{{ formatCurrency(order.total) }}</span>
                     </div>
                   </div>
                 </div>
+
                 <!-- Void Button (only for completed orders) -->
                 <button 
                   v-if="order.status === 'completed'" 
-                  class="btn btn-sm" 
-                  style="margin-top:var(--space-sm); width:100%; background:rgba(255,59,48,0.1); color:#ff3b30; border:1px solid rgba(255,59,48,0.3); min-height:40px; font-size:var(--font-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
+                  class="btn btn-block mt-md order-void-btn" 
                   @click.stop="openVoidModal(order)"
                 >
-                  <i class="fa-solid fa-trash-can"></i> ลบบิลนี้
+                  <i class="fa-solid fa-trash-can mr-xs"></i> ลบบิลนี้
                 </button>
               </div>
             </div>
 
             <!-- Pagination UI for Daily Orders -->
-            <div v-if="totalDailyOrdersPages > 1" class="pagination-bar flex flex-center align-center gap-md">
+            <div v-if="totalDailyOrdersPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
               <button 
                 class="pagination-btn" 
                 :disabled="dailyOrdersCurrentPage === 1" 
@@ -267,7 +429,7 @@
               >
                 <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
               </button>
-              <span class="pagination-info">
+              <span class="pagination-info tabular-nums">
                 หน้า {{ dailyOrdersCurrentPage }} / {{ totalDailyOrdersPages }}
               </span>
               <button 
@@ -2505,6 +2667,12 @@ const displayedDailyReport = computed(() => {
   };
 });
 
+const getPaymentPct = (sales) => {
+  const total = Number(displayedDailyReport.value?.total_sales) || 0;
+  if (total <= 0) return 0;
+  return Math.round(((Number(sales) || 0) / total) * 100);
+};
+
 const dailyOrdersCurrentPage = ref(1);
 const dailyOrdersPerPage = 15;
 const totalDailyOrdersPages = computed(() => {
@@ -4500,6 +4668,88 @@ select.reports-filter-control,
   box-shadow: 0 2px 6px rgba(139,3,19,0.2) !important;
 }
 
+/* --- Sales Tab Elevated Styling --- */
+.sales-kpi-card {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.sales-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 3, 19, 0.08) !important;
+}
+.sales-kpi-icon-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 3-Metric Stat Strip */
+.sales-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+@media (max-width: 640px) {
+  .sales-metrics-strip {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+}
+.sales-metric-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-primary, #fffdfa);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+.sales-metric-box .metric-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.sales-metric-box .metric-info {
+  display: flex;
+  flex-direction: column;
+}
+.sales-metric-box .metric-label {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.sales-metric-box .metric-val {
+  font-size: var(--font-lg);
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Payment Ratio Multi-Color Bar */
+.payment-ratio-bar {
+  display: flex;
+  height: 10px;
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+}
+.ratio-seg {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.ratio-seg.seg-cash { background: #10b981; }
+.ratio-seg.seg-qr { background: var(--primary, #8b0313); }
+.ratio-seg.seg-gov { background: #3b82f6; }
+.ratio-seg.seg-delivery { background: #ea580c; }
+
 /* Payment Methods Grid */
 .payment-methods-grid {
   display: grid;
@@ -4512,6 +4762,160 @@ select.reports-filter-control,
   .payment-methods-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+}
+
+.pay-card {
+  border: 1.5px solid var(--border-color) !important;
+  background: #ffffff !important;
+  transition: all var(--transition-base);
+}
+.pay-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.pay-card.pay-card-cash { border-left: 3px solid #10b981 !important; }
+.pay-card.pay-card-qr { border-left: 3px solid var(--primary, #8b0313) !important; }
+.pay-card.pay-card-gov { border-left: 3px solid #3b82f6 !important; }
+.pay-card.pay-card-delivery { border-left: 3px solid #ea580c !important; }
+
+.pay-card .pay-title {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.pay-card .pay-pct-badge {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+.pay-card .pay-amount {
+  font-size: var(--font-base);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+.pay-card .pay-count {
+  font-size: var(--font-xs);
+}
+
+/* Order Report Cards */
+.order-report-card {
+  background: #ffffff !important;
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+.order-report-card:hover {
+  border-color: rgba(139, 3, 19, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.06);
+}
+.order-report-card.cancelled-order {
+  background: #fafafa !important;
+  opacity: 0.75;
+}
+.order-id-badge {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  font-weight: 800;
+  font-size: var(--font-sm);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+.order-id-badge.cancelled {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.order-pay-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.order-pay-pill.pay-cash { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.order-pay-pill.pay-qr { background: rgba(139, 3, 19, 0.08); color: var(--primary); }
+.order-pay-pill.pay-gov { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+.order-pay-pill.pay-delivery { background: rgba(234, 88, 12, 0.1); color: #ea580c; }
+
+.order-status-pill.pill-cancelled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.order-discount-pill {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed rgba(239, 68, 68, 0.3);
+}
+.order-total-amount {
+  font-size: var(--font-base);
+  font-weight: 800;
+}
+.order-total-amount.strike {
+  text-decoration: line-through;
+}
+.order-chevron-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+.order-chevron-btn.rotate {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+.order-cancel-reason-box {
+  background: rgba(239, 68, 68, 0.06);
+  border-left: 3px solid #dc2626;
+  padding: 6px 10px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: var(--font-xs);
+  color: #dc2626;
+}
+.order-drawer-content {
+  border-top: 1px dashed var(--border-color);
+}
+.order-item-qty {
+  background: rgba(139, 3, 19, 0.06);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+.order-void-btn {
+  border: 1.5px solid rgba(239, 68, 68, 0.3) !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+  color: #dc2626 !important;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 8px var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+.order-void-btn:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
 }
 
 .btn-delete-action {
