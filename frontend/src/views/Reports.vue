@@ -4221,24 +4221,23 @@ select.reports-filter-control,
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  max-height: 480px;
-  overflow-y: auto;
-  padding-right: 4px;
 }
 
 .activity-log-item {
   display: flex;
   gap: var(--space-md);
   padding: var(--space-md);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
+  box-shadow: 0 2px 6px rgba(61, 27, 17, 0.03);
   transition: all var(--transition-base);
 }
 
 .activity-log-item:hover {
-  background: var(--bg-secondary);
-  border-color: var(--border-color-focus);
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.06);
 }
 
 .log-badge-wrapper {
