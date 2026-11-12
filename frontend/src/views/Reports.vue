@@ -110,19 +110,17 @@
       <!-- Tab 1: Sales (ยอดขาย) -->
       <div v-if="activeTab === 'sales'" class="flex flex-col gap-lg">
         
-        <!-- Top summary widgets (Elevated Retro Cards) -->
+        <!-- Top summary widgets (Clean Minimal Cards, No background colors) -->
         <div class="grid grid-2 gap-md">
           <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(139, 3, 19, 0.15); background: #ffffff; position: relative; overflow: hidden;">
             <div class="flex flex-center align-center gap-xs text-xs text-secondary mb-xs font-semibold">
-              <span class="sales-kpi-icon-badge" style="background: rgba(139, 3, 19, 0.08); color: var(--primary);">
-                <i class="fa-solid fa-sun"></i>
-              </span>
+              <i class="fa-solid fa-sack-dollar text-primary"></i>
               <span>ยอดขายวันนี้</span>
             </div>
             <div class="font-bold text-primary tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px;">
               {{ formatCurrency(summary.today_sales) }}
             </div>
-            <div class="inline-flex align-center gap-xs px-sm py-2xs rounded-pill" style="background: rgba(139, 3, 19, 0.06); color: var(--primary); font-size: var(--font-xs); font-weight: 600;">
+            <div class="inline-flex align-center gap-xs text-xs text-muted font-medium">
               <i class="fa-solid fa-receipt"></i>
               <span class="tabular-nums">{{ summary.today_orders }} บิลเสร็จสมบูรณ์</span>
             </div>
@@ -130,15 +128,13 @@
 
           <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(217, 119, 6, 0.2); background: #ffffff; position: relative; overflow: hidden;">
             <div class="flex flex-center align-center gap-xs text-xs text-secondary mb-xs font-semibold">
-              <span class="sales-kpi-icon-badge" style="background: rgba(217, 119, 6, 0.1); color: #d97706;">
-                <i class="fa-solid fa-calendar-check"></i>
-              </span>
+              <i class="fa-solid fa-calendar-check" style="color: #b45309;"></i>
               <span>ยอดรวมเดือนนี้</span>
             </div>
             <div class="font-bold tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px; color: #b45309;">
               {{ formatCurrency(summary.month_sales) }}
             </div>
-            <div class="inline-flex align-center gap-xs px-sm py-2xs rounded-pill" style="background: rgba(217, 119, 6, 0.08); color: #b45309; font-size: var(--font-xs); font-weight: 600;">
+            <div class="inline-flex align-center gap-xs text-xs text-muted font-medium">
               <i class="fa-solid fa-bag-shopping"></i>
               <span class="tabular-nums">{{ summary.month_orders }} รายการขาย</span>
             </div>
@@ -152,9 +148,6 @@
               <i class="fa-solid fa-chart-pie"></i>
               <span>{{ summaryCardTitle }}</span>
             </div>
-            <span class="badge tabular-nums" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); font-size: var(--font-xs); font-weight: 600; padding: 4px 10px; border-radius: 999px;">
-              {{ displayedDailyReport.total_orders }} ออเดอร์
-            </span>
           </div>
           
           <!-- Clean 3-Metric Stats Bar (No colored boxes, clean white theme) -->
