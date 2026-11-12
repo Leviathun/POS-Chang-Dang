@@ -5672,7 +5672,7 @@ select.reports-filter-control,
 .stock-log-right {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   gap: 4px;
   flex-shrink: 0;
