@@ -322,6 +322,11 @@
                     #{{ order.order_number }}
                   </span>
                   <div class="flex align-center gap-xs" style="flex-wrap: wrap;">
+                    <!-- 2. เวลา -->
+                    <span class="text-xs text-muted tabular-nums mr-xs">
+                      <i class="fa-regular fa-clock mr-2xs" style="font-size: 0.75rem;"></i>{{ formatTime(order.created_at) }}
+                    </span>
+                    <!-- 3. ประเภทการชำระเงิน -->
                     <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
                       <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : ''"></i>
                       <span>{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
@@ -331,9 +336,6 @@
                     </span>
                     <span v-if="order.discount > 0" class="order-discount-pill tabular-nums">
                       ลด -{{ formatCurrency(order.discount) }}
-                    </span>
-                    <span class="text-xs text-muted tabular-nums ml-xs">
-                      <i class="fa-regular fa-clock mr-2xs" style="font-size: 0.7rem;"></i>{{ formatTime(order.created_at) }}
                     </span>
                   </div>
                 </div>
@@ -387,14 +389,15 @@
                   </div>
                 </div>
 
-                <!-- Void Button (only for completed orders) -->
-                <button 
-                  v-if="order.status === 'completed'" 
-                  class="btn btn-block mt-md order-void-btn" 
-                  @click.stop="openVoidModal(order)"
-                >
-                  <i class="fa-solid fa-trash-can mr-xs"></i> ลบบิลนี้
-                </button>
+                <!-- Void Button (Aligned to the far right) -->
+                <div v-if="order.status === 'completed'" class="flex justify-end mt-md">
+                  <button 
+                    class="btn order-void-btn" 
+                    @click.stop="openVoidModal(order)"
+                  >
+                    <i class="fa-solid fa-trash-can mr-xs"></i> ลบบิลนี้
+                  </button>
+                </div>
               </div>
             </div>
 
