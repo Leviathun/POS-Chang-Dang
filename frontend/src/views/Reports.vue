@@ -3459,10 +3459,8 @@ const loadStockHistoryLogs = async () => {
     allStockHistoryLogs.value = allLogs;
 
     if (selectedReportsStockItemId.value && selectedReportsStockItemId.value !== 'all') {
-      const res = await api.stock.getLogs(selectedReportsStockItemId.value, params);
-      const rawLogs = res.data?.logs || res.data || [];
       const itemName = selectedStockItemName.value;
-      const baseLogs = Array.isArray(rawLogs) ? rawLogs.map(l => ({ ...l, item_name: l.item_name || itemName })) : [];
+      const baseLogs = allLogs.filter(l => l && (l.menu_item_id === selectedReportsStockItemId.value || (itemName && l.item_name === itemName)));
       const includedIds = new Set(baseLogs.map(l => l.id));
       const partnerLogs = [];
       for (const bLog of baseLogs) {

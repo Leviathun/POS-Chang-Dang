@@ -525,16 +525,21 @@ router.get('/logs/all', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 1000;
     const db = getDb();
-    const branchId = await resolveBranchId(db, req, true);
+    const isAllBranches = req.query.branch_id === 'all';
+    const branchId = isAllBranches ? null : await resolveBranchId(db, req, true);
 
     let query = `
       SELECT sl.*, u.name as staff_name, mi.name as item_name, mi.price as item_price, mi.uom as item_uom, mi.raw_quantity as item_raw_quantity
       FROM stock_logs sl
       LEFT JOIN users u ON u.id = sl.staff_id
       LEFT JOIN menu_items mi ON mi.id = sl.menu_item_id
-      WHERE sl.branch_id = ?
+      WHERE 1=1
     `;
-    const params = [branchId];
+    const params = [];
+    if (!isAllBranches && branchId) {
+      query += ` AND sl.branch_id = ? `;
+      params.push(branchId);
+    }
 
     query += appendStockLogDateFilter(req.query, params);
 
@@ -691,6 +696,10 @@ router.get('/:id/logs', async (req, res) => {
       WHERE sl.menu_item_id = ?
     `;
     const params = [Number(id)];
+    if (req.query.branch_id && req.query.branch_id !== 'all') {
+      query += ` AND sl.branch_id = ? `;
+      params.push(Number(req.query.branch_id));
+    }
 
     query += appendStockLogDateFilter(req.query, params);
     query += ` ORDER BY sl.created_at DESC `;
