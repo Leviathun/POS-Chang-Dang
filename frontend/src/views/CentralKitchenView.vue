@@ -8642,13 +8642,17 @@ onUnmounted(() => {
 
 
 .ck-cat-form-actions {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: var(--space-sm);
-  align-items: center;
+  align-items: stretch;
 }
 
 .ck-cat-form-actions .btn {
-  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
   border-radius: var(--radius-md) !important;
 }
 
