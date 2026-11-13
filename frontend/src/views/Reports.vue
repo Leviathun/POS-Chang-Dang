@@ -2156,7 +2156,20 @@ const isHistoryPaymentDropdownOpen = ref(false);
 const isActivityStaffDropdownOpen = ref(false);
 const isStockItemDropdownOpen = ref(false);
 
-const reportsStockItems = computed(() => store.stockItems || []);
+const reportsStockItems = computed(() => {
+  if (selectedBranchId.value && selectedBranchId.value !== 'all' && Number(selectedBranchId.value) === Number(currentUser?.branch_id)) {
+    return store.stockItems || [];
+  }
+  const byName = new Map();
+  for (const log of allStockHistoryLogs.value || []) {
+    if (log?.item_name && !byName.has(log.item_name)) {
+      byName.set(log.item_name, { id: log.menu_item_id, name: log.item_name });
+    }
+  }
+  return byName.size > 0
+    ? Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, 'th'))
+    : (store.stockItems || []);
+});
 const selectedReportsStockItemId = ref('all');
 
 const selectedStockItemName = computed(() => {
@@ -3828,6 +3841,7 @@ const toggleBranchDropdown = () => {
 
 const selectBranch = (branchId) => {
   selectedBranchId.value = branchId;
+  selectedReportsStockItemId.value = 'all';
   isBranchDropdownOpen.value = false;
   if (branchId !== null) {
     sessionStorage.setItem('selected_branch_id', String(branchId));

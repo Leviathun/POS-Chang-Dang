@@ -33,9 +33,12 @@ const getCookVerb = (name) => {
 const getCookMethodLabel = (name) => 'ของ' + getCookVerb(name);
 
 async function resolveBranchId(db, req, allowQueryOverride = false) {
+  const headerBranch = req.headers['x-branch-id'] && req.headers['x-branch-id'] !== 'all'
+    ? Number(req.headers['x-branch-id'])
+    : null;
   let branchId = (allowQueryOverride && req.query.branch_id)
     ? Number(req.query.branch_id)
-    : (req.user ? req.user.branch_id : null);
+    : (headerBranch || (req.user ? req.user.branch_id : null));
   if (!branchId) {
     const defaultBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
     branchId = defaultBranch ? defaultBranch.id : null;
