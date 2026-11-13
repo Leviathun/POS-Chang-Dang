@@ -534,8 +534,38 @@ router.delete('/branches/:id', requireAdmin, async (req, res) => {
       });
     }
 
-    // ลบสาขาและข้อมูลเมนู/สต็อก (เนื่องจากมี CASCADE ใน menu_items และตารางอื่นที่เกี่ยวข้อง)
-    await db.prepare('DELETE FROM branches WHERE id = ?').run(Number(id));
+    // ลบข้อมูลลูกที่อ้างอิง branch_id (ทั้งที่มีและไม่มี ON DELETE CASCADE) ภายใน transaction
+    const branchIdNum = Number(id);
+    const deleteBranchTx = db.transaction(async () => {
+      await db.prepare('UPDATE users SET branch_id = NULL WHERE branch_id = ? AND active = 0').run(branchIdNum);
+      await db.prepare('DELETE FROM central_kitchen_transfer_items WHERE transfer_id IN (SELECT id FROM central_kitchen_transfers WHERE branch_id = ?)').run(branchIdNum);
+      const childTables = [
+        'central_kitchen_transfers',
+        'central_kitchen_finances',
+        'branch_dividend_payouts',
+        'branch_partners',
+        'cash_drawer_sessions',
+        'employee_attendance',
+        'employee_event_ots',
+        'employee_advances',
+        'employee_payrolls',
+        'employee_guarantees',
+        'expenses',
+        'stock_logs',
+        'modifier_stock_logs',
+        'activity_logs',
+        'modifier_presets',
+        'modifiers',
+        'menu_items',
+        'categories',
+        'settings'
+      ];
+      for (const tbl of childTables) {
+        await db.prepare(`DELETE FROM ${tbl} WHERE branch_id = ?`).run(branchIdNum);
+      }
+      await db.prepare('DELETE FROM branches WHERE id = ?').run(branchIdNum);
+    });
+    await deleteBranchTx();
 
     // บันทึก Log กิจกรรมในส่วนกลาง (ไม่มีสาขาให้ระบุให้ระบุ NULL หรือสาขาแรกที่ยังเหลืออยู่)
     const remainingBranch = await db.prepare('SELECT id FROM branches LIMIT 1').get();
