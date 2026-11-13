@@ -60,37 +60,7 @@
       </div>
 
       <template v-else>
-        <!-- Branch Selector Card for Admin -->
-        <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="card diner-retro-card settings-branch-header">
-          <div class="flex flex-between align-center flex-wrap gap-md">
-            <div>
-              <div class="font-bold text-lg text-primary"><i class="fa-solid fa-store mr-xs"></i> ตั้งค่าร้านค้า & สาขา</div>
-              <div class="text-xs text-secondary">เลือกสาขาที่ต้องการดูหรือจัดการระบบหน้าร้าน</div>
-            </div>
-            <div class="custom-select-wrapper" style="min-width: 240px;" @click.stop>
-              <div 
-                class="custom-select-trigger settings-branch-trigger" 
-                :class="{ 'active': isSettingsBranchDropdownOpen }" 
-                @click="toggleSettingsBranchDropdown"
-              >
-                <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
-              </div>
-              <div v-if="isSettingsBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-                <div 
-                  v-for="b in branches" 
-                  :key="b.id" 
-                  class="custom-select-option" 
-                  :class="{ 'selected': selectedSettingsBranchId === b.id }" 
-                  @click="selectSettingsBranch(b.id)"
-                >
-                  {{ b.name }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Navigation Cards: Central Kitchen & Requisition -->
+        <!-- Quick Navigation Cards -->
         <div class="diner-modules-grid">
           <!-- 1. Central Kitchen System (Admin Only) -->
           <div v-if="currentUser?.role === 'admin'" class="card diner-module-card" :class="{ 'is-active': isCentralKitchenSession }">
@@ -102,10 +72,10 @@
                 </div>
                 <div>
                   <div class="font-bold text-base text-primary">
-                    {{ isCentralKitchenSession ? 'กำลังอยู่ในโหมด: ระบบครัวกลาง' : 'ระบบครัวกลาง (Central Kitchen)' }}
+                    {{ isCentralKitchenSession ? 'กำลังใช้งาน: ระบบครัวกลาง' : 'ระบบครัวกลาง' }}
                   </div>
                   <div class="text-xs text-secondary">
-                    {{ isCentralKitchenSession ? 'คลิกปุ่มเพื่อสลับกลับไปทำงานที่หน้าเคาน์เตอร์ขายหน้าร้าน POS' : 'บริหารคลังสินค้ากลาง, จ่ายของให้สาขา, อนุมัติคำขอเบิก, สรุปการเงินกองกลาง' }}
+                    {{ isCentralKitchenSession ? 'กดปุ่มเพื่อสลับกลับไปหน้าขายหน้าร้าน' : 'จัดการคลังกลาง จ่ายของให้สาขา และอนุมัติใบเบิก' }}
                   </div>
                 </div>
               </div>
@@ -126,7 +96,7 @@
                   @click="switchToPosBranchFromSettings"
                 >
                   <i class="fa-solid fa-store"></i>
-                  <span>สลับกลับไปหน้าร้าน POS</span>
+                  <span>สลับกลับหน้าร้าน</span>
                 </button>
               </div>
             </div>
@@ -140,13 +110,13 @@
                   <i class="fa-solid fa-boxes-packing"></i>
                 </div>
                 <div>
-                  <div class="font-bold text-base text-primary">ระบบเบิกของจากครัวกลาง (Requisition)</div>
-                  <div class="text-xs text-secondary">ส่งคำขอเบิกวัตถุดิบและสินค้าจากครัวกลางเข้ามายังสาขา</div>
+                  <div class="font-bold text-base text-primary">เบิกของจากครัวกลาง</div>
+                  <div class="text-xs text-secondary">ส่งคำขอเบิกวัตถุดิบและสินค้าเข้าสาขา</div>
                 </div>
               </div>
               <router-link 
                 to="/requisition" 
-                class="btn btn-secondary inline-flex align-center gap-xs"
+                class="btn btn-primary inline-flex align-center gap-xs"
               >
                 <i class="fa-solid fa-box-open"></i>
                 <span>ไปที่หน้าเบิกของ</span>
@@ -163,12 +133,9 @@
       <div class="card diner-retro-card flex flex-between align-center flex-wrap gap-md staff-header-card">
         <div class="flex align-center gap-md">
           <div class="diner-icon-badge"><i class="fa-solid fa-users"></i></div>
-          <div>
-            <div class="flex align-center gap-sm">
-              <span class="font-bold text-lg text-primary">จัดการพนักงานหน้าร้าน</span>
-              <span class="diner-count-pill">{{ users.length }} คน</span>
-            </div>
-            <div class="text-xs text-secondary">กำหนดสิทธิ์ บทบาท สาขา และรหัส PIN เข้าใช้งาน POS</div>
+          <div class="flex align-center gap-sm">
+            <span class="font-bold text-lg text-primary">จัดการพนักงานหน้าร้าน</span>
+            <span class="diner-count-pill">{{ users.length }} คน</span>
           </div>
         </div>
         <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
@@ -434,12 +401,9 @@
       <div class="card diner-retro-card flex flex-between align-center flex-wrap gap-md staff-header-card">
         <div class="flex align-center gap-md">
           <div class="diner-icon-badge"><i class="fa-solid fa-code-branch"></i></div>
-          <div>
-            <div class="flex align-center gap-sm">
-              <span class="font-bold text-lg text-primary">จัดการสาขาของร้าน</span>
-              <span class="diner-count-pill">{{ branches.length }} สาขา</span>
-            </div>
-            <div class="text-xs text-secondary">เพิ่ม แก้ไขชื่อสาขา และที่อยู่สำหรับออกบิลและคลังสินค้า</div>
+          <div class="flex align-center gap-sm">
+            <span class="font-bold text-lg text-primary">จัดการสาขาของร้าน</span>
+            <span class="diner-count-pill">{{ branches.length }} สาขา</span>
           </div>
         </div>
         <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
@@ -750,10 +714,10 @@
       <div class="card">
         <div class="card-title mb-sm text-base">
           <i class="fa-solid fa-cloud-arrow-down" style="margin-right: 6px; color: var(--primary);"></i> 
-          ส่งออกรายงาน & สำรองข้อมูล (Export & Backup)
+          ส่งออกรายงาน & สำรองข้อมูล
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          ดาวน์โหลดข้อมูลสรุปครบทั้ง 7 หมวดหมู่แยกเป็น 7 แถบหน้าย่อย (Worksheets) ในไฟล์ Excel (.xlsx) ได้แก่ ยอดขาย, สินค้าขายดี, ประวัติออเดอร์, ค่าใช้จ่าย, สต็อก, กิจกรรม, รอบลิ้นชัก พร้อมระบบคำนวณและปรับขนาดคอลัมน์ให้อัตโนมัติ (Auto-fit) อ่านง่าย ชัดเจน ไม่ต้องลากขยายเอง
+          ดาวน์โหลดข้อมูลสรุป 7 หมวดหมู่เป็นไฟล์ Excel แยกแถบพร้อมใช้งาน
         </p>
 
         <!-- Filters Row: Period & Branch Selector -->
@@ -829,10 +793,10 @@
             <div>
               <div class="flex align-center gap-sm mb-xs">
                 <i class="fa-solid fa-file-excel text-lg" style="color: var(--success, #2a9d8f);"></i>
-                <strong class="text-base font-bold" style="color: var(--text-primary);">1. ดาวน์โหลดรายงานสรุป Excel (7 แถบย่อย)</strong>
+                <strong class="text-base font-bold" style="color: var(--text-primary);">1. ดาวน์โหลดรายงาน Excel</strong>
               </div>
               <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
-                ส่งออกรายงาน 7 หมวดหมู่แยกเป็น 7 แถบหน้าย่อย (Worksheets) จัดขนาดคอลัมน์กว้างพอดีกับข้อความ ไม่ถูกตัดทอน
+                ส่งออกรายงานสรุป 7 หมวดหมู่ลงเครื่อง
               </p>
             </div>
             <button 
@@ -840,7 +804,7 @@
               @click="downloadExcelSummary"
               style="border-color: var(--success, #2a9d8f); color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
             >
-              <i class="fa-solid fa-file-excel"></i> ดาวน์โหลดรายงาน Excel (7 แถบย่อย)
+              <i class="fa-solid fa-file-excel"></i> ดาวน์โหลดรายงาน Excel
             </button>
           </div>
 
@@ -852,10 +816,10 @@
             <div>
               <div class="flex align-center gap-sm mb-xs">
                 <i class="fa-solid fa-cloud-arrow-down text-lg" style="color: var(--danger, #c0392b);"></i>
-                <strong class="text-base font-bold" style="color: var(--danger, #c0392b);">2. ดาวน์โหลด Excel และล้างข้อมูลบน Cloud</strong>
+                <strong class="text-base font-bold" style="color: var(--danger, #c0392b);">2. ดาวน์โหลดและล้างข้อมูลเก่า</strong>
               </div>
               <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
-                ดาวน์โหลดไฟล์สำรองลงเครื่องก่อนเสมอ จากนั้นจะล้างประวัติธุรกรรมเก่าออกจาก Turso Cloud เพื่อคืนโควตา Reads
+                สำรองไฟล์ลงเครื่องก่อนลบประวัติเก่าบนคลาวด์
               </p>
             </div>
             <button 
@@ -863,7 +827,7 @@
               @click="openPurgeModal"
               style="background: var(--danger, #c0392b); border-color: var(--danger, #c0392b); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
             >
-              <i class="fa-solid fa-trash-can-arrow-up"></i> ดาวน์โหลด & ล้างข้อมูลบน Cloud
+              <i class="fa-solid fa-trash-can-arrow-up"></i> ดาวน์โหลด & ล้างข้อมูลเก่า
             </button>
           </div>
 
@@ -873,13 +837,13 @@
 
         <!-- Full JSON Backup & SQLite Download -->
         <div>
-          <div class="text-xs font-bold text-secondary mb-sm uppercase tracking-wider">ตัวเลือกการสำรองทั้งระบบเพิ่มเติม:</div>
+          <div class="text-xs font-bold text-secondary mb-sm">สำรองข้อมูลทั้งระบบ:</div>
           <div class="flex gap-md backup-btns-container">
             <button class="btn btn-secondary flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-              <i class="fa-solid fa-database"></i> ดาวน์โหลด Full Backup (.json)
+              <i class="fa-solid fa-database"></i> สำรองข้อมูล (.json)
             </button>
             <button class="btn btn-secondary flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-              <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูลดิบ (.db)
+              <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูล (.db)
             </button>
           </div>
         </div>
@@ -889,14 +853,14 @@
       <div class="card">
         <div class="card-title mb-sm text-base">
           <i class="fa-solid fa-file-import" style="margin-right: 6px; color: var(--primary);"></i> 
-          นำเข้าและกู้คืนข้อมูลระบบ (Import & Restore)
+          นำเข้าและกู้คืนข้อมูล
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          นำเข้าข้อมูลสำรองจากไฟล์ <code style="background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;">.json</code> ที่เคยดาวน์โหลดไว้ เพื่อกู้คืนฐานข้อมูลกลับเข้าสู่ระบบ
+          เลือกไฟล์สำรอง .json ที่เคยดาวน์โหลดไว้เพื่อกู้คืนข้อมูล
         </p>
 
         <div class="form-group mb-0">
-          <label class="form-label font-bold text-sm"><i class="fa-solid fa-file-arrow-up mr-xs"></i> เลือกไฟล์ JSON สำรองข้อมูลเพื่อกู้คืน:</label>
+          <label class="form-label font-bold text-sm"><i class="fa-solid fa-file-arrow-up mr-xs"></i> เลือกไฟล์สำรองข้อมูล:</label>
           <input 
             type="file" 
             class="form-input" 
@@ -916,7 +880,7 @@
           <i class="fa-solid fa-print" style="margin-right: 6px; color: var(--primary);"></i> ตั้งค่าเครื่องพิมพ์ & ลิ้นชัก
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          เชื่อมต่อกับเครื่องพิมพ์ใบเสร็จและสั่งงานลิ้นชักเก็บเงินอเนกประสงค์ โดยเลือกประเภทการเชื่อมต่อที่เหมาะสมกับอุปกรณ์ของคุณ
+          เลือกวิธีเชื่อมต่อเครื่องพิมพ์ใบเสร็จและลิ้นชักเก็บเงิน
         </p>
 
         <!-- Connection Type Selection (Cards) -->
@@ -935,8 +899,8 @@
                 <i class="fa-solid fa-plug font-xl"></i>
               </div>
               <div class="option-info">
-                <div class="option-title">เครื่องพิมพ์ทั่วไป (ต่อสาย USB ตรง)</div>
-                <div class="option-desc">เชื่อมต่อผ่าน Google Chrome โดยตรง (เหมาะสำหรับคอมพิวเตอร์ PC/โน้ตบุ๊ก)</div>
+                <div class="option-title">ต่อสาย USB ตรง</div>
+                <div class="option-desc">เหมาะสำหรับคอมพิวเตอร์และโน้ตบุ๊ก</div>
               </div>
               <div class="option-badge">
                 <i class="fa-solid fa-circle-check"></i>
@@ -953,8 +917,8 @@
                 <i class="fa-solid fa-tablet-screen-button font-xl"></i>
               </div>
               <div class="option-info">
-                <div class="option-title">แอป RawBT (แนะนำสำหรับแท็บเล็ต / Android)</div>
-                <div class="option-desc">สั่งพิมพ์และดีดลิ้นชักผ่านแอป RawBT บนแท็บเล็ต เสถียร ไม่หลุดง่าย</div>
+                <div class="option-title">แอป RawBT</div>
+                <div class="option-desc">แนะนำสำหรับแท็บเล็ตและมือถือ Android</div>
               </div>
               <div class="option-badge">
                 <i class="fa-solid fa-circle-check"></i>
@@ -987,10 +951,10 @@
               สถานะเครื่องพิมพ์: {{ printerConnected ? 'เชื่อมต่อพร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;" v-if="printerConnected">
-              เชื่อมต่อผ่านสาย USB พร้อมสำหรับทำรายการขายหน้าร้าน
+              พร้อมพิมพ์ใบเสร็จและเปิดลิ้นชัก
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;" v-else>
-              คลิกปุ่มเชื่อมต่อด้านล่างเพื่อเลือกเครื่องพิมพ์ความร้อนสำหรับดีดลิ้นชักและพิมพ์ใบเสร็จ
+              กดปุ่มด้านล่างเพื่อเลือกเครื่องพิมพ์
             </div>
           </div>
         </div>
@@ -1015,10 +979,10 @@
           </div>
           <div style="flex: 1; min-width: 0;">
             <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
-              สถานะ: เปิดใช้งานร่วมกับแอป RawBT เรียบร้อยแล้ว
+              สถานะ: เปิดใช้งานผ่านแอป RawBT แล้ว
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
-              ระบบจะส่งคำสั่งพิมพ์ใบเสร็จและดีดลิ้นชักไปยังแอป RawBT โดยตรงอัตโนมัติ (ไม่ต้องกดจับคู่ USB ในเบราว์เซอร์)
+              ส่งคำสั่งพิมพ์และเปิดลิ้นชักอัตโนมัติ
             </div>
           </div>
         </div>
@@ -1039,8 +1003,8 @@
         <div class="flex flex-col mb-xl" style="display: flex; flex-direction: column;">
           <div class="setting-item">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
-              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">เปิดลิ้นชักอัตโนมัติเมื่อชำระเงิน</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">ลิ้นชักจะดีดเปิดโดยอัตโนมัติทันทีที่ทำรายการสำเร็จ</span>
+              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">เปิดลิ้นชักอัตโนมัติ</strong>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เปิดลิ้นชักทันทีเมื่อชำระเงินสำเร็จ</span>
             </div>
             <label class="switch">
               <input type="checkbox" v-model="printerConfig.autoKick" @change="saveLocalPrinterConfig" />
@@ -1051,7 +1015,7 @@
           <div class="setting-item">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
               <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">พิมพ์ใบเสร็จอัตโนมัติ</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เครื่องพิมพ์จะสไลด์พิมพ์ใบเสร็จออกมาทันทีเมื่อทำรายการสำเร็จ</span>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">พิมพ์ทันทีเมื่อทำรายการสำเร็จ</span>
             </div>
             <label class="switch">
               <input type="checkbox" v-model="printerConfig.autoPrint" @change="saveLocalPrinterConfig" />
@@ -1061,8 +1025,8 @@
 
           <div class="setting-item setting-item-select" v-if="printerConfig.connectionType === 'rawbt'">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
-              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จบน RawBT</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือกรูปแบบการส่งข้อมูลไปยังแอป RawBT (โหมดรูปภาพ เหมือนสาขา 1 คมชัด 100%)</span>
+              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จ RawBT</strong>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">โหมดรูปภาพคมชัด 100%</span>
             </div>
             
             <div class="custom-select-wrapper" @click.stop style="width: auto; min-width: 280px; max-width: 100%; position: relative; z-index: 5;">
@@ -1073,7 +1037,7 @@
               >
                 <span class="custom-select-text font-semibold">
                   <i class="fa-solid fa-image mr-xs" style="color: var(--primary);"></i>
-                  รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)
+                  รูปภาพคมชัด 100%
                 </span>
               </div>
               <div v-if="isPrintModeDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
@@ -1082,7 +1046,7 @@
                   @click="selectPrintMode('image')"
                 >
                   <i class="fa-solid fa-circle-check mr-xs text-primary"></i>
-                  รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)
+                  รูปภาพคมชัด 100%
                 </div>
               </div>
             </div>
