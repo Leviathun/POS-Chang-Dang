@@ -164,18 +164,24 @@ router.get('/', async (req, res) => {
         mi.id, mi.name, mi.price, mi.category_id, mi.active, mi.uom,
         c.name as category_name,
         mi.quantity as stock,
-        mi.raw_quantity as raw_stock
+        mi.raw_quantity as raw_stock,
+        COALESCE(mi.low_stock_threshold, ?) as low_stock_threshold
       FROM menu_items mi
       LEFT JOIN categories c ON c.id = mi.category_id AND c.branch_id = ?
       WHERE mi.branch_id = ?
       ORDER BY mi.sort_order ASC, mi.id ASC
-    `).all(branchId, branchId);
+    `).all(threshold, branchId, branchId);
 
-    const itemsWithFlag = items.map(item => ({
-      ...item,
-      low_stock: item.stock !== null && item.stock <= threshold,
-      low_raw_stock: item.raw_stock !== null && item.raw_stock <= threshold
-    }));
+    const itemsWithFlag = items.map(item => {
+      const itemThreshold = item.low_stock_threshold !== null && item.low_stock_threshold !== undefined
+        ? Number(item.low_stock_threshold)
+        : threshold;
+      return {
+        ...item,
+        low_stock: item.stock !== null && item.stock <= itemThreshold,
+        low_raw_stock: item.raw_stock !== null && item.raw_stock <= itemThreshold
+      };
+    });
 
     res.json({
       success: true,

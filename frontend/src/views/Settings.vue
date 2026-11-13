@@ -27,6 +27,7 @@
         <i class="fa-solid fa-code-branch"></i> จัดการสาขา
       </button>
       <button 
+        v-if="false"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'presets' }"
         @click="activeTab = 'presets'"
@@ -51,153 +52,134 @@
     </div>
 
     <!-- Tab 1: Shop Settings Form -->
-    <div v-if="activeTab === 'shop'" class="card">
-      <div v-if="shopSettingsLoading" class="flex flex-col gap-md">
+    <div v-if="activeTab === 'shop'" class="flex flex-col gap-lg w-full">
+      <div v-if="shopSettingsLoading" class="card flex flex-col gap-md">
         <div class="skeleton" style="width: 100%; height: 78px; border-radius: var(--radius-md);"></div>
-        <div class="skeleton" style="width: 100%; height: 74px; border-radius: var(--radius-lg);"></div>
-        <div class="skeleton" style="width: 100%; height: 74px; border-radius: var(--radius-lg);"></div>
-        <div class="divider my-xs" style="height: 1px; background: var(--border-color);"></div>
-        <div class="skeleton" style="width: 220px; height: 20px; border-radius: var(--radius-sm);"></div>
-        <div class="skeleton" style="width: 100%; height: 46px; border-radius: var(--radius-md);"></div>
-        <div class="skeleton mt-sm" style="width: 100%; height: 48px; border-radius: var(--radius-md);"></div>
+        <div class="skeleton" style="width: 100%; height: 82px; border-radius: var(--radius-lg);"></div>
+        <div class="skeleton" style="width: 100%; height: 82px; border-radius: var(--radius-lg);"></div>
       </div>
 
       <template v-else>
-      <!-- Branch Selector for Admin -->
-      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl settings-branch-header">
-        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store mr-xs"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
-        <div class="custom-select-wrapper" @click.stop>
-          <div 
-            class="custom-select-trigger settings-branch-trigger" 
-            :class="{ 'active': isSettingsBranchDropdownOpen }" 
-            @click="toggleSettingsBranchDropdown"
-          >
-            <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
-          </div>
-          <div v-if="isSettingsBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-            <div 
-              v-for="b in branches" 
-              :key="b.id" 
-              class="custom-select-option" 
-              :class="{ 'selected': selectedSettingsBranchId === b.id }" 
-              @click="selectSettingsBranch(b.id)"
-            >
-              {{ b.name }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Navigation Cards: Central Kitchen & Requisition (จับส่วนเกินเข้าหน้าตั้งค่าร้าน) -->
-      <div class="settings-extra-modules mb-xl">
-        <!-- 1. Central Kitchen System (Admin Only - พนักงานและบทบาทอื่นไม่แสดง) -->
-        <div v-if="currentUser?.role === 'admin'" class="card p-md mb-md border-primary-light" :style="isCentralKitchenSession ? 'background: rgba(139, 3, 19, 0.06); border: 2px solid var(--primary);' : 'background: rgba(139, 3, 19, 0.03); border: 1.5px dashed var(--primary-light);'">
+        <!-- Branch Selector Card for Admin -->
+        <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="card diner-retro-card settings-branch-header">
           <div class="flex flex-between align-center flex-wrap gap-md">
-            <div class="flex align-center gap-md">
-              <div class="p-sm rounded-circle" style="background: rgba(139, 3, 19, 0.1); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i v-if="!isCentralKitchenSession" class="fa-solid fa-warehouse text-primary" style="font-size: 1.25rem;"></i>
-                <i v-else class="fa-solid fa-store text-primary" style="font-size: 1.25rem;"></i>
+            <div>
+              <div class="font-bold text-lg text-primary"><i class="fa-solid fa-store mr-xs"></i> ตั้งค่าร้านค้า & สาขา</div>
+              <div class="text-xs text-secondary">เลือกสาขาที่ต้องการดูหรือจัดการระบบหน้าร้าน</div>
+            </div>
+            <div class="custom-select-wrapper" style="min-width: 240px;" @click.stop>
+              <div 
+                class="custom-select-trigger settings-branch-trigger" 
+                :class="{ 'active': isSettingsBranchDropdownOpen }" 
+                @click="toggleSettingsBranchDropdown"
+              >
+                <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
               </div>
-              <div>
-                <div class="font-bold text-base" style="color: var(--primary);">
-                  {{ isCentralKitchenSession ? 'กำลังอยู่ในโหมด: ระบบครัวกลาง' : 'ระบบครัวกลาง (Central Kitchen)' }}
-                </div>
-                <div class="text-xs text-secondary">
-                  {{ isCentralKitchenSession ? 'คลิกปุ่มเพื่อสลับกลับไปทำงานที่หน้าเคาน์เตอร์ขายหน้าร้าน POS' : 'บริหารคลังสินค้ากลาง, จ่ายของให้สาขา, อนุมัติคำขอเบิก, สรุปการเงินกองกลาง' }}
+              <div v-if="isSettingsBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
+                <div 
+                  v-for="b in branches" 
+                  :key="b.id" 
+                  class="custom-select-option" 
+                  :class="{ 'selected': selectedSettingsBranchId === b.id }" 
+                  @click="selectSettingsBranch(b.id)"
+                >
+                  {{ b.name }}
                 </div>
               </div>
             </div>
-            <div class="flex align-center gap-xs">
-              <button 
-                v-if="!isCentralKitchenSession" 
-                type="button"
-                class="btn btn-primary inline-flex align-center gap-xs"
-                @click="enterCentralKitchenFromSettings"
-                style="padding: 8px 16px; font-size: var(--font-sm);"
-              >
-                <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                <span>เข้าสู่ระบบครัวกลาง</span>
-              </button>
-              <button 
-                v-else 
-                type="button" 
-                class="btn btn-primary inline-flex align-center gap-xs"
-                @click="switchToPosBranchFromSettings"
-                style="padding: 8px 18px; font-size: var(--font-sm); font-weight: bold;"
-              >
-                <i class="fa-solid fa-store"></i>
-                <span>สลับกลับไปหน้าร้าน POS</span>
-              </button>
-            </div>
           </div>
         </div>
 
-        <!-- 2. Requisition System (เบิกของจากครัวกลาง) -->
-        <div class="card p-md mb-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
-          <div class="flex flex-between align-center flex-wrap gap-md">
-            <div class="flex align-center gap-md">
-              <div class="p-sm rounded-circle" style="background: rgba(139, 3, 19, 0.06); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="fa-solid fa-boxes-packing text-primary" style="font-size: 1.25rem;"></i>
+        <!-- Quick Navigation Cards: Central Kitchen & Requisition -->
+        <div class="diner-modules-grid">
+          <!-- 1. Central Kitchen System (Admin Only) -->
+          <div v-if="currentUser?.role === 'admin'" class="card diner-module-card" :class="{ 'is-active': isCentralKitchenSession }">
+            <div class="flex flex-between align-center flex-wrap gap-md">
+              <div class="flex align-center gap-md">
+                <div class="diner-icon-badge" :class="{ 'is-solid': isCentralKitchenSession }">
+                  <i v-if="!isCentralKitchenSession" class="fa-solid fa-warehouse"></i>
+                  <i v-else class="fa-solid fa-store"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-base text-primary">
+                    {{ isCentralKitchenSession ? 'กำลังอยู่ในโหมด: ระบบครัวกลาง' : 'ระบบครัวกลาง (Central Kitchen)' }}
+                  </div>
+                  <div class="text-xs text-secondary">
+                    {{ isCentralKitchenSession ? 'คลิกปุ่มเพื่อสลับกลับไปทำงานที่หน้าเคาน์เตอร์ขายหน้าร้าน POS' : 'บริหารคลังสินค้ากลาง, จ่ายของให้สาขา, อนุมัติคำขอเบิก, สรุปการเงินกองกลาง' }}
+                  </div>
+                </div>
               </div>
-              <div>
-                <div class="font-bold text-base text-primary">ระบบเบิกของจากครัวกลาง (Requisition)</div>
-                <div class="text-xs text-secondary">ส่งคำขอเบิกวัตถุดิบและสินค้าจากครัวกลางเข้ามายังสาขา</div>
+              <div class="flex align-center gap-xs">
+                <button 
+                  v-if="!isCentralKitchenSession" 
+                  type="button"
+                  class="btn btn-primary inline-flex align-center gap-xs"
+                  @click="enterCentralKitchenFromSettings"
+                >
+                  <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                  <span>เข้าสู่ระบบครัวกลาง</span>
+                </button>
+                <button 
+                  v-else 
+                  type="button" 
+                  class="btn btn-primary inline-flex align-center gap-xs"
+                  @click="switchToPosBranchFromSettings"
+                >
+                  <i class="fa-solid fa-store"></i>
+                  <span>สลับกลับไปหน้าร้าน POS</span>
+                </button>
               </div>
             </div>
-            <router-link 
-              to="/requisition" 
-              class="btn btn-secondary inline-flex align-center gap-xs"
-              style="padding: 8px 16px; font-size: var(--font-sm);"
-            >
-              <i class="fa-solid fa-box-open"></i>
-              <span>ไปที่หน้าเบิกของ</span>
-            </router-link>
+          </div>
+
+          <!-- 2. Requisition System -->
+          <div class="card diner-module-card">
+            <div class="flex flex-between align-center flex-wrap gap-md">
+              <div class="flex align-center gap-md">
+                <div class="diner-icon-badge">
+                  <i class="fa-solid fa-boxes-packing"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-base text-primary">ระบบเบิกของจากครัวกลาง (Requisition)</div>
+                  <div class="text-xs text-secondary">ส่งคำขอเบิกวัตถุดิบและสินค้าจากครัวกลางเข้ามายังสาขา</div>
+                </div>
+              </div>
+              <router-link 
+                to="/requisition" 
+                class="btn btn-secondary inline-flex align-center gap-xs"
+              >
+                <i class="fa-solid fa-box-open"></i>
+                <span>ไปที่หน้าเบิกของ</span>
+              </router-link>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- Stock Notification & Save (Admin only) -->
-      <template v-if="currentUser?.role === 'admin'">
-        <div class="divider mb-lg" style="height: 1px; background: var(--border-color);"></div>
-
-        <div class="card-title text-sm"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> การแจ้งเตือนสต็อกวัตถุดิบ</div>
-
-        <!-- Low Stock Threshold -->
-        <div class="form-group">
-          <label class="form-label">จุดเตือนสต็อกวัตถุดิบใกล้หมด (ชิ้น)</label>
-          <input 
-            type="number" 
-            class="form-input" 
-            v-model.number="shopForm.low_stock_threshold" 
-            placeholder="เช่น 5" 
-            min="1"
-          />
-        </div>
-
-        <!-- Save Shop Settings Button -->
-        <button class="btn btn-primary btn-block mt-lg" :disabled="isSavingShopSettings" @click="saveShopSettings">
-          <i v-if="isSavingShopSettings" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-floppy-disk"></i>
-          {{ isSavingShopSettings ? 'กำลังบันทึก...' : 'บันทึกตั้งค่าระบบร้าน' }}
-        </button>
-      </template>
       </template>
     </div>
 
     <!-- Tab 2: User management -->
     <div v-if="activeTab === 'users'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
-        <span class="font-bold text-lg"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> จัดการพนักงานหน้าร้าน</span>
+      <div class="card diner-retro-card flex flex-between align-center flex-wrap gap-md staff-header-card">
+        <div class="flex align-center gap-md">
+          <div class="diner-icon-badge"><i class="fa-solid fa-users"></i></div>
+          <div>
+            <div class="flex align-center gap-sm">
+              <span class="font-bold text-lg text-primary">จัดการพนักงานหน้าร้าน</span>
+              <span class="diner-count-pill">{{ users.length }} คน</span>
+            </div>
+            <div class="text-xs text-secondary">กำหนดสิทธิ์ บทบาท สาขา และรหัส PIN เข้าใช้งาน POS</div>
+          </div>
+        </div>
         <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
       </div>
 
       <!-- Users list table (Visible on Desktop Only) -->
-      <div class="card p-0 overflow-hidden hide-mobile">
+      <div class="card diner-table-card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+              <tr class="diner-table-head">
                 <th class="text-left" style="padding: var(--space-md);">ชื่อพนักงาน</th>
                 <th class="text-center" style="padding: var(--space-md);">สาขา</th>
                 <th class="text-center" style="padding: var(--space-md);">บทบาท</th>
@@ -237,20 +219,25 @@
                 class="table-row-hover"
               >
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold text-base">{{ u.name }}</div>
-                  <div class="text-base text-muted">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+                  <div class="flex align-center gap-sm">
+                    <div class="diner-avatar-sm">{{ u.name ? u.name.charAt(0).toUpperCase() : '?' }}</div>
+                    <div>
+                      <div class="font-bold text-base">{{ u.name }}</div>
+                      <div class="text-xs text-muted">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+                    </div>
+                  </div>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="text-base text-secondary flex align-center justify-center" style="gap: 4px;">
-                    <i class="fa-solid fa-store" style="color: var(--text-tertiary);"></i> {{ getBranchName(u.branch_id) }}
+                  <span class="text-sm text-secondary inline-flex align-center justify-center" style="gap: 4px;">
+                    <i class="fa-solid fa-store" style="color: var(--primary);"></i> {{ getBranchName(u.branch_id) }}
                   </span>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge text-base" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
+                  <span class="badge text-sm" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
                     {{ getRoleLabel(u.role) }}
                   </span>
                 </td>
-                <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary);">
+                <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary); letter-spacing: 2px;">
                   ••••
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
@@ -273,7 +260,7 @@
       </div>
 
       <!-- Mobile Users Cards List (Visible on Mobile Only) -->
-      <div class="show-mobile-only p-md mobile-users-list">
+      <div class="show-mobile-only mobile-users-list">
         <template v-if="usersLoading">
           <div v-for="i in 3" :key="'um-skel-' + i" class="card p-sm flex align-center gap-md" style="margin-bottom: var(--space-sm);">
             <div class="skeleton" style="width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;"></div>
@@ -444,17 +431,26 @@
     <!-- Tab 3: Branch management (Admin only) -->
     <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
-        <span class="font-bold text-lg"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> จัดการสาขาของร้าน</span>
+      <div class="card diner-retro-card flex flex-between align-center flex-wrap gap-md staff-header-card">
+        <div class="flex align-center gap-md">
+          <div class="diner-icon-badge"><i class="fa-solid fa-code-branch"></i></div>
+          <div>
+            <div class="flex align-center gap-sm">
+              <span class="font-bold text-lg text-primary">จัดการสาขาของร้าน</span>
+              <span class="diner-count-pill">{{ branches.length }} สาขา</span>
+            </div>
+            <div class="text-xs text-secondary">เพิ่ม แก้ไขชื่อสาขา และที่อยู่สำหรับออกบิลและคลังสินค้า</div>
+          </div>
+        </div>
         <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
       </div>
 
       <!-- Branch list table (Visible on Desktop Only) -->
-      <div class="card p-0 overflow-hidden hide-mobile">
+      <div class="card diner-table-card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+              <tr class="diner-table-head">
                 <th class="text-left" style="padding: var(--space-md);">ชื่อสาขา</th>
                 <th class="text-left" style="padding: var(--space-md);">ที่อยู่</th>
                 <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
@@ -490,10 +486,13 @@
                 class="table-row-hover"
               >
                 <td style="padding: var(--space-md); vertical-align: middle; font-weight: bold;">
-                  {{ b.name }}
+                  <div class="flex align-center gap-sm">
+                    <div class="diner-avatar-sm"><i class="fa-solid fa-store"></i></div>
+                    <span>{{ b.name }}</span>
+                  </div>
                 </td>
                 <td style="padding: var(--space-md); vertical-align: middle; color: var(--text-secondary);">
-                  {{ b.address || '-' }}
+                  <i class="fa-solid fa-location-dot mr-xs" style="color: var(--primary);"></i>{{ b.address || '-' }}
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
@@ -508,7 +507,7 @@
       </div>
 
       <!-- Mobile Branch Cards List (Visible on Mobile Only) -->
-      <div class="show-mobile-only p-md mobile-users-list">
+      <div class="show-mobile-only mobile-users-list">
         <template v-if="usersLoading || shopSettingsLoading">
           <div v-for="i in 3" :key="'bm-skel-' + i" class="card p-sm flex align-center gap-md" style="margin-bottom: var(--space-sm);">
             <div class="skeleton" style="width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;"></div>
@@ -2514,5 +2513,79 @@ input:checked + .slider:before {
   .mobile-logout-btn:active {
     transform: scale(0.96);
   }
+}
+
+/* --- Diner Retro Settings Cards & Tables --- */
+.diner-retro-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.04);
+}
+.diner-modules-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+.diner-module-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+.diner-module-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.06);
+}
+.diner-module-card.is-active {
+  border: 2px solid var(--primary);
+  background: rgba(139, 3, 19, 0.03);
+}
+.diner-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.diner-icon-badge.is-solid {
+  background: var(--primary);
+  color: #ffffff;
+}
+.diner-count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.diner-table-card {
+  border: 1.5px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+.diner-table-head {
+  border-bottom: 1.5px solid var(--border-color);
+  background: rgba(139, 3, 19, 0.04);
+}
+.diner-avatar-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(139, 3, 19, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-sm);
+  flex-shrink: 0;
 }
 </style>
