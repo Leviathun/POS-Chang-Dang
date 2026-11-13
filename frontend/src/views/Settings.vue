@@ -601,6 +601,14 @@
             />
           </div>
 
+          <div v-if="!isEditBranchMode && branches.length > 0" class="form-group">
+            <label class="form-label">คัดลอกเมนูจากสาขา</label>
+            <select class="form-input" v-model="branchForm.copy_from_branch_id">
+              <option v-for="b in branches" :key="'copy-' + b.id" :value="b.id">{{ b.name }}</option>
+              <option value="none">ไม่คัดลอก (เริ่มจากหน้าว่าง)</option>
+            </select>
+          </div>
+
           <div class="flex gap-md mt-lg">
             <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
             <button 
@@ -1629,9 +1637,11 @@ const branchForm = ref({
 const openAddBranchModal = () => {
   isEditBranchMode.value = false;
   editBranchId.value = null;
+  const defaultSource = branches.value.find(b => !b.name?.includes('ครัวกลาง')) || branches.value[0];
   branchForm.value = {
     name: '',
-    address: ''
+    address: '',
+    copy_from_branch_id: defaultSource ? defaultSource.id : 'none'
   };
   showBranchModal.value = true;
 };
@@ -1657,7 +1667,8 @@ const handleSaveBranch = async () => {
   try {
     const payload = {
       name: branchForm.value.name,
-      address: branchForm.value.address
+      address: branchForm.value.address,
+      ...(!isEditBranchMode.value ? { copy_from_branch_id: branchForm.value.copy_from_branch_id } : {})
     };
 
     let res;

@@ -304,7 +304,7 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
 // ─── POST /branches — สร้างสาขาใหม่ (Admin only) ────────────────
 router.post('/branches', requireAdmin, async (req, res) => {
   try {
-    const { name, address, phone } = req.body;
+    const { name, address, phone, copy_from_branch_id } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
@@ -322,9 +322,17 @@ router.post('/branches', requireAdmin, async (req, res) => {
 
       const branchId = result.lastInsertRowid;
 
-      // หาสาขาหลัก (เพื่อคัดลอกข้อมูลสินค้า)
-      const sourceBranch = await db.prepare('SELECT id FROM branches WHERE id != ? LIMIT 1').get(branchId);
-      const sourceBranchId = sourceBranch ? sourceBranch.id : null;
+      // หาสาขาต้นทางสำหรับคัดลอกเมนู (ถ้าเลือก 'none' ให้เริ่มจากหน้าว่าง)
+      let sourceBranchId = null;
+      if (copy_from_branch_id !== 'none' && copy_from_branch_id !== null && copy_from_branch_id !== 0) {
+        if (copy_from_branch_id) {
+          const requestedSource = await db.prepare('SELECT id FROM branches WHERE id = ? AND id != ?').get(Number(copy_from_branch_id), branchId);
+          sourceBranchId = requestedSource ? requestedSource.id : null;
+        } else {
+          const sourceBranch = await db.prepare('SELECT id FROM branches WHERE id != ? LIMIT 1').get(branchId);
+          sourceBranchId = sourceBranch ? sourceBranch.id : null;
+        }
+      }
 
       if (sourceBranchId) {
         // 1. คัดลอก Categories
@@ -339,7 +347,7 @@ router.post('/branches', requireAdmin, async (req, res) => {
 
         // 2. คัดลอก Menu Items (พร้อมตั้งสต็อกเป็น 0/null ตามต้นฉบับ)
         const menuItems = await db.prepare(`
-          SELECT name, price, category_id, image_url, active, sort_order, uom, multiple_prices, quantity, raw_quantity 
+          SELECT name, price, category_id, image_url, active, sort_order, uom, multiple_prices, quantity, raw_quantity, low_stock_threshold 
           FROM menu_items 
           WHERE branch_id = ?
         `).all(sourceBranchId);
@@ -350,8 +358,8 @@ router.post('/branches', requireAdmin, async (req, res) => {
           const initialRawQuantity = item.raw_quantity !== null ? 0 : null;
 
           await db.prepare(`
-            INSERT INTO menu_items (branch_id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices, quantity, raw_quantity)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO menu_items (branch_id, name, price, category_id, image_url, active, sort_order, uom, multiple_prices, quantity, raw_quantity, low_stock_threshold)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).run(
             branchId,
             item.name,
@@ -363,7 +371,8 @@ router.post('/branches', requireAdmin, async (req, res) => {
             item.uom,
             item.multiple_prices,
             initialQuantity,
-            initialRawQuantity
+            initialRawQuantity,
+            item.low_stock_threshold ?? 5
           );
         }
 
