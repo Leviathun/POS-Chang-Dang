@@ -197,7 +197,7 @@
           <!-- Central Kitchen section -->
           <div class="sidebar-divider" style="margin: var(--space-xs) 0;"></div>
 
-          <router-link v-if="isManagerOrAdminUser" to="/central-kitchen/catalog" class="sidebar-item branch-switch-btn" active-class="active">
+          <router-link v-if="adminUser" to="/central-kitchen/catalog" class="sidebar-item branch-switch-btn" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-warehouse"></i></span>
             <span class="sidebar-label">ระบบครัวกลาง</span>
             <span v-if="pendingOrdersCount > 0" class="sidebar-badge">{{ pendingOrdersCount }}</span>
@@ -1676,6 +1676,11 @@ onUnmounted(() => {
   .sidebar-user .user-role-badge.admin {
     background: rgba(139, 3, 19, 0.1);
     color: var(--primary-light);
+  }
+
+  .sidebar-user .user-role-badge.manager {
+    background: rgba(197, 118, 0, 0.12);
+    color: #c57600;
   }
 
   .sidebar-user .user-role-badge.staff {
