@@ -152,61 +152,33 @@
           />
         </div>
 
-        <!-- Bottom Row: Filter Pills on left, View Toggle & Add Button on right -->
-        <div class="flex flex-between align-center flex-wrap gap-md catalog-toolbar-bottom">
-          <!-- Left: Category Pills -->
-          <div class="category-tabs flex gap-xs align-center" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
-            <button 
-              v-for="cat in categories" 
-              :key="cat.id" 
-              class="category-tab"
-              :class="{ 'active': selectedCategory === cat.id }"
-              @click="selectedCategory = cat.id"
-            >
-              <i :class="cat.icon" style="margin-right: 4px;"></i> {{ cat.label }}
-              <span v-if="getCategoryCount(cat.id) > 0" class="ml-xs font-normal opacity-90">
-                ({{ getCategoryCount(cat.id) }})
-              </span>
-            </button>
-          </div>
+        <!-- Middle Row: Category Filter Pills -->
+        <div class="category-tabs flex gap-xs align-center flex-wrap" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
+          <button 
+            v-for="cat in categories" 
+            :key="cat.id" 
+            class="category-tab"
+            :class="{ 'active': selectedCategory === cat.id }"
+            @click="selectedCategory = cat.id"
+          >
+            <i :class="cat.icon" style="margin-right: 4px;"></i> {{ cat.label }}
+            <span v-if="getCategoryCount(cat.id) > 0" class="ml-xs font-normal opacity-90">
+              ({{ getCategoryCount(cat.id) }})
+            </span>
+          </button>
+        </div>
 
-          <!-- Right: View Toggle & Add Button (Matched 48px height) -->
-          <div class="catalog-toolbar-actions">
-            <!-- Row Top: Toggle View (Left) & จัดการหมวด (Right) -->
-            <div class="catalog-toolbar-row-top">
-              <div class="view-mode-toggle flex align-center">
-                <button 
-                  class="view-toggle-btn" 
-                  :class="{ 'active': viewMode === 'grid' }"
-                  @click="viewMode = 'grid'"
-                  title="มุมมองการ์ดรูปภาพ"
-                >
-                  <i class="fa-solid fa-grip"></i>
-                </button>
-                <button 
-                  class="view-toggle-btn" 
-                  :class="{ 'active': viewMode === 'table' }"
-                  @click="viewMode = 'table'"
-                  title="มุมมองตาราง"
-                >
-                  <i class="fa-solid fa-table-list"></i>
-                </button>
-              </div>
-              <button class="btn btn-secondary toolbar-btn" @click="openCategoryModal" title="จัดการหมวดหมู่สินค้าในครัวกลาง">
-                <i class="fa-solid fa-folder-open"></i> <span>จัดการหมวด</span>
-              </button>
-            </div>
-
-            <!-- Row Bottom: เรียงลำดับ (Left) & สร้างใหม่ (Right) -->
-            <div class="catalog-toolbar-row-bottom">
-              <button class="btn btn-secondary toolbar-btn" @click="openReorderMode" title="จัดเรียงลำดับการแสดงแคตตาล็อก">
-                <i class="fa-solid fa-sort"></i> <span>เรียงลำดับ</span>
-              </button>
-              <button class="btn btn-primary btn-add-item toolbar-btn" @click="openCreateItemModal">
-                <i class="fa-solid fa-plus"></i> <span>สร้างใหม่</span>
-              </button>
-            </div>
-          </div>
+        <!-- Bottom Row: Separate Action Buttons Row -->
+        <div class="catalog-toolbar-actions">
+          <button class="btn btn-secondary toolbar-btn" @click="openCategoryModal" title="จัดการหมวดหมู่สินค้าในครัวกลาง">
+            <i class="fa-solid fa-folder-open"></i> <span>จัดการหมวด</span>
+          </button>
+          <button class="btn btn-secondary toolbar-btn" @click="openReorderMode" title="จัดเรียงลำดับการแสดงแคตตาล็อก">
+            <i class="fa-solid fa-sort"></i> <span>เรียงลำดับ</span>
+          </button>
+          <button class="btn btn-primary btn-add-item toolbar-btn" @click="openCreateItemModal">
+            <i class="fa-solid fa-plus"></i> <span>สร้างใหม่</span>
+          </button>
         </div>
       </div>
 
@@ -250,7 +222,7 @@
       </div>
 
       <!-- View 1: Grid Cards View -->
-      <div v-else-if="viewMode === 'grid'" class="grid-cards">
+      <div v-else class="grid-cards">
         <div 
           v-for="item in filteredItems" 
           :key="item.id" 
@@ -361,95 +333,6 @@
         </div>
       </div>
 
-      <!-- View 2: Desktop Table View -->
-      <div v-else class="card p-0 overflow-hidden desktop-stock-table-container">
-        <div style="overflow-x: auto;">
-          <table class="table w-full" style="border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
-                <th class="text-left" style="padding: var(--space-md);">ชื่อสินค้า / วัตถุดิบ</th>
-                <th class="text-center" style="padding: var(--space-md); width: 150px;">หมวดหมู่</th>
-                <th class="text-right" style="padding: var(--space-md); width: 140px;">ราคาทุนต่อหน่วย</th>
-                <th class="text-center" style="padding: var(--space-md); width: 150px;">สต็อกในครัวกลาง</th>
-                <th class="text-center" style="padding: var(--space-md); width: 130px;">สถานะ</th>
-                <th class="text-center" style="padding: var(--space-md); width: 230px;">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr 
-                v-for="item in filteredItems" 
-                :key="item.id"
-                style="border-bottom: 1px solid var(--border-color);"
-                class="table-row-hover"
-              >
-                <!-- Thumbnail -->
-                <td class="text-center" style="padding: var(--space-sm); vertical-align: middle;">
-                  <div style="width: 50px; height: 42px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
-                    <img v-if="item.image_url" :src="item.image_url" alt="" style="width: 100%; height: 100%; object-fit: cover;" />
-                    <i v-else :class="getCategoryIcon(item.category)" style="color: var(--text-tertiary); font-size: 1.2rem;"></i>
-                  </div>
-                </td>
-                <!-- Name -->
-                <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold text-base">{{ item.name }}</div>
-                  <div class="text-xs text-secondary">
-                    หน่วยนับ: {{ item.unit }}
-                    <span v-if="item.pack_size > 1" class="text-primary font-bold ml-1">(1 {{ item.unit }} = {{ item.pack_size }} ชิ้น)</span>
-                  </div>
-                </td>
-                <!-- Category -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="text-secondary text-sm flex justify-center align-center gap-xs">
-                    <i :class="getCategoryIcon(item.category)" class="text-muted"></i>
-                    <span>{{ getCategoryLabel(item.category) }}</span>
-                  </span>
-                </td>
-                <!-- Cost -->
-                <td class="text-right" style="padding: var(--space-md); vertical-align: middle; font-weight: bold; color: var(--primary);">
-                  ฿{{ formatNumber(item.cost_price) }} / {{ item.unit }}
-                </td>
-                <!-- Quantity -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle; font-weight: bold; font-size: 1.05rem;">
-                  {{ formatNumber(item.quantity) }} {{ item.unit }}
-                </td>
-                <!-- Status -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span v-if="item.quantity <= 0" class="text-danger font-medium text-sm flex justify-center align-center gap-xs">
-                    <i class="fa-solid fa-circle-xmark"></i> หมดสต็อก
-                  </span>
-                  <span v-else-if="item.quantity <= item.min_stock_alert" class="text-warning font-medium text-sm flex justify-center align-center gap-xs">
-                    <i class="fa-solid fa-triangle-exclamation"></i> ใกล้หมด
-                  </span>
-                  <span v-else class="text-success font-medium text-sm flex justify-center align-center gap-xs">
-                    <i class="fa-solid fa-circle-check"></i> พร้อมจ่าย
-                  </span>
-                </td>
-                <!-- Actions -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="flex justify-center gap-xs align-center">
-                    <button class="btn-action btn-action-primary table-btn-action" @click="openQuickRestockModal(item)" title="เติมสต็อกด่วน">
-                      <i class="fa-solid fa-plus"></i> เติมด่วน
-                    </button>
-                    <button class="btn-action btn-action-adjust table-btn-action" @click="openAdjustStockModal(item)" title="ปรับปรุงสต็อก">
-                      <i class="fa-solid fa-sliders"></i> ปรับปรุง
-                    </button>
-                    <button class="btn-action btn-action-edit table-btn-action table-btn-icon" @click="openEditItemModal(item)" title="แก้ไข">
-                      <i class="fa-solid fa-pen"></i>
-                    </button>
-                    <button class="btn-action btn-action-waste table-btn-action table-btn-icon" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
-                      <i class="fa-solid fa-dumpster"></i>
-                    </button>
-                    <button class="btn-action table-btn-action table-btn-icon text-danger" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">
-                      <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
       </div>
     </div>
 
@@ -4019,7 +3902,6 @@ const activeTab = computed(() => {
 });
 
 // View mode: 'grid' or 'table'
-const viewMode = ref('grid');
 
 // States
 const items = ref([]);
@@ -5643,14 +5525,11 @@ onUnmounted(() => {
 .catalog-toolbar-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-sm);
-}
-
-.catalog-toolbar-row-top,
-.catalog-toolbar-row-bottom {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
 }
 
 .toolbar-btn {
@@ -5953,43 +5832,6 @@ onUnmounted(() => {
   display: none !important;
 }
 
-.view-mode-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-  height: 48px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  box-sizing: border-box;
-}
-
-.view-toggle-btn {
-  height: 38px;
-  width: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  font-size: 1.15rem;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.view-toggle-btn.active {
-  background: var(--gradient-primary);
-  color: white;
-  box-shadow: var(--shadow-sm);
-}
-
-.view-toggle-btn:hover:not(.active) {
-  background: rgba(139, 3, 19, 0.05);
-  color: var(--primary);
-}
 
 .search-icon {
   position: absolute;
@@ -7205,37 +7047,12 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .catalog-toolbar-bottom {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  /* Toolbar: Row Top (Toggle + จัดการหมวด) & Row Bottom (เรียงลำดับ + สร้างใหม่) */
+  /* Toolbar: Separate 3-button action row */
   .catalog-toolbar-actions {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 8px !important;
-  }
-
-  .catalog-toolbar-row-top,
-  .catalog-toolbar-row-bottom {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     width: 100% !important;
     gap: 8px !important;
-  }
-
-  .catalog-toolbar-row-top .view-mode-toggle {
-    width: 100% !important;
-    height: 44px !important;
-    display: flex !important;
-    box-sizing: border-box !important;
-  }
-
-  .catalog-toolbar-row-top .view-mode-toggle .view-toggle-btn {
-    flex: 1 !important;
-    height: 34px !important;
   }
 
   .toolbar-btn {
