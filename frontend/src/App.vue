@@ -174,11 +174,6 @@
             <span class="sidebar-label">ขายหน้าร้าน (POS)</span>
           </router-link>
 
-          <router-link to="/requisition" class="sidebar-item" active-class="active">
-            <span class="sidebar-icon"><i class="fa-solid fa-boxes-packing"></i></span>
-            <span class="sidebar-label">เบิกของจากครัวกลาง</span>
-          </router-link>
-
           <router-link v-if="isManagerOrAdminUser" to="/menu" class="sidebar-item" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-utensils"></i></span>
             <span class="sidebar-label">จัดการเมนูอาหาร</span>
@@ -199,11 +194,18 @@
             <span class="sidebar-label">บริหารจัดการร้าน</span>
           </router-link>
 
-          <!-- For Manager & Admin: Quick link to Central Kitchen! -->
-          <router-link v-if="isManagerOrAdminUser" to="/central-kitchen/catalog" class="sidebar-item" active-class="active">
+          <!-- Central Kitchen section -->
+          <div class="sidebar-divider" style="margin: var(--space-xs) 0;"></div>
+
+          <router-link v-if="isManagerOrAdminUser" to="/central-kitchen/catalog" class="sidebar-item branch-switch-btn" active-class="active">
             <span class="sidebar-icon"><i class="fa-solid fa-warehouse"></i></span>
             <span class="sidebar-label">ระบบครัวกลาง</span>
             <span v-if="pendingOrdersCount > 0" class="sidebar-badge">{{ pendingOrdersCount }}</span>
+          </router-link>
+
+          <router-link to="/requisition" class="sidebar-item" active-class="active">
+            <span class="sidebar-icon"><i class="fa-solid fa-boxes-packing"></i></span>
+            <span class="sidebar-label">เบิกของจากครัวกลาง</span>
           </router-link>
 
           <router-link to="/settings" class="sidebar-item" active-class="active">
@@ -236,18 +238,6 @@
 
           <!-- Right: Branch Badge -->
           <div class="header-right flex align-center gap-xs">
-            <!-- When in Central Kitchen mode: show quick switch back to Retail Store in the corner! -->
-            <button 
-              v-if="isCentralKitchenSessionActive" 
-              type="button" 
-              class="header-btn inline-flex align-center gap-2xs" 
-              @click="switchToPosBranch"
-              title="สลับกลับไปหน้าร้าน POS"
-              style="background: rgba(139, 3, 19, 0.08) !important; color: var(--primary) !important; border: 1.5px solid var(--primary-light) !important;"
-            >
-              <i class="fa-solid fa-store" style="font-size: var(--font-xs);"></i>
-              <span style="font-size: var(--font-xs); font-weight: bold;">หน้าร้าน</span>
-            </button>
             <div class="header-branch-badge inline-flex align-center">
               <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
               <i v-else class="fa-solid fa-store branch-icon"></i>

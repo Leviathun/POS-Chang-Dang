@@ -885,6 +885,9 @@ const isOutOfStock = (item) => {
 const isLowStock = (item) => {
   if (item.stock === null || item.stock === undefined) return false;
   if (item.stock <= 0) return false;
+  if (item.low_stock_threshold !== null && item.low_stock_threshold !== undefined) {
+    return item.stock <= Number(item.low_stock_threshold);
+  }
   if (item.uom === 'กรัม') {
     return item.stock <= 500;
   }

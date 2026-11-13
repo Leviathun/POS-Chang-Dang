@@ -72,7 +72,6 @@
               :class="{ active: selectedCategory === cat.id }"
               @click="selectedCategory = cat.id"
             >
-              <i :class="cat.icon" style="margin-right: 4px;"></i>
               <span>{{ cat.label }}</span>
               <span v-if="getCategoryCount(cat.id) > 0" class="category-count">
                 ({{ getCategoryCount(cat.id) }})
@@ -134,7 +133,6 @@
             <!-- 1. TOP: ประเภท กับ พร้อมจ่าย (ใช้เฉพาะไอคอนประหยัดพื้นที่ ไม่เบียด) -->
             <div class="card-top-badges flex flex-between align-center">
               <span class="badge badge-neutral card-badge-category">
-                <i :class="getCategoryIcon(item.category)" class="mr-1"></i>
                 {{ getCategoryLabel(item.category) }}
               </span>
               <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="ของหมดสต็อก">
@@ -158,7 +156,7 @@
                 loading="lazy"
               />
               <div v-else class="item-img-placeholder">
-                <i :class="getCategoryIcon(item.category)"></i>
+                <i class="fa-solid fa-box-open"></i>
               </div>
             </div>
 
@@ -955,14 +953,6 @@ onUnmounted(() => {
 });
 
 const cartSidebarRef = ref(null);
-const scrollToCart = () => {
-  if (cartSidebarRef.value) {
-    cartSidebarRef.value.scrollIntoView({ behavior: 'smooth' });
-  } else {
-    document.querySelector('.cart-sidebar')?.scrollIntoView({ behavior: 'smooth' });
-  }
-};
-
 // Helpers
 const formatNumber = (num) => Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const formatDateTime = (str) => {
@@ -982,15 +972,6 @@ const getCategoryLabel = (cat) => {
   return map[cat] || cat;
 };
 
-const getCategoryIcon = (cat) => {
-  const map = {
-    'raw_material': 'fa-solid fa-drumstick-bite',
-    'packaging': 'fa-solid fa-box-open',
-    'equipment': 'fa-solid fa-kitchen-set',
-    'general': 'fa-solid fa-tag'
-  };
-  return map[cat] || 'fa-solid fa-box';
-};
 
 const getStatusBadgeClass = (st) => {
   const map = {

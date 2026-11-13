@@ -701,6 +701,9 @@ const formatStockQty = (qty, uom) => {
 const isItemLowStock = (item, qty) => {
   if (qty === null || qty === undefined) return false;
   if (qty <= 0) return false;
+  if (item.low_stock_threshold !== null && item.low_stock_threshold !== undefined) {
+    return qty <= Number(item.low_stock_threshold);
+  }
   if (item.uom === 'กรัม') {
     return qty <= 500;
   }

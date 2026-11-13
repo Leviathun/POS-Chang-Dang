@@ -869,6 +869,16 @@ async function initDatabase() {
     console.warn('⚠️ Migration central_kitchen_items columns failed:', e.message);
   }
 
+  // Migration: Add per-item low_stock_threshold to menu_items
+  try {
+    const menuCols = await db.prepare("PRAGMA table_info(menu_items)").all();
+    if (!menuCols.some(c => c.name === 'low_stock_threshold')) {
+      await db.exec("ALTER TABLE menu_items ADD COLUMN low_stock_threshold INTEGER DEFAULT 5");
+    }
+  } catch (e) {
+    console.warn('⚠️ Migration menu_items.low_stock_threshold failed:', e.message);
+  }
+
   // Migration: Seed default central_kitchen_categories if empty
   try {
     const ckCatCount = await db.prepare('SELECT COUNT(*) as count FROM central_kitchen_categories').get();

@@ -652,6 +652,18 @@
             </div>
           </div>
 
+          <!-- Low Stock Alert Threshold -->
+          <div class="form-group">
+            <label class="form-label font-bold">แจ้งเตือนสต็อกใกล้หมด ({{ itemForm.uom || 'ชิ้น' }})</label>
+            <input 
+              type="number" 
+              class="form-input tabular-nums" 
+              v-model.number="itemForm.low_stock_threshold" 
+              placeholder="เช่น 5" 
+              min="0"
+            />
+          </div>
+
           <!-- Raw Stock Tracking Toggle (Checkbox) -->
           <div class="form-group flex align-center gap-sm mt-md mb-md">
             <label class="toggle-switch">
@@ -779,16 +791,6 @@ const getModifierCategoryLabel = (category) => {
     'powder': 'ผงโรย'
   };
   return map[category] || category;
-};
-
-const getModifierCategoryIcon = (category) => {
-  const map = {
-    'sauce_small': 'fa-solid fa-bottle-droplet',
-    'sauce_large': 'fa-solid fa-prescription-bottle',
-    'dipping': 'fa-solid fa-bowl-food',
-    'powder': 'fa-solid fa-sparkles'
-  };
-  return map[category] || 'fa-solid fa-tag';
 };
 
 const getModifierCategoryClass = (category) => {
@@ -960,6 +962,7 @@ const itemForm = ref({
   category_id: '',
   image_url: '',
   uom: 'ชิ้น',
+  low_stock_threshold: 5,
   use_multiple_prices: false,
   use_cooking_options: false,
   multiple_prices: { S: '', M: '', L: '' }
@@ -1055,12 +1058,6 @@ const onSmlToggleChange = () => {
   }
 };
 
-const onCookingToggleChange = () => {
-  if (itemForm.value.use_cooking_options) {
-    itemForm.value.use_multiple_prices = false;
-  }
-};
-
 const openAddModal = () => {
   isEditMode.value = false;
   editItemId.value = null;
@@ -1071,6 +1068,7 @@ const openAddModal = () => {
     image_url: '',
     track_raw_stock: false,
     uom: 'ชิ้น',
+    low_stock_threshold: 5,
     use_multiple_prices: false,
     use_cooking_options: false,
     multiple_prices: { S: '', M: '', L: '' }
@@ -1112,6 +1110,7 @@ const openEditModal = (item) => {
     image_url: item.image_url || '',
     track_raw_stock: item.raw_stock !== null && item.raw_stock !== undefined,
     uom: item.uom || 'ชิ้น',
+    low_stock_threshold: item.low_stock_threshold !== null && item.low_stock_threshold !== undefined ? Number(item.low_stock_threshold) : (item.uom === 'กรัม' ? 500 : 5),
     use_multiple_prices: useMult,
     use_cooking_options: useCooking,
     multiple_prices: multPrices
@@ -1284,6 +1283,7 @@ const handleSaveItem = async () => {
       image_url: itemForm.value.image_url.trim() || null,
       track_raw_stock: !!itemForm.value.track_raw_stock,
       uom: itemForm.value.uom || 'ชิ้น',
+      low_stock_threshold: itemForm.value.low_stock_threshold !== '' && itemForm.value.low_stock_threshold !== null && itemForm.value.low_stock_threshold !== undefined ? Math.max(0, Number(itemForm.value.low_stock_threshold)) : 5,
       multiple_prices: multiplePricesPayload
     };
 

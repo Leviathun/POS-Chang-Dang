@@ -2156,7 +2156,20 @@ const isHistoryPaymentDropdownOpen = ref(false);
 const isActivityStaffDropdownOpen = ref(false);
 const isStockItemDropdownOpen = ref(false);
 
-const reportsStockItems = computed(() => store.stockItems || []);
+const reportsStockItems = computed(() => {
+  if (selectedBranchId.value && selectedBranchId.value !== 'all' && Number(selectedBranchId.value) === Number(currentUser?.branch_id)) {
+    return store.stockItems || [];
+  }
+  const byName = new Map();
+  for (const log of allStockHistoryLogs.value || []) {
+    if (log?.item_name && !byName.has(log.item_name)) {
+      byName.set(log.item_name, { id: log.menu_item_id, name: log.item_name });
+    }
+  }
+  return byName.size > 0
+    ? Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, 'th'))
+    : (store.stockItems || []);
+});
 const selectedReportsStockItemId = ref('all');
 
 const selectedStockItemName = computed(() => {
@@ -3380,14 +3393,23 @@ const totalStaffCreditValue = computed(() => {
   }
 });
 
+const stockRestockReversalLogs = computed(() =>
+  Array.isArray(stockHistoryLogs.value)
+    ? stockHistoryLogs.value.filter(l => String(l?.note || '').includes('ปรับลดคืนวัตถุดิบจากการยกเลิกรายจ่าย'))
+    : []
+);
 const stockRestockCount = computed(() => Array.isArray(stockRestockLogs.value) ? stockRestockLogs.value.length : 0);
 const stockRestockTotalQty = computed(() => {
   if (!Array.isArray(stockRestockLogs.value)) return 0;
-  return stockRestockLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
+  const added = stockRestockLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
+  const reversed = stockRestockReversalLogs.value.reduce((sum, l) => sum + (Number(l?.change_qty) || 0), 0);
+  return Math.max(0, added + reversed);
 });
 const totalRestockValue = computed(() => {
   if (!Array.isArray(stockRestockLogs.value)) return 0;
-  return stockRestockLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+  const added = stockRestockLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+  const reversed = stockRestockReversalLogs.value.reduce((sum, l) => sum + getStockLogMonetaryValue(l), 0);
+  return Math.max(0, added - reversed);
 });
 
 const stockLogsCardRef = ref(null);
@@ -3450,10 +3472,8 @@ const loadStockHistoryLogs = async () => {
     allStockHistoryLogs.value = allLogs;
 
     if (selectedReportsStockItemId.value && selectedReportsStockItemId.value !== 'all') {
-      const res = await api.stock.getLogs(selectedReportsStockItemId.value, params);
-      const rawLogs = res.data?.logs || res.data || [];
       const itemName = selectedStockItemName.value;
-      const baseLogs = Array.isArray(rawLogs) ? rawLogs.map(l => ({ ...l, item_name: l.item_name || itemName })) : [];
+      const baseLogs = allLogs.filter(l => l && (l.menu_item_id === selectedReportsStockItemId.value || (itemName && l.item_name === itemName)));
       const includedIds = new Set(baseLogs.map(l => l.id));
       const partnerLogs = [];
       for (const bLog of baseLogs) {
@@ -3600,19 +3620,6 @@ const getStockReasonLabel = (reason) => {
   return map[reason] || reason;
 };
 
-const getStockReasonIconClass = (reason) => {
-  const map = {
-    'sale': 'fa-solid fa-cart-shopping',
-    'restock': 'fa-solid fa-plus',
-    'adjustment': 'fa-solid fa-wrench',
-    'waste': 'fa-solid fa-trash-can',
-    'cancel_restore': 'fa-solid fa-rotate-left',
-    'staff_benefit': 'fa-solid fa-utensils',
-    'fry': 'fa-solid fa-fire'
-  };
-  return map[reason] || 'fa-solid fa-circle-info';
-};
-
 // Refetch stock history when item or date changes
 watch(selectedReportsStockItemId, () => {
   stockLogsCurrentPage.value = 1;
@@ -3709,20 +3716,6 @@ const selectedFilterActionLabel = computed(() => {
   };
   return filterLabels[filterAction.value] || 'ทั้งหมด';
 });
-const getFilterActionIcon = (action) => {
-  const map = {
-    all: 'fa-solid fa-folder-open',
-    login: 'fa-solid fa-key',
-    sales: 'fa-solid fa-circle-check',
-    cancel: 'fa-solid fa-ban',
-    expenses: 'fa-solid fa-wallet',
-    stock: 'fa-solid fa-boxes-stacked',
-    waste: 'fa-solid fa-trash-can',
-    credit: 'fa-solid fa-user-check',
-    cash_drawer: 'fa-solid fa-cash-register'
-  };
-  return map[action] || 'fa-solid fa-folder';
-};
 const selectFilterAction = (action) => {
   filterAction.value = action;
   isFilterActionDropdownOpen.value = false;
@@ -3821,6 +3814,7 @@ const toggleBranchDropdown = () => {
 
 const selectBranch = (branchId) => {
   selectedBranchId.value = branchId;
+  selectedReportsStockItemId.value = 'all';
   isBranchDropdownOpen.value = false;
   if (branchId !== null) {
     sessionStorage.setItem('selected_branch_id', String(branchId));
@@ -4256,11 +4250,6 @@ const loadTopItems = async () => {
   }
 };
 
-const getPopularityPercentage = (qty, maxQty) => {
-  if (!maxQty) return 0;
-  return Math.round((qty / maxQty) * 100);
-};
-
 // ── Order Expand & Void ──
 
 const toggleExpandOrder = async (orderId) => {
@@ -4372,14 +4361,6 @@ const handleDeleteExpense = async (id) => {
 };
 
 // ── Helpers ──
-
-const setPeriodMode = (mode) => {
-  periodMode.value = mode;
-  if (!selectedDate.value) selectedDate.value = getToday();
-  if (!selectedMonth.value) selectedMonth.value = getToday().substring(0, 7);
-  if (!selectedYear.value) selectedYear.value = getToday().substring(0, 4);
-  loadReportData();
-};
 
 const getCategoryLabel = (cat) => {
   const map = {
@@ -4504,66 +4485,6 @@ const exportToCSV = (headers, rows, filename) => {
     console.error(error);
     ui.showToast('เกิดข้อผิดพลาดในการส่งออกไฟล์: ' + error.message, 'error');
   }
-};
-
-const exportSalesCSV = () => {
-  const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
-  const rows = (displayedDailyReport.value.orders || []).map(o => {
-    let modsText = '';
-    const modsStr = o.modifiers || o.free_modifiers;
-    if (modsStr) {
-      try {
-        const parsed = JSON.parse(modsStr);
-        if (Array.isArray(parsed)) {
-          modsText = parsed.map(m => m.name).join(' | ');
-        }
-      } catch (e) {}
-    }
-    return [
-      o.order_number,
-      o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : o.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ',
-      o.staff_name || 'ระบบ',
-      o.branch_name || 'ไม่ระบุ',
-      o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
-      formatDate(o.created_at) + ' ' + formatTime(o.created_at),
-      modsText,
-      o.note || ''
-    ];
-  });
-  
-  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
-  exportToCSV(headers, rows, `sales_report_${periodStr}.csv`);
-};
-
-const exportHistoryOrdersCSV = () => {
-  const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
-  const rows = historyOrders.value.map(o => {
-    let modsText = '';
-    const modsStr = o.modifiers || o.free_modifiers;
-    if (modsStr) {
-      try {
-        const parsed = JSON.parse(modsStr);
-        if (Array.isArray(parsed)) {
-          modsText = parsed.map(m => m.name).join(' | ');
-        }
-      } catch (e) {}
-    }
-    return [
-      o.order_number,
-      o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : o.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ',
-      o.staff_name || 'ระบบ',
-      o.branch_name || 'ไม่ระบุ',
-      o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
-      formatDate(o.created_at) + ' ' + formatTime(o.created_at),
-      modsText,
-      o.note || ''
-    ];
-  });
-  
-  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
-  exportToCSV(headers, rows, `order_history_${periodStr}.csv`);
 };
 
 const exportExpensesCSV = () => {
