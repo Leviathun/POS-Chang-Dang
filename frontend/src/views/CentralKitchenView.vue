@@ -15,9 +15,7 @@
             จัดเรียงลำดับสินค้า: <strong>{{ reorderItems.length }}</strong> รายการ
           </div>
           <div class="menu-action-buttons">
-            <button class="btn btn-secondary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode">
-              <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-            </button>
+            <button class="btn btn-primary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
             <button class="btn btn-primary btn-bulk-header-save" :disabled="isSavingReorder" @click="handleSaveReorder">
               <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
@@ -32,10 +30,10 @@
             <table class="table w-full" style="border-collapse: collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th class="text-center" style="padding: var(--space-md); width: 60px;">ลาก</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 80px;">รูป</th>
-                  <th class="text-left" style="padding: var(--space-md);">สินค้าในครัวกลาง</th>
-                  <th class="text-right" style="padding: var(--space-md); width: 150px;">ราคา</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 10%;">ลาก</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 15%;">รูป</th>
+                  <th class="text-left" style="padding: var(--space-md); width: 45%;">สินค้าในครัวกลาง</th>
+                  <th class="text-center" style="padding: var(--space-md); width: 30%; white-space: nowrap;">ราคา</th>
                 </tr>
               </thead>
               <tbody>
@@ -2814,118 +2812,124 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="showCategoryModal" class="modal-container active">
       <div class="modal-overlay" @click="showCategoryModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-lg" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
+      <div class="modal-content modal-center w-full max-w-lg" style="position:relative; z-index:2; overflow-y:auto; max-height:88dvh;">
         <div class="modal-header">
           <h3>
-            <i class="fa-solid fa-folder-open" style="margin-right: 6px;"></i>
+            <i class="fa-solid fa-folder-open" style="margin-right: 8px;"></i>
             จัดการหมวดหมู่ครัวกลาง
           </h3>
-          <button class="modal-close" @click="showCategoryModal = false">✕</button>
+          <button class="modal-close" @click="showCategoryModal = false" aria-label="ปิด">✕</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: var(--space-lg);">
           <!-- Form: Add or Edit Category -->
-          <div class="card p-md mb-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
-            <div class="font-bold text-sm mb-sm text-primary flex align-center gap-xs">
-              <i :class="editingCat ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-plus-circle'"></i>
+          <div class="ck-cat-form-card">
+            <div class="ck-cat-form-title">
+              <i :class="editingCat ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-circle-plus'"></i>
               <span>{{ editingCat ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่' }}</span>
             </div>
-            
-            <div class="form-group mb-sm">
-              <label class="form-label text-xs font-bold">ชื่อหมวดหมู่ *</label>
-              <input 
-                type="text" 
-                class="form-input" 
-                v-model="catForm.name" 
-                placeholder="เช่น ซอส, ผงปรุงรส, แป้งและน้ำมัน"
-                style="width: 100%;"
-              />
-            </div>
 
-            <div class="form-group mb-sm">
-              <label class="form-label text-xs font-bold">รหัสหมวดหมู่ (เว้นว่างได้ ระบบจะสร้างให้อัตโนมัติ)</label>
-              <input 
-                type="text" 
-                class="form-input" 
-                v-model="catForm.code" 
-                :disabled="!!editingCat"
-                placeholder="เช่น sauce, powder, oil_flour" 
-                style="width: 100%;"
-              />
-            </div>
+            <div class="ck-cat-form-fields">
+              <div class="form-group mb-0">
+                <label class="form-label text-xs font-bold">ชื่อหมวดหมู่ *</label>
+                <input 
+                  type="text" 
+                  class="form-input w-full" 
+                  v-model="catForm.name" 
+                  placeholder="เช่น ซอส, ผงปรุงรส, แป้งและน้ำมัน"
+                />
+              </div>
 
-            <!-- Icon Picker -->
-            <div class="form-group mb-md">
-              <label class="form-label text-xs font-bold mb-xs block">เลือกไอคอนสัญลักษณ์</label>
-              <div class="grid gap-xs" style="grid-template-columns: repeat(6, 1fr);">
-                <button 
-                  v-for="ico in availableCategoryIcons" 
-                  :key="ico.icon" 
-                  type="button"
-                  class="btn"
-                  :class="catForm.icon === ico.icon ? 'btn-primary' : 'btn-secondary'"
-                  :title="ico.title"
-                  style="height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 0;"
-                  @click="catForm.icon = ico.icon"
-                >
-                  <i :class="ico.icon"></i>
-                </button>
+              <div class="form-group mb-0">
+                <label class="form-label text-xs font-bold">รหัสหมวดหมู่ <span class="font-normal text-muted">(เว้นว่างเพื่อสร้างอัตโนมัติ)</span></label>
+                <input 
+                  type="text" 
+                  class="form-input w-full" 
+                  v-model="catForm.code" 
+                  :disabled="!!editingCat"
+                  placeholder="เช่น sauce, powder, oil_flour"
+                />
+              </div>
+
+              <!-- Icon Picker -->
+              <div class="form-group mb-0">
+                <label class="form-label text-xs font-bold mb-xs block">เลือกไอคอนสัญลักษณ์</label>
+                <div class="ck-cat-icon-grid">
+                  <button 
+                    v-for="ico in availableCategoryIcons" 
+                    :key="ico.icon" 
+                    type="button"
+                    class="ck-cat-icon-btn"
+                    :class="{ 'active': catForm.icon === ico.icon }"
+                    :title="ico.title"
+                    @click="catForm.icon = ico.icon"
+                  >
+                    <i :class="ico.icon"></i>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="flex gap-sm justify-end">
+            <div class="ck-cat-form-actions">
               <button 
                 v-if="editingCat" 
-                class="btn btn-secondary text-xs" 
+                type="button"
+                class="btn btn-secondary" 
                 @click="handleCancelEditCat"
               >
-                ยกเลิกแก้ไข
+                ยกเลิก
               </button>
               <button 
-                class="btn btn-primary text-xs" 
+                type="button"
+                class="btn btn-primary" 
                 :disabled="!catForm.name || isSavingCat" 
                 @click="handleSaveCategory"
+                style="flex: 1;"
               >
-                <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin mr-1"></i>
-                <i v-else class="fa-solid fa-floppy-disk mr-1"></i>
-                {{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'อัปเดตหมวดหมู่' : 'เพิ่มหมวดหมู่') }}
+                <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-floppy-disk"></i>
+                <span>{{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'บันทึกการแก้ไข' : 'เพิ่มหมวดหมู่') }}</span>
               </button>
             </div>
           </div>
 
           <!-- Existing Categories List -->
           <div>
-            <div class="font-bold text-sm mb-sm text-secondary flex flex-between align-center">
-              <span>หมวดหมู่ทั้งหมด ({{ kitchenCategories.length }} หมวดหมู่)</span>
-              <span class="text-xs text-muted">คลิกแก้ไขหรือลบหมวดหมู่ที่ไม่ได้ใช้งาน</span>
+            <div class="flex flex-between align-center mb-sm">
+              <span class="font-bold text-sm text-secondary">หมวดหมู่ทั้งหมด ({{ kitchenCategories.length }})</span>
+              <span class="text-xs text-muted">แก้ไขหรือลบหมวดหมู่ได้</span>
             </div>
 
-            <div class="flex flex-col gap-xs" style="max-height: 240px; overflow-y: auto;">
+            <div class="ck-cat-list">
               <div 
                 v-for="cat in kitchenCategories" 
                 :key="cat.id" 
-                class="flex flex-between align-center p-sm" 
-                style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);"
+                class="ck-cat-row"
               >
-                <div class="flex align-center gap-sm">
-                  <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color);">
-                    <i :class="cat.icon || 'fa-solid fa-tag'" class="text-primary"></i>
+                <div class="flex align-center gap-sm" style="min-width: 0;">
+                  <div class="ck-cat-row-icon">
+                    <i :class="cat.icon || 'fa-solid fa-tag'"></i>
                   </div>
-                  <div>
-                    <div class="font-bold text-sm">{{ cat.name }}</div>
-                    <div class="text-2xs text-secondary font-mono">{{ cat.code }} • {{ getCategoryCount(cat.code) }} สินค้า</div>
+                  <div style="min-width: 0;">
+                    <div class="font-bold text-sm text-primary-dark" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cat.name }}</div>
+                    <div class="ck-cat-row-meta">
+                      <span class="ck-cat-code-pill">{{ cat.code }}</span>
+                      <span class="text-xs text-secondary">{{ getCategoryCount(cat.code) }} สินค้า</span>
+                    </div>
                   </div>
                 </div>
 
-                <div class="flex align-center gap-xs">
+                <div class="flex align-center gap-xs flex-shrink-0">
                   <button 
-                    class="btn btn-ghost btn-xs text-primary" 
+                    type="button"
+                    class="ck-cat-action-btn edit" 
                     title="แก้ไขหมวดหมู่"
                     @click="handleEditCat(cat)"
                   >
                     <i class="fa-solid fa-pen"></i>
                   </button>
                   <button 
-                    class="btn btn-ghost btn-xs text-danger" 
+                    type="button"
+                    class="ck-cat-action-btn delete" 
                     title="ลบหมวดหมู่"
                     @click="handleDeleteCat(cat)"
                   >
@@ -3109,14 +3113,19 @@
             <div class="flex flex-between align-center mb-xs">
               <label class="form-label font-bold flex align-center gap-xs mb-0">
                 <i class="fa-solid fa-link text-primary"></i>
-                <span class="desktop-only">ผูกกับเมนูใน POS (สำหรับเติมสต็อกอัตโนมัติเมื่อเบิก/จ่าย)</span>
-                <span class="mobile-only">ผูกกับเมนู POS (เติมสต็อกอัตโนมัติ)</span>
+                <span>ผูกกับเมนูใน POS</span>
+                <span class="ck-tooltip-wrap" tabindex="0" aria-label="คำอธิบายการผูกเมนู POS">
+                  <i class="fa-regular fa-circle-question ck-tooltip-icon"></i>
+                  <span class="ck-tooltip-bubble" role="tooltip">
+                    ใช้สำหรับเติมสต็อกอัตโนมัติเมื่อเบิก/จ่าย หากเว้นว่างระบบจะหักเฉพาะสต็อกครัวกลางและบันทึกรายจ่ายสาขา โดยไม่แตะสต็อกเมนู POS
+                  </span>
+                </span>
               </label>
               <span v-if="itemForm.linked_menu_item_name" class="badge badge-success text-2xs" style="font-size: 11px; padding: 2px 8px; flex-shrink: 0;">
                 <i class="fa-solid fa-check"></i> ผูกแล้ว
               </span>
               <span v-else class="badge badge-secondary text-2xs" style="font-size: 11px; padding: 2px 8px; flex-shrink: 0;">
-                ไม่ผูก (เว้นว่าง)
+                ไม่ผูก
               </span>
             </div>
 
@@ -3133,8 +3142,7 @@
                     {{ itemForm.linked_menu_item_name }}
                   </template>
                   <template v-else>
-                    <span class="text-muted desktop-only">-- ไม่ผูกกับเมนู POS (ไม่เติมสต็อกอัตโนมัติ) --</span>
-                    <span class="text-muted mobile-only">-- ไม่ผูกกับเมนู POS --</span>
+                    <span class="text-muted">-- ไม่ผูกกับเมนู POS --</span>
                   </template>
                 </span>
               </div>
@@ -3145,7 +3153,7 @@
                   @click="itemForm.linked_menu_item_name = ''; isPosMenuModalDropdownOpen = false;"
                 >
                   <i class="fa-solid fa-ban text-muted" style="margin-right: 6px; width: 16px;"></i>
-                  <span>-- ไม่ผูกกับเมนู POS (ไม่เติมสต็อก) --</span>
+                  <span>-- ไม่ผูกกับเมนู POS --</span>
                 </div>
 
                 <template v-for="(groupItems, categoryName) in groupedPosMenuItems" :key="categoryName">
@@ -3166,14 +3174,13 @@
               </div>
             </div>
 
-            <!-- 2. ปุ่มเลือกว่าจะเติมอยู่ใน ประเภทสด หรือ พร้อมทาน (สไตล์ปุ่ม ไม่มีรูเช็คถูก) -->
+            <!-- 2. ปุ่มเลือกว่าจะเติมอยู่ใน ประเภทสด หรือ พร้อมทาน -->
             <div v-if="itemForm.linked_menu_item_name" class="stock-type-selector mt-sm">
               <label class="text-xs font-bold text-secondary block mb-xs">
                 <span class="desktop-only">เลือกประเภทสต็อกที่จะเติมเข้าเมนู "{{ itemForm.linked_menu_item_name }}":</span>
                 <span class="mobile-only">ประเภทสต็อกที่เติม:</span>
               </label>
               <div class="grid grid-2 gap-sm">
-                <!-- ปุ่มสต็อกของสด -->
                 <button 
                   type="button" 
                   class="btn-stock-choice"
@@ -3185,7 +3192,6 @@
                   <span class="btn-stock-choice-sub mobile-only">ของดิบ (raw_quantity)</span>
                 </button>
 
-                <!-- ปุ่มสต็อกพร้อมทาน -->
                 <button 
                   type="button" 
                   class="btn-stock-choice"
@@ -3235,20 +3241,6 @@
                 <span class="desktop-only">เมื่อครัวกลางจ่ายของให้สาขา ระบบจะคำนวณตามอัตราแปลงหน่วยและเติมสต็อกเมนูนี้ที่สาขาให้อัตโนมัติ</span>
                 <span class="mobile-only">เมื่อจ่ายของ จะคำนวณแปลงหน่วยและเติมสต็อกเมนูนี้ให้สาขาอัตโนมัติ</span>
               </div>
-            </div>
-
-            <!-- ข้อมูลอธิบายเมื่อเว้นว่าง (ไม่ผูกกับเมนู) -->
-            <div v-else class="stock-sync-empty-note mt-xs">
-              <div class="flex align-center gap-xs text-xs font-bold text-secondary mb-1">
-                <i class="fa-regular fa-circle-question text-primary"></i>
-                <span>เมื่อเว้นว่าง (ไม่ผูกเมนู)</span>
-              </div>
-              <p class="text-2xs text-muted mb-0 desktop-only">
-                เมื่อเบิกจ่าย ระบบจะ<strong>หักเฉพาะสต็อกครัวกลาง</strong> และบันทึกเป็น<strong>รายจ่ายสาขา</strong>ตามปกติ โดย<strong>ไม่มีการแตะต้องสต็อกเมนู POS</strong> ของสาขา (เหมาะสำหรับ บรรจุภัณฑ์, ถุงหิ้ว, ของใช้ทั่วไป, อุปกรณ์ หรือวัตถุดิบรวม)
-              </p>
-              <p class="text-2xs text-muted mb-0 mobile-only">
-                ระบบจะตัดสต็อกครัวกลาง และบันทึกรายจ่ายสาขา โดย<strong>ไม่แตะสต็อก POS</strong> (เหมาะกับของใช้, บรรจุภัณฑ์)
-              </p>
             </div>
           </div>
 
@@ -5557,6 +5549,7 @@ onUnmounted(() => {
   font-size: var(--font-lg);
   font-weight: bold;
   color: var(--text-secondary);
+  margin-left: 0;
 }
 
 .menu-action-buttons {
@@ -8682,5 +8675,194 @@ onUnmounted(() => {
     z-index: 10;
     animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
+}
+
+/* ── Category Modal & POS Link Tooltip ── */
+.ck-cat-form-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ck-cat-form-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.ck-cat-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.ck-cat-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.ck-cat-icon-btn {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.ck-cat-icon-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.ck-cat-icon-btn.active {
+  background: var(--gradient-primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.ck-cat-form-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.ck-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ck-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 10px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.ck-cat-row-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.ck-cat-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.ck-cat-code-pill {
+  font-family: monospace;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.ck-cat-action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.ck-cat-action-btn.edit {
+  color: var(--primary);
+}
+
+.ck-cat-action-btn.edit:hover {
+  background: rgba(139, 3, 19, 0.08);
+  border-color: var(--primary);
+}
+
+.ck-cat-action-btn.delete {
+  color: var(--danger);
+}
+
+.ck-cat-action-btn.delete:hover {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: var(--danger);
+}
+
+.ck-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.ck-tooltip-icon {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.ck-tooltip-wrap:hover .ck-tooltip-icon,
+.ck-tooltip-wrap:focus .ck-tooltip-icon {
+  color: var(--primary);
+}
+
+.ck-tooltip-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: 260px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: #2b1d12;
+  color: #fff7df;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 30;
+}
+
+.ck-tooltip-wrap:hover .ck-tooltip-bubble,
+.ck-tooltip-wrap:focus .ck-tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
 }
 </style>
