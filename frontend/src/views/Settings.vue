@@ -130,15 +130,16 @@
     <!-- Tab 2: User management -->
     <div v-if="activeTab === 'users'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card diner-retro-card flex flex-between align-center flex-wrap gap-md staff-header-card">
+      <div class="card diner-page-header">
         <div class="flex align-center gap-md">
-          <div class="diner-icon-badge"><i class="fa-solid fa-users"></i></div>
-          <div class="flex align-center gap-sm">
-            <span class="font-bold text-lg text-primary">จัดการพนักงานหน้าร้าน</span>
-            <span class="diner-count-pill">{{ users.length }} คน</span>
+          <div class="diner-icon-circle"><i class="fa-solid fa-users"></i></div>
+          <div class="diner-header-title">
+            พนักงานหน้าร้าน: <strong class="tabular-nums">{{ users.length }}</strong> คน
           </div>
         </div>
-        <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
+        <div class="diner-header-actions">
+          <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
+        </div>
       </div>
 
       <!-- Users list table (Visible on Desktop Only) -->
@@ -251,45 +252,37 @@
           v-else 
           v-for="u in users" 
           :key="u.id"
-          class="card p-sm flex align-center gap-md"
-          style="margin-bottom: var(--space-sm);"
+          class="card diner-item-card"
         >
-          <!-- Profile Badge -->
-          <div 
-            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
-            class="font-bold text-md"
-          >
-            <i v-if="!u.name" class="fa-solid fa-user"></i>
-            <span v-else>{{ u.name.charAt(0).toUpperCase() }}</span>
+          <div class="flex align-center gap-md mb-sm">
+            <div class="diner-icon-badge font-bold">
+              <i v-if="!u.name" class="fa-solid fa-user"></i>
+              <span v-else>{{ u.name.charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-between align-center gap-xs">
+                <span class="font-bold text-base" style="color: var(--text-primary);">{{ u.name }}</span>
+                <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
+                  {{ getRoleLabel(u.role) }}
+                </span>
+              </div>
+              <div class="text-xs text-secondary mt-xs flex align-center gap-xs">
+                <i class="fa-solid fa-store" style="color: var(--primary);"></i>
+                <span>{{ getBranchName(u.branch_id) }}</span>
+              </div>
+            </div>
           </div>
-
-          <!-- Info & Actions -->
-          <div class="flex-1 min-w-0">
-            <div class="flex flex-between align-center mb-xs">
-              <span class="font-bold text-primary text-base">{{ u.name }}</span>
-              <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
-                {{ getRoleLabel(u.role) }}
-              </span>
-            </div>
-            <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm); display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fa-solid fa-store" style="color: var(--text-tertiary);"></i> {{ getBranchName(u.branch_id) }} | PIN: <strong style="color:var(--primary);">••••</strong>
-            </div>
-            <!-- Actions buttons in card -->
-            <div class="flex gap-sm">
-              <button 
-                class="btn-action btn-action-edit flex-1" 
-                @click="openEditUserModal(u)"
-              >
-                <i class="fa-solid fa-pen-to-square"></i> แก้ไข
-              </button>
-              <button 
-                class="btn-action btn-action-delete flex-1" 
-                :disabled="u.id === currentUser?.id"
-                @click="handleDeleteUser(u.id)"
-              >
-                <i class="fa-solid fa-trash-can"></i> ลบ
-              </button>
-            </div>
+          <div class="flex gap-sm">
+            <button class="btn-action btn-action-edit flex-1" @click="openEditUserModal(u)">
+              <i class="fa-solid fa-pen-to-square"></i> แก้ไข
+            </button>
+            <button 
+              class="btn-action btn-action-delete flex-1" 
+              :disabled="u.id === currentUser?.id"
+              @click="handleDeleteUser(u.id)"
+            >
+              <i class="fa-solid fa-trash-can"></i> ลบ
+            </button>
           </div>
         </div>
       </div>
@@ -398,15 +391,16 @@
     <!-- Tab 3: Branch management (Admin only) -->
     <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card diner-retro-card flex flex-between align-center flex-wrap gap-md staff-header-card">
+      <div class="card diner-page-header">
         <div class="flex align-center gap-md">
-          <div class="diner-icon-badge"><i class="fa-solid fa-code-branch"></i></div>
-          <div class="flex align-center gap-sm">
-            <span class="font-bold text-lg text-primary">จัดการสาขาของร้าน</span>
-            <span class="diner-count-pill">{{ branches.length }} สาขา</span>
+          <div class="diner-icon-circle"><i class="fa-solid fa-code-branch"></i></div>
+          <div class="diner-header-title">
+            สาขาทั้งหมด: <strong class="tabular-nums">{{ branches.length }}</strong> สาขา
           </div>
         </div>
-        <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
+        <div class="diner-header-actions">
+          <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
+        </div>
       </div>
 
       <!-- Branch list table (Visible on Desktop Only) -->
@@ -492,35 +486,26 @@
           v-else 
           v-for="b in branches" 
           :key="b.id"
-          class="card p-sm flex align-center gap-md"
-          style="margin-bottom: var(--space-sm);"
+          class="card diner-item-card"
         >
-          <div 
-            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
-            class="text-md"
-          >
-            <i class="fa-solid fa-store" style="font-size: 1.2rem;"></i>
+          <div class="flex align-center gap-md mb-sm">
+            <div class="diner-icon-badge">
+              <i class="fa-solid fa-store"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-base" style="color: var(--text-primary);">{{ b.name }}</div>
+              <div class="text-xs text-secondary mt-xs">
+                <i class="fa-solid fa-location-dot mr-xs" style="color: var(--primary);"></i>{{ b.address || '-' }}
+              </div>
+            </div>
           </div>
-
-          <div class="flex-1 min-w-0">
-            <div class="font-bold text-primary mb-xs text-base">{{ b.name }}</div>
-            <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm);">
-              <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
-            </div>
-            <div class="flex gap-sm">
-              <button 
-                class="btn-action btn-action-edit flex-1" 
-                @click="openEditBranchModal(b)"
-              >
-                <i class="fa-solid fa-pen-to-square"></i> แก้ไข
-              </button>
-              <button 
-                class="btn-action btn-action-delete flex-1" 
-                @click="handleDeleteBranch(b.id)"
-              >
-                <i class="fa-solid fa-trash-can"></i> ลบ
-              </button>
-            </div>
+          <div class="flex gap-sm">
+            <button class="btn-action btn-action-edit flex-1" @click="openEditBranchModal(b)">
+              <i class="fa-solid fa-pen-to-square"></i> แก้ไข
+            </button>
+            <button class="btn-action btn-action-delete flex-1" @click="handleDeleteBranch(b.id)">
+              <i class="fa-solid fa-trash-can"></i> ลบ
+            </button>
           </div>
         </div>
       </div>
@@ -2480,6 +2465,50 @@ input:checked + .slider:before {
 }
 
 /* --- Diner Retro Settings Cards & Tables --- */
+.diner-page-header {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+.diner-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.diner-header-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+.diner-header-title strong {
+  color: var(--primary);
+  font-size: 1.35rem;
+}
+.diner-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.diner-item-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
 .diner-retro-card {
   background: #ffffff;
   border: 1.5px solid var(--border-color);
