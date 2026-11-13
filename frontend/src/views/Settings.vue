@@ -603,10 +603,33 @@
 
           <div v-if="!isEditBranchMode && branches.length > 0" class="form-group">
             <label class="form-label">คัดลอกเมนูจากสาขา</label>
-            <select class="form-input" v-model="branchForm.copy_from_branch_id">
-              <option v-for="b in branches" :key="'copy-' + b.id" :value="b.id">{{ b.name }}</option>
-              <option value="none">ไม่คัดลอก (เริ่มจากหน้าว่าง)</option>
-            </select>
+            <div class="custom-select-wrapper" @click.stop>
+              <div
+                class="custom-select-trigger"
+                :class="{ 'active': isCopyBranchDropdownOpen }"
+                @click="isCopyBranchDropdownOpen = !isCopyBranchDropdownOpen"
+              >
+                <span class="custom-select-text">{{ selectedCopyBranchName }}</span>
+              </div>
+              <div v-if="isCopyBranchDropdownOpen" class="custom-select-dropdown">
+                <div
+                  v-for="b in branches"
+                  :key="'copy-' + b.id"
+                  class="custom-select-option"
+                  :class="{ 'selected': branchForm.copy_from_branch_id === b.id }"
+                  @click="selectCopyBranch(b.id)"
+                >
+                  {{ b.name }}
+                </div>
+                <div
+                  class="custom-select-option"
+                  :class="{ 'selected': branchForm.copy_from_branch_id === 'none' }"
+                  @click="selectCopyBranch('none')"
+                >
+                  ไม่คัดลอก (เริ่มจากหน้าว่าง)
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="flex gap-md mt-lg">
@@ -1560,6 +1583,17 @@ const selectUserBranch = (branchId) => {
   isBranchDropdownOpen.value = false;
 };
 
+const isCopyBranchDropdownOpen = ref(false);
+const selectedCopyBranchName = computed(() => {
+  if (branchForm.value.copy_from_branch_id === 'none') return 'ไม่คัดลอก (เริ่มจากหน้าว่าง)';
+  const found = branches.value.find(b => b.id === branchForm.value.copy_from_branch_id);
+  return found ? found.name : 'เลือกสาขาต้นทาง...';
+});
+const selectCopyBranch = (branchId) => {
+  branchForm.value.copy_from_branch_id = branchId;
+  isCopyBranchDropdownOpen.value = false;
+};
+
 const selectSettingsBranch = (branchId) => {
   selectedSettingsBranchId.value = branchId;
   isSettingsBranchDropdownOpen.value = false;
@@ -1590,6 +1624,7 @@ const selectPrintMode = (mode) => {
 const closeSettingsDropdowns = () => {
   isRoleDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
+  isCopyBranchDropdownOpen.value = false;
   isSettingsBranchDropdownOpen.value = false;
   isBackupPeriodDropdownOpen.value = false;
   isBackupBranchDropdownOpen.value = false;
@@ -1635,6 +1670,7 @@ const branchForm = ref({
 });
 
 const openAddBranchModal = () => {
+  isCopyBranchDropdownOpen.value = false;
   isEditBranchMode.value = false;
   editBranchId.value = null;
   const defaultSource = branches.value.find(b => !b.name?.includes('ครัวกลาง')) || branches.value[0];
