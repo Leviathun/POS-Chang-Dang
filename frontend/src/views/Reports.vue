@@ -3620,19 +3620,6 @@ const getStockReasonLabel = (reason) => {
   return map[reason] || reason;
 };
 
-const getStockReasonIconClass = (reason) => {
-  const map = {
-    'sale': 'fa-solid fa-cart-shopping',
-    'restock': 'fa-solid fa-plus',
-    'adjustment': 'fa-solid fa-wrench',
-    'waste': 'fa-solid fa-trash-can',
-    'cancel_restore': 'fa-solid fa-rotate-left',
-    'staff_benefit': 'fa-solid fa-utensils',
-    'fry': 'fa-solid fa-fire'
-  };
-  return map[reason] || 'fa-solid fa-circle-info';
-};
-
 // Refetch stock history when item or date changes
 watch(selectedReportsStockItemId, () => {
   stockLogsCurrentPage.value = 1;
@@ -3729,20 +3716,6 @@ const selectedFilterActionLabel = computed(() => {
   };
   return filterLabels[filterAction.value] || 'ทั้งหมด';
 });
-const getFilterActionIcon = (action) => {
-  const map = {
-    all: 'fa-solid fa-folder-open',
-    login: 'fa-solid fa-key',
-    sales: 'fa-solid fa-circle-check',
-    cancel: 'fa-solid fa-ban',
-    expenses: 'fa-solid fa-wallet',
-    stock: 'fa-solid fa-boxes-stacked',
-    waste: 'fa-solid fa-trash-can',
-    credit: 'fa-solid fa-user-check',
-    cash_drawer: 'fa-solid fa-cash-register'
-  };
-  return map[action] || 'fa-solid fa-folder';
-};
 const selectFilterAction = (action) => {
   filterAction.value = action;
   isFilterActionDropdownOpen.value = false;
@@ -4277,11 +4250,6 @@ const loadTopItems = async () => {
   }
 };
 
-const getPopularityPercentage = (qty, maxQty) => {
-  if (!maxQty) return 0;
-  return Math.round((qty / maxQty) * 100);
-};
-
 // ── Order Expand & Void ──
 
 const toggleExpandOrder = async (orderId) => {
@@ -4393,14 +4361,6 @@ const handleDeleteExpense = async (id) => {
 };
 
 // ── Helpers ──
-
-const setPeriodMode = (mode) => {
-  periodMode.value = mode;
-  if (!selectedDate.value) selectedDate.value = getToday();
-  if (!selectedMonth.value) selectedMonth.value = getToday().substring(0, 7);
-  if (!selectedYear.value) selectedYear.value = getToday().substring(0, 4);
-  loadReportData();
-};
 
 const getCategoryLabel = (cat) => {
   const map = {

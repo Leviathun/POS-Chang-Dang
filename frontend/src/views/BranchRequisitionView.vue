@@ -955,14 +955,6 @@ onUnmounted(() => {
 });
 
 const cartSidebarRef = ref(null);
-const scrollToCart = () => {
-  if (cartSidebarRef.value) {
-    cartSidebarRef.value.scrollIntoView({ behavior: 'smooth' });
-  } else {
-    document.querySelector('.cart-sidebar')?.scrollIntoView({ behavior: 'smooth' });
-  }
-};
-
 // Helpers
 const formatNumber = (num) => Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const formatDateTime = (str) => {

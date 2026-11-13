@@ -1594,21 +1594,6 @@ const selectCopyBranch = (branchId) => {
   isCopyBranchDropdownOpen.value = false;
 };
 
-const selectSettingsBranch = (branchId) => {
-  selectedSettingsBranchId.value = branchId;
-  isSettingsBranchDropdownOpen.value = false;
-  if (branchId !== null) {
-    sessionStorage.setItem('selected_branch_id', String(branchId));
-  }
-  loadShopSettings();
-};
-
-const toggleSettingsBranchDropdown = () => {
-  const current = isSettingsBranchDropdownOpen.value;
-  closeSettingsDropdowns();
-  isSettingsBranchDropdownOpen.value = !current;
-};
-
 const togglePrintModeDropdown = () => {
   const current = isPrintModeDropdownOpen.value;
   closeSettingsDropdowns();

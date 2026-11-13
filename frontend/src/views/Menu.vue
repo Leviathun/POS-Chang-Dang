@@ -793,16 +793,6 @@ const getModifierCategoryLabel = (category) => {
   return map[category] || category;
 };
 
-const getModifierCategoryIcon = (category) => {
-  const map = {
-    'sauce_small': 'fa-solid fa-bottle-droplet',
-    'sauce_large': 'fa-solid fa-prescription-bottle',
-    'dipping': 'fa-solid fa-bowl-food',
-    'powder': 'fa-solid fa-sparkles'
-  };
-  return map[category] || 'fa-solid fa-tag';
-};
-
 const getModifierCategoryClass = (category) => {
   const map = {
     'sauce_small': 'badge-mod-sauce-small',
@@ -1065,12 +1055,6 @@ const openCatModal = () => {
 const onSmlToggleChange = () => {
   if (itemForm.value.use_multiple_prices) {
     itemForm.value.use_cooking_options = false;
-  }
-};
-
-const onCookingToggleChange = () => {
-  if (itemForm.value.use_cooking_options) {
-    itemForm.value.use_multiple_prices = false;
   }
 };
 

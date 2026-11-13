@@ -5492,12 +5492,6 @@ const submitWaste = async () => {
 // ── Branch Reimbursement Methods ──────────────────────────────────
 const reimburseTargetBranch = ref(null);
 
-const openReimburseModal = () => {
-  reimburseTargetBranch.value = null;
-  reimburseNote.value = `โอนเคลียร์เงินคืนครัวกลาง สาขา ${settlementData.value?.branch_name || ''}`;
-  showReimburseModal.value = true;
-};
-
 const openReimburseModalForBranch = (branch) => {
   reimburseTargetBranch.value = branch;
   reimburseNote.value = `โอนเคลียร์เงินคืนครัวกลาง สาขา ${branch.branch_name || ''}`;
