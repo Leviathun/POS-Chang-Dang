@@ -1776,28 +1776,6 @@ const loadShopSettings = async (force = false) => {
   }
 };
 
-// Save Shop Settings to Database
-const saveShopSettings = async () => {
-  if (isSavingShopSettings.value) return;
-  isSavingShopSettings.value = true;
-  ui.showLoading();
-  try {
-    const promises = Object.entries(shopForm.value).map(([key, val]) => {
-      return api.settings.update(key, String(val), selectedSettingsBranchId.value);
-    });
-    
-    await Promise.all(promises);
-    await loadShopSettings(true); // Force reload settings to update store cache
-    ui.showToast('บันทึกการตั้งค่าร้านสำเร็จแล้ว 🎉', 'success');
-  } catch (error) {
-    console.error(error);
-    ui.showToast('บันทึกตั้งค่าไม่สำเร็จ: ' + error.message, 'error');
-  } finally {
-    ui.hideLoading();
-    isSavingShopSettings.value = false;
-  }
-};
-
 // Users Logic
 const loadUsersData = async (force = false) => {
   usersLoading.value = !store.settingsLoaded || force;

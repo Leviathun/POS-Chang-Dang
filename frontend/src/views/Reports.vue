@@ -4527,66 +4527,6 @@ const exportToCSV = (headers, rows, filename) => {
   }
 };
 
-const exportSalesCSV = () => {
-  const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
-  const rows = (displayedDailyReport.value.orders || []).map(o => {
-    let modsText = '';
-    const modsStr = o.modifiers || o.free_modifiers;
-    if (modsStr) {
-      try {
-        const parsed = JSON.parse(modsStr);
-        if (Array.isArray(parsed)) {
-          modsText = parsed.map(m => m.name).join(' | ');
-        }
-      } catch (e) {}
-    }
-    return [
-      o.order_number,
-      o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : o.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ',
-      o.staff_name || 'ระบบ',
-      o.branch_name || 'ไม่ระบุ',
-      o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
-      formatDate(o.created_at) + ' ' + formatTime(o.created_at),
-      modsText,
-      o.note || ''
-    ];
-  });
-  
-  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
-  exportToCSV(headers, rows, `sales_report_${periodStr}.csv`);
-};
-
-const exportHistoryOrdersCSV = () => {
-  const headers = ['เลขที่บิล', 'ยอดสุทธิ (บาท)', 'วิธีชำระเงิน', 'พนักงาน', 'สาขา', 'สถานะ', 'วันที่-เวลา', 'ซอส/ผง/น้ำจิ้มที่เลือก', 'หมายเหตุ'];
-  const rows = historyOrders.value.map(o => {
-    let modsText = '';
-    const modsStr = o.modifiers || o.free_modifiers;
-    if (modsStr) {
-      try {
-        const parsed = JSON.parse(modsStr);
-        if (Array.isArray(parsed)) {
-          modsText = parsed.map(m => m.name).join(' | ');
-        }
-      } catch (e) {}
-    }
-    return [
-      o.order_number,
-      o.total,
-      o.payment_method === 'cash' ? 'เงินสด' : (o.payment_method === 'qr' || o.payment_method === 'promptpay') ? 'QR Code' : o.payment_method === 'gov' ? 'โครงการของรัฐ' : o.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ',
-      o.staff_name || 'ระบบ',
-      o.branch_name || 'ไม่ระบุ',
-      o.status === 'completed' ? 'สำเร็จ' : o.status === 'cancelled' ? 'ยกเลิก' : 'รอชำระ',
-      formatDate(o.created_at) + ' ' + formatTime(o.created_at),
-      modsText,
-      o.note || ''
-    ];
-  });
-  
-  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
-  exportToCSV(headers, rows, `order_history_${periodStr}.csv`);
-};
-
 const exportExpensesCSV = () => {
   const headers = ['วันที่-เวลา', 'รายการ', 'รายรับ (บาท)', 'รายจ่าย (บาท)', 'คงเหลือสุทธิ (บาท)'];
   const rows = filteredLedgerTransactions.value.map(t => [
