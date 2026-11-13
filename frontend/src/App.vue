@@ -238,18 +238,6 @@
 
           <!-- Right: Branch Badge -->
           <div class="header-right flex align-center gap-xs">
-            <!-- When in Central Kitchen mode: show quick switch back to Retail Store in the corner! -->
-            <button 
-              v-if="isCentralKitchenSessionActive" 
-              type="button" 
-              class="header-btn inline-flex align-center gap-2xs" 
-              @click="switchToPosBranch"
-              title="สลับกลับไปหน้าร้าน POS"
-              style="background: rgba(139, 3, 19, 0.08) !important; color: var(--primary) !important; border: 1.5px solid var(--primary-light) !important;"
-            >
-              <i class="fa-solid fa-store" style="font-size: var(--font-xs);"></i>
-              <span style="font-size: var(--font-xs); font-weight: bold;">หน้าร้าน</span>
-            </button>
             <div class="header-branch-badge inline-flex align-center">
               <i v-if="isCentralKitchenSessionActive" class="fa-solid fa-warehouse branch-icon"></i>
               <i v-else class="fa-solid fa-store branch-icon"></i>
