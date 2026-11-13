@@ -4784,7 +4784,7 @@ const getStatusLabel = (st) => {
 
 // Fetch Methods
 const loadItems = async () => {
-  isLoadingItems.value = true;
+  if (items.value.length === 0) isLoadingItems.value = true;
   try {
     const res = await api.centralKitchen.getItems({ active_only: 'true' });
     if (res.success) {
@@ -4798,7 +4798,7 @@ const loadItems = async () => {
 };
 
 const loadOrders = async () => {
-  isLoadingOrders.value = true;
+  if (orders.value.length === 0) isLoadingOrders.value = true;
   try {
     const res = await api.centralKitchen.getTransfers(getPeriodQueryParams());
     if (res.success) {
@@ -4812,7 +4812,7 @@ const loadOrders = async () => {
 };
 
 const loadHistory = async () => {
-  isLoadingHistory.value = true;
+  if (history.value.length === 0) isLoadingHistory.value = true;
   try {
     const res = await api.centralKitchen.getHistory(getPeriodQueryParams());
     if (res.success) {
@@ -5632,7 +5632,7 @@ onUnmounted(() => {
   window.removeEventListener('click', closeOrderBranchDropdown);
   window.removeEventListener('click', closePartnerBranchDropdown);
   window.removeEventListener('click', closeReceivablesBranchDropdown);
-  window.addEventListener('click', closeDispatchBranchDropdown);
+  window.removeEventListener('click', closeDispatchBranchDropdown);
 });
 </script>
 
