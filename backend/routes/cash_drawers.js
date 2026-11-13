@@ -353,53 +353,81 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
 
     const sessions = await db.prepare(query).all(...params);
 
-    const enrichedSessions = [];
-    for (const session of sessions) {
-      // Get cash sales comprehensively
-      const salesRes = await db.prepare(`
-        SELECT SUM(total) as cash_sales
-        FROM orders
-        WHERE (session_id = ? OR (session_id IS NULL AND branch_id = ? AND date(created_at, '+7 hours') = ?))
-          AND payment_method = 'cash' AND status = 'completed'
-      `).get(session.id, session.branch_id, session.session_date);
-      const cashSales = salesRes ? (salesRes.cash_sales || 0) : 0;
+    const EXPENSE_CASH_SUM = `SUM(
+      CASE 
+        WHEN is_refund = 1 OR status = 'refund' THEN -amount
+        WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
+        ELSE amount
+      END
+    )`;
 
-      // Get cash expenses comprehensively
-      const expRes = await db.prepare(`
-        SELECT SUM(
-          CASE 
-            WHEN is_refund = 1 OR status = 'refund' THEN -amount
-            WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
-            ELSE amount
-          END
-        ) as cash_expenses
-        FROM expenses
-        WHERE (session_id = ? OR (session_id IS NULL AND branch_id = ? AND expense_date = ?))
-          AND (payment_method = 'cash' OR payment_method IS NULL)
-      `).get(session.id, session.branch_id, session.session_date);
-      const cashExpenses = Math.max(0, expRes ? (expRes.cash_expenses || 0) : 0);
+    // Batch-aggregate sales & expenses for all fetched sessions in parallel (avoids N+1)
+    const ordersBySession = new Map();
+    const ordersNullByBD = new Map();
+    const expBySession = new Map();
+    const expNullByBD = new Map();
 
-      // For open session, calculate expected cash on the fly
+    if (sessions.length > 0) {
+      const sIds = [...new Set(sessions.map(s => s.id))];
+      const sBranches = [...new Set(sessions.map(s => s.branch_id))];
+      const sDates = [...new Set(sessions.map(s => s.session_date))];
+      const idPh = sIds.map(() => '?').join(',');
+      const brPh = sBranches.map(() => '?').join(',');
+      const dtPh = sDates.map(() => '?').join(',');
+
+      const [oSessRows, oNullRows, eSessRows, eNullRows] = await Promise.all([
+        db.prepare(`
+          SELECT session_id, SUM(total) as cash_sales
+          FROM orders
+          WHERE session_id IN (${idPh}) AND payment_method = 'cash' AND status = 'completed'
+          GROUP BY session_id
+        `).all(...sIds),
+        db.prepare(`
+          SELECT branch_id, date(created_at, '+7 hours') as d, SUM(total) as cash_sales
+          FROM orders
+          WHERE session_id IS NULL AND branch_id IN (${brPh}) AND date(created_at, '+7 hours') IN (${dtPh})
+            AND payment_method = 'cash' AND status = 'completed'
+          GROUP BY branch_id, date(created_at, '+7 hours')
+        `).all(...sBranches, ...sDates),
+        db.prepare(`
+          SELECT session_id, ${EXPENSE_CASH_SUM} as cash_expenses
+          FROM expenses
+          WHERE session_id IN (${idPh}) AND (payment_method = 'cash' OR payment_method IS NULL)
+          GROUP BY session_id
+        `).all(...sIds),
+        db.prepare(`
+          SELECT branch_id, expense_date as d, ${EXPENSE_CASH_SUM} as cash_expenses
+          FROM expenses
+          WHERE session_id IS NULL AND branch_id IN (${brPh}) AND expense_date IN (${dtPh})
+            AND (payment_method = 'cash' OR payment_method IS NULL)
+          GROUP BY branch_id, expense_date
+        `).all(...sBranches, ...sDates)
+      ]);
+
+      for (const r of oSessRows) ordersBySession.set(r.session_id, r.cash_sales || 0);
+      for (const r of oNullRows) ordersNullByBD.set(`${r.branch_id}|${r.d}`, r.cash_sales || 0);
+      for (const r of eSessRows) expBySession.set(r.session_id, r.cash_expenses || 0);
+      for (const r of eNullRows) expNullByBD.set(`${r.branch_id}|${r.d}`, r.cash_expenses || 0);
+    }
+
+    const enrichedSessions = sessions.map(session => {
+      const bdKey = `${session.branch_id}|${session.session_date}`;
+      const cashSales = (ordersBySession.get(session.id) || 0) + (ordersNullByBD.get(bdKey) || 0);
+      const cashExpenses = Math.max(0, (expBySession.get(session.id) || 0) + (expNullByBD.get(bdKey) || 0));
       const expectedCash = (session.opening_cash || 0) + cashSales - cashExpenses;
-      
-      enrichedSessions.push({
+      return {
         ...session,
         cash_sales: cashSales,
         cash_expenses: cashExpenses,
         calculated_expected_cash: expectedCash
-      });
-    }
+      };
+    });
 
     // Determine branches that need virtual sessions for today & yesterday if not yet created
-    let targetBranches = [];
-    if (filterBranchId !== null) {
-      const b = await db.prepare('SELECT id, name FROM branches WHERE id = ?').get(filterBranchId);
-      if (b) targetBranches.push(b);
-    } else {
-      targetBranches = await db.prepare('SELECT id, name FROM branches ORDER BY id ASC').all();
-    }
+    const targetBranches = filterBranchId !== null
+      ? (await db.prepare('SELECT id, name FROM branches WHERE id = ?').all(filterBranchId))
+      : (await db.prepare('SELECT id, name FROM branches ORDER BY id ASC').all());
 
-    // Helper to generate list of YYYY-MM-DD dates in range
     const getDatesInRange = (startStr, endStr) => {
       const dates = [];
       const [sy, sm, sd] = startStr.split('-').map(Number);
@@ -421,125 +449,66 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
     const yesterdayDate = new Date(todayDate.getTime() - 24 * 60 * 60 * 1000);
     const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
 
+    const existingKeys = new Set(enrichedSessions.map(s => `${s.branch_id}|${s.session_date}`));
+    const candidateDates = (start_date && end_date)
+      ? getDatesInRange(start_date, end_date)
+      : [yesterdayStr, todayStr];
+
+    const missingPairs = [];
     for (const targetBranch of targetBranches) {
-      if (start_date && end_date) {
-        // Generate every day in the requested date range (e.g. days 1 to 31 of the month)
-        const dateRangeList = getDatesInRange(start_date, end_date);
-        for (const dStr of dateRangeList) {
-          const hasSession = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === dStr);
-          if (!hasSession) {
-            // Query actual cash sales/expenses for this date
-            const dSales = await db.prepare(`
-              SELECT SUM(total) as cash_sales FROM orders 
-              WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
-            `).get(targetBranch.id, dStr);
-            const dExpenses = await db.prepare(`
-              SELECT SUM(
-                CASE 
-                  WHEN is_refund = 1 OR status = 'refund' THEN -amount
-                  WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
-                  ELSE amount
-                END
-              ) as cash_expenses FROM expenses 
-              WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL) AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
-            `).get(targetBranch.id, dStr);
-
-            const cashSales = dSales ? (dSales.cash_sales || 0) : 0;
-            const cashExpenses = Math.max(0, dExpenses ? (dExpenses.cash_expenses || 0) : 0);
-
-            enrichedSessions.push({
-              id: null,
-              branch_id: targetBranch.id,
-              branch_name: targetBranch.name,
-              session_date: dStr,
-              opening_cash: 0.0,
-              expected_cash: cashSales - cashExpenses,
-              actual_cash: null,
-              difference: null,
-              status: 'open',
-              note: null,
-              cash_sales: cashSales,
-              cash_expenses: cashExpenses,
-              calculated_expected_cash: cashSales - cashExpenses
-            });
-          }
+      for (const dStr of candidateDates) {
+        if (!existingKeys.has(`${targetBranch.id}|${dStr}`)) {
+          missingPairs.push({ branch: targetBranch, dateStr: dStr });
         }
-      } else {
-        // Default fallback if no range specified: ensure yesterday & today exist
-        const hasToday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === todayStr);
-        const hasYesterday = enrichedSessions.some(s => s.branch_id === targetBranch.id && s.session_date === yesterdayStr);
+      }
+    }
 
-        if (!hasYesterday) {
-          const ySales = await db.prepare(`
-            SELECT SUM(total) as cash_sales FROM orders 
-            WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
-          `).get(targetBranch.id, yesterdayStr);
-          const yExpenses = await db.prepare(`
-            SELECT SUM(
-              CASE 
-                WHEN is_refund = 1 OR status = 'refund' THEN -amount
-                WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
-                ELSE amount
-              END
-            ) as cash_expenses FROM expenses 
-            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL) AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
-          `).get(targetBranch.id, yesterdayStr);
-          
-          const yCashSales = ySales ? (ySales.cash_sales || 0) : 0;
-          const yCashExpenses = Math.max(0, yExpenses ? (yExpenses.cash_expenses || 0) : 0);
+    if (missingPairs.length > 0) {
+      const mBranches = [...new Set(missingPairs.map(p => p.branch.id))];
+      const mDates = [...new Set(missingPairs.map(p => p.dateStr))];
+      const brPh = mBranches.map(() => '?').join(',');
+      const dtPh = mDates.map(() => '?').join(',');
 
-          enrichedSessions.push({
-            id: null,
-            branch_id: targetBranch.id,
-            branch_name: targetBranch.name,
-            session_date: yesterdayStr,
-            opening_cash: 0.0,
-            expected_cash: yCashSales - yCashExpenses,
-            actual_cash: null,
-            difference: null,
-            status: 'open',
-            note: null,
-            cash_sales: yCashSales,
-            cash_expenses: yCashExpenses,
-            calculated_expected_cash: yCashSales - yCashExpenses
-          });
-        }
+      const [vSalesRows, vExpRows] = await Promise.all([
+        db.prepare(`
+          SELECT branch_id, date(created_at, '+7 hours') as d, SUM(total) as cash_sales
+          FROM orders
+          WHERE branch_id IN (${brPh}) AND date(created_at, '+7 hours') IN (${dtPh})
+            AND payment_method = 'cash' AND status = 'completed'
+          GROUP BY branch_id, date(created_at, '+7 hours')
+        `).all(...mBranches, ...mDates),
+        db.prepare(`
+          SELECT branch_id, expense_date as d, ${EXPENSE_CASH_SUM} as cash_expenses
+          FROM expenses
+          WHERE branch_id IN (${brPh}) AND expense_date IN (${dtPh})
+            AND (payment_method = 'cash' OR payment_method IS NULL)
+            AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
+          GROUP BY branch_id, expense_date
+        `).all(...mBranches, ...mDates)
+      ]);
 
-        if (!hasToday) {
-          const tSales = await db.prepare(`
-            SELECT SUM(total) as cash_sales FROM orders 
-            WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND payment_method = 'cash' AND status = 'completed'
-          `).get(targetBranch.id, todayStr);
-          const tExpenses = await db.prepare(`
-            SELECT SUM(
-              CASE 
-                WHEN is_refund = 1 OR status = 'refund' THEN -amount
-                WHEN status = 'cancelled' AND id NOT IN (SELECT refund_ref_id FROM expenses WHERE refund_ref_id IS NOT NULL) THEN 0
-                ELSE amount
-              END
-            ) as cash_expenses FROM expenses 
-            WHERE branch_id = ? AND expense_date = ? AND (payment_method = 'cash' OR payment_method IS NULL) AND (note IS NULL OR (note NOT LIKE '%ครัวกลาง%' AND note NOT LIKE '%เบิกของ%'))
-          `).get(targetBranch.id, todayStr);
-          
-          const tCashSales = tSales ? (tSales.cash_sales || 0) : 0;
-          const tCashExpenses = Math.max(0, tExpenses ? (tExpenses.cash_expenses || 0) : 0);
+      const vSalesMap = new Map(vSalesRows.map(r => [`${r.branch_id}|${r.d}`, r.cash_sales || 0]));
+      const vExpMap = new Map(vExpRows.map(r => [`${r.branch_id}|${r.d}`, r.cash_expenses || 0]));
 
-          enrichedSessions.push({
-            id: null,
-            branch_id: targetBranch.id,
-            branch_name: targetBranch.name,
-            session_date: todayStr,
-            opening_cash: 0.0,
-            expected_cash: tCashSales - tCashExpenses,
-            actual_cash: null,
-            difference: null,
-            status: 'open',
-            note: null,
-            cash_sales: tCashSales,
-            cash_expenses: tCashExpenses,
-            calculated_expected_cash: tCashSales - tCashExpenses
-          });
-        }
+      for (const { branch, dateStr } of missingPairs) {
+        const key = `${branch.id}|${dateStr}`;
+        const cashSales = vSalesMap.get(key) || 0;
+        const cashExpenses = Math.max(0, vExpMap.get(key) || 0);
+        enrichedSessions.push({
+          id: null,
+          branch_id: branch.id,
+          branch_name: branch.name,
+          session_date: dateStr,
+          opening_cash: 0.0,
+          expected_cash: cashSales - cashExpenses,
+          actual_cash: null,
+          difference: null,
+          status: 'open',
+          note: null,
+          cash_sales: cashSales,
+          cash_expenses: cashExpenses,
+          calculated_expected_cash: cashSales - cashExpenses
+        });
       }
     }
 
