@@ -316,10 +316,10 @@
                   {{ getRoleLabel(u.role) }}
                 </span>
               </div>
-              <div class="text-xs text-secondary mt-xs flex align-center gap-sm flex-wrap">
-                <span><i class="fa-solid fa-store mr-xs" style="color: var(--primary);"></i>{{ getBranchName(u.branch_id) }}</span>
-                <span class="inline-flex align-center gap-xs">
-                  PIN: <strong class="tabular-nums" style="color: var(--primary);">{{ (currentUser?.role === 'admin' && visiblePinUserIds[u.id]) ? (u.pin || '-') : '••••' }}</strong>
+              <div class="text-xs text-secondary mt-xs flex flex-col gap-xs">
+                <div><i class="fa-solid fa-store mr-xs" style="color: var(--primary);"></i>{{ getBranchName(u.branch_id) }}</div>
+                <div class="flex align-center gap-sm">
+                  <span>PIN: <strong class="tabular-nums" style="color: var(--primary); letter-spacing: 1px;">{{ (currentUser?.role === 'admin' && visiblePinUserIds[u.id]) ? (u.pin || '-') : '••••' }}</strong></span>
                   <button
                     v-if="currentUser?.role === 'admin'"
                     type="button"
@@ -329,7 +329,7 @@
                   >
                     <i :class="visiblePinUserIds[u.id] ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
                   </button>
-                </span>
+                </div>
               </div>
             </div>
           </div>
@@ -991,7 +991,7 @@
           </div>
           <div style="flex: 1; min-width: 0;">
             <div class="font-bold text-base" :style="{ color: printerConnected ? 'var(--success)' : 'var(--primary)', fontSize: 'var(--font-base)', lineHeight: '1.4' }">
-              สถานะเครื่องพิมพ์: {{ printerConnected ? 'เชื่อมต่อพร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}
+              สถานะเครื่องพิมพ์: <span class="printer-status-value">{{ printerConnected ? 'เชื่อมต่อพร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}</span>
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;" v-if="printerConnected">
               พร้อมพิมพ์ใบเสร็จและเปิดลิ้นชัก
@@ -2278,6 +2278,18 @@ onUnmounted(() => {
 
 /* --- Responsive Visibility Utilities --- */
 @media (max-width: 768px) {
+  .printer-status-value {
+    display: block;
+  }
+  .diner-page-header {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .diner-header-actions {
+    width: 100%;
+    justify-content: center;
+  }
   .show-mobile-only.mobile-users-list {
     display: flex !important;
     flex-direction: column;
@@ -2590,15 +2602,16 @@ input:checked + .slider:before {
 .btn-pin-toggle {
   background: rgba(139, 3, 19, 0.08);
   color: var(--primary);
-  border: none;
-  border-radius: var(--radius-sm);
-  width: 26px;
-  height: 26px;
+  border: 1px solid rgba(139, 3, 19, 0.16);
+  border-radius: var(--radius-md);
+  min-width: 34px;
+  height: 32px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 .btn-pin-toggle:hover {
   background: rgba(139, 3, 19, 0.16);
