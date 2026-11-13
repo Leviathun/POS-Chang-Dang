@@ -1678,6 +1678,11 @@ onUnmounted(() => {
     color: var(--primary-light);
   }
 
+  .sidebar-user .user-role-badge.manager {
+    background: rgba(197, 118, 0, 0.12);
+    color: #c57600;
+  }
+
   .sidebar-user .user-role-badge.staff {
     background: rgba(42, 157, 143, 0.1);
     color: var(--success);
