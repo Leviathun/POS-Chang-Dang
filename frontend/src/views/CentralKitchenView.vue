@@ -8647,6 +8647,11 @@ onUnmounted(() => {
   align-items: center;
 }
 
+.ck-cat-form-actions .btn {
+  flex: 1;
+  border-radius: var(--radius-md) !important;
+}
+
 .ck-cat-list {
   display: flex;
   flex-direction: column;
