@@ -442,7 +442,7 @@
             >
               <i v-if="isSavingUser" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingUser ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+              {{ isSavingUser ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -610,7 +610,7 @@
             >
               <i v-if="isSavingBranch" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingBranch ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+              {{ isSavingBranch ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
