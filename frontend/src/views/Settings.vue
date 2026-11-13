@@ -2657,6 +2657,10 @@ input:checked + .slider:before {
   border: 2px solid var(--primary);
   background: rgba(139, 3, 19, 0.03);
 }
+.diner-module-card .btn-primary {
+  min-width: 192px;
+  justify-content: center;
+}
 .diner-icon-badge {
   width: 44px;
   height: 44px;
