@@ -27,6 +27,7 @@
         <i class="fa-solid fa-code-branch"></i> จัดการสาขา
       </button>
       <button 
+        v-if="false"
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'presets' }"
         @click="activeTab = 'presets'"
@@ -51,153 +52,136 @@
     </div>
 
     <!-- Tab 1: Shop Settings Form -->
-    <div v-if="activeTab === 'shop'" class="card">
-      <div v-if="shopSettingsLoading" class="flex flex-col gap-md">
+    <div v-if="activeTab === 'shop'" class="flex flex-col gap-lg w-full">
+      <div v-if="shopSettingsLoading" class="card flex flex-col gap-md">
         <div class="skeleton" style="width: 100%; height: 78px; border-radius: var(--radius-md);"></div>
-        <div class="skeleton" style="width: 100%; height: 74px; border-radius: var(--radius-lg);"></div>
-        <div class="skeleton" style="width: 100%; height: 74px; border-radius: var(--radius-lg);"></div>
-        <div class="divider my-xs" style="height: 1px; background: var(--border-color);"></div>
-        <div class="skeleton" style="width: 220px; height: 20px; border-radius: var(--radius-sm);"></div>
-        <div class="skeleton" style="width: 100%; height: 46px; border-radius: var(--radius-md);"></div>
-        <div class="skeleton mt-sm" style="width: 100%; height: 48px; border-radius: var(--radius-md);"></div>
+        <div class="skeleton" style="width: 100%; height: 82px; border-radius: var(--radius-lg);"></div>
+        <div class="skeleton" style="width: 100%; height: 82px; border-radius: var(--radius-lg);"></div>
       </div>
 
       <template v-else>
-      <!-- Branch Selector for Admin -->
-      <div v-if="currentUser?.role === 'admin' && branches.length > 0" class="form-group mb-xl settings-branch-header">
-        <label class="form-label font-bold" style="color: var(--primary); margin-bottom: 8px;"><i class="fa-solid fa-store mr-xs"></i> กำลังตั้งค่าข้อมูลของสาขา:</label>
-        <div class="custom-select-wrapper" @click.stop>
-          <div 
-            class="custom-select-trigger settings-branch-trigger" 
-            :class="{ 'active': isSettingsBranchDropdownOpen }" 
-            @click="toggleSettingsBranchDropdown"
-          >
-            <span class="custom-select-text">{{ selectedSettingsBranchName }}</span>
-          </div>
-          <div v-if="isSettingsBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
-            <div 
-              v-for="b in branches" 
-              :key="b.id" 
-              class="custom-select-option" 
-              :class="{ 'selected': selectedSettingsBranchId === b.id }" 
-              @click="selectSettingsBranch(b.id)"
-            >
-              {{ b.name }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Navigation Cards: Central Kitchen & Requisition (จับส่วนเกินเข้าหน้าตั้งค่าร้าน) -->
-      <div class="settings-extra-modules mb-xl">
-        <!-- 1. Central Kitchen System (Admin Only - พนักงานและบทบาทอื่นไม่แสดง) -->
-        <div v-if="currentUser?.role === 'admin'" class="card p-md mb-md border-primary-light" :style="isCentralKitchenSession ? 'background: rgba(139, 3, 19, 0.06); border: 2px solid var(--primary);' : 'background: rgba(139, 3, 19, 0.03); border: 1.5px dashed var(--primary-light);'">
-          <div class="flex flex-between align-center flex-wrap gap-md">
-            <div class="flex align-center gap-md">
-              <div class="p-sm rounded-circle" style="background: rgba(139, 3, 19, 0.1); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i v-if="!isCentralKitchenSession" class="fa-solid fa-warehouse text-primary" style="font-size: 1.25rem;"></i>
-                <i v-else class="fa-solid fa-store text-primary" style="font-size: 1.25rem;"></i>
-              </div>
-              <div>
-                <div class="font-bold text-base" style="color: var(--primary);">
-                  {{ isCentralKitchenSession ? 'กำลังอยู่ในโหมด: ระบบครัวกลาง' : 'ระบบครัวกลาง (Central Kitchen)' }}
+        <!-- Quick Navigation Cards -->
+        <div class="diner-modules-grid">
+          <!-- 1. Central Kitchen System (Admin Only) -->
+          <div v-if="currentUser?.role === 'admin'" class="card diner-module-card" :class="{ 'is-active': isCentralKitchenSession }">
+            <div class="flex flex-between align-center flex-wrap gap-md">
+              <div class="flex align-center gap-md">
+                <div class="diner-icon-badge" :class="{ 'is-solid': isCentralKitchenSession }">
+                  <i v-if="!isCentralKitchenSession" class="fa-solid fa-warehouse"></i>
+                  <i v-else class="fa-solid fa-store"></i>
                 </div>
-                <div class="text-xs text-secondary">
-                  {{ isCentralKitchenSession ? 'คลิกปุ่มเพื่อสลับกลับไปทำงานที่หน้าเคาน์เตอร์ขายหน้าร้าน POS' : 'บริหารคลังสินค้ากลาง, จ่ายของให้สาขา, อนุมัติคำขอเบิก, สรุปการเงินกองกลาง' }}
+                <div>
+                  <div class="font-bold text-base text-primary">
+                    {{ isCentralKitchenSession ? 'กำลังใช้งาน: ระบบครัวกลาง' : 'ระบบครัวกลาง' }}
+                  </div>
+                  <div class="text-xs text-secondary">
+                    {{ isCentralKitchenSession ? 'กดปุ่มเพื่อสลับกลับไปหน้าขายหน้าร้าน' : 'จัดการคลังกลาง จ่ายของให้สาขา และอนุมัติใบเบิก' }}
+                  </div>
                 </div>
               </div>
+              <div class="flex align-center gap-xs">
+                <button 
+                  v-if="!isCentralKitchenSession" 
+                  type="button"
+                  class="btn btn-primary inline-flex align-center gap-xs"
+                  @click="enterCentralKitchenFromSettings"
+                >
+                  <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                  <span>เข้าสู่ระบบครัวกลาง</span>
+                </button>
+                <button 
+                  v-else 
+                  type="button" 
+                  class="btn btn-primary inline-flex align-center gap-xs"
+                  @click="switchToPosBranchFromSettings"
+                >
+                  <i class="fa-solid fa-store"></i>
+                  <span>สลับกลับหน้าร้าน</span>
+                </button>
+              </div>
             </div>
-            <div class="flex align-center gap-xs">
-              <button 
-                v-if="!isCentralKitchenSession" 
-                type="button"
+          </div>
+
+          <!-- 2. Requisition System -->
+          <div class="card diner-module-card">
+            <div class="flex flex-between align-center flex-wrap gap-md">
+              <div class="flex align-center gap-md">
+                <div class="diner-icon-badge">
+                  <i class="fa-solid fa-boxes-packing"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-base text-primary">เบิกของจากครัวกลาง</div>
+                  <div class="text-xs text-secondary">ส่งคำขอเบิกวัตถุดิบและสินค้าเข้าสาขา</div>
+                </div>
+              </div>
+              <router-link 
+                to="/requisition" 
                 class="btn btn-primary inline-flex align-center gap-xs"
-                @click="enterCentralKitchenFromSettings"
-                style="padding: 8px 16px; font-size: var(--font-sm);"
               >
-                <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                <span>เข้าสู่ระบบครัวกลาง</span>
-              </button>
-              <button 
-                v-else 
-                type="button" 
-                class="btn btn-primary inline-flex align-center gap-xs"
-                @click="switchToPosBranchFromSettings"
-                style="padding: 8px 18px; font-size: var(--font-sm); font-weight: bold;"
-              >
-                <i class="fa-solid fa-store"></i>
-                <span>สลับกลับไปหน้าร้าน POS</span>
-              </button>
+                <i class="fa-solid fa-box-open"></i>
+                <span>ไปที่หน้าเบิกของ</span>
+              </router-link>
             </div>
           </div>
         </div>
-
-        <!-- 2. Requisition System (เบิกของจากครัวกลาง) -->
-        <div class="card p-md mb-md" style="background: #ffffff; border: 1.5px solid var(--border-color);">
-          <div class="flex flex-between align-center flex-wrap gap-md">
-            <div class="flex align-center gap-md">
-              <div class="p-sm rounded-circle" style="background: rgba(139, 3, 19, 0.06); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="fa-solid fa-boxes-packing text-primary" style="font-size: 1.25rem;"></i>
-              </div>
-              <div>
-                <div class="font-bold text-base text-primary">ระบบเบิกของจากครัวกลาง (Requisition)</div>
-                <div class="text-xs text-secondary">ส่งคำขอเบิกวัตถุดิบและสินค้าจากครัวกลางเข้ามายังสาขา</div>
-              </div>
-            </div>
-            <router-link 
-              to="/requisition" 
-              class="btn btn-secondary inline-flex align-center gap-xs"
-              style="padding: 8px 16px; font-size: var(--font-sm);"
-            >
-              <i class="fa-solid fa-box-open"></i>
-              <span>ไปที่หน้าเบิกของ</span>
-            </router-link>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stock Notification & Save (Admin only) -->
-      <template v-if="currentUser?.role === 'admin'">
-        <div class="divider mb-lg" style="height: 1px; background: var(--border-color);"></div>
-
-        <div class="card-title text-sm"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px;"></i> การแจ้งเตือนสต็อกวัตถุดิบ</div>
-
-        <!-- Low Stock Threshold -->
-        <div class="form-group">
-          <label class="form-label">จุดเตือนสต็อกวัตถุดิบใกล้หมด (ชิ้น)</label>
-          <input 
-            type="number" 
-            class="form-input" 
-            v-model.number="shopForm.low_stock_threshold" 
-            placeholder="เช่น 5" 
-            min="1"
-          />
-        </div>
-
-        <!-- Save Shop Settings Button -->
-        <button class="btn btn-primary btn-block mt-lg" :disabled="isSavingShopSettings" @click="saveShopSettings">
-          <i v-if="isSavingShopSettings" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-floppy-disk"></i>
-          {{ isSavingShopSettings ? 'กำลังบันทึก...' : 'บันทึกตั้งค่าระบบร้าน' }}
-        </button>
-      </template>
       </template>
     </div>
 
     <!-- Tab 2: User management -->
     <div v-if="activeTab === 'users'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
-        <span class="font-bold text-lg"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> จัดการพนักงานหน้าร้าน</span>
-        <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
+      <div class="card diner-page-header">
+        <div class="diner-header-title">
+          พนักงานหน้าร้าน: <strong class="tabular-nums">{{ filteredUsers.length }}</strong> คน
+        </div>
+        <div class="diner-header-actions">
+          <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
+        </div>
+      </div>
+
+      <!-- Branch & Role Filter Bar -->
+      <div class="card p-md flex flex-col gap-sm" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+        <div class="flex align-center gap-xs flex-wrap">
+          <span class="text-xs font-bold text-secondary" style="min-width: 48px;">สาขา:</span>
+          <button
+            type="button"
+            class="btn btn-secondary btn-filter-pill"
+            :class="{ active: userBranchFilter === 'all' }"
+            @click="userBranchFilter = 'all'"
+          >ทั้งหมด</button>
+          <button
+            v-for="b in branches"
+            :key="'uf-b-' + b.id"
+            type="button"
+            class="btn btn-secondary btn-filter-pill"
+            :class="{ active: userBranchFilter === b.id }"
+            @click="userBranchFilter = b.id"
+          >{{ b.name }}</button>
+        </div>
+        <div class="flex align-center gap-xs flex-wrap">
+          <span class="text-xs font-bold text-secondary" style="min-width: 48px;">บทบาท:</span>
+          <button
+            v-for="r in [
+              { value: 'all', label: 'ทั้งหมด' },
+              { value: 'admin', label: 'ผู้ดูแลระบบ' },
+              { value: 'manager', label: 'ผู้จัดการ' },
+              { value: 'staff', label: 'พนักงาน' }
+            ]"
+            :key="'uf-r-' + r.value"
+            type="button"
+            class="btn btn-secondary btn-filter-pill"
+            :class="{ active: userRoleFilter === r.value }"
+            @click="userRoleFilter = r.value"
+          >{{ r.label }}</button>
+        </div>
       </div>
 
       <!-- Users list table (Visible on Desktop Only) -->
-      <div class="card p-0 overflow-hidden hide-mobile">
+      <div class="card diner-table-card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+              <tr class="diner-table-head">
                 <th class="text-left" style="padding: var(--space-md);">ชื่อพนักงาน</th>
                 <th class="text-center" style="padding: var(--space-md);">สาขา</th>
                 <th class="text-center" style="padding: var(--space-md);">บทบาท</th>
@@ -229,29 +213,50 @@
                   </td>
                 </tr>
               </template>
+              <tr v-else-if="filteredUsers.length === 0">
+                <td colspan="5" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
+                  ไม่พบพนักงานตามเงื่อนไขที่เลือก
+                </td>
+              </tr>
               <tr 
                 v-else 
-                v-for="u in users" 
+                v-for="u in filteredUsers" 
                 :key="u.id" 
                 style="border-bottom: 1px solid var(--border-color);"
                 class="table-row-hover"
               >
                 <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold text-base">{{ u.name }}</div>
-                  <div class="text-base text-muted">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+                  <div class="flex align-center gap-sm">
+                    <div class="diner-avatar-sm">{{ u.name ? u.name.charAt(0).toUpperCase() : '?' }}</div>
+                    <div>
+                      <div class="font-bold text-base">{{ u.name }}</div>
+                      <div class="text-xs text-muted">สมัครเมื่อ: {{ formatDate(u.created_at) }}</div>
+                    </div>
+                  </div>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="text-base text-secondary flex align-center justify-center" style="gap: 4px;">
-                    <i class="fa-solid fa-store" style="color: var(--text-tertiary);"></i> {{ getBranchName(u.branch_id) }}
+                  <span class="text-sm text-secondary inline-flex align-center justify-center" style="gap: 4px;">
+                    <i class="fa-solid fa-store" style="color: var(--primary);"></i> {{ getBranchName(u.branch_id) }}
                   </span>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge text-base" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
+                  <span class="badge text-sm" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
                     {{ getRoleLabel(u.role) }}
                   </span>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary);">
-                  ••••
+                  <div class="inline-flex align-center justify-center gap-xs">
+                    <span class="tabular-nums" style="letter-spacing: 2px;">{{ (currentUser?.role === 'admin' && visiblePinUserIds[u.id]) ? (u.pin || '-') : '••••' }}</span>
+                    <button
+                      v-if="currentUser?.role === 'admin'"
+                      type="button"
+                      class="btn-pin-toggle"
+                      :title="visiblePinUserIds[u.id] ? 'ซ่อนรหัส PIN' : 'ดูรหัส PIN'"
+                      @click="toggleUserPin(u.id)"
+                    >
+                      <i :class="visiblePinUserIds[u.id] ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                    </button>
+                  </div>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
@@ -273,7 +278,7 @@
       </div>
 
       <!-- Mobile Users Cards List (Visible on Mobile Only) -->
-      <div class="show-mobile-only p-md mobile-users-list">
+      <div class="show-mobile-only mobile-users-list">
         <template v-if="usersLoading">
           <div v-for="i in 3" :key="'um-skel-' + i" class="card p-sm flex align-center gap-md" style="margin-bottom: var(--space-sm);">
             <div class="skeleton" style="width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;"></div>
@@ -290,52 +295,55 @@
             </div>
           </div>
         </template>
-        <div v-else-if="users.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
-          ยังไม่มีข้อมูลพนักงาน
+        <div v-else-if="filteredUsers.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+          ไม่พบข้อมูลพนักงาน
         </div>
         <div 
           v-else 
-          v-for="u in users" 
+          v-for="u in filteredUsers" 
           :key="u.id"
-          class="card p-sm flex align-center gap-md"
-          style="margin-bottom: var(--space-sm);"
+          class="card diner-item-card"
         >
-          <!-- Profile Badge -->
-          <div 
-            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
-            class="font-bold text-md"
-          >
-            <i v-if="!u.name" class="fa-solid fa-user"></i>
-            <span v-else>{{ u.name.charAt(0).toUpperCase() }}</span>
+          <div class="flex align-center gap-md mb-sm">
+            <div class="diner-icon-badge font-bold">
+              <i v-if="!u.name" class="fa-solid fa-user"></i>
+              <span v-else>{{ u.name.charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-between align-center gap-xs">
+                <span class="font-bold text-base" style="color: var(--text-primary);">{{ u.name }}</span>
+                <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
+                  {{ getRoleLabel(u.role) }}
+                </span>
+              </div>
+              <div class="text-xs text-secondary mt-xs flex flex-col gap-xs">
+                <div><i class="fa-solid fa-store mr-xs" style="color: var(--primary);"></i>{{ getBranchName(u.branch_id) }}</div>
+                <div class="flex align-center gap-sm">
+                  <span>PIN: <strong class="tabular-nums" style="color: var(--primary); letter-spacing: 1px;">{{ (currentUser?.role === 'admin' && visiblePinUserIds[u.id]) ? (u.pin || '-') : '••••' }}</strong></span>
+                  <button
+                    v-if="currentUser?.role === 'admin'"
+                    type="button"
+                    class="btn-pin-toggle"
+                    :title="visiblePinUserIds[u.id] ? 'ซ่อนรหัส PIN' : 'ดูรหัส PIN'"
+                    @click="toggleUserPin(u.id)"
+                  >
+                    <i :class="visiblePinUserIds[u.id] ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <!-- Info & Actions -->
-          <div class="flex-1 min-w-0">
-            <div class="flex flex-between align-center mb-xs">
-              <span class="font-bold text-primary text-base">{{ u.name }}</span>
-              <span class="badge" :class="u.role === 'admin' ? 'badge-primary' : u.role === 'manager' ? 'badge-warning' : 'badge-neutral'">
-                {{ getRoleLabel(u.role) }}
-              </span>
-            </div>
-            <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm); display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fa-solid fa-store" style="color: var(--text-tertiary);"></i> {{ getBranchName(u.branch_id) }} | PIN: <strong style="color:var(--primary);">••••</strong>
-            </div>
-            <!-- Actions buttons in card -->
-            <div class="flex gap-sm">
-              <button 
-                class="btn-action btn-action-edit flex-1" 
-                @click="openEditUserModal(u)"
-              >
-                <i class="fa-solid fa-pen-to-square"></i> แก้ไข
-              </button>
-              <button 
-                class="btn-action btn-action-delete flex-1" 
-                :disabled="u.id === currentUser?.id"
-                @click="handleDeleteUser(u.id)"
-              >
-                <i class="fa-solid fa-trash-can"></i> ลบ
-              </button>
-            </div>
+          <div class="flex gap-sm">
+            <button class="btn-action btn-action-edit flex-1" @click="openEditUserModal(u)">
+              <i class="fa-solid fa-pen-to-square"></i> แก้ไข
+            </button>
+            <button 
+              class="btn-action btn-action-delete flex-1" 
+              :disabled="u.id === currentUser?.id"
+              @click="handleDeleteUser(u.id)"
+            >
+              <i class="fa-solid fa-trash-can"></i> ลบ
+            </button>
           </div>
         </div>
       </div>
@@ -434,7 +442,7 @@
             >
               <i v-if="isSavingUser" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingUser ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+              {{ isSavingUser ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -444,17 +452,21 @@
     <!-- Tab 3: Branch management (Admin only) -->
     <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
-        <span class="font-bold text-lg"><i class="fa-solid fa-store" style="margin-right: 6px;"></i> จัดการสาขาของร้าน</span>
-        <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
+      <div class="card diner-page-header">
+        <div class="diner-header-title">
+          สาขาทั้งหมด: <strong class="tabular-nums">{{ branches.length }}</strong> สาขา
+        </div>
+        <div class="diner-header-actions">
+          <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
+        </div>
       </div>
 
       <!-- Branch list table (Visible on Desktop Only) -->
-      <div class="card p-0 overflow-hidden hide-mobile">
+      <div class="card diner-table-card p-0 overflow-hidden hide-mobile">
         <div style="overflow-x: auto;">
           <table class="table w-full" style="border-collapse: collapse;">
             <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
+              <tr class="diner-table-head">
                 <th class="text-left" style="padding: var(--space-md);">ชื่อสาขา</th>
                 <th class="text-left" style="padding: var(--space-md);">ที่อยู่</th>
                 <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
@@ -490,10 +502,13 @@
                 class="table-row-hover"
               >
                 <td style="padding: var(--space-md); vertical-align: middle; font-weight: bold;">
-                  {{ b.name }}
+                  <div class="flex align-center gap-sm">
+                    <div class="diner-avatar-sm"><i class="fa-solid fa-store"></i></div>
+                    <span>{{ b.name }}</span>
+                  </div>
                 </td>
                 <td style="padding: var(--space-md); vertical-align: middle; color: var(--text-secondary);">
-                  {{ b.address || '-' }}
+                  <i class="fa-solid fa-location-dot mr-xs" style="color: var(--primary);"></i>{{ b.address || '-' }}
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
@@ -508,7 +523,7 @@
       </div>
 
       <!-- Mobile Branch Cards List (Visible on Mobile Only) -->
-      <div class="show-mobile-only p-md mobile-users-list">
+      <div class="show-mobile-only mobile-users-list">
         <template v-if="usersLoading || shopSettingsLoading">
           <div v-for="i in 3" :key="'bm-skel-' + i" class="card p-sm flex align-center gap-md" style="margin-bottom: var(--space-sm);">
             <div class="skeleton" style="width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;"></div>
@@ -529,35 +544,26 @@
           v-else 
           v-for="b in branches" 
           :key="b.id"
-          class="card p-sm flex align-center gap-md"
-          style="margin-bottom: var(--space-sm);"
+          class="card diner-item-card"
         >
-          <div 
-            style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-primary); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
-            class="text-md"
-          >
-            <i class="fa-solid fa-store" style="font-size: 1.2rem;"></i>
+          <div class="flex align-center gap-md mb-sm">
+            <div class="diner-icon-badge">
+              <i class="fa-solid fa-store"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-base" style="color: var(--text-primary);">{{ b.name }}</div>
+              <div class="text-xs text-secondary mt-xs">
+                <i class="fa-solid fa-location-dot mr-xs" style="color: var(--primary);"></i>{{ b.address || '-' }}
+              </div>
+            </div>
           </div>
-
-          <div class="flex-1 min-w-0">
-            <div class="font-bold text-primary mb-xs text-base">{{ b.name }}</div>
-            <div class="text-xs text-secondary" style="margin-bottom: var(--space-sm);">
-              <i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> ที่อยู่: {{ b.address || '-' }}
-            </div>
-            <div class="flex gap-sm">
-              <button 
-                class="btn-action btn-action-edit flex-1" 
-                @click="openEditBranchModal(b)"
-              >
-                <i class="fa-solid fa-pen-to-square"></i> แก้ไข
-              </button>
-              <button 
-                class="btn-action btn-action-delete flex-1" 
-                @click="handleDeleteBranch(b.id)"
-              >
-                <i class="fa-solid fa-trash-can"></i> ลบ
-              </button>
-            </div>
+          <div class="flex gap-sm">
+            <button class="btn-action btn-action-edit flex-1" @click="openEditBranchModal(b)">
+              <i class="fa-solid fa-pen-to-square"></i> แก้ไข
+            </button>
+            <button class="btn-action btn-action-delete flex-1" @click="handleDeleteBranch(b.id)">
+              <i class="fa-solid fa-trash-can"></i> ลบ
+            </button>
           </div>
         </div>
       </div>
@@ -595,6 +601,37 @@
             />
           </div>
 
+          <div v-if="!isEditBranchMode && branches.length > 0" class="form-group">
+            <label class="form-label">คัดลอกเมนูจากสาขา</label>
+            <div class="custom-select-wrapper" @click.stop>
+              <div
+                class="custom-select-trigger"
+                :class="{ 'active': isCopyBranchDropdownOpen }"
+                @click="isCopyBranchDropdownOpen = !isCopyBranchDropdownOpen"
+              >
+                <span class="custom-select-text">{{ selectedCopyBranchName }}</span>
+              </div>
+              <div v-if="isCopyBranchDropdownOpen" class="custom-select-dropdown">
+                <div
+                  v-for="b in branches"
+                  :key="'copy-' + b.id"
+                  class="custom-select-option"
+                  :class="{ 'selected': branchForm.copy_from_branch_id === b.id }"
+                  @click="selectCopyBranch(b.id)"
+                >
+                  {{ b.name }}
+                </div>
+                <div
+                  class="custom-select-option"
+                  :class="{ 'selected': branchForm.copy_from_branch_id === 'none' }"
+                  @click="selectCopyBranch('none')"
+                >
+                  ไม่คัดลอก (เริ่มจากหน้าว่าง)
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="flex gap-md mt-lg">
             <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
             <button 
@@ -604,7 +641,7 @@
             >
               <i v-if="isSavingBranch" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingBranch ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+              {{ isSavingBranch ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -751,10 +788,10 @@
       <div class="card">
         <div class="card-title mb-sm text-base">
           <i class="fa-solid fa-cloud-arrow-down" style="margin-right: 6px; color: var(--primary);"></i> 
-          ส่งออกรายงาน & สำรองข้อมูล (Export & Backup)
+          ส่งออกรายงาน & สำรองข้อมูล
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          ดาวน์โหลดข้อมูลสรุปครบทั้ง 7 หมวดหมู่แยกเป็น 7 แถบหน้าย่อย (Worksheets) ในไฟล์ Excel (.xlsx) ได้แก่ ยอดขาย, สินค้าขายดี, ประวัติออเดอร์, ค่าใช้จ่าย, สต็อก, กิจกรรม, รอบลิ้นชัก พร้อมระบบคำนวณและปรับขนาดคอลัมน์ให้อัตโนมัติ (Auto-fit) อ่านง่าย ชัดเจน ไม่ต้องลากขยายเอง
+          ดาวน์โหลดข้อมูลสรุป 7 หมวดหมู่เป็นไฟล์ Excel แยกแถบพร้อมใช้งาน
         </p>
 
         <!-- Filters Row: Period & Branch Selector -->
@@ -830,10 +867,10 @@
             <div>
               <div class="flex align-center gap-sm mb-xs">
                 <i class="fa-solid fa-file-excel text-lg" style="color: var(--success, #2a9d8f);"></i>
-                <strong class="text-base font-bold" style="color: var(--text-primary);">1. ดาวน์โหลดรายงานสรุป Excel (7 แถบย่อย)</strong>
+                <strong class="text-base font-bold" style="color: var(--text-primary);">1. ดาวน์โหลดรายงาน Excel</strong>
               </div>
               <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
-                ส่งออกรายงาน 7 หมวดหมู่แยกเป็น 7 แถบหน้าย่อย (Worksheets) จัดขนาดคอลัมน์กว้างพอดีกับข้อความ ไม่ถูกตัดทอน
+                ส่งออกรายงานสรุป 7 หมวดหมู่ลงเครื่อง
               </p>
             </div>
             <button 
@@ -841,7 +878,7 @@
               @click="downloadExcelSummary"
               style="border-color: var(--success, #2a9d8f); color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
             >
-              <i class="fa-solid fa-file-excel"></i> ดาวน์โหลดรายงาน Excel (7 แถบย่อย)
+              <i class="fa-solid fa-file-excel"></i> ดาวน์โหลดรายงาน Excel
             </button>
           </div>
 
@@ -853,10 +890,10 @@
             <div>
               <div class="flex align-center gap-sm mb-xs">
                 <i class="fa-solid fa-cloud-arrow-down text-lg" style="color: var(--danger, #c0392b);"></i>
-                <strong class="text-base font-bold" style="color: var(--danger, #c0392b);">2. ดาวน์โหลด Excel และล้างข้อมูลบน Cloud</strong>
+                <strong class="text-base font-bold" style="color: var(--danger, #c0392b);">2. ดาวน์โหลดและล้างข้อมูลเก่า</strong>
               </div>
               <p class="text-xs text-secondary mb-md" style="line-height: 1.4;">
-                ดาวน์โหลดไฟล์สำรองลงเครื่องก่อนเสมอ จากนั้นจะล้างประวัติธุรกรรมเก่าออกจาก Turso Cloud เพื่อคืนโควตา Reads
+                สำรองไฟล์ลงเครื่องก่อนลบประวัติเก่าบนคลาวด์
               </p>
             </div>
             <button 
@@ -864,7 +901,7 @@
               @click="openPurgeModal"
               style="background: var(--danger, #c0392b); border-color: var(--danger, #c0392b); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
             >
-              <i class="fa-solid fa-trash-can-arrow-up"></i> ดาวน์โหลด & ล้างข้อมูลบน Cloud
+              <i class="fa-solid fa-trash-can-arrow-up"></i> ดาวน์โหลด & ล้างข้อมูลเก่า
             </button>
           </div>
 
@@ -874,13 +911,13 @@
 
         <!-- Full JSON Backup & SQLite Download -->
         <div>
-          <div class="text-xs font-bold text-secondary mb-sm uppercase tracking-wider">ตัวเลือกการสำรองทั้งระบบเพิ่มเติม:</div>
+          <div class="text-xs font-bold text-secondary mb-sm">สำรองข้อมูลทั้งระบบ:</div>
           <div class="flex gap-md backup-btns-container">
             <button class="btn btn-secondary flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-              <i class="fa-solid fa-database"></i> ดาวน์โหลด Full Backup (.json)
+              <i class="fa-solid fa-database"></i> สำรองข้อมูล (.json)
             </button>
             <button class="btn btn-secondary flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-              <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูลดิบ (.db)
+              <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูล (.db)
             </button>
           </div>
         </div>
@@ -890,14 +927,14 @@
       <div class="card">
         <div class="card-title mb-sm text-base">
           <i class="fa-solid fa-file-import" style="margin-right: 6px; color: var(--primary);"></i> 
-          นำเข้าและกู้คืนข้อมูลระบบ (Import & Restore)
+          นำเข้าและกู้คืนข้อมูล
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          นำเข้าข้อมูลสำรองจากไฟล์ <code style="background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;">.json</code> ที่เคยดาวน์โหลดไว้ เพื่อกู้คืนฐานข้อมูลกลับเข้าสู่ระบบ
+          เลือกไฟล์สำรอง .json ที่เคยดาวน์โหลดไว้เพื่อกู้คืนข้อมูล
         </p>
 
         <div class="form-group mb-0">
-          <label class="form-label font-bold text-sm"><i class="fa-solid fa-file-arrow-up mr-xs"></i> เลือกไฟล์ JSON สำรองข้อมูลเพื่อกู้คืน:</label>
+          <label class="form-label font-bold text-sm"><i class="fa-solid fa-file-arrow-up mr-xs"></i> เลือกไฟล์สำรองข้อมูล:</label>
           <input 
             type="file" 
             class="form-input" 
@@ -917,7 +954,7 @@
           <i class="fa-solid fa-print" style="margin-right: 6px; color: var(--primary);"></i> ตั้งค่าเครื่องพิมพ์ & ลิ้นชัก
         </div>
         <p class="text-secondary mb-lg text-sm" style="line-height: 1.5;">
-          เชื่อมต่อกับเครื่องพิมพ์ใบเสร็จและสั่งงานลิ้นชักเก็บเงินอเนกประสงค์ โดยเลือกประเภทการเชื่อมต่อที่เหมาะสมกับอุปกรณ์ของคุณ
+          เลือกวิธีเชื่อมต่อเครื่องพิมพ์ใบเสร็จและลิ้นชักเก็บเงิน
         </p>
 
         <!-- Connection Type Selection (Cards) -->
@@ -936,8 +973,8 @@
                 <i class="fa-solid fa-plug font-xl"></i>
               </div>
               <div class="option-info">
-                <div class="option-title">เครื่องพิมพ์ทั่วไป (ต่อสาย USB ตรง)</div>
-                <div class="option-desc">เชื่อมต่อผ่าน Google Chrome โดยตรง (เหมาะสำหรับคอมพิวเตอร์ PC/โน้ตบุ๊ก)</div>
+                <div class="option-title">ต่อสาย USB ตรง</div>
+                <div class="option-desc">เหมาะสำหรับคอมพิวเตอร์และโน้ตบุ๊ก</div>
               </div>
               <div class="option-badge">
                 <i class="fa-solid fa-circle-check"></i>
@@ -954,8 +991,8 @@
                 <i class="fa-solid fa-tablet-screen-button font-xl"></i>
               </div>
               <div class="option-info">
-                <div class="option-title">แอป RawBT (แนะนำสำหรับแท็บเล็ต / Android)</div>
-                <div class="option-desc">สั่งพิมพ์และดีดลิ้นชักผ่านแอป RawBT บนแท็บเล็ต เสถียร ไม่หลุดง่าย</div>
+                <div class="option-title">แอป RawBT</div>
+                <div class="option-desc">แนะนำสำหรับแท็บเล็ตและมือถือ Android</div>
               </div>
               <div class="option-badge">
                 <i class="fa-solid fa-circle-check"></i>
@@ -985,13 +1022,13 @@
           </div>
           <div style="flex: 1; min-width: 0;">
             <div class="font-bold text-base" :style="{ color: printerConnected ? 'var(--success)' : 'var(--primary)', fontSize: 'var(--font-base)', lineHeight: '1.4' }">
-              สถานะเครื่องพิมพ์: {{ printerConnected ? 'เชื่อมต่อพร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}
+              สถานะเครื่องพิมพ์: <span class="printer-status-value">{{ printerConnected ? 'เชื่อมต่อพร้อมใช้งาน' : 'ยังไม่ได้เชื่อมต่อ' }}</span>
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;" v-if="printerConnected">
-              เชื่อมต่อผ่านสาย USB พร้อมสำหรับทำรายการขายหน้าร้าน
+              พร้อมพิมพ์ใบเสร็จและเปิดลิ้นชัก
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;" v-else>
-              คลิกปุ่มเชื่อมต่อด้านล่างเพื่อเลือกเครื่องพิมพ์ความร้อนสำหรับดีดลิ้นชักและพิมพ์ใบเสร็จ
+              กดปุ่มด้านล่างเพื่อเลือกเครื่องพิมพ์
             </div>
           </div>
         </div>
@@ -1016,10 +1053,10 @@
           </div>
           <div style="flex: 1; min-width: 0;">
             <div class="font-bold text-base" style="color: var(--success); font-size: var(--font-base); line-height: 1.4;">
-              สถานะ: เปิดใช้งานร่วมกับแอป RawBT เรียบร้อยแล้ว
+              สถานะ: เปิดใช้งานผ่านแอป RawBT แล้ว
             </div>
             <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
-              ระบบจะส่งคำสั่งพิมพ์ใบเสร็จและดีดลิ้นชักไปยังแอป RawBT โดยตรงอัตโนมัติ (ไม่ต้องกดจับคู่ USB ในเบราว์เซอร์)
+              ส่งคำสั่งพิมพ์และเปิดลิ้นชักอัตโนมัติ
             </div>
           </div>
         </div>
@@ -1040,8 +1077,8 @@
         <div class="flex flex-col mb-xl" style="display: flex; flex-direction: column;">
           <div class="setting-item">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
-              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">เปิดลิ้นชักอัตโนมัติเมื่อชำระเงิน</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">ลิ้นชักจะดีดเปิดโดยอัตโนมัติทันทีที่ทำรายการสำเร็จ</span>
+              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">เปิดลิ้นชักอัตโนมัติ</strong>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เปิดลิ้นชักทันทีเมื่อชำระเงินสำเร็จ</span>
             </div>
             <label class="switch">
               <input type="checkbox" v-model="printerConfig.autoKick" @change="saveLocalPrinterConfig" />
@@ -1052,7 +1089,7 @@
           <div class="setting-item">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
               <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">พิมพ์ใบเสร็จอัตโนมัติ</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เครื่องพิมพ์จะสไลด์พิมพ์ใบเสร็จออกมาทันทีเมื่อทำรายการสำเร็จ</span>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">พิมพ์ทันทีเมื่อทำรายการสำเร็จ</span>
             </div>
             <label class="switch">
               <input type="checkbox" v-model="printerConfig.autoPrint" @change="saveLocalPrinterConfig" />
@@ -1062,8 +1099,8 @@
 
           <div class="setting-item setting-item-select" v-if="printerConfig.connectionType === 'rawbt'">
             <div style="flex: 1; min-width: 0; padding-right: var(--space-md);">
-              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จบน RawBT</strong>
-              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">เลือกรูปแบบการส่งข้อมูลไปยังแอป RawBT (โหมดรูปภาพ เหมือนสาขา 1 คมชัด 100%)</span>
+              <strong style="font-size: var(--font-sm); color: var(--text-primary); display: block; font-weight: var(--font-weight-semibold);">รูปแบบใบเสร็จ RawBT</strong>
+              <span style="font-size: var(--font-xs); color: var(--text-secondary); display: block; margin-top: 4px; line-height: 1.4;">โหมดรูปภาพคมชัด 100%</span>
             </div>
             
             <div class="custom-select-wrapper" @click.stop style="width: auto; min-width: 280px; max-width: 100%; position: relative; z-index: 5;">
@@ -1074,7 +1111,7 @@
               >
                 <span class="custom-select-text font-semibold">
                   <i class="fa-solid fa-image mr-xs" style="color: var(--primary);"></i>
-                  รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)
+                  รูปภาพคมชัด 100%
                 </span>
               </div>
               <div v-if="isPrintModeDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 2px);">
@@ -1083,7 +1120,7 @@
                   @click="selectPrintMode('image')"
                 >
                   <i class="fa-solid fa-circle-check mr-xs text-primary"></i>
-                  รูปภาพจาก POS (เหมือนสาขา 1 — คมชัด 100%)
+                  รูปภาพคมชัด 100%
                 </div>
               </div>
             </div>
@@ -1546,19 +1583,15 @@ const selectUserBranch = (branchId) => {
   isBranchDropdownOpen.value = false;
 };
 
-const selectSettingsBranch = (branchId) => {
-  selectedSettingsBranchId.value = branchId;
-  isSettingsBranchDropdownOpen.value = false;
-  if (branchId !== null) {
-    sessionStorage.setItem('selected_branch_id', String(branchId));
-  }
-  loadShopSettings();
-};
-
-const toggleSettingsBranchDropdown = () => {
-  const current = isSettingsBranchDropdownOpen.value;
-  closeSettingsDropdowns();
-  isSettingsBranchDropdownOpen.value = !current;
+const isCopyBranchDropdownOpen = ref(false);
+const selectedCopyBranchName = computed(() => {
+  if (branchForm.value.copy_from_branch_id === 'none') return 'ไม่คัดลอก (เริ่มจากหน้าว่าง)';
+  const found = branches.value.find(b => b.id === branchForm.value.copy_from_branch_id);
+  return found ? found.name : 'เลือกสาขาต้นทาง...';
+});
+const selectCopyBranch = (branchId) => {
+  branchForm.value.copy_from_branch_id = branchId;
+  isCopyBranchDropdownOpen.value = false;
 };
 
 const togglePrintModeDropdown = () => {
@@ -1576,6 +1609,7 @@ const selectPrintMode = (mode) => {
 const closeSettingsDropdowns = () => {
   isRoleDropdownOpen.value = false;
   isBranchDropdownOpen.value = false;
+  isCopyBranchDropdownOpen.value = false;
   isSettingsBranchDropdownOpen.value = false;
   isBackupPeriodDropdownOpen.value = false;
   isBackupBranchDropdownOpen.value = false;
@@ -1587,6 +1621,22 @@ const activeTab = ref('shop');
 const currentUser = ref(null);
 const selectedSettingsBranchId = ref(null);
 const users = computed(() => store.users || []);
+const userBranchFilter = ref('all');
+const userRoleFilter = ref('all');
+const visiblePinUserIds = ref({});
+const toggleUserPin = (userId) => {
+  visiblePinUserIds.value = {
+    ...visiblePinUserIds.value,
+    [userId]: !visiblePinUserIds.value[userId]
+  };
+};
+const filteredUsers = computed(() => {
+  return users.value.filter(u => {
+    if (userBranchFilter.value !== 'all' && Number(u.branch_id) !== Number(userBranchFilter.value)) return false;
+    if (userRoleFilter.value !== 'all' && u.role !== userRoleFilter.value) return false;
+    return true;
+  });
+});
 const shopSettingsLoading = ref(false);
 const usersLoading = ref(false);
 const showUserModal = ref(false);
@@ -1605,11 +1655,14 @@ const branchForm = ref({
 });
 
 const openAddBranchModal = () => {
+  isCopyBranchDropdownOpen.value = false;
   isEditBranchMode.value = false;
   editBranchId.value = null;
+  const defaultSource = branches.value.find(b => !b.name?.includes('ครัวกลาง')) || branches.value[0];
   branchForm.value = {
     name: '',
-    address: ''
+    address: '',
+    copy_from_branch_id: defaultSource ? defaultSource.id : 'none'
   };
   showBranchModal.value = true;
 };
@@ -1635,7 +1688,8 @@ const handleSaveBranch = async () => {
   try {
     const payload = {
       name: branchForm.value.name,
-      address: branchForm.value.address
+      address: branchForm.value.address,
+      ...(!isEditBranchMode.value ? { copy_from_branch_id: branchForm.value.copy_from_branch_id } : {})
     };
 
     let res;
@@ -1704,28 +1758,6 @@ const loadShopSettings = async (force = false) => {
     ui.showToast('ไม่สามารถดึงข้อมูลตั้งค่าระบบได้', 'error');
   } finally {
     shopSettingsLoading.value = false;
-  }
-};
-
-// Save Shop Settings to Database
-const saveShopSettings = async () => {
-  if (isSavingShopSettings.value) return;
-  isSavingShopSettings.value = true;
-  ui.showLoading();
-  try {
-    const promises = Object.entries(shopForm.value).map(([key, val]) => {
-      return api.settings.update(key, String(val), selectedSettingsBranchId.value);
-    });
-    
-    await Promise.all(promises);
-    await loadShopSettings(true); // Force reload settings to update store cache
-    ui.showToast('บันทึกการตั้งค่าร้านสำเร็จแล้ว 🎉', 'success');
-  } catch (error) {
-    console.error(error);
-    ui.showToast('บันทึกตั้งค่าไม่สำเร็จ: ' + error.message, 'error');
-  } finally {
-    ui.hideLoading();
-    isSavingShopSettings.value = false;
   }
 };
 
@@ -2256,6 +2288,18 @@ onUnmounted(() => {
 
 /* --- Responsive Visibility Utilities --- */
 @media (max-width: 768px) {
+  .printer-status-value {
+    display: block;
+  }
+  .diner-page-header {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .diner-header-actions {
+    width: 100%;
+    justify-content: center;
+  }
   .show-mobile-only.mobile-users-list {
     display: flex !important;
     flex-direction: column;
@@ -2514,5 +2558,151 @@ input:checked + .slider:before {
   .mobile-logout-btn:active {
     transform: scale(0.96);
   }
+}
+
+/* --- Diner Retro Settings Cards & Tables --- */
+.diner-page-header {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+.diner-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.diner-header-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+.diner-header-title strong {
+  color: var(--primary);
+  font-size: 1.35rem;
+}
+.diner-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.btn-filter-pill {
+  padding: 5px 12px;
+  font-size: var(--font-xs);
+  border-radius: var(--radius-full);
+  min-height: 30px;
+}
+.btn-filter-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+.btn-pin-toggle {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  border: 1px solid rgba(139, 3, 19, 0.16);
+  border-radius: var(--radius-md);
+  min-width: 34px;
+  height: 32px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.btn-pin-toggle:hover {
+  background: rgba(139, 3, 19, 0.16);
+}
+.diner-item-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+.diner-retro-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.04);
+}
+.diner-modules-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+.diner-module-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+.diner-module-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.06);
+}
+.diner-module-card.is-active {
+  border: 2px solid var(--primary);
+  background: rgba(139, 3, 19, 0.03);
+}
+.diner-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.diner-icon-badge.is-solid {
+  background: var(--primary);
+  color: #ffffff;
+}
+.diner-count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.diner-table-card {
+  border: 1.5px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+.diner-table-head {
+  border-bottom: 1.5px solid var(--border-color);
+  background: rgba(139, 3, 19, 0.04);
+}
+.diner-avatar-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(139, 3, 19, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-sm);
+  flex-shrink: 0;
 }
 </style>

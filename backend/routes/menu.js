@@ -268,9 +268,12 @@ router.post('/', requireManagerOrAdmin, async (req, res) => {
     }
 
     // บันทึกเมนู
+    const thresholdVal = req.body.low_stock_threshold !== undefined && req.body.low_stock_threshold !== null && req.body.low_stock_threshold !== ''
+      ? Math.max(0, Number(req.body.low_stock_threshold))
+      : 5;
     const result = await db.prepare(`
-      INSERT INTO menu_items (branch_id, name, price, category_id, image_url, sort_order, uom, multiple_prices, quantity, raw_quantity)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO menu_items (branch_id, name, price, category_id, image_url, sort_order, uom, multiple_prices, quantity, raw_quantity, low_stock_threshold)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       branchId,
       name,
@@ -281,7 +284,8 @@ router.post('/', requireManagerOrAdmin, async (req, res) => {
       uom || 'ชิ้น',
       multPricesStr,
       stock !== undefined && stock !== null ? stock : 0,
-      track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null
+      track_raw_stock ? (raw_stock !== undefined && raw_stock !== null ? raw_stock : 0) : null,
+      thresholdVal
     );
 
     const newItemId = result.lastInsertRowid;
@@ -310,7 +314,7 @@ router.post('/', requireManagerOrAdmin, async (req, res) => {
 router.put('/:id', requireManagerOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active, uom, multiple_prices } = req.body;
+    const { name, price, category_id, image_url, stock, raw_stock, track_raw_stock, sort_order, active, uom, multiple_prices, low_stock_threshold } = req.body;
     const db = getDb();
     const branchId = await getBranchId(req, db);
 
@@ -350,11 +354,15 @@ router.put('/:id', requireManagerOrAdmin, async (req, res) => {
       rq = raw_stock;
     }
 
+    const nextThreshold = low_stock_threshold !== undefined && low_stock_threshold !== null && low_stock_threshold !== ''
+      ? Math.max(0, Number(low_stock_threshold))
+      : item.low_stock_threshold;
+
     await db.prepare(`
       UPDATE menu_items 
       SET name = ?, price = ?, category_id = ?, image_url = ?, 
           sort_order = ?, active = ?, uom = ?, multiple_prices = ?,
-          quantity = ?, raw_quantity = ?,
+          quantity = ?, raw_quantity = ?, low_stock_threshold = ?,
           updated_at = datetime('now', 'localtime')
       WHERE id = ? AND branch_id = ?
     `).run(
@@ -368,6 +376,7 @@ router.put('/:id', requireManagerOrAdmin, async (req, res) => {
       multPricesStr !== undefined ? multPricesStr : item.multiple_prices,
       q,
       rq,
+      nextThreshold !== undefined && nextThreshold !== null ? nextThreshold : 5,
       Number(id),
       branchId
     );

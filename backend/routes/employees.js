@@ -588,87 +588,106 @@ router.get('/payroll/calculate', requireAdmin, async (req, res) => {
     const users = await db.prepare(usersQuery).all(...params);
     const calculations = [];
 
+    // Batch-fetch all payroll inputs in parallel to avoid N+1 per-user queries
+    const attByUser = new Map();
+    const otByUser = new Map();
+    const advByUser = new Map();
+    const payoutsByUser = new Map();
+    const guaranteeByUser = new Map();
+    const holdbackDatesByUser = new Map();
+
+    if (users.length > 0) {
+      const uIds = users.map(u => u.id);
+      const uPh = uIds.map(() => '?').join(',');
+      const monthLike = `${month}%`;
+
+      const [attRows, otRows, advRows, payoutRows, guaranteeRows, holdbackRows] = await Promise.all([
+        db.prepare(`
+          SELECT
+            a.user_id,
+            COUNT(CASE WHEN a.status = 'present' AND (a.is_paid = 0 OR a.is_paid IS NULL) THEN 1 END) as unpaid_days_present,
+            COUNT(CASE WHEN a.status IN ('leave_paid', 'leave_unpaid', 'absent') AND (a.is_paid = 0 OR a.is_paid IS NULL) THEN 1 END) as unpaid_days_leave,
+            COUNT(CASE WHEN a.had_lunch_benefit = 1 AND a.status = 'present' AND (a.is_paid = 0 OR a.is_paid IS NULL) THEN 1 END) as unpaid_lunch_count,
+            COALESCE(SUM(CASE WHEN a.status = 'present' AND (a.is_paid = 0 OR a.is_paid IS NULL) THEN COALESCE(a.daily_wage, u.wage_rate, 0) END), 0) as unpaid_daily_wages,
+            COUNT(CASE WHEN a.status = 'present' THEN 1 END) as total_days_present,
+            COUNT(CASE WHEN a.had_lunch_benefit = 1 AND a.status = 'present' THEN 1 END) as total_lunch_count
+          FROM employee_attendance a
+          JOIN users u ON a.user_id = u.id
+          WHERE a.user_id IN (${uPh}) AND a.work_date LIKE ?
+          GROUP BY a.user_id
+        `).all(...uIds, monthLike),
+        db.prepare(`
+          SELECT p.user_id, COALESCE(SUM(p.amount), 0) as total_ot
+          FROM employee_event_ot_participants p
+          JOIN employee_event_ots o ON p.event_ot_id = o.id
+          WHERE p.user_id IN (${uPh}) AND o.event_date LIKE ? AND (p.is_paid = 0 OR p.is_paid IS NULL)
+          GROUP BY p.user_id
+        `).all(...uIds, monthLike),
+        db.prepare(`
+          SELECT user_id, COALESCE(SUM(amount), 0) as total_advance
+          FROM employee_advances
+          WHERE user_id IN (${uPh}) AND advance_date LIKE ? AND status = 'pending'
+          GROUP BY user_id
+        `).all(...uIds, monthLike),
+        db.prepare(`
+          SELECT p.*, e.id as expense_id
+          FROM employee_payrolls p
+          LEFT JOIN expenses e ON p.expense_id = e.id
+          WHERE p.user_id IN (${uPh}) AND p.period_month = ?
+          ORDER BY p.payment_date DESC, p.id DESC
+        `).all(...uIds, month),
+        db.prepare(`
+          SELECT * FROM employee_guarantees
+          WHERE user_id IN (${uPh})
+          ORDER BY id DESC
+        `).all(...uIds),
+        db.prepare(`
+          SELECT user_id, created_at FROM employee_payrolls
+          WHERE user_id IN (${uPh}) AND holdback_deducted_amount > 0 AND (status IS NULL OR status != 'cancelled')
+        `).all(...uIds)
+      ]);
+
+      for (const r of attRows) attByUser.set(r.user_id, r);
+      for (const r of otRows) otByUser.set(r.user_id, Number(r.total_ot || 0));
+      for (const r of advRows) advByUser.set(r.user_id, Number(r.total_advance || 0));
+      for (const r of payoutRows) {
+        if (!payoutsByUser.has(r.user_id)) payoutsByUser.set(r.user_id, []);
+        payoutsByUser.get(r.user_id).push(r);
+      }
+      for (const r of guaranteeRows) {
+        if (!guaranteeByUser.has(r.user_id)) guaranteeByUser.set(r.user_id, r);
+      }
+      for (const r of holdbackRows) {
+        if (!holdbackDatesByUser.has(r.user_id)) holdbackDatesByUser.set(r.user_id, []);
+        holdbackDatesByUser.get(r.user_id).push(r.created_at);
+      }
+    }
+
     for (const u of users) {
-      // 1. นับจำนวนวันที่มาทำงานจริงที่ "ยังไม่เคยจ่ายเงิน" (is_paid = 0) ในงวดเดือนนี้
-      const unpaidAttRow = await db.prepare(`
-        SELECT 
-          COUNT(CASE WHEN status = 'present' THEN 1 END) as unpaid_days_present,
-          COUNT(CASE WHEN status IN ('leave_paid', 'leave_unpaid', 'absent') THEN 1 END) as unpaid_days_leave,
-          COUNT(CASE WHEN had_lunch_benefit = 1 AND status = 'present' THEN 1 END) as unpaid_lunch_count,
-          COALESCE(SUM(CASE WHEN status = 'present' THEN COALESCE(daily_wage, ?) END), 0) as unpaid_daily_wages
-        FROM employee_attendance
-        WHERE user_id = ? AND work_date LIKE ? AND (is_paid = 0 OR is_paid IS NULL)
-      `).get(u.wage_rate || 0, u.id, `${month}%`);
+      const attRow = attByUser.get(u.id);
+      const unpaidDaysWorked = attRow ? (attRow.unpaid_days_present || 0) : 0;
+      const unpaidDaysLeave = attRow ? (attRow.unpaid_days_leave || 0) : 0;
+      const unpaidLunchCount = attRow ? (attRow.unpaid_lunch_count || 0) : 0;
+      const unpaidBaseSalary = Number(attRow ? (attRow.unpaid_daily_wages || 0) : 0);
+      const totalDaysWorkedMonth = attRow ? (attRow.total_days_present || 0) : 0;
+      const totalLunchCountMonth = attRow ? (attRow.total_lunch_count || 0) : 0;
 
-      const unpaidDaysWorked = unpaidAttRow ? (unpaidAttRow.unpaid_days_present || 0) : 0;
-      const unpaidDaysLeave = unpaidAttRow ? (unpaidAttRow.unpaid_days_leave || 0) : 0;
-      const unpaidLunchCount = unpaidAttRow ? (unpaidAttRow.unpaid_lunch_count || 0) : 0;
-      const unpaidBaseSalary = Number(unpaidAttRow ? (unpaidAttRow.unpaid_daily_wages || 0) : 0);
-
-      // 2. สรุปวันทำงานทั้งหมดของทั้งเดือน (ทั้งที่จ่ายแล้ว + ยังไม่จ่าย)
-      const totalMonthAttRow = await db.prepare(`
-        SELECT 
-          COUNT(CASE WHEN status = 'present' THEN 1 END) as total_days_present,
-          COUNT(CASE WHEN had_lunch_benefit = 1 AND status = 'present' THEN 1 END) as total_lunch_count
-        FROM employee_attendance
-        WHERE user_id = ? AND work_date LIKE ?
-      `).get(u.id, `${month}%`);
-
-      const totalDaysWorkedMonth = totalMonthAttRow ? (totalMonthAttRow.total_days_present || 0) : 0;
-      const totalLunchCountMonth = totalMonthAttRow ? (totalMonthAttRow.total_lunch_count || 0) : 0;
-
-      // 3. รวม OT ตามอีเวนต์ที่ยังไม่จ่ายในงวดเดือนนี้
-      const otRow = await db.prepare(`
-        SELECT COALESCE(SUM(p.amount), 0) as total_ot
-        FROM employee_event_ot_participants p
-        JOIN employee_event_ots o ON p.event_ot_id = o.id
-        WHERE p.user_id = ? AND o.event_date LIKE ? AND (p.is_paid = 0 OR p.is_paid IS NULL)
-      `).get(u.id, `${month}%`);
-      const eventOtAmount = otRow ? Number(otRow.total_ot || 0) : 0;
-
-      // 4. รวมยอดเบิกล่วงหน้าที่รอดำเนินการหัก (pending) ในงวดเดือนนี้
-      const advRow = await db.prepare(`
-        SELECT COALESCE(SUM(amount), 0) as total_advance
-        FROM employee_advances
-        WHERE user_id = ? AND advance_date LIKE ? AND status = 'pending'
-      `).get(u.id, `${month}%`);
-      const advanceAmount = advRow ? Number(advRow.total_advance || 0) : 0;
-
-      // 5. ประวัติการจ่ายเงินทั้งหมดในเดือนนี้ (History of Payouts in this month)
-      const historyPayouts = await db.prepare(`
-        SELECT p.*, e.id as expense_id
-        FROM employee_payrolls p
-        LEFT JOIN expenses e ON p.expense_id = e.id
-        WHERE p.user_id = ? AND p.period_month = ?
-        ORDER BY p.payment_date DESC, p.id DESC
-      `).all(u.id, month);
+      const eventOtAmount = otByUser.get(u.id) || 0;
+      const advanceAmount = advByUser.get(u.id) || 0;
+      const historyPayouts = payoutsByUser.get(u.id) || [];
 
       const activePayouts = historyPayouts.filter(p => p.status !== 'cancelled');
       const totalPaidAmountMonth = activePayouts.reduce((sum, item) => sum + Number(item.net_paid_amount || 0), 0);
       const totalPaidDaysMonth = activePayouts.reduce((sum, item) => sum + Number(item.days_worked || 0), 0);
       const totalHoldbackDeductedMonth = activePayouts.reduce((sum, item) => sum + Number(item.holdback_deducted_amount || 0), 0);
 
-      // 6. ข้อมูลสถานะเงินประกัน (Guarantee Deposit)
-      const guaranteeRecord = await db.prepare(`
-        SELECT * FROM employee_guarantees
-        WHERE user_id = ?
-        ORDER BY id DESC LIMIT 1
-      `).get(u.id);
+      const guaranteeRecord = guaranteeByUser.get(u.id) || null;
+      const isGuaranteeSettled = Boolean(
+        guaranteeRecord &&
+        guaranteeRecord.status === 'held' &&
+        (holdbackDatesByUser.get(u.id) || []).some(dt => dt >= guaranteeRecord.created_at)
+      );
 
-      // ตรวจสอบว่าเงินประกันรายการปัจจุบัน (ถ้า status = 'held') เคยถูกหักในสลิปจ่ายเงินไปแล้วหรือยัง
-      let isGuaranteeSettled = false;
-      if (guaranteeRecord && guaranteeRecord.status === 'held') {
-        const matchingSlip = await db.prepare(`
-          SELECT id FROM employee_payrolls
-          WHERE user_id = ? AND holdback_deducted_amount > 0 AND created_at >= ? AND (status IS NULL OR status != 'cancelled')
-          LIMIT 1
-        `).get(u.id, guaranteeRecord.created_at);
-        if (matchingSlip) {
-          isGuaranteeSettled = true;
-        }
-      }
-
-      // 7. คำนวณยอดสุทธิที่รอจ่ายรอบนี้ (Net Payable this round)
       let baseSalaryRound = 0;
       if (u.wage_type === 'monthly') {
         baseSalaryRound = activePayouts.length === 0 ? (u.wage_rate || 0) : 0;
@@ -676,7 +695,6 @@ router.get('/payroll/calculate', requireAdmin, async (req, res) => {
         baseSalaryRound = unpaidBaseSalary;
       }
 
-      // ถ้ามีการวางเงินประกันแล้ว (status = 'held') และยังไม่เคยถูกหักในสลิปเงินเดือน ให้หักลบ 1,000 บาท
       let guaranteeDeductionRound = 0;
       if (guaranteeRecord && guaranteeRecord.status === 'held' && !isGuaranteeSettled) {
         guaranteeDeductionRound = Number(guaranteeRecord.amount || 1000);
