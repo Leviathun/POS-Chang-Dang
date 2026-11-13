@@ -5596,7 +5596,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 10px 12px;
+  min-height: 52px;
+  padding: 14px 16px;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--border-color);
   background: var(--card-bg, #ffffff);
@@ -5722,10 +5723,11 @@ onUnmounted(() => {
     display: none !important;
   }
   .btn-stock-choice {
-    padding: 8px 6px !important;
+    min-height: 48px !important;
+    padding: 12px 10px !important;
   }
   .btn-stock-choice-title {
-    font-size: 12.5px !important;
+    font-size: 14px !important;
   }
   .btn-stock-choice-sub {
     font-size: 10px !important;
