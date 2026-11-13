@@ -131,14 +131,48 @@
     <div v-if="activeTab === 'users'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
       <div class="card diner-page-header">
-        <div class="flex align-center gap-md">
-          <div class="diner-icon-circle"><i class="fa-solid fa-users"></i></div>
-          <div class="diner-header-title">
-            พนักงานหน้าร้าน: <strong class="tabular-nums">{{ users.length }}</strong> คน
-          </div>
+        <div class="diner-header-title">
+          พนักงานหน้าร้าน: <strong class="tabular-nums">{{ filteredUsers.length }}</strong> คน
         </div>
         <div class="diner-header-actions">
           <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
+        </div>
+      </div>
+
+      <!-- Branch & Role Filter Bar -->
+      <div class="card p-md flex flex-col gap-sm" style="background: #ffffff; border: 1.5px solid var(--border-color);">
+        <div class="flex align-center gap-xs flex-wrap">
+          <span class="text-xs font-bold text-secondary" style="min-width: 48px;">สาขา:</span>
+          <button
+            type="button"
+            class="btn btn-secondary btn-filter-pill"
+            :class="{ active: userBranchFilter === 'all' }"
+            @click="userBranchFilter = 'all'"
+          >ทั้งหมด</button>
+          <button
+            v-for="b in branches"
+            :key="'uf-b-' + b.id"
+            type="button"
+            class="btn btn-secondary btn-filter-pill"
+            :class="{ active: userBranchFilter === b.id }"
+            @click="userBranchFilter = b.id"
+          >{{ b.name }}</button>
+        </div>
+        <div class="flex align-center gap-xs flex-wrap">
+          <span class="text-xs font-bold text-secondary" style="min-width: 48px;">บทบาท:</span>
+          <button
+            v-for="r in [
+              { value: 'all', label: 'ทั้งหมด' },
+              { value: 'admin', label: 'ผู้ดูแลระบบ' },
+              { value: 'manager', label: 'ผู้จัดการ' },
+              { value: 'staff', label: 'พนักงาน' }
+            ]"
+            :key="'uf-r-' + r.value"
+            type="button"
+            class="btn btn-secondary btn-filter-pill"
+            :class="{ active: userRoleFilter === r.value }"
+            @click="userRoleFilter = r.value"
+          >{{ r.label }}</button>
         </div>
       </div>
 
@@ -179,9 +213,14 @@
                   </td>
                 </tr>
               </template>
+              <tr v-else-if="filteredUsers.length === 0">
+                <td colspan="5" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
+                  ไม่พบพนักงานตามเงื่อนไขที่เลือก
+                </td>
+              </tr>
               <tr 
                 v-else 
-                v-for="u in users" 
+                v-for="u in filteredUsers" 
                 :key="u.id" 
                 style="border-bottom: 1px solid var(--border-color);"
                 class="table-row-hover"
@@ -205,8 +244,19 @@
                     {{ getRoleLabel(u.role) }}
                   </span>
                 </td>
-                <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary); letter-spacing: 2px;">
-                  ••••
+                <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; color:var(--primary);">
+                  <div class="inline-flex align-center justify-center gap-xs">
+                    <span class="tabular-nums" style="letter-spacing: 2px;">{{ (currentUser?.role === 'admin' && visiblePinUserIds[u.id]) ? (u.pin || '-') : '••••' }}</span>
+                    <button
+                      v-if="currentUser?.role === 'admin'"
+                      type="button"
+                      class="btn-pin-toggle"
+                      :title="visiblePinUserIds[u.id] ? 'ซ่อนรหัส PIN' : 'ดูรหัส PIN'"
+                      @click="toggleUserPin(u.id)"
+                    >
+                      <i :class="visiblePinUserIds[u.id] ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                    </button>
+                  </div>
                 </td>
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="flex justify-center gap-sm">
@@ -245,12 +295,12 @@
             </div>
           </div>
         </template>
-        <div v-else-if="users.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
-          ยังไม่มีข้อมูลพนักงาน
+        <div v-else-if="filteredUsers.length === 0" style="text-align: center; padding: var(--space-xl); color: var(--text-tertiary);">
+          ไม่พบข้อมูลพนักงาน
         </div>
         <div 
           v-else 
-          v-for="u in users" 
+          v-for="u in filteredUsers" 
           :key="u.id"
           class="card diner-item-card"
         >
@@ -266,9 +316,20 @@
                   {{ getRoleLabel(u.role) }}
                 </span>
               </div>
-              <div class="text-xs text-secondary mt-xs flex align-center gap-xs">
-                <i class="fa-solid fa-store" style="color: var(--primary);"></i>
-                <span>{{ getBranchName(u.branch_id) }}</span>
+              <div class="text-xs text-secondary mt-xs flex align-center gap-sm flex-wrap">
+                <span><i class="fa-solid fa-store mr-xs" style="color: var(--primary);"></i>{{ getBranchName(u.branch_id) }}</span>
+                <span class="inline-flex align-center gap-xs">
+                  PIN: <strong class="tabular-nums" style="color: var(--primary);">{{ (currentUser?.role === 'admin' && visiblePinUserIds[u.id]) ? (u.pin || '-') : '••••' }}</strong>
+                  <button
+                    v-if="currentUser?.role === 'admin'"
+                    type="button"
+                    class="btn-pin-toggle"
+                    :title="visiblePinUserIds[u.id] ? 'ซ่อนรหัส PIN' : 'ดูรหัส PIN'"
+                    @click="toggleUserPin(u.id)"
+                  >
+                    <i :class="visiblePinUserIds[u.id] ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                  </button>
+                </span>
               </div>
             </div>
           </div>
@@ -392,11 +453,8 @@
     <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
       <div class="card diner-page-header">
-        <div class="flex align-center gap-md">
-          <div class="diner-icon-circle"><i class="fa-solid fa-code-branch"></i></div>
-          <div class="diner-header-title">
-            สาขาทั้งหมด: <strong class="tabular-nums">{{ branches.length }}</strong> สาขา
-          </div>
+        <div class="diner-header-title">
+          สาขาทั้งหมด: <strong class="tabular-nums">{{ branches.length }}</strong> สาขา
         </div>
         <div class="diner-header-actions">
           <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
@@ -1535,6 +1593,22 @@ const activeTab = ref('shop');
 const currentUser = ref(null);
 const selectedSettingsBranchId = ref(null);
 const users = computed(() => store.users || []);
+const userBranchFilter = ref('all');
+const userRoleFilter = ref('all');
+const visiblePinUserIds = ref({});
+const toggleUserPin = (userId) => {
+  visiblePinUserIds.value = {
+    ...visiblePinUserIds.value,
+    [userId]: !visiblePinUserIds.value[userId]
+  };
+};
+const filteredUsers = computed(() => {
+  return users.value.filter(u => {
+    if (userBranchFilter.value !== 'all' && Number(u.branch_id) !== Number(userBranchFilter.value)) return false;
+    if (userRoleFilter.value !== 'all' && u.role !== userRoleFilter.value) return false;
+    return true;
+  });
+});
 const shopSettingsLoading = ref(false);
 const usersLoading = ref(false);
 const showUserModal = ref(false);
@@ -2501,6 +2575,33 @@ input:checked + .slider:before {
   align-items: center;
   gap: var(--space-sm);
   flex-wrap: wrap;
+}
+.btn-filter-pill {
+  padding: 5px 12px;
+  font-size: var(--font-xs);
+  border-radius: var(--radius-full);
+  min-height: 30px;
+}
+.btn-filter-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+.btn-pin-toggle {
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.btn-pin-toggle:hover {
+  background: rgba(139, 3, 19, 0.16);
 }
 .diner-item-card {
   background: #ffffff;
