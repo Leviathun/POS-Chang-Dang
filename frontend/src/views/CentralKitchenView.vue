@@ -66,7 +66,7 @@
                   <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                     <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
                       <img v-if="item.image_url" :src="item.image_url" :alt="item.name" style="width: 100%; height: 100%; object-fit: cover;" />
-                      <i v-else :class="getCategoryIcon(item.category)" class="text-base text-muted"></i>
+                      <i v-else class="fa-solid fa-box-open text-base text-muted"></i>
                     </div>
                   </td>
                   <!-- Name & Category -->
@@ -77,7 +77,7 @@
                     </div>
                   </td>
                   <!-- Price -->
-                  <td class="text-right" style="padding: var(--space-md); font-weight: bold; vertical-align: middle;">
+                  <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;">
                     ฿{{ formatNumber(item.cost_price) }} / {{ item.unit }}
                   </td>
                 </tr>
@@ -112,7 +112,7 @@
                 <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
                   <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="mobile-menu-card-img" />
                   <div v-else class="mobile-menu-card-placeholder">
-                    <i :class="getCategoryIcon(item.category)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i>
+                    <i class="fa-solid fa-box-open" style="font-size: 1.2rem; color: var(--text-tertiary);"></i>
                   </div>
                 </div>
                 
@@ -159,7 +159,7 @@
             :class="{ 'active': selectedCategory === cat.id }"
             @click="selectedCategory = cat.id"
           >
-            <i :class="cat.icon" style="margin-right: 4px;"></i> {{ cat.label }}
+            {{ cat.label }}
             <span v-if="getCategoryCount(cat.id) > 0" class="ml-xs font-normal opacity-90">
               ({{ getCategoryCount(cat.id) }})
             </span>
@@ -230,7 +230,6 @@
           <!-- 1. TOP: ประเภท กับ พร้อมจ่าย (ใช้เฉพาะไอคอนประหยัดพื้นที่ ไม่เบียด) -->
           <div class="card-top-badges flex flex-between align-center">
             <span class="badge badge-neutral card-badge-category">
-              <i :class="getCategoryIcon(item.category)" class="mr-1"></i>
               {{ getCategoryLabel(item.category) }}
             </span>
             <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="ของหมดสต็อก">
@@ -253,7 +252,7 @@
               class="item-img"
             />
             <div v-else class="item-img-placeholder">
-              <i :class="getCategoryIcon(item.category)"></i>
+              <i class="fa-solid fa-box-open"></i>
             </div>
           </div>
 
@@ -420,7 +419,6 @@
                 :class="{ active: dispatchCategory === cat.id }"
                 @click="dispatchCategory = cat.id"
               >
-                <i :class="cat.icon" style="margin-right: 4px;"></i>
                 <span>{{ cat.label }}</span>
                 <span v-if="getDispatchCategoryCount(cat.id) > 0" class="category-count">
                   ({{ getDispatchCategoryCount(cat.id) }})
@@ -469,7 +467,6 @@
               <!-- Top badges -->
               <div class="card-top-badges flex flex-between align-center">
                 <span class="badge badge-neutral card-badge-category">
-                  <i :class="getCategoryIcon(item.category)" class="mr-1"></i>
                   {{ getCategoryLabel(item.category) }}
                 </span>
                 <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="หมดสต็อก">
@@ -493,7 +490,7 @@
                   loading="lazy"
                 />
                 <div v-else class="item-img-placeholder">
-                  <i :class="getCategoryIcon(item.category)"></i>
+                  <i class="fa-solid fa-box-open"></i>
                 </div>
               </div>
 
@@ -2838,35 +2835,6 @@
                   placeholder="เช่น ซอส, ผงปรุงรส, แป้งและน้ำมัน"
                 />
               </div>
-
-              <div class="form-group mb-0">
-                <label class="form-label text-xs font-bold">รหัสหมวดหมู่ <span class="font-normal text-muted">(เว้นว่างเพื่อสร้างอัตโนมัติ)</span></label>
-                <input 
-                  type="text" 
-                  class="form-input w-full" 
-                  v-model="catForm.code" 
-                  :disabled="!!editingCat"
-                  placeholder="เช่น sauce, powder, oil_flour"
-                />
-              </div>
-
-              <!-- Icon Picker -->
-              <div class="form-group mb-0">
-                <label class="form-label text-xs font-bold mb-xs block">เลือกไอคอนสัญลักษณ์</label>
-                <div class="ck-cat-icon-grid">
-                  <button 
-                    v-for="ico in availableCategoryIcons" 
-                    :key="ico.icon" 
-                    type="button"
-                    class="ck-cat-icon-btn"
-                    :class="{ 'active': catForm.icon === ico.icon }"
-                    :title="ico.title"
-                    @click="catForm.icon = ico.icon"
-                  >
-                    <i :class="ico.icon"></i>
-                  </button>
-                </div>
-              </div>
             </div>
 
             <div class="ck-cat-form-actions">
@@ -2905,17 +2873,9 @@
                 :key="cat.id" 
                 class="ck-cat-row"
               >
-                <div class="flex align-center gap-sm" style="min-width: 0;">
-                  <div class="ck-cat-row-icon">
-                    <i :class="cat.icon || 'fa-solid fa-tag'"></i>
-                  </div>
-                  <div style="min-width: 0;">
-                    <div class="font-bold text-sm text-primary-dark" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cat.name }}</div>
-                    <div class="ck-cat-row-meta">
-                      <span class="ck-cat-code-pill">{{ cat.code }}</span>
-                      <span class="text-xs text-secondary">{{ getCategoryCount(cat.code) }} สินค้า</span>
-                    </div>
-                  </div>
+                <div style="min-width: 0;">
+                  <div class="font-bold text-sm text-primary-dark" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cat.name }}</div>
+                  <div class="text-xs text-secondary">{{ getCategoryCount(cat.code) }} สินค้า</div>
                 </div>
 
                 <div class="flex align-center gap-xs flex-shrink-0">
@@ -3002,7 +2962,6 @@
                   :class="{ 'selected': cat.id === itemForm.category }"
                   @click="itemForm.category = cat.id; isCategoryModalDropdownOpen = false;"
                 >
-                  <i :class="cat.icon" style="margin-right: 6px; width: 16px;"></i>
                   {{ cat.label }}
                 </div>
               </div>
@@ -3114,10 +3073,17 @@
               <label class="form-label font-bold flex align-center gap-xs mb-0">
                 <i class="fa-solid fa-link text-primary"></i>
                 <span>ผูกกับเมนูใน POS</span>
-                <span class="ck-tooltip-wrap" tabindex="0" aria-label="คำอธิบายการผูกเมนู POS">
-                  <i class="fa-regular fa-circle-question ck-tooltip-icon"></i>
+                <span class="ck-tooltip-wrap" @click.stop>
+                  <button type="button" class="ck-tooltip-trigger" aria-label="คำอธิบายการผูกเมนู POS">
+                    <i class="fa-solid fa-circle-info"></i>
+                  </button>
                   <span class="ck-tooltip-bubble" role="tooltip">
-                    ใช้สำหรับเติมสต็อกอัตโนมัติเมื่อเบิก/จ่าย หากเว้นว่างระบบจะหักเฉพาะสต็อกครัวกลางและบันทึกรายจ่ายสาขา โดยไม่แตะสต็อกเมนู POS
+                    <span class="ck-tooltip-arrow"></span>
+                    <span class="ck-tooltip-title"><i class="fa-solid fa-link"></i> การผูกกับเมนูใน POS</span>
+                    <span class="ck-tooltip-body">
+                      • <strong>เมื่อผูกเมนู:</strong> เติมสต็อกเมนูที่สาขาอัตโนมัติเมื่อเบิก/จ่าย<br>
+                      • <strong>เมื่อเว้นว่าง:</strong> หักเฉพาะสต็อกครัวกลางและบันทึกรายจ่ายสาขา โดยไม่แตะสต็อกเมนู POS
+                    </span>
                   </span>
                 </span>
               </label>
@@ -4082,20 +4048,6 @@ const isSavingCat = ref(false);
 const editingCat = ref(null);
 const catForm = ref({ name: '', code: '', icon: 'fa-solid fa-tag' });
 
-const availableCategoryIcons = [
-  { icon: 'fa-solid fa-drumstick-bite', title: 'วัตถุดิบ/อาหาร' },
-  { icon: 'fa-solid fa-bottle-droplet', title: 'ซอส/น้ำจิ้ม' },
-  { icon: 'fa-solid fa-mortar-pestle', title: 'ผง/เครื่องปรุง' },
-  { icon: 'fa-solid fa-wheat-awn', title: 'แป้ง/น้ำมัน' },
-  { icon: 'fa-solid fa-box-open', title: 'บรรจุภัณฑ์' },
-  { icon: 'fa-solid fa-kitchen-set', title: 'อุปกรณ์/ของใช้' },
-  { icon: 'fa-solid fa-snowflake', title: 'อาหารแช่แข็ง' },
-  { icon: 'fa-solid fa-cubes', title: 'วัตถุดิบแปรรูป' },
-  { icon: 'fa-solid fa-bowl-food', title: 'อาหารปรุงสำเร็จ' },
-  { icon: 'fa-solid fa-wine-bottle', title: 'เครื่องดื่ม/ไซรัป' },
-  { icon: 'fa-solid fa-spray-can-sparkles', title: 'ของใช้ทำความสะอาด' },
-  { icon: 'fa-solid fa-tag', title: 'ทั่วไป/อื่นๆ' }
-];
 
 const openCategoryModal = () => {
   editingCat.value = null;
@@ -4621,20 +4573,6 @@ const getItemNameParts = (name) => {
   return { main: name, sub: '' };
 };
 
-const getCategoryIcon = (cat) => {
-  const found = kitchenCategories.value.find(c => c.code === cat);
-  if (found && found.icon) return found.icon;
-  const map = {
-    'raw_material': 'fa-solid fa-drumstick-bite',
-    'sauce': 'fa-solid fa-bottle-droplet',
-    'powder': 'fa-solid fa-mortar-pestle',
-    'oil_flour': 'fa-solid fa-wheat-awn',
-    'packaging': 'fa-solid fa-box-open',
-    'equipment': 'fa-solid fa-kitchen-set',
-    'general': 'fa-solid fa-tag'
-  };
-  return map[cat] || 'fa-solid fa-box';
-};
 
 const getStatusBadgeClass = (st) => {
   const map = {
@@ -8703,37 +8641,6 @@ onUnmounted(() => {
   gap: var(--space-sm);
 }
 
-.ck-cat-icon-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-}
-
-.ck-cat-icon-btn {
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  border: 1.5px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  font-size: 1.05rem;
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.ck-cat-icon-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.ck-cat-icon-btn.active {
-  background: var(--gradient-primary);
-  border-color: var(--primary);
-  color: #fff;
-  box-shadow: var(--shadow-sm);
-}
 
 .ck-cat-form-actions {
   display: flex;
@@ -8761,35 +8668,6 @@ onUnmounted(() => {
   border-radius: var(--radius-md);
 }
 
-.ck-cat-row-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary);
-  flex-shrink: 0;
-}
-
-.ck-cat-row-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.ck-cat-code-pill {
-  font-family: monospace;
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-}
 
 .ck-cat-action-btn {
   width: 34px;
@@ -8826,42 +8704,86 @@ onUnmounted(() => {
   position: relative;
   display: inline-flex;
   align-items: center;
-  cursor: help;
 }
 
-.ck-tooltip-icon {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
+.ck-tooltip-trigger {
+  background: none;
+  border: none;
+  outline: none;
+  padding: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
 }
 
-.ck-tooltip-wrap:hover .ck-tooltip-icon,
-.ck-tooltip-wrap:focus .ck-tooltip-icon {
+.ck-tooltip-wrap:hover .ck-tooltip-trigger,
+.ck-tooltip-trigger:focus {
   color: var(--primary);
+  background: rgba(139, 3, 19, 0.08);
 }
 
 .ck-tooltip-bubble {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  transform: translateX(-50%);
-  width: 260px;
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  background: #2b1d12;
-  color: #fff7df;
+  left: -6px;
+  bottom: calc(100% + 10px);
+  width: min(300px, 78vw);
+  padding: 10px 12px;
+  background: #fffcf7;
+  border: 1px solid rgba(139, 3, 19, 0.18);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 400;
-  line-height: 1.45;
-  box-shadow: var(--shadow-md);
+  line-height: 1.6;
+  box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14);
+  text-align: left;
+  white-space: normal;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.15s ease;
-  z-index: 30;
+  z-index: 60;
+}
+
+.ck-tooltip-arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 11px;
+  width: 10px;
+  height: 10px;
+  background: #fffcf7;
+  border-right: 1px solid rgba(139, 3, 19, 0.18);
+  border-bottom: 1px solid rgba(139, 3, 19, 0.18);
+  transform: rotate(45deg);
+}
+
+.ck-tooltip-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.ck-tooltip-body {
+  display: block;
+}
+
+.ck-tooltip-body strong {
+  color: var(--text-primary);
 }
 
 .ck-tooltip-wrap:hover .ck-tooltip-bubble,
-.ck-tooltip-wrap:focus .ck-tooltip-bubble {
+.ck-tooltip-wrap:focus-within .ck-tooltip-bubble {
   opacity: 1;
   visibility: visible;
 }
