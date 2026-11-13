@@ -3154,8 +3154,6 @@
                   @click="itemForm.target_stock_type = 'raw'"
                 >
                   <span class="btn-stock-choice-title">🥩 ประเภทสด</span>
-                  <span class="btn-stock-choice-sub desktop-only">ของสด/ดิบ (raw_quantity) นำไปหมัก/ปรุงต่อ</span>
-                  <span class="btn-stock-choice-sub mobile-only">ของดิบ (raw_quantity)</span>
                 </button>
 
                 <button 
@@ -3165,8 +3163,6 @@
                   @click="itemForm.target_stock_type = 'ready'"
                 >
                   <span class="btn-stock-choice-title">🍗 พร้อมทาน</span>
-                  <span class="btn-stock-choice-sub desktop-only">พร้อมขาย (quantity) หน้าร้านกดขายได้เลย</span>
-                  <span class="btn-stock-choice-sub mobile-only">พร้อมขาย (quantity)</span>
                 </button>
               </div>
 
@@ -6981,21 +6977,22 @@ onUnmounted(() => {
   /* Toolbar: Separate 3-button action row */
   .catalog-toolbar-actions {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: 1.25fr 1fr 1fr !important;
     width: 100% !important;
-    gap: 8px !important;
+    gap: 6px !important;
   }
 
   .toolbar-btn {
     width: 100% !important;
-    height: 44px !important;
+    min-width: 0 !important;
+    height: 42px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 6px !important;
-    font-size: 0.95rem !important;
+    gap: 4px !important;
+    font-size: 0.84rem !important;
     font-weight: bold !important;
-    padding: 0 8px !important;
+    padding: 0 6px !important;
     box-sizing: border-box !important;
     white-space: nowrap !important;
     border-radius: var(--radius-md) !important;
@@ -8731,9 +8728,10 @@ onUnmounted(() => {
 
 .ck-tooltip-bubble {
   position: absolute;
-  left: -6px;
+  left: 50%;
   bottom: calc(100% + 10px);
-  width: min(300px, 78vw);
+  transform: translateX(-50%);
+  width: min(270px, 72vw);
   padding: 10px 12px;
   background: #fffcf7;
   border: 1px solid rgba(139, 3, 19, 0.18);
@@ -8756,13 +8754,13 @@ onUnmounted(() => {
 .ck-tooltip-arrow {
   position: absolute;
   bottom: -6px;
-  left: 11px;
+  left: 50%;
   width: 10px;
   height: 10px;
   background: #fffcf7;
   border-right: 1px solid rgba(139, 3, 19, 0.18);
   border-bottom: 1px solid rgba(139, 3, 19, 0.18);
-  transform: rotate(45deg);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .ck-tooltip-title {
