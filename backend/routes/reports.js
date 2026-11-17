@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { attachUser, requireAuth, requireAdmin } = require('../middleware/auth');
 const reportsService = require('../services/reports');
+const { getPublicBaseUrl } = require('./images');
 
 function getThailandDate() {
   return new Date(Date.now() + 7 * 60 * 60 * 1000);
@@ -112,7 +113,7 @@ router.get('/top-items', requireAdmin, async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
     const branchId = getBranchFilter(req);
-    const items = await reportsService.getTopItems(days, branchId, { date: req.query.date || null, month: req.query.month || null, year: req.query.year || null, start_time: req.query.start_time || null, end_time: req.query.end_time || null });
+    const items = await reportsService.getTopItems(days, branchId, { date: req.query.date || null, month: req.query.month || null, year: req.query.year || null, start_time: req.query.start_time || null, end_time: req.query.end_time || null }, getPublicBaseUrl(req));
 
     res.json({
       success: true,

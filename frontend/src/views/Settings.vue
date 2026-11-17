@@ -2,7 +2,7 @@
   <div id="settings-page" class="page-enter">
     
     <!-- Tab toggles inside Settings page -->
-    <div class="category-tabs mb-lg">
+    <div class="category-tabs tab-category mb-lg">
       <button 
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'shop' }"
@@ -145,7 +145,7 @@
           <span class="text-xs font-bold text-secondary" style="min-width: 48px;">สาขา:</span>
           <button
             type="button"
-            class="btn btn-secondary btn-filter-pill"
+            class="filter-pill"
             :class="{ active: userBranchFilter === 'all' }"
             @click="userBranchFilter = 'all'"
           >ทั้งหมด</button>
@@ -153,7 +153,7 @@
             v-for="b in branches"
             :key="'uf-b-' + b.id"
             type="button"
-            class="btn btn-secondary btn-filter-pill"
+            class="filter-pill"
             :class="{ active: userBranchFilter === b.id }"
             @click="userBranchFilter = b.id"
           >{{ b.name }}</button>
@@ -169,7 +169,7 @@
             ]"
             :key="'uf-r-' + r.value"
             type="button"
-            class="btn btn-secondary btn-filter-pill"
+            class="filter-pill"
             :class="{ active: userRoleFilter === r.value }"
             @click="userRoleFilter = r.value"
           >{{ r.label }}</button>
@@ -2196,8 +2196,10 @@ const handleExecutePurgeCloud = async () => {
 
 onMounted(() => {
   currentUser.value = getUser();
-  if (sessionStorage.getItem('selected_branch_id')) {
-    selectedSettingsBranchId.value = Number(sessionStorage.getItem('selected_branch_id'));
+  const savedBranchId = sessionStorage.getItem('selected_branch_id');
+  if (savedBranchId && savedBranchId !== 'all' && !isNaN(Number(savedBranchId))) {
+    selectedSettingsBranchId.value = Number(savedBranchId);
+
   } else if (currentUser.value) {
     selectedSettingsBranchId.value = currentUser.value.branch_id;
   }
@@ -2598,17 +2600,7 @@ input:checked + .slider:before {
   gap: var(--space-sm);
   flex-wrap: wrap;
 }
-.btn-filter-pill {
-  padding: 5px 12px;
-  font-size: var(--font-xs);
-  border-radius: var(--radius-full);
-  min-height: 30px;
-}
-.btn-filter-pill.active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
+
 .btn-pin-toggle {
   background: rgba(139, 3, 19, 0.08);
   color: var(--primary);
@@ -2657,6 +2649,10 @@ input:checked + .slider:before {
   border: 2px solid var(--primary);
   background: rgba(139, 3, 19, 0.03);
 }
+.diner-module-card .btn-primary {
+  min-width: 192px;
+  justify-content: center;
+}
 .diner-icon-badge {
   width: 44px;
   height: 44px;
@@ -2704,5 +2700,10 @@ input:checked + .slider:before {
   font-weight: var(--font-weight-bold);
   font-size: var(--font-sm);
   flex-shrink: 0;
+}
+@media (min-width: 769px) {
+  .diner-page-header {
+    padding: var(--space-xl);
+  }
 }
 </style>

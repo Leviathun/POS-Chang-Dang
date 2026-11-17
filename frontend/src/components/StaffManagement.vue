@@ -2,7 +2,7 @@
   <div class="staff-management-wrapper card p-md" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation for Staff Management -->
-    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+    <div class="category-tabs tab-category mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
       <button 
         class="btn btn-secondary" 
         :class="{ 'active': activeSubTab === 'employees' }"

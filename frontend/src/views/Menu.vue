@@ -68,9 +68,10 @@
                     <div 
                       class="drag-handle" 
                       style="cursor: grab;"
-                      @touchstart="handleTouchStart(index, $event)"
+                      @touchstart.prevent="handleTouchStart(index, $event)"
                       @touchmove.prevent="handleTouchMove"
                       @touchend="handleTouchEnd"
+                  @touchcancel="handleTouchEnd"
                     >
                       <i class="fa-solid fa-bars"></i>
                     </div>
@@ -117,6 +118,7 @@
                   @touchstart="handleTouchStart(index, $event)"
                   @touchmove.prevent="handleTouchMove"
                   @touchend="handleTouchEnd"
+                  @touchcancel="handleTouchEnd"
                 >
                   <i class="fa-solid fa-bars"></i>
                 </div>
@@ -909,48 +911,88 @@ const handleDragEnd = () => {
   dragIndex.value = null;
 };
 
+let touchScrollRaf = null;
+let lastTouchX = 0;
+let lastTouchY = 0;
+let lastScrollTs = 0;
+let lastAutoSwapTs = 0;
+
+const swapItemAtPoint = (x, y) => {
+  if (dragIndex.value === null) return;
+  const targetElement = document.elementFromPoint(x, y);
+  const element = targetElement?.closest('.mobile-reorder-card, .desktop-reorder-row');
+  if (!element) return;
+  const targetIndex = Number(element.dataset.index);
+  if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
+    const item = reorderItems.value[dragIndex.value];
+    reorderItems.value.splice(dragIndex.value, 1);
+    reorderItems.value.splice(targetIndex, 0, item);
+    dragIndex.value = targetIndex;
+  }
+};
+
+const runTouchAutoScroll = (now) => {
+  if (dragIndex.value === null) {
+    touchScrollRaf = null;
+    return;
+  }
+  const dt = lastScrollTs ? Math.min(now - lastScrollTs, 50) : 16.67;
+  lastScrollTs = now;
+  const frameScale = dt / 16.67;
+
+  const threshold = 170;
+  const maxSpeed = 48;
+  let dy = 0;
+  if (lastTouchY < threshold) {
+    const ratio = Math.min(1, (threshold - lastTouchY) / threshold);
+    dy = -Math.ceil((6 + ratio * maxSpeed) * frameScale);
+  } else if (lastTouchY > window.innerHeight - threshold) {
+    const ratio = Math.min(1, (lastTouchY - (window.innerHeight - threshold)) / threshold);
+    dy = Math.ceil((6 + ratio * maxSpeed) * frameScale);
+  }
+  if (dy !== 0) {
+    // ponytail: 2-arg scrollBy with scrollBehavior='auto' avoids iOS/Android smooth-scroll lag
+    window.scrollBy(0, dy);
+    if (now - lastAutoSwapTs >= 60) {
+      lastAutoSwapTs = now;
+      swapItemAtPoint(lastTouchX, lastTouchY);
+    }
+  }
+  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
+};
+
 const handleTouchStart = (index, event) => {
   dragIndex.value = index;
-  const element = event.target.closest('.mobile-reorder-card, .desktop-reorder-row');
-  if (element) {
-    element.classList.add('dragging');
+  // Disable smooth scroll & scroll anchoring while dragging so auto-scroll doesn't stutter on mobile
+  document.documentElement.style.scrollBehavior = 'auto';
+  document.documentElement.style.overflowAnchor = 'none';
+  const touch = event.touches[0];
+  if (touch) {
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
   }
+  lastScrollTs = 0;
+  lastAutoSwapTs = 0;
+  if (touchScrollRaf) cancelAnimationFrame(touchScrollRaf);
+  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
 };
 
 const handleTouchMove = (event) => {
   if (dragIndex.value === null) return;
   const touch = event.touches[0];
-  const clientY = touch.clientY;
-
-  // Auto scroll on touch drag (both mobile and desktop)
-  const threshold = 120;
-  const scrollSpeed = 15;
-  if (clientY < threshold) {
-    window.scrollBy(0, -scrollSpeed);
-  } else if (clientY > window.innerHeight - threshold) {
-    window.scrollBy(0, scrollSpeed);
-  }
-
-  const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (targetElement) {
-    const element = targetElement.closest('.mobile-reorder-card, .desktop-reorder-row');
-    if (element) {
-      const targetIndex = Number(element.dataset.index);
-      if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
-        const item = reorderItems.value[dragIndex.value];
-        reorderItems.value.splice(dragIndex.value, 1);
-        reorderItems.value.splice(targetIndex, 0, item);
-        dragIndex.value = targetIndex;
-      }
-    }
-  }
+  if (!touch) return;
+  lastTouchX = touch.clientX;
+  lastTouchY = touch.clientY;
+  swapItemAtPoint(lastTouchX, lastTouchY);
 };
 
 const handleTouchEnd = () => {
   dragIndex.value = null;
-  const draggingEl = document.querySelector('.mobile-reorder-card.dragging, .desktop-reorder-row.dragging');
-  if (draggingEl) {
-    draggingEl.classList.remove('dragging');
+  document.documentElement.style.scrollBehavior = '';
+  document.documentElement.style.overflowAnchor = '';
+  if (touchScrollRaf) {
+    cancelAnimationFrame(touchScrollRaf);
+    touchScrollRaf = null;
   }
 };
 
@@ -1570,6 +1612,11 @@ onUnmounted(() => {
   color: var(--text-tertiary);
   font-size: 1.25rem;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .drag-handle:active {

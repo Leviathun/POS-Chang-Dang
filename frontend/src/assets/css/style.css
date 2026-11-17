@@ -1875,8 +1875,10 @@ select.form-input:focus {
 
 /* --- Bulk Hint Box end --- */
 
-/* --- Category Tab start --- */
-.category-tab {
+/* --- Page-Switching Tabs (.tab-category & .category-tab) start --- */
+.category-tab,
+.tab-category .btn,
+.tab-category .btn-secondary {
   padding: var(--space-sm) var(--space-lg);
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -1889,14 +1891,64 @@ select.form-input:focus {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.category-tab:active {
+.category-tab:active,
+.tab-category .btn:active,
+.tab-category .btn-secondary:active {
   transform: scale(0.97);
 }
-.category-tab.active {
+.category-tab.active,
+.tab-category .btn.active,
+.tab-category .btn-secondary.active {
   background: var(--gradient-primary);
   color: white;
   border-color: transparent;
   box-shadow: var(--shadow-glow-primary);
+}
+
+/* --- Data Filter Pills (.filter-pill) start --- */
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.filter-pill:active {
+  transform: scale(0.97);
+}
+.filter-pill.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-glow-primary);
+}
+.filter-pill.active-danger {
+  background: #dc3545;
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.25);
+}
+.filter-pill.active-warning {
+  background: #fd7e14;
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(253, 126, 20, 0.25);
+}
+.filter-pill.active-success {
+  background: #28a745;
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.25);
 }
 
 /* --- Category Tab end --- */
@@ -1926,8 +1978,10 @@ select.form-input:focus {
     padding: 12px 18px !important;
   }
 
-  /* Reduce category tab, period tabs, csv export, presets, and change method pill button sizes by 1 step on mobile */
+  /* Restore original mobile pill sizing for page-switching tabs (.tab-category / .category-tabs) */
   .category-tab,
+  .tab-category .btn,
+  .tab-category .btn-secondary,
   .category-tabs .btn-secondary,
   .category-tabs .btn,
   .period-tabs .btn,
@@ -2128,6 +2182,16 @@ select.form-input:focus {
 .tabular-nums, .table td, .qty-badge, .sidebar-badge {
   font-variant-numeric: tabular-nums;
 }
-.btn, .btn-action, .btn-modal, .category-tab, .picker-nav-btn, .picker-trigger-btn, .custom-select-trigger {
+.btn, .btn-action, .btn-modal, .category-tab, .picker-nav-btn, .picker-trigger-btn, .custom-select-trigger, .filter-pill {
   touch-action: manipulation;
+}
+
+@media (max-width: 1024px) {
+  .filter-pill {
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    border-radius: var(--radius-full) !important;
+    min-height: unset !important;
+  }
 }

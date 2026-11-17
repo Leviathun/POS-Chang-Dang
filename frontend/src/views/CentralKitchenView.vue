@@ -583,7 +583,7 @@
             </div>
 
             <!-- Target Branch Badge Card -->
-            <div class="dispatch-branch-info-card flex align-center gap-md" style="background: var(--bg-secondary); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-md);">
+            <div class="dispatch-branch-info-card flex align-center gap-md" style="background: rgba(139, 3, 19, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-md);">
               <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: 1.15rem;"></i>
               </div>
@@ -8795,5 +8795,65 @@ onUnmounted(() => {
 .ck-tooltip-wrap:focus-within .ck-tooltip-bubble {
   opacity: 1;
   visibility: visible;
+}
+/* --- Push Dispatch & Catalog UI Polish --- */
+.dispatch-toolbar-card h3 {
+  font-size: var(--font-lg);
+}
+
+.filter-bar .category-tabs {
+  flex-wrap: wrap !important;
+  overflow-x: visible !important;
+}
+
+.item-card.in-cart {
+  border: 2px solid var(--primary) !important;
+  box-shadow: 0 4px 14px rgba(139, 3, 19, 0.12);
+}
+
+.item-img-container {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.btn-qty {
+  width: 40px;
+  height: 40px;
+  touch-action: manipulation;
+}
+
+.qty-badge,
+.category-count,
+.item-cost-val,
+.item-stock-val,
+.cart-total-row,
+.cart-info {
+  font-variant-numeric: tabular-nums;
+}
+
+.dispatch-branch-select {
+  min-height: 44px;
+}
+
+@media (min-width: 769px) {
+  .dispatch-toolbar-card {
+    padding: var(--space-xl) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cart-sidebar {
+    max-height: calc(100vh - 96px);
+  }
+  .cart-sidebar > div:first-child {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+  }
+  .cart-items-list {
+    flex: 1;
+    min-height: 120px;
+    max-height: none !important;
+  }
 }
 </style>
