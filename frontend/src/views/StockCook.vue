@@ -3,8 +3,22 @@
     
     <!-- Info Header Card (Matches Stock.vue styling & layout) -->
     <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div class="stock-page-title">
-        ปรุงอาหาร
+      <div class="title-tooltip-wrapper" @click.stop>
+        <div class="stock-page-title">
+          ปรุงอาหาร
+        </div>
+        <button
+          type="button"
+          class="title-info-btn"
+          aria-label="คำอธิบายจุดปรุงอาหาร"
+          :aria-expanded="showHintTooltip"
+          @click="showHintTooltip = !showHintTooltip"
+        >
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+        <div v-if="showHintTooltip" class="title-tooltip-popover" role="tooltip">
+          <strong>จุดปรุงอาหาร:</strong> บันทึกปรุง ทอด ห่อ หรือปิ้ง ระบบจะตัดสต็อกวัตถุดิบและเพิ่มสินค้าพร้อมขายให้อัตโนมัติ
+        </div>
       </div>
       <div class="flex align-center gap-xs flex-wrap mobile-header-actions">
         <router-link to="/stock" class="btn btn-primary btn-bulk-back">
@@ -20,14 +34,6 @@
           <i v-else class="fa-solid fa-fire-flame-curved"></i>
           <span class="btn-text">ปรุงทั้งหมด ({{ pendingCookCount }})</span>
         </button>
-      </div>
-    </div>
-
-    <!-- Description & Tips Banner (Solid White Card) -->
-    <div class="card p-md mb-lg cook-hint-box">
-      <span class="hint-icon"><i class="fa-solid fa-lightbulb"></i></span>
-      <div class="hint-text">
-        <strong>จุดปรุงอาหาร:</strong> บันทึกปรุง ทอด ห่อ หรือปิ้ง ระบบจะตัดสต็อกวัตถุดิบและเพิ่มสินค้าพร้อมขายให้อัตโนมัติ
       </div>
     </div>
 
@@ -71,7 +77,7 @@
         <button 
           v-for="cat in filterCategories" 
           :key="cat.id" 
-          class="btn btn-secondary pill-btn"
+          class="filter-pill"
           :class="{ 'active': activeCategory === cat.id }"
           @click="activeCategory = cat.id"
         >
@@ -407,7 +413,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue';
+import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import api from '../api';
 import { ui } from '../helpers';
 import { store } from '../store';
@@ -925,15 +931,24 @@ const loadStockData = async (force = false) => {
   }
 };
 
+const showHintTooltip = ref(false);
+const closeHintTooltip = () => {
+  showHintTooltip.value = false;
+};
+
 onMounted(() => {
   loadStockData();
+  window.addEventListener('click', closeHintTooltip);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeHintTooltip);
 });
 </script>
 
 <style scoped>
 /* Card White Theming */
 .card,
-.cook-hint-box,
 .cook-filter-card,
 .cook-item-card,
 .cook-stock-box,
@@ -967,22 +982,48 @@ onMounted(() => {
   box-sizing: border-box !important;
 }
 
-.cook-hint-box {
-  border: 1px solid rgba(139, 3, 19, 0.15);
-  border-left: 4px solid var(--primary);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: var(--font-sm);
-  color: var(--text-secondary);
+.title-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-.cook-hint-box .hint-icon {
+.title-info-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  font-size: var(--font-sm);
+  line-height: 1;
+  margin-top: -2px;
+  border-radius: var(--radius-full);
+  touch-action: manipulation;
+  transition: color var(--transition-fast);
+}
+
+.title-info-btn:hover,
+.title-info-btn:focus-visible {
   color: var(--primary);
-  font-size: 1.15rem;
-  flex-shrink: 0;
+  outline: none;
+}
+
+.title-tooltip-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: min(320px, 82vw);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-xs);
+  line-height: 1.45;
 }
 
 .cook-filter-card {
@@ -1037,12 +1078,6 @@ onMounted(() => {
 .btn-secondary-rect:hover {
   border-color: var(--primary) !important;
   color: var(--primary) !important;
-}
-
-.pill-btn {
-  padding: 6px 14px !important;
-  font-size: var(--font-sm) !important;
-  border-radius: var(--radius-full) !important;
 }
 
 /* Grid of Cook Items */
@@ -1379,6 +1414,16 @@ onMounted(() => {
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+  .title-tooltip-wrapper {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .title-tooltip-popover {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   .stock-page-title {
     font-size: var(--font-lg) !important;
     font-weight: bold !important;
@@ -1439,7 +1484,7 @@ onMounted(() => {
     -webkit-overflow-scrolling: touch;
   }
 
-  .cook-filter-pills .pill-btn {
+  .cook-filter-pills .filter-pill {
     flex-shrink: 0;
   }
 
@@ -1460,6 +1505,16 @@ onMounted(() => {
     margin-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 10px) !important;
     max-height: calc(100vh - var(--bottom-nav-height, 64px) - var(--safe-bottom, 0px) - 50px) !important;
     width: calc(100% - 24px) !important;
+  }
+}
+@media (min-width: 769px) {
+  .mobile-stock-header-card {
+    padding: var(--space-xl) !important;
+  }
+  .btn-bulk-back,
+  .btn-cook-save-all {
+    height: auto !important;
+    padding: var(--space-md) var(--space-xl) !important;
   }
 }
 </style>

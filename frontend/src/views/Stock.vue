@@ -29,7 +29,7 @@
           <i class="fa-solid fa-fire-burner"></i> ปรุง
         </router-link>
         <router-link v-if="isManagerOrAdminUser" to="/stock/bulk" class="btn btn-primary">
-          <i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน
+          <i class="fa-solid fa-boxes-stacked"></i> ปรับปรุงยอด
         </router-link>
       </div>
     </div>
@@ -109,7 +109,7 @@
                 <!-- Actions -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm">
-                    <button v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" class="btn-action btn-action-fry" @click="openActionModal('fry', item, false)"><i :class="getCookActionIcon(item.name)"></i> {{ getCookActionLabel(item.name) }}สินค้า</button>
+
                     <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
                     <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
                   </div>
@@ -201,14 +201,6 @@
             
             <!-- Bottom Stock Actions -->
             <div class="mobile-stock-card-actions">
-              <button 
-                v-if="item.raw_quantity !== null && item.raw_quantity !== undefined" 
-                class="btn-action btn-action-fry" 
-                style="grid-column: span 2;" 
-                @click="openActionModal('fry', item, false)"
-              >
-                <i :class="getCookActionIcon(item.name)"></i> {{ getCookActionLabel(item.name) }}
-              </button>
               <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
               <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
             </div>
@@ -1175,6 +1167,19 @@ onMounted(() => {
   gap: 8px !important;
   box-sizing: border-box !important;
   min-width: 160px !important;
+}
+@media (min-width: 769px) {
+  .mobile-stock-header-card {
+    padding: var(--space-xl) !important;
+  }
+  .mobile-header-actions {
+    gap: var(--space-sm) !important;
+  }
+  .mobile-header-actions .btn {
+    height: auto !important;
+    padding: var(--space-md) var(--space-xl) !important;
+    min-width: auto !important;
+  }
 }
 @media (max-width: 768px) {
   .stock-page-title {

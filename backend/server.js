@@ -16,6 +16,7 @@ const compression = require('compression');
 const { initDatabase } = require('./config/database');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ────────────────────────────────────────────
@@ -29,8 +30,10 @@ app.use(express.json({ limit: '10mb' }));
 
 // Static files (PWA) - served from root dist/ folder
 app.use(express.static(path.join(__dirname, '..', 'dist'), {
+  maxAge: '365d',
+  immutable: true,
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('index.html')) {
+    if (filePath.endsWith('index.html') || filePath.endsWith('sw.js') || filePath.endsWith('manifest.webmanifest')) {
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.set('Pragma', 'no-cache');
       res.set('Expires', '0');
@@ -42,6 +45,7 @@ app.use(express.static(path.join(__dirname, '..', 'dist'), {
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // ─── API Routes ───────────────────────────────────────────
+app.use('/api/images', require('./routes/images'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/menu', require('./routes/menu'));
 app.use('/api/orders', require('./routes/orders'));

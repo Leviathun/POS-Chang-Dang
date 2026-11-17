@@ -1,17 +1,34 @@
 <template>
   <div id="stock-bulk-page" class="page-enter">
     
-    <!-- Top Action Card / Page Header -->
-    <div class="card mb-lg bulk-header-grid">
-      <div class="header-left">
-        <router-link to="/stock" class="btn btn-primary btn-bulk-back">
+    <!-- Top Header Card (Matches Stock.vue & StockCook.vue) -->
+    <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
+      <div class="title-tooltip-wrapper" @click.stop>
+        <h2 class="stock-page-title">
+          ปรับปรุงยอด
+        </h2>
+        <button 
+          type="button" 
+          class="title-info-btn" 
+          aria-label="คำอธิบายโหมดปรับปรุงยอด"
+          :aria-expanded="showHintTooltip"
+          @click="showHintTooltip = !showHintTooltip"
+        >
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+        <div v-if="showHintTooltip" class="title-tooltip-popover" role="tooltip">
+          <template v-if="activeStockType === 'menu_items'">
+            <strong>โหมดปรับปรุงยอด:</strong> กรอกจำนวนสต็อกคงเหลือจริงล่าสุด ระบบจะคำนวณส่วนต่างและบันทึกเฉพาะรายการที่มีการเปลี่ยนแปลง
+          </template>
+          <template v-else>
+            <strong>โหมดปรับปรุงยอด (เครื่องปรุง):</strong> กรอกจำนวน <strong>รอบเสิร์ฟ</strong> จริงคงเหลือทั้งหมดล่าสุดในระบบ
+          </template>
+        </div>
+      </div>
+      <div class="flex align-center gap-sm flex-wrap mobile-header-actions">
+        <router-link to="/stock" class="btn btn-secondary btn-bulk-back">
           <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
         </router-link>
-      </div>
-      <div class="header-center">
-        <h2 class="stock-page-title"><i class="fa-solid fa-boxes-stacked"></i> จัดการสต็อกด่วน</h2>
-      </div>
-      <div class="header-right">
         <button 
           class="btn btn-primary btn-bulk-header-save" 
           :disabled="isSaving"
@@ -19,14 +36,53 @@
         >
           <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
           <i v-else class="fa-solid fa-floppy-disk"></i>
-          {{ isSaving ? 'กำลังบันทึก...' : 'บันทึก' }}
+          <span>{{ isSaving ? 'กำลังบันทึก...' : (changedCount > 0 ? `บันทึก (${changedCount})` : 'บันทึก') }}</span>
         </button>
+      </div>
+    </div>
+
+    <!-- Search & Modified Summary Bar -->
+    <div class="card p-md mb-lg bulk-toolbar-card">
+      <div class="flex flex-between align-center gap-md flex-wrap">
+        <div class="input-icon-wrapper flex-1" style="min-width: 220px;">
+          <i class="fa-solid fa-magnifying-glass input-icon"></i>
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            class="form-input bulk-search-input" 
+            placeholder="ค้นหาชื่อสินค้า..." 
+            aria-label="ค้นหาชื่อสินค้า"
+          />
+          <button 
+            v-if="searchQuery" 
+            type="button"
+            class="clear-search-btn" 
+            aria-label="ล้างคำค้นหา"
+            @click="searchQuery = ''"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="flex align-center gap-sm flex-wrap">
+          <span class="text-sm font-semibold tabular-nums" :class="changedCount > 0 ? 'text-primary' : 'text-secondary'">
+            แก้ไขแล้ว {{ changedCount }} รายการ
+          </span>
+          <button 
+            v-if="changedCount > 0"
+            type="button"
+            class="btn btn-secondary btn-sm"
+            @click="resetAllChanges"
+          >
+            <i class="fa-solid fa-rotate-left"></i> รีเซ็ต
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Main Content Area -->
     <div class="card p-lg overflow-hidden bulk-main-card">
-      <!-- Outer Category Tabs: Menu Items vs Modifiers -->
+      <!-- Outer Category Tabs: Menu Items vs Modifiers (Hidden while preserving structure) -->
       <div class="category-tabs mb-lg" v-if="false">
         <button 
           class="btn btn-secondary" 
@@ -44,47 +100,6 @@
         </button>
       </div>
 
-      <!-- Action Mode Tabs -->
-      <div class="flex gap-sm mb-lg">
-        <button 
-          class="btn-action flex-1" 
-          :class="bulkTab === 'relative' ? 'btn-action-fry' : ''" 
-          @click="setBulkTab('relative')"
-        >
-          <i class="fa-solid fa-square-plus"></i> เพิ่มสต็อก
-        </button>
-        <button 
-          class="btn-action flex-1" 
-          :class="bulkTab === 'absolute' ? 'btn-action-fry' : ''" 
-          @click="setBulkTab('absolute')"
-        >
-          <i class="fa-solid fa-wrench"></i> ปรับปรุงยอด
-        </button>
-      </div>
-
-      <!-- Description Hint Box -->
-      <div class="bulk-hint-box mb-lg">
-        <span class="hint-icon"><i class="fa-solid fa-lightbulb"></i></span>
-        <div class="hint-text">
-          <template v-if="activeStockType === 'menu_items'">
-            <span v-if="bulkTab === 'relative'">
-              <strong>โหมดเพิ่มสต็อก (สินค้า):</strong> พิมพ์จำนวนสินค้าที่ต้องการเพิ่ม (เช่น <code>30</code>) หรือจำนวนที่ต้องการหักออก (เช่น <code>-5</code>) ปล่อยว่างไว้หากไม่มีการเปลี่ยนแปลง
-            </span>
-            <span v-else>
-              <strong>โหมดปรับปรุงยอด (สินค้า):</strong> พิมพ์จำนวนสต็อกคงเหลือจริงล่าสุด ระบบจะทำการตั้งค่าสต็อกจริงให้ตรงตามที่ระบุโดยอัตโนมัติ
-            </span>
-          </template>
-          <template v-else>
-            <span v-if="bulkTab === 'relative'">
-              <strong>โหมดเพิ่มสต็อก (เครื่องปรุง):</strong> พิมพ์จำนวนถุง/ซองที่นำเข้าเพิ่ม (เช่น <code>2</code> ถุง หรือ <code>10</code> ซอง) หรือที่หักออก (เช่น <code>-1</code>) ระบบจะคำนวณรอบเสิร์ฟตามขนาดบรรจุให้โดยอัตโนมัติ
-            </span>
-            <span v-else>
-              <strong>โหมดปรับปรุงยอด (เครื่องปรุง):</strong> พิมพ์จำนวน **รอบเสิร์ฟ** จริงคงเหลือทั้งหมดล่าสุดในระบบ
-            </span>
-          </template>
-        </div>
-      </div>
-
       <!-- Loading State (Skeleton) -->
       <div v-if="loading" class="bulk-stock-table-container">
         <div class="bulk-stock-rows-container">
@@ -96,13 +111,13 @@
               <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
             </div>
             <div class="bulk-item-input-col">
-              <div class="skeleton mx-auto" style="height: 36px; width: 110px; border-radius: 8px;"></div>
+              <div class="skeleton mx-auto" style="height: 44px; width: 110px; border-radius: 8px;"></div>
             </div>
             <div class="bulk-item-current-col text-center">
               <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
             </div>
             <div class="bulk-item-input-col">
-              <div class="skeleton mx-auto" style="height: 36px; width: 110px; border-radius: 8px;"></div>
+              <div class="skeleton mx-auto" style="height: 44px; width: 110px; border-radius: 8px;"></div>
             </div>
           </div>
         </div>
@@ -114,22 +129,39 @@
         <div class="bulk-stock-header-row desktop-only">
           <div style="text-align: left; padding-left: var(--space-md);">เมนูอาหาร</div>
           <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-snowflake text-accent"></i> คงเหลือ (ของสด)</div>
-          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-snowflake text-accent"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด (ของสด)' : 'ปรับยอด (ของสด)' }}</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-snowflake text-accent"></i> ปรับยอด (ของสด)</div>
           <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> คงเหลือ (พร้อมขาย)</div>
-          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด (พร้อมขาย)' : 'ปรับยอด (พร้อมขาย)' }}</div>
+          <div class="text-center flex align-center justify-center gap-xs"><i class="fa-solid fa-fire text-primary"></i> ปรับยอด (พร้อมขาย)</div>
+        </div>
+
+        <!-- Empty Search State -->
+        <div v-if="filteredMenuItems.length === 0" class="text-center p-3xl text-secondary">
+          <i class="fa-solid fa-magnifying-glass mb-sm" style="font-size: 28px; opacity: 0.4;"></i>
+          <div class="font-bold">ไม่พบรายการสินค้าที่ค้นหา</div>
         </div>
 
         <!-- Scrollable content -->
-        <div class="bulk-stock-rows-container">
-          <div v-for="item in bulkFormItems" :key="item.menu_item_id" class="bulk-stock-row" :class="{ 'has-linkage-warning': item.name.includes('แร็ปไก่') || isLinkedBun(item) }">
+        <div v-else class="bulk-stock-rows-container">
+          <div 
+            v-for="item in filteredMenuItems" 
+            :key="item.menu_item_id" 
+            class="bulk-stock-row" 
+            :class="{ 
+              'has-linkage-warning': item.name.includes('แร็ปไก่') || isLinkedBun(item),
+              'is-modified': isMenuItemModified(item)
+            }"
+          >
             <!-- Col 1: Name -->
             <div class="bulk-item-name-col">
-              <div class="font-bold text-base">{{ item.name }}</div>
+              <div class="flex align-center gap-xs flex-wrap">
+                <span class="font-bold text-base item-name-text">{{ item.name }}</span>
+                <span v-if="isMenuItemModified(item)" class="badge badge-warning badge-sm">แก้ไข</span>
+              </div>
             </div>
 
             <!-- Col 2: Raw stock quantity -->
-            <div class="bulk-item-current-col text-center">
-              <span class="mobile-label"><i class="fa-solid fa-snowflake text-accent" style="margin-right: 4px;"></i> คงเหลือ ของสด:</span>
+            <div class="bulk-item-current-col text-center tabular-nums">
+              <span class="mobile-label"><i class="fa-solid fa-snowflake text-accent" style="margin-right: 4px;"></i> คงเหลือ ของสด</span>
               <span :class="{ 'text-danger': isItemLowStock(item, item.raw_quantity) }" class="font-bold text-base">
                 {{ item.raw_quantity !== null && item.raw_quantity !== undefined ? formatStockQty(item.raw_quantity, item.uom) : '-' }}
               </span>
@@ -138,21 +170,35 @@
             <!-- Col 3: Raw stock input -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label"><i class="fa-solid fa-snowflake text-accent" style="margin-right: 4px;"></i> {{ bulkTab === 'relative' ? 'เพิ่มยอด ของสด:' : 'ปรับยอด ของสด:' }}</span>
-                <input 
-                  type="text" 
-                  v-model="item.raw"
-                  :disabled="item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin()"
-                  :placeholder="item.raw_quantity === null || item.raw_quantity === undefined ? 'ไม่มี' : (!isAdmin() ? 'ล็อก' : (bulkTab === 'relative' ? '0' : String(Math.round(item.raw_quantity * 100) / 100)))"
-                  class="form-input"
-                  :class="{ 'disabled-input': item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin() }"
-                />
+                <span class="mobile-label"><i class="fa-solid fa-snowflake text-accent" style="margin-right: 4px;"></i> ปรับยอด ของสด</span>
+                <div class="input-with-delta">
+                  <input 
+                    type="text" 
+                    inputmode="decimal"
+                    v-model="item.raw"
+                    :disabled="item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin()"
+                    :placeholder="item.raw_quantity === null || item.raw_quantity === undefined ? 'ไม่มี' : (!isAdmin() ? 'ล็อก' : String(Math.round(item.raw_quantity * 100) / 100))"
+                    :aria-label="`ปรับยอดของสด ${item.name}`"
+                    class="form-input tabular-nums"
+                    :class="{ 
+                      'disabled-input': item.raw_quantity === null || item.raw_quantity === undefined || !isAdmin(),
+                      'input-changed': getDelta(item.raw, item.raw_quantity) !== 0 && item.raw_quantity !== null && item.raw_quantity !== undefined
+                    }"
+                  />
+                  <span 
+                    v-if="item.raw_quantity !== null && item.raw_quantity !== undefined && getDelta(item.raw, item.raw_quantity) !== 0"
+                    class="delta-pill tabular-nums"
+                    :class="getDelta(item.raw, item.raw_quantity) > 0 ? 'delta-positive' : 'delta-negative'"
+                  >
+                    {{ formatDelta(getDelta(item.raw, item.raw_quantity)) }}
+                  </span>
+                </div>
               </div>
             </div>
 
             <!-- Col 4: Cooked/Steamed/Grilled stock quantity -->
-            <div class="bulk-item-current-col text-center">
-              <span class="mobile-label"><i :class="getProductMethodIcon(item.name) + ' text-primary'" style="margin-right: 4px;"></i> คงเหลือ {{ getProductMethodLabel(item.name) }}:</span>
+            <div class="bulk-item-current-col text-center tabular-nums">
+              <span class="mobile-label"><i :class="getProductMethodIcon(item.name) + ' text-primary'" style="margin-right: 4px;"></i> คงเหลือ {{ getProductMethodLabel(item.name) }}</span>
               <span :class="{ 'text-danger': isItemLowStock(item, item.quantity) }" class="font-bold text-base">
                 {{ item.quantity !== null && item.quantity !== undefined ? formatStockQty(item.quantity, item.uom) : formatStockQty(0, item.uom) }}
               </span>
@@ -161,13 +207,25 @@
             <!-- Col 5: Cooked/Steamed/Grilled stock input -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label"><i :class="getProductMethodIcon(item.name) + ' text-primary'" style="margin-right: 4px;"></i> {{ bulkTab === 'relative' ? `เพิ่มยอด ${getProductMethodLabel(item.name)}:` : `ปรับยอด ${getProductMethodLabel(item.name)}:` }}</span>
-                 <input 
-                  type="text" 
-                  v-model="item.cooked"
-                  :placeholder="bulkTab === 'relative' ? '0' : (item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0')"
-                  class="form-input"
-                />
+                <span class="mobile-label"><i :class="getProductMethodIcon(item.name) + ' text-primary'" style="margin-right: 4px;"></i> ปรับยอด {{ getProductMethodLabel(item.name) }}</span>
+                <div class="input-with-delta">
+                  <input 
+                    type="text" 
+                    inputmode="decimal"
+                    v-model="item.cooked"
+                    :placeholder="item.quantity !== null && item.quantity !== undefined ? String(Math.round(item.quantity * 100) / 100) : '0'"
+                    :aria-label="`ปรับยอดพร้อมขาย ${item.name}`"
+                    class="form-input tabular-nums"
+                    :class="{ 'input-changed': getDelta(item.cooked, item.quantity ?? 0) !== 0 }"
+                  />
+                  <span 
+                    v-if="getDelta(item.cooked, item.quantity ?? 0) !== 0"
+                    class="delta-pill tabular-nums"
+                    :class="getDelta(item.cooked, item.quantity ?? 0) > 0 ? 'delta-positive' : 'delta-negative'"
+                  >
+                    {{ formatDelta(getDelta(item.cooked, item.quantity ?? 0)) }}
+                  </span>
+                </div>
                 <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" class="linkage-warning-text text-danger font-bold text-center">
                   {{ getLinkageWarningText(item) }}
                 </div>
@@ -176,37 +234,32 @@
           </div>
         </div>
 
-        <!-- Absolute Tab reason presets -->
-        <div v-if="bulkTab === 'absolute'" class="absolute-reason-section mt-xl">
+        <!-- Reason presets & Note -->
+        <div class="absolute-reason-section mt-xl">
           <div class="form-group mb-0">
-            <label class="form-label font-bold text-md">เหตุผลในการปรับยอดจริง *</label>
-            <div class="custom-select-wrapper" @click.stop>
-              <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isReasonDropdownOpen }" 
-                @click="isReasonDropdownOpen = !isReasonDropdownOpen"
+            <label class="form-label font-bold text-sm text-secondary mb-xs block">
+              <i class="fa-solid fa-clipboard-check text-primary" style="margin-right: 4px;"></i> เหตุผลในการปรับยอดจริง *
+            </label>
+            <div class="reason-preset-group" role="radiogroup" aria-label="เหตุผลในการปรับยอดจริง">
+              <button
+                v-for="opt in reasonOptions"
+                :key="opt.value"
+                type="button"
+                class="reason-preset-btn"
+                :class="{ active: bulkReasonPreset === opt.value }"
+                @click="bulkReasonPreset = opt.value"
               >
-                <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
-                  <i :class="getBulkReasonIcon(bulkReasonPreset)"></i>
-                  {{ selectedReasonLabel }}
-                </span>
-              </div>
-              <div v-if="isReasonDropdownOpen" class="custom-select-dropdown">
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'นับยอดขาด/เกิน' }" @click="selectReasonPreset('นับยอดขาด/เกิน')">
-                  <i class="fa-solid fa-chart-simple" style="margin-right: 4px;"></i> นับยอดขาด/เกิน
-                </div>
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'กรอกผิด' }" @click="selectReasonPreset('กรอกผิด')">
-                  <i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> กรอกผิด (แก้ไขยอด)
-                </div>
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'อื่นๆ' }" @click="selectReasonPreset('อื่นๆ')">
-                  <i class="fa-solid fa-circle-question" style="margin-right: 4px;"></i> อื่นๆ
-                </div>
-              </div>
+                <i :class="opt.icon"></i>
+                <span>{{ opt.label }}</span>
+              </button>
             </div>
           </div>
           <div class="form-group mb-0">
-            <label class="form-label font-bold text-md">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
+            <label for="bulk-note-menu" class="form-label font-bold text-sm text-secondary mb-xs block">
+              <i class="fa-solid fa-pen-to-square text-primary" style="margin-right: 4px;"></i> คำอธิบายเพิ่มเติม (ถ้ามี)
+            </label>
             <input 
+              id="bulk-note-menu"
               type="text" 
               v-model="bulkNote" 
               placeholder="ระบุข้อความเพื่อบันทึกประวัติ..." 
@@ -216,7 +269,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex gap-lg mt-2xl bulk-action-buttons">
+        <div class="flex gap-lg mt-xl bulk-action-buttons">
           <router-link to="/stock" class="btn-modal btn-modal-secondary flex-1">
             ยกเลิก
           </router-link>
@@ -227,7 +280,7 @@
           >
             <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-floppy-disk"></i>
-            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : 'บันทึก' }}
+            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : (changedCount > 0 ? `บันทึกการเปลี่ยนแปลง (${changedCount})` : 'บันทึก') }}
           </button>
         </div>
       </div>
@@ -239,25 +292,22 @@
           <div style="text-align: left; padding-left: var(--space-md);">ชื่อเครื่องปรุง / ซอส / ผงปรุงรส</div>
           <div class="text-center">ประเภท</div>
           <div class="text-center">คงเหลือปัจจุบัน</div>
-          <div style="text-align: center;">
-            {{ bulkTab === 'relative' ? 'จำนวนที่เพิ่ม (ถุง/ซองเล็ก) *' : 'จำนวนรอบเสิร์ฟเป้าหมาย *' }}
-          </div>
+          <div style="text-align: center;">จำนวนรอบเสิร์ฟเป้าหมาย *</div>
         </div>
 
         <!-- Scrollable content -->
         <div class="bulk-stock-rows-container">
           <div 
-            v-for="item in bulkModifiersFormItems" 
+            v-for="item in filteredModifiers" 
             :key="item.modifier_id" 
             class="bulk-stock-row bulk-modifier-row"
+            :class="{ 'is-modified': getDelta(item.value, item.total_servings) !== 0 }"
             style="grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr;"
           >
             <!-- Col 1: Name & Mobile Badge -->
             <div class="bulk-item-name-col">
               <div class="flex flex-between align-center w-full gap-xs">
-                <div>
-                  <div class="font-bold text-base text-left">{{ item.name }}</div>
-                </div>
+                <div class="font-bold text-base text-left item-name-text">{{ item.name }}</div>
                 <span class="badge show-mobile-inline" :class="getModifierCategoryClass(item.category)" style="padding: 3px 8px; margin-left: auto;">
                   {{ getModifierCategoryLabel(item.category) }}
                 </span>
@@ -272,8 +322,8 @@
             </div>
 
             <!-- Col 3: Current Stock (servings + bags) -->
-            <div class="bulk-item-current-col text-center">
-              <span class="mobile-label">คงเหลือ:</span>
+            <div class="bulk-item-current-col text-center tabular-nums">
+              <span class="mobile-label">คงเหลือ</span>
               <span class="font-bold text-base">
                 {{ formatModifierStockShort(item) }}
               </span>
@@ -282,51 +332,56 @@
             <!-- Col 4: Input value -->
             <div class="bulk-item-input-col">
               <div class="bulk-input-wrapper">
-                <span class="mobile-label">
-                  {{ bulkTab === 'relative' ? (item.category === 'sauce_small' ? 'ซองที่เพิ่ม:' : 'ถุงที่เพิ่ม:') : 'รอบเสิร์ฟ:' }}
-                </span>
-                <input 
-                  type="text" 
-                  v-model="item.value"
-                  :placeholder="bulkTab === 'relative' ? '0' : String(Math.round(item.total_servings * 100) / 100)"
-                  class="form-input"
-                />
+                <span class="mobile-label">รอบเสิร์ฟ</span>
+                <div class="input-with-delta">
+                  <input 
+                    type="text" 
+                    inputmode="decimal"
+                    v-model="item.value"
+                    :placeholder="String(Math.round(item.total_servings * 100) / 100)"
+                    :aria-label="`ปรับยอดรอบเสิร์ฟ ${item.name}`"
+                    class="form-input tabular-nums"
+                    :class="{ 'input-changed': getDelta(item.value, item.total_servings) !== 0 }"
+                  />
+                  <span 
+                    v-if="getDelta(item.value, item.total_servings) !== 0"
+                    class="delta-pill tabular-nums"
+                    :class="getDelta(item.value, item.total_servings) > 0 ? 'delta-positive' : 'delta-negative'"
+                  >
+                    {{ formatDelta(getDelta(item.value, item.total_servings)) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Absolute Tab reason presets -->
-        <div v-if="bulkTab === 'absolute'" class="absolute-reason-section mt-xl">
+        <!-- Reason presets & Note -->
+        <div class="absolute-reason-section mt-xl">
           <div class="form-group mb-0">
-            <label class="form-label font-bold text-md">เหตุผลในการปรับยอดจริง *</label>
-            <div class="custom-select-wrapper" @click.stop>
-              <div 
-                class="custom-select-trigger" 
-                :class="{ 'active': isReasonDropdownOpen }" 
-                @click="isReasonDropdownOpen = !isReasonDropdownOpen"
+            <label class="form-label font-bold text-sm text-secondary mb-xs block">
+              <i class="fa-solid fa-clipboard-check text-primary" style="margin-right: 4px;"></i> เหตุผลในการปรับยอดจริง *
+            </label>
+            <div class="reason-preset-group" role="radiogroup" aria-label="เหตุผลในการปรับยอดจริง">
+              <button
+                v-for="opt in reasonOptions"
+                :key="opt.value"
+                type="button"
+                class="reason-preset-btn"
+                :class="{ active: bulkReasonPreset === opt.value }"
+                @click="bulkReasonPreset = opt.value"
               >
-                <span class="custom-select-text" style="display: inline-flex; align-items: center; gap: 6px;">
-                  <i :class="getBulkReasonIcon(bulkReasonPreset)"></i>
-                  {{ selectedReasonLabel }}
-                </span>
-              </div>
-              <div v-if="isReasonDropdownOpen" class="custom-select-dropdown">
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'นับยอดขาด/เกิน' }" @click="selectReasonPreset('นับยอดขาด/เกิน')">
-                  <i class="fa-solid fa-chart-simple" style="margin-right: 4px;"></i> นับยอดขาด/เกิน
-                </div>
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'กรอกผิด' }" @click="selectReasonPreset('กรอกผิด')">
-                  <i class="fa-solid fa-pen-to-square" style="margin-right: 4px;"></i> กรอกผิด (แก้ไขยอด)
-                </div>
-                <div class="custom-select-option" :class="{ 'selected': bulkReasonPreset === 'อื่นๆ' }" @click="selectReasonPreset('อื่นๆ')">
-                  <i class="fa-solid fa-circle-question" style="margin-right: 4px;"></i> อื่นๆ
-                </div>
-              </div>
+                <i :class="opt.icon"></i>
+                <span>{{ opt.label }}</span>
+              </button>
             </div>
           </div>
           <div class="form-group mb-0">
-            <label class="form-label font-bold text-md">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
+            <label for="bulk-note-mod" class="form-label font-bold text-sm text-secondary mb-xs block">
+              <i class="fa-solid fa-pen-to-square text-primary" style="margin-right: 4px;"></i> คำอธิบายเพิ่มเติม (ถ้ามี)
+            </label>
             <input 
+              id="bulk-note-mod"
               type="text" 
               v-model="bulkNote" 
               placeholder="ระบุข้อความเพื่อบันทึกประวัติ..." 
@@ -336,7 +391,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex gap-lg mt-2xl bulk-action-buttons">
+        <div class="flex gap-lg mt-xl bulk-action-buttons">
           <router-link to="/stock" class="btn-modal btn-modal-secondary flex-1">
             ยกเลิก
           </router-link>
@@ -347,7 +402,7 @@
           >
             <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-floppy-disk"></i>
-            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : 'บันทึก' }}
+            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : (changedCount > 0 ? `บันทึกการเปลี่ยนแปลง (${changedCount})` : 'บันทึก') }}
           </button>
         </div>
       </div>
@@ -368,16 +423,52 @@ const stockItems = computed(() => store.stockItems);
 const loading = ref(true);
 const isSaving = ref(false);
 const activeStockType = ref('menu_items'); // 'menu_items' or 'modifiers'
-const bulkTab = ref('relative'); // 'relative' or 'absolute'
+const searchQuery = ref('');
 const bulkFormItems = ref([]);
 const bulkModifiersFormItems = ref([]);
 const bulkReasonPreset = ref('นับยอดขาด/เกิน');
 const bulkNote = ref('');
 const lowStockThreshold = computed(() => store.lowStockThreshold);
 
+const round2 = (n) => Math.round(Number(n) * 100) / 100;
+
+const getDelta = (inputVal, currentVal) => {
+  if (inputVal === '' || inputVal === null || inputVal === undefined) return 0;
+  const parsed = Number(String(inputVal).trim());
+  if (isNaN(parsed)) return 0;
+  return round2(parsed - round2(currentVal ?? 0));
+};
+
+const formatDelta = (delta) => (delta > 0 ? `+${delta}` : String(delta));
+
+const isMenuItemModified = (item) => {
+  const cookedChanged = getDelta(item.cooked, item.quantity ?? 0) !== 0;
+  const rawChanged = item.raw_quantity !== null && item.raw_quantity !== undefined && getDelta(item.raw, item.raw_quantity) !== 0;
+  return cookedChanged || rawChanged;
+};
+
+const filteredMenuItems = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return bulkFormItems.value;
+  return bulkFormItems.value.filter(i => i.name.toLowerCase().includes(q));
+});
+
+const filteredModifiers = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return bulkModifiersFormItems.value;
+  return bulkModifiersFormItems.value.filter(i => i.name.toLowerCase().includes(q));
+});
+
+const changedCount = computed(() => {
+  if (activeStockType.value === 'menu_items') {
+    return bulkFormItems.value.filter(isMenuItemModified).length;
+  }
+  return bulkModifiersFormItems.value.filter(m => getDelta(m.value, m.total_servings) !== 0).length;
+});
+
 const formatStockQty = (qty, uom) => {
   if (qty === null || qty === undefined) return '';
-  const roundedQty = Math.round(Number(qty) * 100) / 100;
+  const roundedQty = round2(qty);
   const formatted = roundedQty.toLocaleString('th-TH', { maximumFractionDigits: 2 });
   if (uom === 'กรัม') {
     return `${formatted} ก.`;
@@ -426,22 +517,12 @@ const isLinkedBun = (item) => {
 
 const getLinkageWarningText = (item) => {
   if (!item || !item.name) return '';
-  let isDeduct = true; // default to deduct
-  if (bulkTab.value === 'relative') {
-    const val = Number(item.cooked);
-    if (!isNaN(val) && item.cooked !== '' && item.cooked !== null && item.cooked !== undefined) {
-      if (val < 0) {
-        isDeduct = false;
-      }
-    }
-  } else {
-    // absolute
-    const val = Number(item.cooked);
-    if (!isNaN(val) && item.cooked !== '' && item.cooked !== null && item.cooked !== undefined) {
-      const current = item.quantity || 0;
-      if (val < current) {
-        isDeduct = false;
-      }
+  let isDeduct = true;
+  const val = Number(item.cooked);
+  if (!isNaN(val) && item.cooked !== '' && item.cooked !== null && item.cooked !== undefined) {
+    const current = item.quantity || 0;
+    if (val < current) {
+      isDeduct = false;
     }
   }
 
@@ -467,12 +548,8 @@ const getProductMethodLabel = (name) => {
                           name.includes('หมั่นโถ') || 
                           name.includes('ขนมจีบ');
   if (isBunOrDumpling) {
-    if (name.includes('ทอด')) {
-      return 'ของทอด';
-    }
-    if (name.includes('ปิ้ง')) {
-      return 'ของปิ้ง';
-    }
+    if (name.includes('ทอด')) return 'ของทอด';
+    if (name.includes('ปิ้ง')) return 'ของปิ้ง';
     return 'ของนึ่ง';
   }
   return 'ของทอด';
@@ -490,42 +567,21 @@ const getProductMethodIcon = (name) => {
                           name.includes('หมั่นโถ') || 
                           name.includes('ขนมจีบ');
   if (isBunOrDumpling) {
-    if (name.includes('ทอด')) {
-      return 'fa-solid fa-fire';
-    }
-    if (name.includes('ปิ้ง')) {
-      return 'fa-solid fa-fire-flame-simple';
-    }
+    if (name.includes('ทอด')) return 'fa-solid fa-fire';
+    if (name.includes('ปิ้ง')) return 'fa-solid fa-fire-flame-simple';
     return 'fa-solid fa-cloud';
   }
   return 'fa-solid fa-fire';
 };
 
-// Custom Dropdown logic for StockBulk.vue
-const isReasonDropdownOpen = ref(false);
-const selectedReasonLabel = computed(() => {
-  const reasonLabels = {
-    'นับยอดขาด/เกิน': 'นับยอดขาด/เกิน',
-    'กรอกผิด': 'กรอกผิด (แก้ไขยอด)',
-    'อื่นๆ': 'อื่นๆ'
-  };
-  return reasonLabels[bulkReasonPreset.value] || 'นับยอดขาด/เกิน';
-});
-
-const getBulkReasonIcon = (reason) => {
-  const map = {
-    'นับยอดขาด/เกิน': 'fa-solid fa-chart-simple',
-    'กรอกผิด': 'fa-solid fa-pen-to-square',
-    'อื่นๆ': 'fa-solid fa-circle-question'
-  };
-  return map[reason] || 'fa-solid fa-circle-question';
-};
-const selectReasonPreset = (val) => {
-  bulkReasonPreset.value = val;
-  isReasonDropdownOpen.value = false;
-};
+const showHintTooltip = ref(false);
+const reasonOptions = [
+  { value: 'นับยอดขาด/เกิน', label: 'นับยอดขาด/เกิน', icon: 'fa-solid fa-chart-simple' },
+  { value: 'กรอกผิด', label: 'กรอกผิด (แก้ไขยอด)', icon: 'fa-solid fa-pen-to-square' },
+  { value: 'อื่นๆ', label: 'อื่นๆ', icon: 'fa-solid fa-circle-question' }
+];
 const closeReasonDropdown = () => {
-  isReasonDropdownOpen.value = false;
+  showHintTooltip.value = false;
 };
 
 // Modifiers Helper Functions
@@ -552,11 +608,11 @@ const getModifierCategoryClass = (category) => {
 const formatModifierStockShort = (item) => {
   if (!item) return '';
   if (item.category === 'sauce_small') {
-    return `${Math.round(item.total_servings * 100) / 100} ซอง`;
+    return `${round2(item.total_servings)} ซอง`;
   }
   const servingsPerBag = item.servings_per_bag || 50;
   const bags = Math.floor(item.total_servings / servingsPerBag);
-  const servings = Math.round((item.total_servings % servingsPerBag) * 100) / 100;
+  const servings = round2(item.total_servings % servingsPerBag);
   
   let text = '';
   if (bags > 0) text += `${bags} ถุง`;
@@ -568,31 +624,31 @@ const formatModifierStockShort = (item) => {
 };
 
 const initializeForm = () => {
-  bulkFormItems.value = stockItems.value.map(item => {
-    return {
-      menu_item_id: item.id,
-      name: item.name,
-      quantity: item.quantity,
-      raw_quantity: item.raw_quantity,
-      uom: item.uom,
-      cooked: '',
-      raw: ''
-    };
-  });
+  bulkFormItems.value = stockItems.value.map(item => ({
+    menu_item_id: item.id,
+    name: item.name,
+    quantity: item.quantity,
+    raw_quantity: item.raw_quantity,
+    uom: item.uom,
+    cooked: item.quantity !== null && item.quantity !== undefined ? round2(item.quantity) : 0,
+    raw: item.raw_quantity !== null && item.raw_quantity !== undefined ? round2(item.raw_quantity) : 0
+  }));
   initializeModifiersForm();
 };
 
 const initializeModifiersForm = () => {
-  bulkModifiersFormItems.value = store.modifiers.map(item => {
-    return {
-      modifier_id: item.id,
-      name: item.name,
-      category: item.category,
-      servings_per_bag: item.servings_per_bag || 50,
-      total_servings: item.total_servings || 0,
-      value: ''
-    };
-  });
+  bulkModifiersFormItems.value = store.modifiers.map(item => ({
+    modifier_id: item.id,
+    name: item.name,
+    category: item.category,
+    servings_per_bag: item.servings_per_bag || 50,
+    total_servings: item.total_servings || 0,
+    value: item.total_servings !== null && item.total_servings !== undefined ? round2(item.total_servings) : 0
+  }));
+};
+
+const resetAllChanges = () => {
+  initializeForm();
 };
 
 const loadStockData = async () => {
@@ -610,28 +666,6 @@ const loadStockData = async () => {
   }
 };
 
-const setBulkTab = (tab) => {
-  bulkTab.value = tab;
-  
-  bulkFormItems.value.forEach(item => {
-    if (tab === 'absolute') {
-      item.cooked = item.quantity !== null && item.quantity !== undefined ? Math.round(item.quantity * 100) / 100 : 0;
-      item.raw = item.raw_quantity !== null && item.raw_quantity !== undefined ? Math.round(item.raw_quantity * 100) / 100 : 0;
-    } else {
-      item.cooked = '';
-      item.raw = '';
-    }
-  });
-
-  bulkModifiersFormItems.value.forEach(item => {
-    if (tab === 'absolute') {
-      item.value = item.total_servings !== null && item.total_servings !== undefined ? Math.round(item.total_servings * 100) / 100 : 0;
-    } else {
-      item.value = '';
-    }
-  });
-};
-
 const handleSaveBulkAdjust = async () => {
   if (isSaving.value) return;
   isSaving.value = true;
@@ -641,32 +675,19 @@ const handleSaveBulkAdjust = async () => {
       const itemsToSend = [];
       
       for (const item of bulkFormItems.value) {
-        let hasChange = false;
-        
         const cookedVal = item.cooked !== null && item.cooked !== undefined && String(item.cooked).trim() !== '' ? String(item.cooked).trim() : null;
         const rawVal = item.raw !== null && item.raw !== undefined && String(item.raw).trim() !== '' ? String(item.raw).trim() : null;
         
         const parsedCooked = cookedVal !== null ? Number(cookedVal) : null;
         const parsedRaw = rawVal !== null ? Number(rawVal) : null;
         
-        if (bulkTab.value === 'relative') {
-          if ((parsedCooked !== null && parsedCooked !== 0 && !isNaN(parsedCooked)) || 
-              (parsedRaw !== null && parsedRaw !== 0 && !isNaN(parsedRaw))) {
-            hasChange = true;
-          }
-        } else {
-          const currentCooked = item.quantity !== null && item.quantity !== undefined ? item.quantity : 0;
-          const currentRaw = item.raw_quantity !== null && item.raw_quantity !== undefined ? item.raw_quantity : 0;
-          
-          const targetCooked = parsedCooked !== null && !isNaN(parsedCooked) ? parsedCooked : currentCooked;
-          const targetRaw = parsedRaw !== null && !isNaN(parsedRaw) ? parsedRaw : currentRaw;
-          
-          if (targetCooked !== currentCooked || targetRaw !== currentRaw) {
-            hasChange = true;
-          }
-        }
+        const currentCooked = item.quantity !== null && item.quantity !== undefined ? round2(item.quantity) : 0;
+        const currentRaw = item.raw_quantity !== null && item.raw_quantity !== undefined ? round2(item.raw_quantity) : 0;
         
-        if (hasChange) {
+        const targetCooked = parsedCooked !== null && !isNaN(parsedCooked) ? round2(parsedCooked) : currentCooked;
+        const targetRaw = parsedRaw !== null && !isNaN(parsedRaw) ? round2(parsedRaw) : currentRaw;
+        
+        if (targetCooked !== currentCooked || (item.raw_quantity !== null && item.raw_quantity !== undefined && targetRaw !== currentRaw)) {
           itemsToSend.push({
             menu_item_id: item.menu_item_id,
             cooked: cookedVal,
@@ -683,10 +704,10 @@ const handleSaveBulkAdjust = async () => {
       }
       
       const payload = {
-        mode: bulkTab.value,
+        mode: 'absolute',
         items: itemsToSend,
-        reason_preset: bulkTab.value === 'absolute' ? bulkReasonPreset.value : undefined,
-        note: bulkTab.value === 'absolute' ? bulkNote.value.trim() : undefined
+        reason_preset: bulkReasonPreset.value,
+        note: bulkNote.value.trim()
       };
       
       const res = await api.stock.bulkAdjust(payload);
@@ -698,45 +719,22 @@ const handleSaveBulkAdjust = async () => {
         }
         store.clearMenuCache();
         store.clearStockCache();
-        ui.showToast(bulkTab.value === 'relative' ? 'เพิ่มสต็อกสินค้าเรียบร้อยแล้ว' : 'ปรับปรุงสต็อกสินค้าเรียบร้อยแล้ว', 'success');
+        ui.showToast('ปรับปรุงสต็อกสินค้าเรียบร้อยแล้ว', 'success');
         router.push('/stock');
       }
     } else {
-      // Modifiers bulk adjust
       const itemsToSend = [];
       
       for (const item of bulkModifiersFormItems.value) {
-        let hasChange = false;
-        
         const inputVal = item.value !== null && item.value !== undefined && String(item.value).trim() !== '' ? String(item.value).trim() : null;
         const parsedVal = inputVal !== null ? Number(inputVal) : null;
+        const currentVal = round2(item.total_servings);
+        const targetVal = parsedVal !== null && !isNaN(parsedVal) ? round2(parsedVal) : currentVal;
         
-        if (bulkTab.value === 'relative') {
-          if (parsedVal !== null && parsedVal !== 0 && !isNaN(parsedVal)) {
-            hasChange = true;
-          }
-        } else {
-          const currentVal = item.total_servings;
-          const targetVal = parsedVal !== null && !isNaN(parsedVal) ? parsedVal : currentVal;
-          
-          if (targetVal !== currentVal) {
-            hasChange = true;
-          }
-        }
-        
-        if (hasChange) {
-          let servingsDelta = 0;
-          if (bulkTab.value === 'relative') {
-            if (item.category === 'sauce_small') {
-              servingsDelta = parsedVal;
-            } else {
-              servingsDelta = parsedVal * item.servings_per_bag;
-            }
-          }
-          
+        if (targetVal !== currentVal) {
           itemsToSend.push({
             modifier_id: item.modifier_id,
-            servings: bulkTab.value === 'relative' ? servingsDelta : parsedVal
+            servings: parsedVal
           });
         }
       }
@@ -749,10 +747,10 @@ const handleSaveBulkAdjust = async () => {
       }
       
       const payload = {
-        mode: bulkTab.value,
+        mode: 'absolute',
         items: itemsToSend,
-        reason_preset: bulkTab.value === 'absolute' ? bulkReasonPreset.value : undefined,
-        note: bulkTab.value === 'absolute' ? bulkNote.value.trim() : undefined
+        reason_preset: bulkReasonPreset.value,
+        note: bulkNote.value.trim()
       };
       
       const res = await api.modifiers.bulkAdjust(payload);
@@ -766,13 +764,12 @@ const handleSaveBulkAdjust = async () => {
           });
         }
         store.clearModifiersCache();
-        ui.showToast(bulkTab.value === 'relative' ? 'เพิ่มสต็อกเครื่องปรุงเรียบร้อยแล้ว' : 'ปรับปรุงสต็อกเครื่องปรุงเรียบร้อยแล้ว', 'success');
+        ui.showToast('ปรับปรุงสต็อกเครื่องปรุงเรียบร้อยแล้ว', 'success');
         router.push('/stock');
       }
     }
   } catch (e) {
     console.error(e);
-    // On failure: Keep all table values intact for retry!
     ui.showToast(e.message || 'ปรับปรุงสต็อกด่วนล้มเหลว กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง', 'error');
   } finally {
     isSaving.value = false;
@@ -791,51 +788,130 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Header Grid Styling */
-.bulk-header-grid {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-}
-
-.header-left {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.header-center {
-  display: flex;
-  justify-content: center;
-}
-
-.header-right {
-  display: flex;
-  justify-content: flex-end;
-}
-
 .stock-page-title {
   margin: 0;
   font-size: var(--font-lg);
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
-/* Action Buttons Footer Container */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.title-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.title-info-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  font-size: var(--font-sm);
+  line-height: 1;
+  margin-top: -2px;
+  border-radius: var(--radius-full);
+  touch-action: manipulation;
+  transition: color var(--transition-fast);
+}
+
+.title-info-btn:hover,
+.title-info-btn:focus-visible {
+  color: var(--primary);
+  outline: none;
+}
+
+.title-tooltip-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: min(320px, 82vw);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-xs);
+  line-height: 1.45;
+}
+
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.bulk-search-input {
+  padding-left: 36px;
+  padding-right: 34px;
+  min-height: 44px;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.clear-search-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
+}
+
+.btn-bulk-back,
+.btn-bulk-header-save {
+  height: 44px !important;
+  min-width: 132px;
+  padding: 0 var(--space-lg) !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--font-base) !important;
+  font-weight: var(--font-weight-semibold);
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
+
+.btn-bulk-save {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
 .bulk-action-buttons {
   display: flex;
   gap: var(--space-lg);
   justify-content: flex-end;
   width: 100%;
-}
-
-.bulk-action-buttons .btn-bulk-save {
-  min-height: 0 !important;
 }
 
 .bulk-stock-table-container {
@@ -845,12 +921,13 @@ onUnmounted(() => {
 
 .bulk-stock-header-row {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.2fr;
-  padding: var(--space-lg) var(--space-md);
-  background: rgba(139, 3, 19, 0.05);
+  grid-template-columns: 2fr 1.1fr 1.3fr 1.1fr 1.3fr;
+  padding: var(--space-md);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color);
   border-bottom: 2px solid var(--border-color);
-  font-size: var(--font-base);
-  font-weight: bold;
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-bold);
   color: var(--text-secondary);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
@@ -861,21 +938,33 @@ onUnmounted(() => {
   border: 1px solid var(--border-color);
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--card-bg);
 }
 
 .bulk-stock-row {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.2fr;
+  grid-template-columns: 2fr 1.1fr 1.3fr 1.1fr 1.3fr;
   align-items: center;
-  padding: var(--space-lg) var(--space-md);
+  padding: var(--space-md);
   border-bottom: 1px solid var(--border-color);
   gap: var(--space-md);
   position: relative;
+  transition: background-color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .bulk-stock-row:hover {
+    background: rgba(139, 3, 19, 0.015);
+  }
+}
+
+.bulk-stock-row.is-modified {
+  background: rgba(139, 3, 19, 0.035);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .bulk-stock-row.has-linkage-warning {
-  padding-bottom: 34px !important;
+  padding-bottom: 30px !important;
 }
 
 .linkage-warning-text {
@@ -899,11 +988,16 @@ onUnmounted(() => {
 
 .bulk-item-name-col {
   text-align: left;
-  padding-left: var(--space-md);
+  padding-left: var(--space-sm);
+  min-width: 0;
+}
+
+.item-name-text {
+  word-break: break-word;
 }
 
 .bulk-item-current-col {
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
 }
 
@@ -914,54 +1008,125 @@ onUnmounted(() => {
   position: relative;
 }
 
-.bulk-input-wrapper input {
-  height: 40px;
-  padding: var(--space-xs) var(--space-sm);
-  font-size: var(--font-base);
-  font-weight: var(--font-weight-medium);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  text-align: center;
+.input-with-delta {
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
 }
 
-.bulk-input-wrapper input:focus {
-  border-color: var(--accent);
+.bulk-input-wrapper input {
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  text-align: center;
+  width: 100%;
+  touch-action: manipulation;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.bulk-input-wrapper input:focus-visible {
+  border-color: var(--border-color-focus);
   box-shadow: 0 0 0 3px var(--accent-glow);
   outline: none;
 }
 
+.bulk-input-wrapper input.input-changed {
+  border-color: var(--primary);
+  background: var(--card-bg);
+}
+
 .bulk-input-wrapper input.disabled-input {
-  background: rgba(0, 0, 0, 0.05) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
   color: var(--text-tertiary) !important;
   cursor: not-allowed !important;
-  opacity: 0.6 !important;
+  opacity: 0.65 !important;
+}
+
+.delta-pill {
+  position: absolute;
+  right: 6px;
+  font-size: var(--font-xxs);
+  font-weight: var(--font-weight-bold);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+}
+
+.delta-positive {
+  background: rgba(22, 163, 74, 0.14);
+  color: var(--success);
+}
+
+.delta-negative {
+  background: rgba(220, 38, 38, 0.14);
+  color: var(--danger);
 }
 
 .mobile-label {
   display: none;
 }
 
-.mobile-only {
-  display: none;
-}
-
-/* Absolute adjustments layout container */
 .absolute-reason-section {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: 1.2fr 1fr;
   gap: var(--space-lg);
   padding: var(--space-lg);
-  background: rgba(139, 3, 19, 0.02);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  align-items: start;
+}
+
+.reason-preset-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.reason-preset-btn {
+  min-height: 44px;
+  padding: 0 var(--space-md);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
-  text-align: left;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
 }
-.absolute-reason-section .form-select,
+
+.reason-preset-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.reason-preset-btn.active {
+  border-color: var(--primary);
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.reason-preset-btn:focus-visible {
+  outline: 2px solid var(--border-color-focus);
+  outline-offset: 2px;
+}
+
 .absolute-reason-section .form-input {
-  height: 48px;
+  min-height: 44px;
   font-size: var(--font-base);
   width: 100%;
 }
@@ -970,11 +1135,6 @@ onUnmounted(() => {
 @media (max-width: 992px) {
   .desktop-only {
     display: none !important;
-  }
-  
-  .bulk-tab {
-    font-size: var(--font-base);
-    padding: 10px 4px;
   }
 
   .bulk-stock-rows-container {
@@ -990,7 +1150,7 @@ onUnmounted(() => {
     padding: var(--space-lg);
     background: var(--card-bg);
     border-radius: var(--radius-lg);
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-md);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
   }
@@ -1000,41 +1160,17 @@ onUnmounted(() => {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: var(--space-sm);
     padding-left: 0;
-    margin-bottom: var(--space-xs);
-  }
-  
-  .mobile-only {
-    display: block !important;
   }
   
   /* Arrange Menu Items Raw and Cooked into two parallel columns on mobile */
-  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(2) { /* Raw Current */
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(3) { /* Raw Input */
-    grid-column: 1;
-    grid-row: 3;
-  }
-  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(4) { /* Cooked Current */
-    grid-column: 2;
-    grid-row: 2;
-  }
-  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(5) { /* Cooked Input */
-    grid-column: 2;
-    grid-row: 3;
-  }
+  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(3) { grid-column: 1; grid-row: 3; }
+  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(4) { grid-column: 2; grid-row: 2; }
+  .bulk-stock-row:not(.bulk-modifier-row) > div:nth-child(5) { grid-column: 2; grid-row: 3; }
 
   /* Arrange Modifiers Row on mobile */
-  .bulk-modifier-row > div:nth-child(3) { /* Current Stock */
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .bulk-modifier-row > div:nth-child(4) { /* Input Value */
-    grid-column: 2;
-    grid-row: 2;
-    width: 100%;
-  }
+  .bulk-modifier-row > div:nth-child(3) { grid-column: 1; grid-row: 2; }
+  .bulk-modifier-row > div:nth-child(4) { grid-column: 2; grid-row: 2; width: 100%; }
 
   .bulk-item-current-col {
     display: flex;
@@ -1042,11 +1178,10 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     text-align: center !important;
-    background: rgba(139, 3, 19, 0.02);
+    background: rgba(139, 3, 19, 0.025);
     border: 1px dashed var(--border-color);
     border-radius: var(--radius-sm);
     padding: var(--space-sm) var(--space-xs);
-    font-size: var(--font-base);
   }
 
   .bulk-item-input-col {
@@ -1059,82 +1194,64 @@ onUnmounted(() => {
   .bulk-input-wrapper {
     align-items: center;
   }
-  
-  .bulk-input-wrapper input {
-    height: 40px;
-    font-size: var(--font-base);
-  }
 
   .mobile-label {
     display: block !important;
     font-size: var(--font-xs);
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     color: var(--text-secondary);
     margin-bottom: var(--space-xs);
     text-align: center;
-    width: auto;
-  }
-
-  /* Prevent action buttons from breaking borders/viewport on mobile */
-  .bulk-action-buttons {
-    display: flex;
-    gap: var(--space-md);
-    width: 100%;
-  }
-  .btn-bulk-back, .btn-bulk-header-save {
-    flex: 1;
-    min-width: 0 !important;
-    width: 100%;
-    padding: 10px 16px !important;
-    font-size: var(--font-base) !important;
-    height: 44px !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
   }
 
   .bulk-main-card {
-    padding: var(--space-md) 0 !important;
+    padding: var(--space-sm) 0 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
   }
 }
 
-@media (max-width: 768px) {
-  .bulk-header-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-md);
-    padding: var(--space-md);
+@media (min-width: 769px) {
+  .mobile-stock-header-card {
+    padding: var(--space-xl) !important;
   }
-  
-  .header-center {
-    grid-column: span 2;
-    order: 1;
+  .btn-bulk-back,
+  .btn-bulk-header-save {
+    height: auto !important;
+    padding: var(--space-md) var(--space-xl) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .title-tooltip-wrapper {
+    width: 100%;
     justify-content: center;
   }
-  
-  .header-left {
-    grid-column: 1;
-    order: 2;
+
+  .title-tooltip-popover {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .mobile-header-actions {
     width: 100%;
   }
-  
-  .header-right {
-    grid-column: 2;
-    order: 3;
-    width: 100%;
-  }
-  
-  .btn-bulk-back, .btn-bulk-header-save {
-    width: 100%;
+
+  .btn-bulk-back,
+  .btn-bulk-header-save {
+    flex: 1;
+    justify-content: center;
   }
 
   .absolute-reason-section {
     grid-template-columns: 1fr;
     gap: var(--space-md);
     padding: var(--space-md);
+  }
+
+  .bulk-action-buttons {
+    gap: var(--space-md);
   }
 }
 </style>

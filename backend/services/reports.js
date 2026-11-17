@@ -1,4 +1,5 @@
 const { getDb } = require('../config/database');
+const { toCachedImageUrl } = require('../routes/images');
 
 /**
  * รายงานยอดขายรายวัน
@@ -361,7 +362,7 @@ async function getYearlyReport(year, branchId = null) {
  * @param {number} [branchId] - รหัสสาขา
  * @param {object} [periodOpts] - ตัวเลือกช่วงเวลา { date, month, year, start_time, end_time }
  */
-async function getTopItems(days = 7, branchId = null, periodOpts = {}) {
+async function getTopItems(days = 7, branchId = null, periodOpts = {}, imageBaseUrl = '') {
   const db = getDb();
   let branchFilter = '';
   const params = [];
@@ -416,8 +417,9 @@ async function getTopItems(days = 7, branchId = null, periodOpts = {}) {
   dbMenuItems.forEach(item => {
     uomMap[item.id] = item.uom;
     if (item.image_url) {
-      imageMap[item.id] = item.image_url;
-      imageByNameMap[item.name] = item.image_url;
+      const resolvedUrl = toCachedImageUrl(imageBaseUrl, 'menu_items', item.id, item.image_url);
+      imageMap[item.id] = resolvedUrl;
+      imageByNameMap[item.name] = resolvedUrl;
     }
   });
 

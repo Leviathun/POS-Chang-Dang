@@ -4,10 +4,10 @@
     <!-- Top Action Toolbar Card -->
     <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
       <div>
-        <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
+        <h2 class="font-bold text-lg mb-xs flex align-center gap-xs">
           <i class="fa-solid fa-boxes-packing text-primary"></i>
           <span>ระบบขอเบิกของจากครัวกลาง</span>
-        </h3>
+        </h2>
         <p class="text-secondary text-xs">
           เลือกรายการของที่ต้องการจากคลังส่วนกลาง เมื่อได้รับของแล้วยอดเงินจะถูกบันทึกเป็นต้นทุนของสาขาอัตโนมัติ
         </p>
@@ -219,7 +219,7 @@
                   @change="setCartQty(item, $event.target.value)"
                   @focus="$event.target.select()" 
                   class="form-input text-center font-bold qty-card-input" 
-                  style="flex: 1; height: 36px; padding: 2px; font-size: 0.95rem; border-radius: var(--radius-sm);" 
+                  style="flex: 1; height: 40px; padding: 2px; font-size: 0.95rem; border-radius: var(--radius-sm);" 
                   title="พิมพ์จำนวนที่ต้องการเบิกได้ทันที"
                 />
                 <button class="btn-qty" :disabled="getCartQty(item.id) >= item.quantity" @click="increaseQty(getCartItem(item.id))" title="เพิ่ม">+</button>
@@ -2333,6 +2333,98 @@ onMounted(() => {
     border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
     margin-top: 12px !important;
     padding-top: 9px !important;
+  }
+}
+/* --- Redesign Polish & Web Interface Guidelines --- */
+.requisition-tab-btn,
+.category-tab,
+.btn-qty,
+.btn-restock-main,
+.btn-submit-requisition,
+.btn-dispatch-order,
+.clear-cart-btn,
+.search-clear-btn,
+.cart-pay-btn {
+  touch-action: manipulation;
+}
+
+.requisition-tab-btn:focus-visible,
+.category-tab:focus-visible,
+.btn-qty:focus-visible,
+.btn-restock-main:focus-visible,
+.btn-submit-requisition:focus-visible,
+.btn-dispatch-order:focus-visible,
+.qty-card-input:focus-visible,
+.qty-input-field:focus-visible {
+  outline: 2px solid var(--border-color-focus);
+  outline-offset: 2px;
+}
+
+.qty-badge,
+.badge-count,
+.category-count,
+.item-cost-val,
+.item-stock-val,
+.qty-card-input,
+.qty-input-field,
+.cart-total-row,
+.cart-info,
+.order-no-title,
+.order-total-amount,
+.order-qty-pill,
+.order-items-table td,
+.order-mobile-item-total {
+  font-variant-numeric: tabular-nums;
+}
+
+.item-card.in-cart {
+  border: 2px solid var(--primary) !important;
+  box-shadow: 0 4px 14px rgba(139, 3, 19, 0.12);
+}
+
+.item-img-container {
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+}
+
+.btn-qty {
+  width: 40px;
+  height: 40px;
+  background: var(--card-bg);
+}
+
+.cart-row {
+  background: var(--card-bg);
+}
+
+.btn-dispatch-order {
+  min-height: 44px;
+}
+
+@media (min-width: 1024px) {
+  .cart-sidebar {
+    max-height: calc(100vh - 96px);
+  }
+  .cart-sidebar > div:first-child {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+  }
+  .cart-items-list {
+    flex: 1;
+    min-height: 120px;
+    max-height: none;
+  }
+}
+@media (min-width: 769px) {
+  .branch-requisition-view > .toolbar-card {
+    padding: var(--space-xl) !important;
+  }
+  .requisition-tab-btn {
+    height: auto;
+    padding: var(--space-md) var(--space-xl);
+    font-size: var(--font-base);
+    border-radius: var(--radius-md);
   }
 }
 </style>

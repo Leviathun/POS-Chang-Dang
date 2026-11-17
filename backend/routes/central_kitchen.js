@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
+const { mapCachedImages, isGeneratedImageUrl } = require('./images');
 const { attachUser, requireAuth, requireManagerOrAdmin } = require('../middleware/auth');
 
 // All routes require authentication
@@ -326,7 +327,7 @@ router.get('/items', async (req, res) => {
 
     res.json({
       success: true,
-      data: items || []
+      data: mapCachedImages(req, 'central_kitchen_items', items || [])
     });
   } catch (error) {
     console.error('❌ Error fetching central kitchen items:', error);
@@ -420,7 +421,7 @@ router.put('/items/:id', requireManagerOrAdmin, async (req, res) => {
       unit ? unit.trim() : null,
       cost_price !== undefined ? Number(cost_price) : null,
       min_stock_alert !== undefined ? Number(min_stock_alert) : null,
-      image_url !== undefined ? image_url : null,
+      image_url !== undefined && !isGeneratedImageUrl(image_url) ? image_url : null,
       req.body.sort_order !== undefined ? Number(req.body.sort_order) : null,
       hasLinkedMenuParam ? 1 : 0,
       cleanLinkedMenu,
@@ -1868,7 +1869,7 @@ router.get('/finances/logs', async (req, res) => {
 
     res.json({
       success: true,
-      data: logs || []
+      data: mapCachedImages(req, 'central_kitchen_items', logs || [], 'item_id')
     });
   } catch (error) {
     console.error('❌ Error fetching central kitchen finances logs:', error);

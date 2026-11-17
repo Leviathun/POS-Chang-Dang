@@ -2,7 +2,7 @@
   <div id="reports-page" class="page-enter">
     
     <!-- Tab toggles placed at the very top, styled as category tabs (Matches Menu.vue style) -->
-    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+    <div class="category-tabs tab-category mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
       <button 
         class="btn btn-secondary" 
         :class="{ 'active': activeTab === 'sales' }"
@@ -1474,63 +1474,63 @@
           <div class="flex flex-wrap align-center gap-xs">
             <span style="font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-right: 4px;">ประเภท:</span>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active': stockReasonFilter === 'all' }" 
               @click="stockReasonFilter = 'all'"
             >
               ทั้งหมด ({{ stockHistoryLogs.length }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active-success': stockReasonFilter === 'restock_ck' }" 
               @click="stockReasonFilter = 'restock_ck'"
             >
               เติมสต็อก (ครัวกลาง) ({{ stockCkRestockLogs.length }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active-success': stockReasonFilter === 'restock' }" 
               @click="stockReasonFilter = 'restock'"
             >
               เติมสต็อก (POS) ({{ stockGeneralRestockLogs.length }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active-warning': stockReasonFilter === 'cook' || stockReasonFilter === 'cook_deduct' || stockReasonFilter === 'cook_ready' }" 
               @click="stockReasonFilter = 'cook'"
             >
               ตัดของสด/ปรุงสุก ({{ stockCookLogs.length }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active': stockReasonFilter === 'adjustment' }" 
               @click="stockReasonFilter = 'adjustment'"
             >
               ปรับปรุงยอด ({{ stockAdjustmentLogs.length }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active': stockReasonFilter === 'sale' }" 
               @click="stockReasonFilter = 'sale'"
             >
               หักจากการขาย ({{ stockSaleLogs.length }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active': stockReasonFilter === 'cancel_restore' }" 
               @click="stockReasonFilter = 'cancel_restore'"
             >
               คืนสต็อก (ยกเลิกบิล) ({{ stockCancelRestoreLogs.length }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active-danger': stockReasonFilter === 'waste' }" 
               @click="stockReasonFilter = 'waste'"
             >
               ของเสีย/ทิ้ง ({{ stockWasteCount }})
             </button>
             <button 
-              class="stock-pill-btn tabular-nums" 
+              class="filter-pill tabular-nums" 
               :class="{ 'active-warning': stockReasonFilter === 'staff_benefit' }" 
               @click="stockReasonFilter = 'staff_benefit'"
             >
@@ -1654,15 +1654,15 @@
           <div class="flex justify-center gap-xs flex-wrap">
             <button
               v-if="stockReasonFilter !== 'all' || selectedReportsStockItemId !== 'all'"
-              class="stock-pill-btn"
+              class="filter-pill"
               @click="stockReasonFilter = 'all'; selectReportsStockItem({ id: 'all', name: 'สินค้าทั้งหมด (รวมทั้งร้าน)' })"
             >
               <i class="fa-solid fa-rotate-left" style="color: var(--primary);"></i> ล้างตัวกรอง
             </button>
-            <button class="stock-pill-btn" @click="selectYesterdayDate">
+            <button class="filter-pill" @click="selectYesterdayDate">
               <i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i> ดูเมื่อวาน ({{ getYesterdayLabel() }})
             </button>
-            <button v-if="periodMode !== 'monthly'" class="stock-pill-btn" @click="switchToMonthlyStock">
+            <button v-if="periodMode !== 'monthly'" class="filter-pill" @click="switchToMonthlyStock">
               <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> ดูรายเดือน ({{ selectedMonth }})
             </button>
           </div>
@@ -2238,8 +2238,12 @@ const useCalculatorSum = () => {
   actualCashInput.value = calculatorTotalSum.value;
 };
 
+// ponytail: sequence guards prevent slower earlier dropdown requests from overwriting newer selections
+const reqSeq = { cashDrawer: 0, stockHistory: 0, ledger: 0, summary: 0, expenses: 0, activities: 0, history: 0, report: 0, topItems: 0 };
+
 const fetchCashDrawerSummary = async () => {
   if (!isManagerOrAdminUser.value) return;
+  const seq = ++reqSeq.cashDrawer;
   cashDrawerLoading.value = true;
   try {
     const params = {};
@@ -2262,13 +2266,15 @@ const fetchCashDrawerSummary = async () => {
     }
 
     const res = await api.cashDrawers.getSummary(params);
+    if (seq !== reqSeq.cashDrawer) return;
     if (res.success) {
       cashDrawerSessions.value = res.data || [];
     }
   } catch (err) {
+    if (seq !== reqSeq.cashDrawer) return;
     ui.error(err.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลสรุปยอดเงินสด');
   } finally {
-    cashDrawerLoading.value = false;
+    if (seq === reqSeq.cashDrawer) cashDrawerLoading.value = false;
   }
 };
 
@@ -3451,6 +3457,7 @@ const paginatedStockLogs = computed(() => {
 });
 
 const loadStockHistoryLogs = async () => {
+  const seq = ++reqSeq.stockHistory;
   stockHistoryLoading.value = true;
   const safetyReleaseTimer = setTimeout(() => {
     stockHistoryLoading.value = false;
@@ -3468,6 +3475,7 @@ const loadStockHistoryLogs = async () => {
 
     let logs = [];
     const allRes = await api.stock.getAllLogs(params);
+    if (seq !== reqSeq.stockHistory) return;
     const allLogs = Array.isArray(allRes.data) ? allRes.data : (Array.isArray(allRes) ? allRes : []);
     allStockHistoryLogs.value = allLogs;
 
@@ -3492,7 +3500,7 @@ const loadStockHistoryLogs = async () => {
     console.error('Stock history logs load error:', e);
   } finally {
     clearTimeout(safetyReleaseTimer);
-    stockHistoryLoading.value = false;
+    if (seq === reqSeq.stockHistory) stockHistoryLoading.value = false;
   }
 };
 
@@ -3905,8 +3913,10 @@ const computeLedgerTransactions = () => {
 };
 
 const loadMonthlyLedger = async () => {
+  const seq = ++reqSeq.ledger;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
+    ledgerLoading.value = false;
     return;
   }
   ledgerLoading.value = true;
@@ -3942,28 +3952,33 @@ const loadMonthlyLedger = async () => {
         api.expenses.get(expenseParams)
       ]);
       ordersRes = ordersResData;
+      if (seq !== reqSeq.ledger) return;
       expenses.value = expensesRes.success ? (expensesRes.data || []) : [];
     }
 
+    if (seq !== reqSeq.ledger) return;
     ledgerOrders.value = ordersRes.success ? (ordersRes.data || []) : [];
     computeLedgerTransactions();
   } catch (e) {
+    if (seq !== reqSeq.ledger) return;
     console.error('❌ Failed to load ledger:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลบัญชีรายรับ-รายจ่ายได้', 'error');
   } finally {
-    ledgerLoading.value = false;
+    if (seq === reqSeq.ledger) ledgerLoading.value = false;
   }
 };
 
 // ── Data Loading ──
 
 const loadReportSummary = async () => {
+  const seq = ++reqSeq.summary;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
     return;
   }
   try {
     const res = await api.reports.summary(selectedBranchId.value);
+    if (seq !== reqSeq.summary) return;
     if (res.success && res.data) {
       summary.value = {
         today_sales: res.data.today?.total_revenue || 0,
@@ -3978,6 +3993,7 @@ const loadReportSummary = async () => {
 };
 
 const loadExpensesForPeriod = async () => {
+  const seq = ++reqSeq.expenses;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
     applyDataFromStore();
     return;
@@ -3991,6 +4007,7 @@ const loadExpensesForPeriod = async () => {
     } else {
       res = await api.expenses.get({ year: selectedYear.value, branch_id: selectedBranchId.value });
     }
+    if (seq !== reqSeq.expenses) return;
     if (res.success) {
       expenses.value = res.data || [];
     }
@@ -4000,6 +4017,7 @@ const loadExpensesForPeriod = async () => {
 };
 
 const loadActivityLogsForPeriod = async () => {
+  const seq = ++reqSeq.activities;
   if (activityFilterSkeletonTimer) clearTimeout(activityFilterSkeletonTimer);
   activityLogsLoading.value = true;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
@@ -4027,17 +4045,19 @@ const loadActivityLogsForPeriod = async () => {
       params.year = selectedYear.value;
     }
     res = await api.activities.get(params);
+    if (seq !== reqSeq.activities) return;
     if (res.success) {
       activityLogs.value = res.data || [];
     }
   } catch (e) {
     console.warn(e);
   } finally {
-    activityLogsLoading.value = false;
+    if (seq === reqSeq.activities) activityLogsLoading.value = false;
   }
 };
 
 const loadOrderHistory = async () => {
+  const seq = ++reqSeq.history;
   if (historyFilterSkeletonTimer) clearTimeout(historyFilterSkeletonTimer);
   historyOrdersLoading.value = true;
   if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
@@ -4072,20 +4092,23 @@ const loadOrderHistory = async () => {
     }
 
     const res = await api.orders.getAll(params);
+    if (seq !== reqSeq.history) return;
     if (res.success) {
       historyOrders.value = res.data || [];
     } else {
       historyOrders.value = [];
     }
   } catch (e) {
+    if (seq !== reqSeq.history) return;
     console.error('❌ Failed to load order history:', e);
     ui.showToast('ไม่สามารถดึงข้อมูลประวัติออเดอร์ได้', 'error');
   } finally {
-    historyOrdersLoading.value = false;
+    if (seq === reqSeq.history) historyOrdersLoading.value = false;
   }
 };
 
 const loadReportData = async () => {
+  const seq = ++reqSeq.report;
   expandedOrderId.value = null;
   expandedItems.value = [];
   dailyOrdersCurrentPage.value = 1;
@@ -4132,6 +4155,7 @@ const loadReportData = async () => {
         res = await api.reports.yearly(selectedYear.value, selectedBranchId.value);
       }
 
+      if (seq !== reqSeq.report) return;
       if (res.success && res.data) {
         const data = res.data;
         dailyReport.value = {
@@ -4170,7 +4194,9 @@ const loadReportData = async () => {
     // โหลดรายงานยอดขายหลักก่อนเพื่อให้พนักงานเห็นยอดสรุปได้ทันทีโดยไม่ติดหน้าจอโหลดนิ่ง
     try {
       await loadMainReport();
+      if (seq !== reqSeq.report) return;
     } catch (err) {
+      if (seq !== reqSeq.report) return;
       console.warn('loadMainReport background warning:', err);
       dailyReport.value = {
         total_sales: 0,
@@ -4210,6 +4236,7 @@ const loadReportData = async () => {
     }
     loadOrderHistory().catch(e => console.warn('Background order history load error:', e));
   } catch (e) {
+    if (seq !== reqSeq.report) return;
     console.error(e);
     ui.showToast('ไม่สามารถดึงข้อมูลรายงานได้', 'error');
     loading.value = false;
@@ -4217,6 +4244,7 @@ const loadReportData = async () => {
 };
 
 const loadTopItems = async () => {
+  const seq = ++reqSeq.topItems;
   const periodParams = {};
   if (periodMode.value === 'daily') {
     periodParams.date = selectedDate.value;
@@ -4235,6 +4263,7 @@ const loadTopItems = async () => {
   
   try {
     const res = await api.reports.topItems(topItemsDays.value, selectedBranchId.value, periodParams);
+    if (seq !== reqSeq.topItems) return;
     if (res.success && Array.isArray(res.data)) {
       const mapped = res.data.map(item => ({
         ...item,
@@ -4246,7 +4275,7 @@ const loadTopItems = async () => {
   } catch (e) {
     console.warn(e);
   } finally {
-    topItemsLoading.value = false;
+    if (seq === reqSeq.topItems) topItemsLoading.value = false;
   }
 };
 
@@ -5652,53 +5681,4 @@ select.reports-filter-control,
   white-space: nowrap;
 }
 
-.stock-pill-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 5px !important;
-  padding: 4px 12px !important;
-  font-size: var(--font-xs, 12px) !important;
-  font-weight: 600 !important;
-  border-radius: 9999px !important;
-  border: 1.5px solid var(--border-color, #e2e8f0) !important;
-  background: #ffffff !important;
-  color: var(--text-secondary, #64748b) !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease-in-out !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
-}
-
-.stock-pill-btn:hover {
-  border-color: var(--primary-light, #8b0313) !important;
-  color: var(--primary, #8b0313) !important;
-  background: rgba(139, 3, 19, 0.04) !important;
-}
-
-.stock-pill-btn.active {
-  background: var(--primary, #8b0313) !important;
-  color: #ffffff !important;
-  border-color: var(--primary, #8b0313) !important;
-  box-shadow: 0 2px 6px rgba(139, 3, 19, 0.25) !important;
-}
-
-.stock-pill-btn.active-danger {
-  background: #dc3545 !important;
-  color: #ffffff !important;
-  border-color: #dc3545 !important;
-  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.25) !important;
-}
-
-.stock-pill-btn.active-warning {
-  background: #fd7e14 !important;
-  color: #ffffff !important;
-  border-color: #fd7e14 !important;
-  box-shadow: 0 2px 6px rgba(253, 126, 20, 0.25) !important;
-}
-
-.stock-pill-btn.active-success {
-  background: #28a745 !important;
-  color: #ffffff !important;
-  border-color: #28a745 !important;
-  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.25) !important;
-}
 </style>
