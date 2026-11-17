@@ -2,7 +2,7 @@
   <div class="expense-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation (Consistent with StaffManagement.vue) -->
-    <div class="category-tabs mb-lg flex gap-xs flex-wrap">
+    <div class="category-tabs tab-category mb-lg flex gap-xs flex-wrap">
       <button 
         type="button"
         class="btn btn-secondary" 
@@ -279,7 +279,7 @@
           <div class="filter-chips-wrapper">
             <button 
               type="button" 
-              class="enhanced-filter-chip"
+              class="filter-pill"
               :class="{ 'active': filterCategory === 'all' }"
               @click="filterCategory = 'all'"
             >
@@ -291,7 +291,7 @@
               v-for="cat in listFilterCategories" 
               :key="'filter-' + cat.id"
               type="button" 
-              class="enhanced-filter-chip"
+              class="filter-pill"
               :class="{ 'active': filterCategory === cat.id }"
               @click="filterCategory = cat.id"
             >
@@ -2007,36 +2007,6 @@ onMounted(() => {
   gap: 8px;
 }
 
-.enhanced-filter-chip {
-  background: #ffffff;
-  border: 1.5px solid var(--border-color);
-  border-radius: 10px;
-  padding: 7px 12px;
-  font-size: var(--font-xs, 0.8rem);
-  font-weight: var(--font-weight-semibold, 600);
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all var(--transition-fast, 0.15s ease);
-  user-select: none;
-}
-
-.enhanced-filter-chip:hover {
-  border-color: var(--primary-light);
-  color: var(--primary);
-  background: rgba(139, 3, 19, 0.02);
-}
-
-.enhanced-filter-chip.active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-  font-weight: var(--font-weight-bold, 700);
-  box-shadow: 0 2px 8px var(--primary-glow);
-}
-
 .filter-count-badge {
   font-size: 10px;
   background: rgba(0,0,0,0.06);
@@ -2045,7 +2015,7 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.enhanced-filter-chip.active .filter-count-badge {
+.filter-pill.active .filter-count-badge {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }

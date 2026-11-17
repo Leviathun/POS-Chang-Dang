@@ -55,7 +55,7 @@
     </DatePeriodFilter>
 
     <!-- Main Navigation Tabs (Clean names without numbers) -->
-    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+    <div class="category-tabs tab-category mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
       <button 
         v-if="isAdminUser"
         class="btn btn-secondary" 
@@ -223,5 +223,10 @@ onUnmounted(() => {
   color: white;
   font-weight: bold;
   box-shadow: 0 4px 12px rgba(139, 3, 19, 0.25);
+}
+@media (min-width: 769px) {
+  #management-page > .card:first-child {
+    padding: var(--space-xl) !important;
+  }
 }
 </style>

@@ -340,13 +340,12 @@
     <transition name="fade">
       <div v-if="isManageChoiceSheetOpen" class="mobile-action-sheet-overlay" @click="closeManageChoiceSheet">
         <div class="mobile-action-sheet-content" @click.stop>
-          <div class="sheet-handle-bar"></div>
-          <div class="sheet-header">
-            <div class="sheet-title flex align-center gap-xs">
-              <i class="fa-solid fa-briefcase text-primary"></i>
+          <div class="modal-header">
+            <h3>
+              <i class="fa-solid fa-briefcase"></i>
               <span>เลือกระบบที่ต้องการเข้าใช้งาน</span>
-            </div>
-            <button type="button" class="sheet-close-btn" @click="closeManageChoiceSheet">
+            </h3>
+            <button type="button" class="modal-close" aria-label="ปิด" @click="closeManageChoiceSheet">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -1193,20 +1192,23 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
-  z-index: 999;
+  z-index: 1200;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
 }
 
 .mobile-action-sheet-content {
-  background: #ffffff;
+  background: var(--bg-primary);
   border-top-left-radius: var(--radius-xl);
   border-top-right-radius: var(--radius-xl);
-  padding: var(--space-md) var(--space-lg) calc(var(--space-xl) + var(--safe-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 0 calc(var(--bottom-nav-height, 64px) + 56px + var(--safe-bottom));
+  max-height: 85dvh;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   max-width: var(--max-width);
   margin: 0 auto;
@@ -1219,47 +1221,11 @@ onUnmounted(() => {
   to { transform: translateY(0); }
 }
 
-.sheet-handle-bar {
-  width: 38px;
-  height: 4px;
-  border-radius: var(--radius-full);
-  background: #e2e8f0;
-  margin: 0 auto var(--space-md);
-}
-
-.sheet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-md);
-  padding-bottom: var(--space-xs);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.sheet-title {
-  font-size: var(--font-base);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-}
-
-.sheet-close-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  background: rgba(0, 0, 0, 0.05);
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1rem;
-}
-
 .sheet-options-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-lg) 0;
 }
 
 .sheet-option-card {
@@ -1267,7 +1233,7 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-md);
-  background: #f8fafc;
+  background: #ffffff;
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-lg);
   cursor: pointer;
@@ -1550,7 +1516,7 @@ onUnmounted(() => {
   /* Desktop Sidebar styling */
   #app-sidebar {
     width: var(--sidebar-width);
-    height: 100vh;
+    height: 100dvh;
     position: fixed;
     top: 0;
     left: 0;
