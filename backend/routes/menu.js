@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../config/database');
 const { attachUser, requireManagerOrAdmin } = require('../middleware/auth');
+const { mapCachedImages, isGeneratedImageUrl } = require('./images');
 
 // ใช้ middleware ตรวจสอบผู้ใช้ทุก route
 router.use(attachUser);
@@ -62,7 +63,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: items
+      data: mapCachedImages(req, 'menu_items', items)
     });
   } catch (error) {
     console.error('❌ Get menu items error:', error.message);
@@ -369,7 +370,7 @@ router.put('/:id', requireManagerOrAdmin, async (req, res) => {
       name !== undefined ? name : item.name,
       price !== undefined ? price : item.price,
       category_id !== undefined ? category_id : item.category_id,
-      image_url !== undefined ? image_url : item.image_url,
+      image_url !== undefined && !isGeneratedImageUrl(image_url) ? image_url : item.image_url,
       sort_order !== undefined ? sort_order : item.sort_order,
       active !== undefined ? active : item.active,
       uom !== undefined ? uom : item.uom,
