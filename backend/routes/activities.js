@@ -33,15 +33,19 @@ router.get('/', async (req, res) => {
     const params = [branchId];
 
     if (year) {
-      sql += " AND strftime('%Y', al.created_at) = ?";
-      params.push(year);
+      sql += ' AND al.created_at >= ? AND al.created_at < ?';
+      params.push(`${year}-01-01`, `${Number(year) + 1}-01-01`);
     } else if (month) {
-      sql += " AND strftime('%Y-%m', al.created_at) = ?";
-      params.push(month);
+      const [y, m] = month.split('-').map(Number);
+      const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
+      sql += ' AND al.created_at >= ? AND al.created_at < ?';
+      params.push(`${month}-01`, nextMonth);
     } else {
       const dateVal = date || new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
-      sql += ' AND date(al.created_at) = ?';
-      params.push(dateVal);
+      const nextDay = new Date(`${dateVal}T00:00:00Z`);
+      nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+      sql += ' AND al.created_at >= ? AND al.created_at < ?';
+      params.push(dateVal, nextDay.toISOString().split('T')[0]);
     }
 
     if (user_id) {

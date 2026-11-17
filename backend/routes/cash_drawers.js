@@ -9,6 +9,14 @@ function getThailandDateString() {
   return d.toISOString().split('T')[0];
 }
 
+// Converts Thai-date list to sargable UTC created_at [start, end) bounds so idx_orders_branch_created is used
+function shiftDayUtcRange(dates) {
+  const sorted = [...dates].sort();
+  const prev = new Date(`${sorted[0]}T00:00:00Z`);
+  prev.setUTCDate(prev.getUTCDate() - 1);
+  return [`${prev.toISOString().split('T')[0]} 17:00:00`, `${sorted[sorted.length - 1]} 17:00:00`];
+}
+
 // In-memory cache for daily cash drawer sessions to eliminate redundant database checks/roundtrips
 const sessionCache = new Map(); // Key: `${branchId}-${sessionDate}`, Value: session object
 
@@ -139,11 +147,12 @@ router.post('/opening-cash', requireManagerOrAdmin, async (req, res) => {
       session.opening_cash = Number(opening_cash);
     }
 
+    const [utcStart, utcEnd] = shiftDayUtcRange([targetDate]);
     // Auto-link unlinked orders and expenses for this branch & date
     await db.prepare(`
       UPDATE orders SET session_id = ? 
-      WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND session_id IS NULL
-    `).run(session.id, targetBranchId, targetDate);
+      WHERE branch_id = ? AND created_at >= ? AND created_at < ? AND session_id IS NULL
+    `).run(session.id, targetBranchId, utcStart, utcEnd);
 
     await db.prepare(`
       UPDATE expenses SET session_id = ? 
@@ -226,11 +235,12 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
 
     const sessionId = session.id;
 
+    const [utcStart, utcEnd] = shiftDayUtcRange([targetDate]);
     // Auto-link unlinked orders and expenses for this branch & date
     await db.prepare(`
       UPDATE orders SET session_id = ? 
-      WHERE branch_id = ? AND date(created_at, '+7 hours') = ? AND session_id IS NULL
-    `).run(sessionId, targetBranchId, targetDate);
+      WHERE branch_id = ? AND created_at >= ? AND created_at < ? AND session_id IS NULL
+    `).run(sessionId, targetBranchId, utcStart, utcEnd);
 
     await db.prepare(`
       UPDATE expenses SET session_id = ? 
@@ -239,11 +249,15 @@ router.post('/audit', requireManagerOrAdmin, async (req, res) => {
 
     // 1. Calculate cash sales
     const ordersResult = await db.prepare(`
-      SELECT SUM(total) as cash_sales
-      FROM orders
-      WHERE (session_id = ? OR (branch_id = ? AND date(created_at, '+7 hours') = ?))
-        AND payment_method = 'cash' AND status = 'completed'
-    `).get(sessionId, targetBranchId, targetDate);
+      SELECT COALESCE(SUM(total), 0) as cash_sales FROM (
+        SELECT total FROM orders
+        WHERE session_id = ? AND payment_method = 'cash' AND status = 'completed'
+        UNION ALL
+        SELECT total FROM orders
+        WHERE (session_id IS NULL OR session_id != ?) AND branch_id = ? AND created_at >= ? AND created_at < ?
+          AND payment_method = 'cash' AND status = 'completed'
+      )
+    `).get(sessionId, sessionId, targetBranchId, utcStart, utcEnd);
     const cashSales = ordersResult ? (ordersResult.cash_sales || 0) : 0;
 
     // 2. Calculate cash expenses
@@ -374,6 +388,7 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
       const idPh = sIds.map(() => '?').join(',');
       const brPh = sBranches.map(() => '?').join(',');
       const dtPh = sDates.map(() => '?').join(',');
+      const [sUtcStart, sUtcEnd] = shiftDayUtcRange(sDates);
 
       const [oSessRows, oNullRows, eSessRows, eNullRows] = await Promise.all([
         db.prepare(`
@@ -385,10 +400,10 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
         db.prepare(`
           SELECT branch_id, date(created_at, '+7 hours') as d, SUM(total) as cash_sales
           FROM orders
-          WHERE session_id IS NULL AND branch_id IN (${brPh}) AND date(created_at, '+7 hours') IN (${dtPh})
+          WHERE session_id IS NULL AND branch_id IN (${brPh}) AND created_at >= ? AND created_at < ? AND date(created_at, '+7 hours') IN (${dtPh})
             AND payment_method = 'cash' AND status = 'completed'
           GROUP BY branch_id, date(created_at, '+7 hours')
-        `).all(...sBranches, ...sDates),
+        `).all(...sBranches, sUtcStart, sUtcEnd, ...sDates),
         db.prepare(`
           SELECT session_id, ${EXPENSE_CASH_SUM} as cash_expenses
           FROM expenses
@@ -468,15 +483,16 @@ router.get('/summary', requireManagerOrAdmin, async (req, res) => {
       const mDates = [...new Set(missingPairs.map(p => p.dateStr))];
       const brPh = mBranches.map(() => '?').join(',');
       const dtPh = mDates.map(() => '?').join(',');
+      const [mUtcStart, mUtcEnd] = shiftDayUtcRange(mDates);
 
       const [vSalesRows, vExpRows] = await Promise.all([
         db.prepare(`
           SELECT branch_id, date(created_at, '+7 hours') as d, SUM(total) as cash_sales
           FROM orders
-          WHERE branch_id IN (${brPh}) AND date(created_at, '+7 hours') IN (${dtPh})
+          WHERE branch_id IN (${brPh}) AND created_at >= ? AND created_at < ? AND date(created_at, '+7 hours') IN (${dtPh})
             AND payment_method = 'cash' AND status = 'completed'
           GROUP BY branch_id, date(created_at, '+7 hours')
-        `).all(...mBranches, ...mDates),
+        `).all(...mBranches, mUtcStart, mUtcEnd, ...mDates),
         db.prepare(`
           SELECT branch_id, expense_date as d, ${EXPENSE_CASH_SUM} as cash_expenses
           FROM expenses
