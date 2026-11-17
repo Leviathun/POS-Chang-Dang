@@ -90,6 +90,7 @@ if (!skipDbInit) {
 }
 
 // ─── Start Server ─────────────────────────────────────────
+if (!process.env.VERCEL) {
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('  🍗 ══════════════════════════════════════════');
@@ -98,5 +99,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('  🍗 ══════════════════════════════════════════');
   console.log('');
 });
+}
 
 module.exports = app;
