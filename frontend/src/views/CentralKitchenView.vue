@@ -58,6 +58,7 @@
                       @touchstart="handleTouchStart(index, $event)"
                       @touchmove.prevent="handleTouchMove"
                       @touchend="handleTouchEnd"
+                      @touchcancel="handleTouchEnd"
                     >
                       <i class="fa-solid fa-bars"></i>
                     </div>
@@ -104,6 +105,7 @@
                   @touchstart="handleTouchStart(index, $event)"
                   @touchmove.prevent="handleTouchMove"
                   @touchend="handleTouchEnd"
+                  @touchcancel="handleTouchEnd"
                 >
                   <i class="fa-solid fa-bars"></i>
                 </div>
@@ -155,7 +157,7 @@
           <button 
             v-for="cat in categories" 
             :key="cat.id" 
-            class="category-tab"
+            class="filter-pill"
             :class="{ 'active': selectedCategory === cat.id }"
             @click="selectedCategory = cat.id"
           >
@@ -415,7 +417,7 @@
               <button 
                 v-for="cat in categories" 
                 :key="cat.id" 
-                class="category-tab"
+                class="filter-pill"
                 :class="{ active: dispatchCategory === cat.id }"
                 @click="dispatchCategory = cat.id"
               >
@@ -692,142 +694,78 @@
 
       <!-- Mobile-only Bottom Docked Cart Bar (Exact POS Floating Cart Bar) -->
       <div 
-        v-if="dispatchCart.length > 0 && !isDispatchMobileDrawerOpen" 
+        v-if="dispatchCart.length > 0" 
         class="cart-bar mobile-only-cart"
       >
         <div class="cart-bar-inner">
-          <div class="cart-info" style="cursor: pointer;" @click="isDispatchMobileDrawerOpen = true">
-            <span class="cart-count">{{ totalDispatchQty }} รายการ</span>
+          <div class="cart-info" @click="isDispatchMobileDrawerOpen = !isDispatchMobileDrawerOpen">
+            <span class="cart-count">
+              {{ totalDispatchQty }} รายการ
+              <i :class="isDispatchMobileDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: 0.75rem; margin-left: 2px;"></i>
+            </span>
             <span class="cart-total">฿{{ formatNumber(totalDispatchCost) }}</span>
           </div>
           <button 
-            class="cart-pay-btn flex align-center justify-center gap-xs" 
-            @click="isDispatchMobileDrawerOpen = true"
+            class="cart-pay-btn" 
+            :disabled="isSubmittingDispatch || dispatchCart.length === 0 || !dispatchBranchId"
+            @click="submitPushDispatch"
           >
-            <i class="fa-solid fa-cart-shopping"></i>
-            <span>ดูรายการจ่าย</span>
+            <i v-if="isSubmittingDispatch" class="fa-solid fa-spinner fa-spin"></i>
+            <i v-else class="fa-solid fa-truck-arrow-right"></i>
+            <span>{{ isSubmittingDispatch ? 'กำลังจ่าย...' : 'ยืนยันจ่ายของ' }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Mobile-only Slide-up Cart Drawer Overlay & Panel (Bottom Sheet) -->
-      <div 
-        v-if="dispatchCart.length > 0 && isDispatchMobileDrawerOpen" 
-        class="cart-drawer-overlay mobile-only-cart"
-        @click="isDispatchMobileDrawerOpen = false"
-      ></div>
-
+      <!-- Mobile-only Slide-up Cart Detail Panel (POS Master Design) -->
       <div 
         v-if="dispatchCart.length > 0" 
         class="cart-detail-panel mobile-only-cart"
         :class="{ 'hidden': !isDispatchMobileDrawerOpen }"
       >
-        <!-- Drawer Header -->
         <div class="cart-detail-header">
-          <span class="font-bold text-base flex align-center gap-xs">
-            <i class="fa-solid fa-truck-arrow-right text-primary"></i>
-            <span>รายการของที่จะจ่าย</span>
-            <span class="badge badge-primary font-bold">{{ totalDispatchQty }}</span>
+          <span class="font-semibold text-md" style="display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-truck-arrow-right"></i> รายการของที่จะจ่าย ({{ selectedDispatchBranchName || 'ยังไม่เลือกสาขา' }})
           </span>
-          <div class="flex align-center gap-sm">
-            <button class="btn btn-ghost btn-sm text-danger" @click="clearDispatchCart">ล้างทั้งหมด</button>
-            <button class="modal-close" @click="isDispatchMobileDrawerOpen = false">✕</button>
-          </div>
+          <button class="btn btn-ghost btn-sm text-danger" @click="clearDispatchCart">ล้างทั้งหมด</button>
         </div>
 
-        <!-- Drawer Scrollable Content -->
-        <div class="cart-drawer-scroll-body flex flex-col gap-md">
-          <!-- Target Branch Badge Card -->
-          <div class="dispatch-branch-info-card flex align-center gap-md" style="background: var(--bg-secondary); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 0;">
-            <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-              <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: 1.1rem;"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="text-xs text-secondary font-medium" style="margin-bottom: 2px;">สาขาที่จะตัดยอดเข้า:</div>
-              <div class="font-bold text-sm text-primary truncate" style="font-size: 0.95rem;">
-                {{ selectedDispatchBranchName || 'ยังไม่ได้เลือกสาขา' }}
+        <div style="overflow-y: auto; max-height: calc(45vh - 60px); padding-bottom: 16px;">
+          <div 
+            v-for="c in dispatchCart" 
+            :key="c.item_id" 
+            class="cart-item animate-fade-in"
+          >
+            <div class="cart-item-info">
+              <div class="cart-item-name">{{ getItemNameParts(c.item_name).main }}</div>
+              <div class="cart-item-price">
+                ฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}
+                <span v-if="c.pack_size > 1" class="text-primary font-semibold"> (เติม {{ c.quantity * c.pack_size }} ชิ้น)</span>
               </div>
             </div>
-          </div>
-
-          <!-- Cart Items List: Spacious 2-Tier Cards with Steppers -->
-          <div class="cart-items-list flex flex-col gap-sm">
-            <div 
-              v-for="c in dispatchCart" 
-              :key="c.item_id" 
-              class="cart-row p-sm flex flex-col justify-between"
-            >
-              <!-- Tier 1: Item Name + Subtotal -->
-              <div class="flex flex-between align-start gap-xs mb-xs">
-                <div class="flex-1 min-w-0 pr-xs">
-                  <div class="cart-item-name font-bold text-sm text-primary">
-                    {{ getItemNameParts(c.item_name).main }}
-                  </div>
-                  <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
-                    {{ getItemNameParts(c.item_name).sub }}
-                  </div>
-                  <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
-                    <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
-                  </div>
-                </div>
-                <div class="text-right flex-shrink-0 pl-xs">
-                  <span class="font-bold text-sm text-primary">฿{{ formatNumber(c.quantity * c.cost_price) }}</span>
-                </div>
-              </div>
-
-              <!-- Tier 2: Unit price + Stepper -->
-              <div class="flex flex-between align-center cart-item-bottom">
-                <span class="text-xs text-secondary">
-                  ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
-                </span>
-                <div class="flex align-center gap-xs flex-shrink-0">
-                  <button class="btn-qty" @click="decreaseDispatchQty(c)" title="ลดจำนวน">-</button>
-                  <input 
-                    type="number" 
-                    inputmode="numeric" 
-                    v-model.number="c.quantity" 
-                    min="1" 
-                    :max="c.max_quantity" 
-                    class="form-input text-center text-sm font-bold" 
-                    style="width: 56px; height: 32px; padding: 2px;"
-                    @change="validateDispatchQty(c)"
-                    @focus="$event.target.select()"
-                  />
-                  <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)" title="เพิ่มจำนวน">+</button>
-                </div>
-              </div>
+            <div class="cart-item-qty">
+              <button class="qty-btn minus" @click="decreaseDispatchQty(c)">−</button>
+              <span class="qty-value">{{ c.quantity }}</span>
+              <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)">+</button>
+            </div>
+            <div class="cart-item-subtotal">
+              ฿{{ formatNumber(c.quantity * c.cost_price) }}
             </div>
           </div>
 
-          <!-- Notes Field -->
-          <div class="form-group">
-            <label class="form-label text-xs font-bold text-secondary mb-xs block">
-              <i class="fa-solid fa-pen-to-square mr-1"></i> บันทึกช่วยจำ / รอบส่ง (ถ้ามี):
-            </label>
+          <!-- Notes Area (Matching POS Mobile Discount Selector Area) -->
+          <div style="padding: 12px 20px;">
+            <div class="font-bold text-sm text-primary flex align-center gap-xs" style="margin-bottom: 6px;">
+              <i class="fa-solid fa-pen-to-square"></i> บันทึกช่วยจำ / รอบส่ง (ถ้ามี)
+            </div>
             <input 
               type="text" 
               v-model="dispatchNotes" 
-              placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน" 
-              class="form-input text-sm w-full"
+              placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน..." 
+              class="form-input"
+              style="font-size: var(--font-sm); padding: 6px 12px; height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
             />
           </div>
-        </div>
-
-        <!-- Drawer Fixed Footer -->
-        <div class="cart-drawer-footer">
-          <div class="cart-total-row flex flex-between align-baseline mb-sm">
-            <span class="text-sm font-bold text-secondary">มูลค่าต้นทุนรวม:</span>
-            <span class="text-2xl font-bold text-primary">฿{{ formatNumber(totalDispatchCost) }}</span>
-          </div>
-          <button 
-            class="btn btn-primary w-full btn-submit-requisition flex align-center justify-center gap-xs" 
-            :disabled="isSubmittingDispatch || dispatchCart.length === 0 || !dispatchBranchId"
-            @click="submitPushDispatch"
-          >
-            <i v-if="isSubmittingDispatch" class="fa-solid fa-spinner fa-spin mr-2"></i>
-            <i v-else class="fa-solid fa-truck-arrow-right mr-2"></i>
-            <span>{{ isSubmittingDispatch ? 'กำลังบันทึกจ่ายของ...' : 'ยืนยันจ่ายของให้สาขา (ตัดสต็อกทันที)' }}</span>
-          </button>
         </div>
       </div>
     </div>
@@ -890,7 +828,7 @@
         <!-- Status Filter Tabs -->
         <div class="order-status-tabs flex gap-xs align-center">
           <button 
-            class="order-tab-btn" 
+            class="filter-pill" 
             :class="{ active: orderFilterStatus === 'all' }"
             @click="orderFilterStatus = 'all'"
           >
@@ -898,7 +836,7 @@
             <span class="order-tab-count">{{ periodMatchedOrders.length }}</span>
           </button>
           <button 
-            class="order-tab-btn" 
+            class="filter-pill" 
             :class="{ active: orderFilterStatus === 'pending' }"
             @click="orderFilterStatus = 'pending'"
           >
@@ -906,7 +844,7 @@
             <span class="order-tab-count">{{ pendingOrdersCount }}</span>
           </button>
           <button 
-            class="order-tab-btn" 
+            class="filter-pill" 
             :class="{ active: orderFilterStatus === 'dispatched' }"
             @click="orderFilterStatus = 'dispatched'"
           >
@@ -914,7 +852,7 @@
             <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
           </button>
           <button 
-            class="order-tab-btn" 
+            class="filter-pill" 
             :class="{ active: orderFilterStatus === 'received' }"
             @click="orderFilterStatus = 'received'"
           >
@@ -1253,7 +1191,7 @@
       <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card history-toolbar">
         <div class="history-status-tabs flex gap-xs align-center">
           <button 
-            class="history-tab-btn" 
+            class="filter-pill" 
             :class="{ active: historyFilter === 'all' }"
             @click="historyFilter = 'all'"
           >
@@ -1261,7 +1199,7 @@
             <span class="history-tab-count">{{ periodMatchedHistory.length }}</span>
           </button>
           <button 
-            class="history-tab-btn" 
+            class="filter-pill" 
             :class="{ active: historyFilter === 'restock' }"
             @click="historyFilter = 'restock'"
           >
@@ -1270,7 +1208,7 @@
             <span class="history-tab-count">{{ restockHistoryCount }}</span>
           </button>
           <button 
-            class="history-tab-btn" 
+            class="filter-pill" 
             :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
             @click="historyFilter = 'transfer'"
           >
@@ -1635,10 +1573,10 @@
         </div>
 
         <!-- Pill Navigation Tabs (Exact style from Management.vue & User reference) -->
-        <div id="finance-subtabs-nav" class="finance-subtabs-container flex gap-xs">
+        <div id="finance-subtabs-nav" class="category-tabs flex gap-xs">
           <button 
             type="button"
-            class="btn btn-secondary" 
+            class="category-tab" 
             :class="{ 'active': financeSubTab === 'ledger' }"
             @click="financeSubTab = 'ledger'"
           >
@@ -1647,7 +1585,7 @@
           </button>
           <button 
             type="button"
-            class="btn btn-secondary" 
+            class="category-tab" 
             :class="{ 'active': financeSubTab === 'receivables' }"
             @click="financeSubTab = 'receivables'"
           >
@@ -1683,7 +1621,7 @@
             <!-- Filter Pills -->
             <div class="finance-status-tabs flex gap-xs align-center">
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'all' }"
                 @click="financeFilterType = 'all'"
               >
@@ -1691,7 +1629,7 @@
                 <span class="finance-tab-count">{{ financeLogs.length }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'capital_in' }"
                 @click="financeFilterType = 'capital_in'"
               >
@@ -1700,7 +1638,7 @@
                 <span class="finance-tab-count">{{ capitalInCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'reimbursement_in' }"
                 @click="financeFilterType = 'reimbursement_in'"
               >
@@ -1709,7 +1647,7 @@
                 <span class="finance-tab-count">{{ reimbursementInCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'purchase_out' }"
                 @click="financeFilterType = 'purchase_out'"
               >
@@ -1718,7 +1656,7 @@
                 <span class="finance-tab-count">{{ purchaseOutCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'operating_expense_out' }"
                 @click="financeFilterType = 'operating_expense_out'"
               >
@@ -1727,7 +1665,7 @@
                 <span class="finance-tab-count">{{ operatingExpenseOutCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'waste_loss' }"
                 @click="financeFilterType = 'waste_loss'"
               >
@@ -1912,7 +1850,7 @@
             <div class="order-status-tabs flex gap-xs align-center">
               <button 
                 type="button"
-                class="order-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: receivablesStatusTab === 'pending' }"
                 @click="setReceivablesStatus('pending')"
               >
@@ -1922,7 +1860,7 @@
               </button>
               <button 
                 type="button"
-                class="order-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: receivablesStatusTab === 'reimbursed' }"
                 @click="setReceivablesStatus('reimbursed')"
               >
@@ -2247,10 +2185,10 @@
       </div>
 
       <!-- Pill Tabs (แท็บหลอดยา): หุ้นส่วน vs ประวัติปันผล -->
-      <div class="category-tabs partner-subtabs mb-lg flex gap-xs" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+      <div class="category-tabs mb-lg flex gap-xs" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
         <button 
           type="button"
-          class="btn btn-secondary" 
+          class="category-tab" 
           :class="{ 'active': partnerSubTab === 'partners' }"
           @click="partnerSubTab = 'partners'"
         >
@@ -2258,7 +2196,7 @@
         </button>
         <button 
           type="button"
-          class="btn btn-secondary" 
+          class="category-tab" 
           :class="{ 'active': partnerSubTab === 'payout_history' }"
           @click="partnerSubTab = 'payout_history'"
         >
@@ -2855,7 +2793,7 @@
               >
                 <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-floppy-disk"></i>
-                <span>{{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'บันทึกการแก้ไข' : 'เพิ่มหมวดหมู่') }}</span>
+                <span>{{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'บันทึก' : 'เพิ่มหมวดหมู่') }}</span>
               </button>
             </div>
           </div>
@@ -4184,47 +4122,87 @@ const handleDragEnd = () => {
   dragIndex.value = null;
 };
 
+let touchScrollRaf = null;
+let lastTouchX = 0;
+let lastTouchY = 0;
+let lastScrollTs = 0;
+let lastAutoSwapTs = 0;
+
+const swapItemAtPoint = (x, y) => {
+  if (dragIndex.value === null) return;
+  const targetElement = document.elementFromPoint(x, y);
+  const element = targetElement?.closest('.mobile-reorder-card, .desktop-reorder-row');
+  if (!element) return;
+  const targetIndex = Number(element.dataset.index);
+  if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
+    const item = reorderItems.value[dragIndex.value];
+    reorderItems.value.splice(dragIndex.value, 1);
+    reorderItems.value.splice(targetIndex, 0, item);
+    dragIndex.value = targetIndex;
+  }
+};
+
+const runTouchAutoScroll = (now) => {
+  if (dragIndex.value === null) {
+    touchScrollRaf = null;
+    return;
+  }
+  const dt = lastScrollTs ? Math.min(now - lastScrollTs, 50) : 16.67;
+  lastScrollTs = now;
+  const frameScale = dt / 16.67;
+
+  const threshold = 170;
+  const maxSpeed = 48;
+  let dy = 0;
+  if (lastTouchY < threshold) {
+    const ratio = Math.min(1, (threshold - lastTouchY) / threshold);
+    dy = -Math.ceil((6 + ratio * maxSpeed) * frameScale);
+  } else if (lastTouchY > window.innerHeight - threshold) {
+    const ratio = Math.min(1, (lastTouchY - (window.innerHeight - threshold)) / threshold);
+    dy = Math.ceil((6 + ratio * maxSpeed) * frameScale);
+  }
+  if (dy !== 0) {
+    // ponytail: 2-arg scrollBy with scrollBehavior='auto' avoids iOS/Android smooth-scroll lag
+    window.scrollBy(0, dy);
+    if (now - lastAutoSwapTs >= 60) {
+      lastAutoSwapTs = now;
+      swapItemAtPoint(lastTouchX, lastTouchY);
+    }
+  }
+  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
+};
+
 const handleTouchStart = (index, event) => {
   dragIndex.value = index;
-  const element = event.target.closest('.mobile-reorder-card, .desktop-reorder-row');
-  if (element) {
-    element.classList.add('dragging');
+  document.documentElement.style.scrollBehavior = 'auto';
+  document.documentElement.style.overflowAnchor = 'none';
+  const touch = event.touches[0];
+  if (touch) {
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
   }
+  lastScrollTs = 0;
+  lastAutoSwapTs = 0;
+  if (touchScrollRaf) cancelAnimationFrame(touchScrollRaf);
+  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
 };
 
 const handleTouchMove = (event) => {
   if (dragIndex.value === null) return;
   const touch = event.touches[0];
-  const clientY = touch.clientY;
-
-  const threshold = 120;
-  const scrollSpeed = 15;
-  if (clientY < threshold) {
-    window.scrollBy(0, -scrollSpeed);
-  } else if (clientY > window.innerHeight - threshold) {
-    window.scrollBy(0, scrollSpeed);
-  }
-
-  const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (targetElement) {
-    const element = targetElement.closest('.mobile-reorder-card, .desktop-reorder-row');
-    if (element) {
-      const targetIndex = Number(element.dataset.index);
-      if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
-        const item = reorderItems.value[dragIndex.value];
-        reorderItems.value.splice(dragIndex.value, 1);
-        reorderItems.value.splice(targetIndex, 0, item);
-        dragIndex.value = targetIndex;
-      }
-    }
-  }
+  if (!touch) return;
+  lastTouchX = touch.clientX;
+  lastTouchY = touch.clientY;
+  swapItemAtPoint(lastTouchX, lastTouchY);
 };
 
 const handleTouchEnd = () => {
   dragIndex.value = null;
-  const draggingEl = document.querySelector('.mobile-reorder-card.dragging, .desktop-reorder-row.dragging');
-  if (draggingEl) {
-    draggingEl.classList.remove('dragging');
+  document.documentElement.style.scrollBehavior = '';
+  document.documentElement.style.overflowAnchor = '';
+  if (touchScrollRaf) {
+    cancelAnimationFrame(touchScrollRaf);
+    touchScrollRaf = null;
   }
 };
 
@@ -6011,35 +5989,6 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.order-tab-btn {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-semibold);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.order-tab-btn:hover:not(.active) {
-  background: var(--bg-secondary);
-  color: var(--primary);
-  border-color: var(--border-color-focus);
-}
-
-.order-tab-btn.active {
-  background: var(--gradient-primary);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: var(--shadow-sm);
-}
-
 .order-tab-count {
   padding: 2px 8px;
   border-radius: var(--radius-full);
@@ -6048,12 +5997,12 @@ onUnmounted(() => {
   line-height: 1;
 }
 
-.order-tab-btn.active .order-tab-count {
+.filter-pill.active .order-tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
 
-.order-tab-btn:not(.active) .order-tab-count {
+.filter-pill:not(.active) .order-tab-count {
   background: rgba(139, 3, 19, 0.08);
   color: var(--primary);
 }
@@ -6253,35 +6202,6 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.history-tab-btn {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-semibold);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.history-tab-btn:hover:not(.active) {
-  background: var(--bg-secondary);
-  color: var(--primary);
-  border-color: var(--border-color-focus);
-}
-
-.history-tab-btn.active {
-  background: var(--gradient-primary);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: var(--shadow-sm);
-}
-
 .history-tab-count {
   margin-left: 2px;
   padding: 2px 8px;
@@ -6291,12 +6211,12 @@ onUnmounted(() => {
   line-height: 1;
 }
 
-.history-tab-btn.active .history-tab-count {
+.filter-pill.active .history-tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
 
-.history-tab-btn:not(.active) .history-tab-count {
+.filter-pill:not(.active) .history-tab-count {
   background: rgba(139, 3, 19, 0.08);
   color: var(--primary);
 }
@@ -6538,37 +6458,6 @@ onUnmounted(() => {
   padding-bottom: 0 !important;
 }
 
-.finance-tab-btn {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-color);
-  background: #ffffff;
-  color: var(--text-secondary);
-  font-size: var(--font-sm);
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.finance-tab-btn:hover {
-  background: var(--bg-hover, #f8f9fa);
-  color: var(--text-primary);
-  border-color: var(--border-color-dark, #ccc);
-}
-
-.finance-tab-btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.2);
-}
-
 .finance-tab-count {
   font-size: 11px;
   font-weight: 600;
@@ -6579,7 +6468,7 @@ onUnmounted(() => {
   line-height: 1.2;
 }
 
-.finance-tab-btn.active .finance-tab-count {
+.filter-pill.active .finance-tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
@@ -7322,14 +7211,6 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .category-tab,
-  .order-tab-btn {
-    flex-shrink: 0 !important;
-    height: 34px !important;
-    padding: 0 10px !important;
-    font-size: 12px !important;
-  }
-
   .order-branch-filter {
     width: 100%;
     display: flex;
@@ -7392,13 +7273,6 @@ onUnmounted(() => {
     padding-bottom: 0 !important;
     gap: 6px !important;
     width: 100% !important;
-  }
-
-  .history-tab-btn {
-    flex-shrink: 0 !important;
-    height: 34px !important;
-    padding: 0 12px !important;
-    font-size: 12px !important;
   }
 
   .history-card-inner {
@@ -7491,13 +7365,6 @@ onUnmounted(() => {
     padding-bottom: 0 !important;
     gap: 6px !important;
     width: 100% !important;
-  }
-
-  .finance-tab-btn {
-    flex-shrink: 0 !important;
-    height: 34px !important;
-    padding: 0 10px !important;
-    font-size: 12px !important;
   }
 
   /* Partners Tab Responsive */
@@ -7625,66 +7492,6 @@ onUnmounted(() => {
   text-decoration: underline;
 }
 
-/* Pill Sub-Tab Navigation for Finance (Scrollable Left-Right, No Wrap) */
-#finance-subtabs-nav,
-.finance-subtabs-container {
-  margin-top: var(--space-xs);
-  margin-bottom: var(--space-lg);
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  gap: var(--space-sm) !important;
-  border-bottom: none !important;
-  padding-bottom: 8px !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-#finance-subtabs-nav::-webkit-scrollbar,
-.finance-subtabs-container::-webkit-scrollbar {
-  display: none;
-}
-
-#finance-subtabs-nav .btn,
-.finance-subtabs-container .btn {
-  font-size: var(--font-sm);
-  padding: 10px 22px;
-  border-radius: var(--radius-full) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-#finance-subtabs-nav .btn:hover:not(.active),
-.finance-subtabs-container .btn:hover:not(.active) {
-  background: var(--bg-hover, #f8fafc);
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-#finance-subtabs-nav .btn.active,
-.finance-subtabs-container .btn.active {
-  background: var(--primary, #8b0313) !important;
-  border-color: var(--primary, #8b0313) !important;
-  color: #ffffff !important;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(139, 3, 19, 0.28);
-}
-
 .tab-count-pill {
   font-size: 0.75rem;
   padding: 2px 8px;
@@ -7694,8 +7501,7 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-#finance-subtabs-nav .btn.active .tab-count-pill,
-.finance-subtabs-container .btn.active .tab-count-pill {
+.category-tab.active .tab-count-pill {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
@@ -7852,13 +7658,6 @@ onUnmounted(() => {
 
 .mobile-consolidated-list {
   display: none;
-}
-
-/* Partner Subtabs (Capsule Pills) */
-.partner-subtabs {
-  border-bottom: 2px solid var(--border-color) !important;
-  padding-bottom: var(--space-sm) !important;
-  margin-bottom: var(--space-lg) !important;
 }
 
 /* Desktop vs Mobile for Payout History */
@@ -8247,143 +8046,6 @@ onUnmounted(() => {
 }
 
 /* ============================================================ */
-/* MOBILE DOCKED CART BAR & BOTTOM SHEET DRAWER (POS DESIGN)    */
-/* ============================================================ */
-.cart-bar {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height, 60px) + var(--safe-bottom, 0px));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width, 100%);
-  height: var(--cart-bar-height, 60px);
-  padding: 0 var(--space-lg);
-  background: rgba(139, 3, 19, 0.96);
-  backdrop-filter: var(--glass-blur, blur(10px));
-  -webkit-backdrop-filter: var(--glass-blur, blur(10px));
-  border-top: 2px solid var(--accent, #ffab2b);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  animation: slideUp 0.3s ease;
-  box-sizing: border-box;
-}
-
-.cart-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  width: 100% !important;
-}
-
-.cart-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.cart-count {
-  font-size: var(--font-xs);
-  color: rgba(255, 247, 223, 0.85);
-  line-height: 1.2;
-}
-
-.cart-total {
-  font-size: var(--font-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--accent, #ffab2b);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-
-.cart-pay-btn {
-  padding: 8px 18px;
-  background: var(--accent, #ffab2b);
-  color: var(--primary-dark, #500000);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-md);
-  box-shadow: 0 0 15px rgba(255, 171, 43, 0.35);
-  border: none;
-  cursor: pointer;
-  font-size: var(--font-sm);
-  transition: all var(--transition-base);
-}
-
-.cart-pay-btn:active {
-  transform: scale(0.96);
-  box-shadow: 0 0 25px rgba(255, 171, 43, 0.5);
-}
-
-/* Mobile Slide-up Drawer Overlay */
-.cart-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  z-index: 55;
-  animation: fadeIn 0.2s ease;
-}
-
-/* Mobile Slide-up Cart Drawer Panel */
-.cart-detail-panel {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height, 60px) + var(--safe-bottom, 0px));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width, 100%);
-  max-height: 78vh;
-  background: var(--bg-secondary, #fff8ee);
-  border: 2px solid var(--primary-light, #ad281e) !important;
-  border-radius: var(--radius-2xl, 16px) var(--radius-2xl, 16px) 0 0;
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  z-index: 56;
-  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  overflow: hidden;
-}
-
-.cart-detail-panel.hidden {
-  display: none !important;
-}
-
-.cart-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px !important;
-  border-bottom: 2px dashed rgba(139, 3, 19, 0.15) !important;
-  background: rgba(255, 247, 223, 0.98) !important;
-  z-index: 1;
-  flex-shrink: 0;
-}
-
-.cart-drawer-scroll-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 14px 18px;
-  max-height: calc(78vh - 165px);
-}
-
-.cart-drawer-footer {
-  flex-shrink: 0;
-  background: #ffffff;
-  border-top: 1px solid rgba(139, 3, 19, 0.12);
-  padding: 12px 18px 16px 18px;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.cart-drawer-footer .cart-total-row {
-  margin-bottom: 10px;
-}
-
-/* ============================================================ */
 /* RESPONSIVE BREAKPOINTS: DESKTOP VS MOBILE ONLY               */
 /* ============================================================ */
 @media (min-width: 1024px) {
@@ -8614,100 +8276,7 @@ onUnmounted(() => {
   }
 }
 
-/* ── Category Modal & POS Link Tooltip ── */
-.ck-cat-form-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.ck-cat-form-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--font-sm);
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.ck-cat-form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-
-.ck-cat-form-actions {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: var(--space-sm);
-  align-items: stretch;
-}
-
-.ck-cat-form-actions .btn {
-  width: 100%;
-  min-width: 0;
-  height: 44px;
-  border-radius: var(--radius-md) !important;
-}
-
-.ck-cat-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 250px;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.ck-cat-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding: 10px 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-}
-
-
-.ck-cat-action-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.ck-cat-action-btn.edit {
-  color: var(--primary);
-}
-
-.ck-cat-action-btn.edit:hover {
-  background: rgba(139, 3, 19, 0.08);
-  border-color: var(--primary);
-}
-
-.ck-cat-action-btn.delete {
-  color: var(--danger);
-}
-
-.ck-cat-action-btn.delete:hover {
-  background: rgba(220, 38, 38, 0.08);
-  border-color: var(--danger);
-}
-
+/* ── POS Link Tooltip ── */
 .ck-tooltip-wrap {
   position: relative;
   display: inline-flex;
