@@ -4,14 +4,14 @@
     <!-- Tab Selector (Hidden from frontend view while preserving code structure) -->
     <div class="category-tabs mb-lg" v-if="false">
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'menu_items' }"
         @click="setTab('menu_items')"
       >
         <i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> สินค้าและเมนู
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'modifiers' }"
         @click="setTab('modifiers')"
       >
@@ -446,65 +446,101 @@
       </div>
     </div>
 
-    <!-- Category Modal -->
+    <!-- Category Modal (Master Design from style.css) -->
     <div v-if="showCatModal" class="modal-container active">
       <div class="modal-overlay" @click="showCatModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
+      <div class="modal-content modal-center w-full max-w-lg" style="position:relative; z-index:2; overflow-y:auto; max-height:88dvh;">
         <div class="modal-header">
-          <h3><i class="fa-solid fa-folder-open" style="margin-right: 6px;"></i> จัดการหมวดหมู่สินค้า</h3>
-          <button class="modal-close" @click="showCatModal = false">✕</button>
+          <h3>
+            <i class="fa-solid fa-folder-open" style="margin-right: 8px;"></i>
+            จัดการหมวดหมู่สินค้า
+          </h3>
+          <button class="modal-close" @click="showCatModal = false" aria-label="ปิด">✕</button>
         </div>
-        <div class="modal-body">
-          <!-- Create Category Form -->
-          <div class="form-group">
-            <label class="form-label font-bold"><i class="fa-solid fa-plus" style="margin-right: 4px;"></i> เพิ่มหมวดหมู่ใหม่</label>
-            <input 
-              type="text" 
-              class="form-input" 
-              v-model="catForm.name" 
-              placeholder="เช่น ของหวาน, ทานเล่น" 
-              style="width: 100%;"
-            />
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: var(--space-lg);">
+          <!-- Form: Add or Edit Category -->
+          <div class="ck-cat-form-card">
+            <div class="ck-cat-form-title">
+              <i :class="editingCat ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-circle-plus'"></i>
+              <span>{{ editingCat ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่' }}</span>
+            </div>
+
+            <div class="ck-cat-form-fields">
+              <div class="form-group mb-0">
+                <label class="form-label text-xs font-bold">ชื่อหมวดหมู่ *</label>
+                <input 
+                  type="text" 
+                  class="form-input w-full" 
+                  v-model="catForm.name" 
+                  placeholder="เช่น ของหวาน, ทานเล่น" 
+                />
+              </div>
+            </div>
+
+            <div class="ck-cat-form-actions">
+              <button 
+                v-if="editingCat" 
+                type="button"
+                class="btn btn-secondary" 
+                @click="handleCancelEditCat"
+              >
+                ยกเลิก
+              </button>
+              <button 
+                type="button"
+                class="btn btn-primary" 
+                :disabled="!catForm.name || isSavingCat" 
+                @click="handleSaveCat"
+                style="flex: 1;"
+              >
+                <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin"></i>
+                <i v-else class="fa-solid fa-floppy-disk"></i>
+                <span>{{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'บันทึก' : 'เพิ่มหมวดหมู่') }}</span>
+              </button>
+            </div>
           </div>
 
-          <!-- List of Existing Categories -->
-          <div class="mt-xl">
-            <label class="form-label font-bold" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs); margin-bottom: var(--space-md);">
-              <i class="fa-solid fa-list-ul" style="margin-right: 4px;"></i> หมวดหมู่ปัจจุบัน ({{ categories.length }} รายการ)
-            </label>
-            
-            <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-xs);">
+          <!-- Existing Categories List -->
+          <div>
+            <div class="flex flex-between align-center mb-sm">
+              <span class="font-bold text-sm text-secondary">หมวดหมู่ทั้งหมด ({{ categories.length }})</span>
+              <span class="text-xs text-muted">แก้ไขหรือลบหมวดหมู่ได้</span>
+            </div>
+
+            <div class="ck-cat-list">
               <div 
                 v-for="cat in categories" 
                 :key="cat.id" 
-                class="flex flex-between align-center p-sm" 
-                style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md);"
+                class="ck-cat-row"
               >
-                <span class="font-semibold text-sm"><i class="fa-solid fa-folder" style="margin-right: 4px; color: var(--text-tertiary);"></i> {{ cat.name }}</span>
-                <button 
-                  class="btn-action btn-action-delete" 
-                  title="ลบหมวดหมู่"
-                  @click="handleDeleteCat(cat.id)"
-                >
-                  <i class="fa-solid fa-trash-can"></i> ลบ
-                </button>
+                <div style="min-width: 0;">
+                  <div class="font-bold text-sm text-primary-dark" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cat.name }}</div>
+                  <div class="text-xs text-secondary tabular-nums">{{ getCategoryMenuCount(cat.id) }} สินค้า</div>
+                </div>
+
+                <div class="flex align-center gap-xs flex-shrink-0">
+                  <button 
+                    type="button"
+                    class="ck-cat-action-btn edit" 
+                    title="แก้ไขหมวดหมู่"
+                    @click="handleEditCat(cat)"
+                  >
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button 
+                    type="button"
+                    class="ck-cat-action-btn delete" 
+                    title="ลบหมวดหมู่"
+                    @click="handleDeleteCat(cat.id)"
+                  >
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
               </div>
               <div v-if="categories.length === 0" class="text-center text-muted py-md text-xs">
                 ไม่มีหมวดหมู่สินค้า
               </div>
             </div>
-          </div>
-
-          <div class="flex gap-md mt-xl">
-            <button 
-              class="btn-modal btn-modal-primary" 
-              :disabled="!catForm.name || isSavingCat" 
-              @click="handleCreateCat"
-            >
-              <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingCat ? 'กำลังบันทึก...' : 'บันทึก' }}
-            </button>
           </div>
         </div>
       </div>
@@ -1089,9 +1125,26 @@ const handleDeleteItem = async (id) => {
 };
 
 // Modals Trigger
+const editingCat = ref(null);
+
+const getCategoryMenuCount = (catId) => {
+  return menuItems.value.filter(item => item.category_id === catId).length;
+};
+
 const openCatModal = () => {
+  editingCat.value = null;
   catForm.value.name = '';
   showCatModal.value = true;
+};
+
+const handleEditCat = (cat) => {
+  editingCat.value = cat;
+  catForm.value.name = cat.name;
+};
+
+const handleCancelEditCat = () => {
+  editingCat.value = null;
+  catForm.value.name = '';
 };
 
 const onSmlToggleChange = () => {
@@ -1220,21 +1273,32 @@ const handlePaste = (e) => {
 const isSavingCat = ref(false);
 const isSavingItem = ref(false);
 
-// Create new Category
-const handleCreateCat = async () => {
-  if (isSavingCat.value) return;
+// Create or Update Category
+const handleSaveCat = async () => {
+  if (isSavingCat.value || !catForm.value.name.trim()) return;
   isSavingCat.value = true;
   ui.showLoading();
   try {
-    const res = await api.menu.createCategory({ name: catForm.value.name });
-    if (res.success) {
-      store.addCategory(res.data || res);
-      ui.showToast(`เพิ่มหมวดหมู่ ${catForm.value.name} สำเร็จ`, 'success');
-      catForm.value.name = ''; // Clear input
+    const name = catForm.value.name.trim();
+    if (editingCat.value) {
+      const res = await api.menu.updateCategory(editingCat.value.id, { name });
+      if (res.success) {
+        store.updateCategory(res.data || res);
+        ui.showToast(`แก้ไขหมวดหมู่ ${name} สำเร็จ`, 'success');
+        editingCat.value = null;
+        catForm.value.name = '';
+      }
+    } else {
+      const res = await api.menu.createCategory({ name });
+      if (res.success) {
+        store.addCategory(res.data || res);
+        ui.showToast(`เพิ่มหมวดหมู่ ${name} สำเร็จ`, 'success');
+        catForm.value.name = '';
+      }
     }
   } catch (e) {
     console.error(e);
-    ui.showToast('เพิ่มหมวดหมู่ไม่สำเร็จ: ' + e.message, 'error');
+    ui.showToast((editingCat.value ? 'แก้ไขหมวดหมู่ไม่สำเร็จ: ' : 'เพิ่มหมวดหมู่ไม่สำเร็จ: ') + e.message, 'error');
   } finally {
     ui.hideLoading();
     isSavingCat.value = false;
