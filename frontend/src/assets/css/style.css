@@ -78,10 +78,10 @@
   --font-base: 1rem;
   --font-md: 1.15rem;
   --font-lg: 1.35rem;
-  --font-xl: var(--font-lg); /* Capped at --font-lg (1.35rem) to limit maximum sizing scale */
-  --font-2xl: var(--font-lg);
-  --font-3xl: var(--font-lg);
-  --font-4xl: var(--font-lg);
+  --font-xl: 1.5rem;
+  --font-2xl: 1.85rem;
+  --font-3xl: 2.2rem;
+  --font-4xl: 2.6rem;
   --font-weight-light: 300;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -1973,6 +1973,8 @@ select.form-input:focus {
     --font-base: 1.02rem;
     --font-md: 1.15rem;
     --font-lg: 1.32rem;
+    --font-xl: 1.45rem;
+    --font-2xl: 1.75rem;
   }
 }
 @media (max-width: 640px) {
@@ -1983,6 +1985,8 @@ select.form-input:focus {
     --font-base: 0.98rem;
     --font-md: 1.1rem;
     --font-lg: 1.25rem;
+    --font-xl: 1.35rem;
+    --font-2xl: 1.55rem;
   }
 }
 @media (max-width: 768px) {
