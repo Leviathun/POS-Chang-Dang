@@ -5,7 +5,7 @@
     <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
       <div class="flex align-center gap-md">
         <div class="header-icon-circle">
-          <i class="fa-solid fa-boxes-packing text-primary" style="font-size: 1.3rem;"></i>
+          <i class="fa-solid fa-boxes-packing text-primary" style="font-size: var(--font-lg);"></i>
         </div>
         <div>
           <h2 class="font-bold text-lg text-primary" style="margin: 0;">
@@ -221,7 +221,7 @@
                   @change="setCartQty(item, $event.target.value)"
                   @focus="$event.target.select()" 
                   class="form-input text-center font-bold qty-card-input" 
-                  style="flex: 1; height: 40px; padding: 2px; font-size: 0.95rem; border-radius: var(--radius-sm);" 
+                  style="flex: 1; height: 40px; padding: 2px; font-size: var(--font-sm); border-radius: var(--radius-sm);" 
                   title="พิมพ์จำนวนที่ต้องการเบิกได้ทันที"
                 />
                 <button class="btn-qty" :disabled="getCartQty(item.id) >= item.quantity" @click="increaseQty(getCartItem(item.id))" title="เพิ่ม">+</button>
@@ -365,7 +365,7 @@
         <div class="cart-info" @click="isCartDrawerOpen = !isCartDrawerOpen">
           <span class="cart-count">
             {{ totalCartQty }} รายการ
-            <i :class="isCartDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: 0.75rem; margin-left: 2px;"></i>
+            <i :class="isCartDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: var(--font-xxs); margin-left: 2px;"></i>
           </span>
           <span class="cart-total">฿{{ formatNumber(totalCartCost) }}</span>
         </div>
@@ -1104,7 +1104,7 @@ onMounted(() => {
   background-color: var(--primary, #8b0313);
   color: #ffffff;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: var(--font-xxs);
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
@@ -1196,7 +1196,7 @@ onMounted(() => {
   color: var(--text-tertiary);
   cursor: pointer;
   padding: 4px;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1352,7 +1352,7 @@ onMounted(() => {
 }
 
 .item-name-sub {
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
   white-space: nowrap;
@@ -1427,7 +1427,7 @@ onMounted(() => {
   background: none;
   border: none;
   padding: 4px;
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   transition: opacity var(--transition-base);
 }
 
@@ -1488,7 +1488,7 @@ onMounted(() => {
   justify-content: center;
   cursor: pointer;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: var(--font-base);
   color: var(--text-primary);
   transition: all var(--transition-base);
   padding: 0;
@@ -1513,7 +1513,7 @@ onMounted(() => {
 /* 48px Cart Submit Button */
 .btn-submit-requisition {
   height: 48px;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   font-weight: 700;
   border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(139, 3, 19, 0.2);
@@ -1559,7 +1559,7 @@ onMounted(() => {
 }
 
 .order-no-title {
-  font-size: 1.15rem;
+  font-size: var(--font-md);
   color: var(--primary);
   display: inline-flex;
   align-items: center;
@@ -1583,7 +1583,7 @@ onMounted(() => {
 }
 
 .order-total-amount {
-  font-size: 1.45rem;
+  font-size: var(--font-xl);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
