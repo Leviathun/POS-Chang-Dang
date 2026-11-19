@@ -101,7 +101,7 @@
                 <!-- Drag Handle -->
                 <div 
                   class="drag-handle" 
-                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: 1.2rem; color: var(--text-tertiary);"
+                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: var(--font-md); color: var(--text-tertiary);"
                   @touchstart="handleTouchStart(index, $event)"
                   @touchmove.prevent="handleTouchMove"
                   @touchend="handleTouchEnd"
@@ -114,7 +114,7 @@
                 <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
                   <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="mobile-menu-card-img" />
                   <div v-else class="mobile-menu-card-placeholder">
-                    <i class="fa-solid fa-box-open" style="font-size: 1.2rem; color: var(--text-tertiary);"></i>
+                    <i class="fa-solid fa-box-open" style="font-size: var(--font-md); color: var(--text-tertiary);"></i>
                   </div>
                 </div>
                 
@@ -270,7 +270,7 @@
           <div class="item-meta-box">
             <div class="item-meta-row flex flex-between align-center text-xs py-1">
               <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
-              <span class="font-bold text-primary item-cost-val" style="font-size: 1rem;">
+              <span class="font-bold text-primary item-cost-val" style="font-size: var(--font-base);">
                 ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
               </span>
             </div>
@@ -287,7 +287,7 @@
                   'text-warning': item.quantity > 0 && item.quantity <= item.min_stock_alert,
                   'text-success': item.quantity > item.min_stock_alert
                 }"
-                style="font-size: 1rem;"
+                style="font-size: var(--font-base);"
               >
                 {{ formatNumber(item.quantity) }} {{ item.unit }}
               </span>
@@ -508,7 +508,7 @@
               <div class="item-meta-box">
                 <div class="item-meta-row flex flex-between align-center text-xs py-1">
                   <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
-                  <span class="font-bold text-primary item-cost-val" style="font-size: 1rem;">
+                  <span class="font-bold text-primary item-cost-val" style="font-size: var(--font-base);">
                     ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
                   </span>
                 </div>
@@ -525,7 +525,7 @@
                       'text-warning': item.quantity > 0 && item.quantity <= (item.min_stock_alert || 5),
                       'text-success': item.quantity > (item.min_stock_alert || 5)
                     }"
-                    style="font-size: 1rem;"
+                    style="font-size: var(--font-base);"
                   >
                     <span class="stock-prefix">เหลือ </span>{{ formatNumber(item.quantity) }} {{ item.unit }}
                   </span>
@@ -587,7 +587,7 @@
             <!-- Target Branch Badge Card -->
             <div class="dispatch-branch-info-card flex align-center gap-md" style="background: rgba(139, 3, 19, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-md);">
               <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: 1.15rem;"></i>
+                <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: var(--font-md);"></i>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-xs text-secondary font-medium" style="margin-bottom: 2px;">สาขาที่จะตัดยอดเข้า:</div>
@@ -1614,7 +1614,7 @@
           <div class="card p-lg ledger-card">
           <div class="ledger-header flex flex-between align-center flex-wrap gap-md">
             <div class="flex align-center gap-xs">
-              <i class="fa-solid fa-clock-rotate-left text-primary" style="font-size: 1.15rem;"></i>
+              <i class="fa-solid fa-clock-rotate-left text-primary" style="font-size: var(--font-md);"></i>
               <span class="font-bold text-base text-main">ประวัติรายการเดินบัญชีกองกลาง</span>
             </div>
 
@@ -2327,7 +2327,7 @@
           <div class="card p-lg flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
             <div>
               <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+                <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i> 
                 <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.35;">
                   เปรียบเทียบ รายรับ vs รายจ่าย
                 </span>
@@ -2441,7 +2441,7 @@
                       </div>
                       <div 
                         class="font-bold my-xs" 
-                        style="font-size: 1.45rem; line-height: 1.2;" 
+                        style="font-size: var(--font-xl); line-height: 1.2;" 
                         :style="{ color: settlementData.net_profit < 0 ? 'var(--danger)' : (p.is_owner ? 'var(--primary)' : '#cc8000') }"
                       >
                         ฿{{ formatNumber(p.payout_amount) }}
@@ -2575,7 +2575,7 @@
                 <span class="summary-title">จำนวนครั้งที่จ่ายปันผล</span>
               </div>
               <div class="summary-value text-success">
-                {{ settlementData.payouts?.length || 0 }} <span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">ครั้ง</span>
+                {{ settlementData.payouts?.length || 0 }} <span style="font-size: var(--font-base); font-weight: normal; color: var(--text-secondary);">ครั้ง</span>
               </div>
               <div class="summary-sub-badges">
                 <span class="sub-badge">บันทึกสำเร็จทั้งหมด</span>
@@ -2600,7 +2600,7 @@
           <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
             <div class="card-title mb-lg flex flex-between align-center" style="border-bottom: 1px solid var(--border-color); padding-bottom: 14px; flex-wrap: wrap; gap: var(--space-sm);">
               <div class="flex align-start gap-xs">
-                <i class="fa-solid fa-file-invoice-dollar text-primary" style="margin-top: 3px; font-size: 1.2rem;"></i>
+                <i class="fa-solid fa-file-invoice-dollar text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i>
                 <div>
                   <div class="font-bold text-base" style="color: var(--text-primary); line-height: 1.35;">
                     ประวัติการจ่ายเงินปันผลจริง
@@ -5479,7 +5479,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--text-tertiary);
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   user-select: none;
 }
 
@@ -6074,7 +6074,7 @@ onUnmounted(() => {
 }
 
 .order-no-title {
-  font-size: 1.15rem;
+  font-size: var(--font-md);
   color: var(--primary);
   display: inline-flex;
   align-items: center;
@@ -6098,7 +6098,7 @@ onUnmounted(() => {
 }
 
 .order-total-amount {
-  font-size: 1.45rem;
+  font-size: var(--font-xl);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
@@ -6254,7 +6254,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   flex-shrink: 0;
 }
 
@@ -6366,13 +6366,13 @@ onUnmounted(() => {
 }
 
 .history-total-amount {
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
 
 .history-qty-value {
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -6565,12 +6565,12 @@ onUnmounted(() => {
 .empty-state-icon.empty-state-icon-sm {
   width: 48px;
   height: 48px;
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
   margin-bottom: 10px;
 }
 
 .empty-state-title {
-  font-size: 1.1rem;
+  font-size: var(--font-md);
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 6px;
@@ -6626,7 +6626,7 @@ onUnmounted(() => {
 }
 
 .summary-value {
-  font-size: 1.5rem;
+  font-size: var(--font-xl);
   font-weight: var(--font-weight-bold, 700);
   line-height: 1.2;
   margin-bottom: 8px;
@@ -6800,7 +6800,7 @@ onUnmounted(() => {
 }
 
 .modal-total-amount {
-  font-size: 1.35rem !important;
+  font-size: var(--font-lg) !important;
   font-weight: 800 !important;
   line-height: 1.1 !important;
   white-space: nowrap !important;
@@ -7326,7 +7326,7 @@ onUnmounted(() => {
   .history-qty-value {
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-    font-size: 1.2rem !important;
+    font-size: var(--font-md) !important;
   }
 
   .history-sub-cost {
@@ -7605,7 +7605,7 @@ onUnmounted(() => {
 .amount-danger-bold {
   color: var(--danger, #ad281e) !important;
   font-weight: 700 !important;
-  font-size: 1.65rem !important;
+  font-size: var(--font-2xl) !important;
   line-height: 1.2 !important;
   letter-spacing: -0.01em;
 }
@@ -7613,7 +7613,7 @@ onUnmounted(() => {
 .amount-danger-bold-table {
   color: var(--danger, #ad281e) !important;
   font-weight: 700 !important;
-  font-size: 1.15rem !important;
+  font-size: var(--font-md) !important;
 }
 
 /* Receivables Tab View Styling */
@@ -7651,7 +7651,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   flex-shrink: 0;
 }
 
@@ -7828,7 +7828,7 @@ onUnmounted(() => {
     margin-left: 0 !important;
   }
   .summary-value {
-    font-size: 1.35rem !important;
+    font-size: var(--font-lg) !important;
     margin-bottom: 2px !important;
   }
   .summary-caption {
@@ -7985,7 +7985,7 @@ onUnmounted(() => {
   justify-content: center;
   cursor: pointer;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: var(--font-base);
   color: var(--text-primary);
   transition: all var(--transition-base);
   padding: 0;
