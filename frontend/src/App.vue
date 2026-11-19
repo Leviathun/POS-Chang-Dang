@@ -361,7 +361,7 @@
               </div>
               <div class="option-info">
                 <div class="option-title">บริหารจัดการร้าน</div>
-                <div class="option-desc">บันทึกค่าใช้จ่าย, ตรวจสอบบิล, หุ้นส่วน & ปันผล</div>
+                <div class="option-desc">บันทึกรายจ่าย, ค่าแรงพนักงาน, รอบกะลิ้นชัก</div>
               </div>
               <i class="fa-solid fa-chevron-right option-arrow"></i>
             </div>
@@ -1238,6 +1238,7 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: all var(--transition-base);
+  min-height: 76px;
 }
 
 .sheet-option-card:active {
