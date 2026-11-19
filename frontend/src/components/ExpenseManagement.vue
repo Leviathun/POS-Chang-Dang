@@ -2,10 +2,10 @@
   <div class="expense-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation (Consistent with StaffManagement.vue) -->
-    <div class="category-tabs tab-category mb-lg flex gap-xs flex-wrap">
+    <div class="category-tabs mb-lg flex gap-xs flex-wrap">
       <button 
         type="button"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'form' }"
         @click="activeSubTab = 'form'"
       >
@@ -13,7 +13,7 @@
       </button>
       <button 
         type="button"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'list' }"
         @click="activeSubTab = 'list'"
       >
@@ -21,7 +21,7 @@
       </button>
       <button 
         type="button"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'analytics' }"
         @click="activeSubTab = 'analytics'"
       >
@@ -1361,10 +1361,10 @@ const topExpenses = computed(() => {
 const loadData = async () => {
   ledgerLoading.value = true;
   try {
-    const params = { status: 'completed', branch_id: props.branchId || '' };
+    const params = { status: 'completed', branch_id: props.branchId || '', include_items: 'false' };
     const expenseParams = { branch_id: props.branchId || '' };
     const guaranteeParams = { branch_id: props.branchId || '' };
-    const stockLogParams = { branch_id: props.branchId || '', limit: 500 };
+    const stockLogParams = { branch_id: props.branchId || '', reason: 'waste,staff_benefit', limit: 500 };
 
     if (activePeriodMode.value === 'daily') {
       params.date = activeDate.value;
@@ -1573,21 +1573,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 1. Sub-tab Navigation (Consistent with StaffManagement) */
-.category-tabs .btn {
-  font-size: var(--font-sm);
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast, 0.15s ease);
-}
-
-.category-tabs .btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  font-weight: var(--font-weight-bold, 700);
-  box-shadow: 0 4px 12px var(--primary-glow, rgba(139, 3, 19, 0.25));
-}
-
 /* 2. Step Section & Form Labels */
 .form-step-section {
   display: flex;

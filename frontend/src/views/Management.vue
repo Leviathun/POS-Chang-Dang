@@ -55,29 +55,26 @@
     </DatePeriodFilter>
 
     <!-- Main Navigation Tabs (Clean names without numbers) -->
-    <div class="category-tabs tab-category mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
       <button 
         v-if="isAdminUser"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': mainTab === 'staff' }"
         @click="mainTab = 'staff'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-users-gear"></i> จัดการพนักงาน & ค่าแรง
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': mainTab === 'expenses' }"
         @click="mainTab = 'expenses'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-wallet"></i> บันทึกรายจ่าย
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': mainTab === 'drawers' }"
         @click="mainTab = 'drawers'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-cash-register"></i> รอบกะ & ลิ้นชักเงิน
       </button>
@@ -211,18 +208,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-.category-tabs .btn {
-  font-size: var(--font-sm);
-  padding: 10px 18px;
-  border-radius: var(--radius-md);
-  transition: all 0.2s ease;
-}
-.category-tabs .btn.active {
-  background: var(--primary);
-  color: white;
-  font-weight: bold;
-  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.25);
 }
 @media (min-width: 769px) {
   #management-page > .card:first-child {

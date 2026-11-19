@@ -2,16 +2,16 @@
   <div id="reports-page" class="page-enter">
     
     <!-- Tab toggles placed at the very top, styled as category tabs (Matches Menu.vue style) -->
-    <div class="category-tabs tab-category mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'sales' }"
         @click="activeTab = 'sales'"
       >
         <i class="fa-solid fa-chart-column"></i> ยอดขาย
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'order_history' }"
         @click="activeTab = 'order_history'"
       >
@@ -19,7 +19,7 @@
       </button>
       <button 
         v-if="isAdminUser"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'top_menus' }"
         @click="activeTab = 'top_menus'"
       >
@@ -27,7 +27,7 @@
       </button>
       <button 
         v-if="isManagerOrAdminUser"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'activity_logs' }"
         @click="activeTab = 'activity_logs'"
       >
@@ -35,7 +35,7 @@
       </button>
       <button 
         v-if="isManagerOrAdminUser"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'stock_history' }"
         @click="activeTab = 'stock_history'"
       >
@@ -783,7 +783,7 @@
             <span class="text-secondary font-bold text-sm"><i class="fa-solid fa-tags"></i> บันทึกด่วน:</span>
             <button 
               type="button" 
-              class="btn btn-secondary btn-sm preset-btn" 
+              class="filter-pill" 
               :class="{ 'active': expenseForm.note === 'แม็คโคร' }"
               @click="expenseForm.note = 'แม็คโคร'"
             >
@@ -791,7 +791,7 @@
             </button>
             <button 
               type="button" 
-              class="btn btn-secondary btn-sm preset-btn" 
+              class="filter-pill" 
               :class="{ 'active': expenseForm.note === 'เลี้ยงลูกน้อง' }"
               @click="expenseForm.note = 'เลี้ยงลูกน้อง'"
             >
@@ -3921,7 +3921,7 @@ const loadMonthlyLedger = async () => {
   }
   ledgerLoading.value = true;
   try {
-    const params = { status: 'completed', branch_id: selectedBranchId.value };
+    const params = { status: 'completed', branch_id: selectedBranchId.value, include_items: 'false' };
 
     if (periodMode.value === 'daily') {
       params.date = selectedDate.value;

@@ -3,12 +3,12 @@
     <div class="flex flex-col gap-md">
       <!-- Period Mode Tabs -->
       <div
-        class="flex gap-xs period-tabs flex-wrap"
+        class="flex gap-xs flex-wrap"
         style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;"
       >
         <button
           type="button"
-          class="btn btn-secondary btn-sm"
+          class="filter-pill"
           :class="{ active: periodMode === 'daily' }"
           @click="selectMode('daily')"
         >
@@ -16,7 +16,7 @@
         </button>
         <button
           type="button"
-          class="btn btn-secondary btn-sm"
+          class="filter-pill"
           :class="{ active: periodMode === 'monthly' }"
           @click="selectMode('monthly')"
         >
@@ -24,7 +24,7 @@
         </button>
         <button
           type="button"
-          class="btn btn-secondary btn-sm"
+          class="filter-pill"
           :class="{ active: periodMode === 'yearly' }"
           @click="selectMode('yearly')"
         >

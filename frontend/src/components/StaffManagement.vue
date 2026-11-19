@@ -2,53 +2,47 @@
   <div class="staff-management-wrapper card p-md" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation for Staff Management -->
-    <div class="category-tabs tab-category mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'employees' }"
         @click="activeSubTab = 'employees'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-users"></i> รายชื่อ & ค่าจ้าง
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'calendar' }"
         @click="activeSubTab = 'calendar'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-calendar-days"></i> ปฏิทินรายบุคคล
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'attendance' }"
         @click="activeSubTab = 'attendance'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-calendar-check"></i> บันทึกเวลา & การลา
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'event_ot' }"
         @click="activeSubTab = 'event_ot'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-tags"></i> OT งานพิเศษ
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'advances' }"
         @click="activeSubTab = 'advances'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-hand-holding-dollar"></i> เบิกเงินล่วงหน้า
       </button>
       <button 
         v-if="isAdminUser"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'payroll' }"
         @click="activeSubTab = 'payroll'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-file-invoice-dollar"></i> คำนวณ & จ่ายเงินเดือน
       </button>
@@ -3927,16 +3921,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.category-tabs .btn {
-  font-size: var(--font-sm);
-  padding: 8px 14px;
-  border-radius: var(--radius-md);
-}
-.category-tabs .btn.active {
-  background: var(--primary);
-  color: white;
-  font-weight: bold;
-}
 .capsule-badge {
   display: inline-flex;
   align-items: center;

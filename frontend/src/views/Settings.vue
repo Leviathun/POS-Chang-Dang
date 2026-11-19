@@ -2,9 +2,9 @@
   <div id="settings-page" class="page-enter">
     
     <!-- Tab toggles inside Settings page -->
-    <div class="category-tabs tab-category mb-lg">
+    <div class="category-tabs mb-lg">
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'shop' }"
         @click="activeTab = 'shop'"
       >
@@ -12,7 +12,7 @@
       </button>
       <button 
         v-if="currentUser?.role === 'admin'"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'users' }"
         @click="activeTab = 'users'"
       >
@@ -20,7 +20,7 @@
       </button>
       <button 
         v-if="currentUser?.role === 'admin'"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'branches' }"
         @click="activeTab = 'branches'"
       >
@@ -28,7 +28,7 @@
       </button>
       <button 
         v-if="false"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'presets' }"
         @click="activeTab = 'presets'"
       >
@@ -36,14 +36,14 @@
       </button>
       <button 
         v-if="currentUser?.role === 'admin'"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'backup' }"
         @click="activeTab = 'backup'"
       >
         <i class="fa-solid fa-database"></i> สำรอง & จัดเก็บข้อมูล
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'printer' }"
         @click="activeTab = 'printer'"
       >
@@ -874,9 +874,9 @@
               </p>
             </div>
             <button 
-              class="btn btn-secondary w-full" 
+              class="btn btn-primary w-full" 
               @click="downloadExcelSummary"
-              style="border-color: var(--success, #2a9d8f); color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
+              style="background: var(--success, #2a9d8f); border-color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
             >
               <i class="fa-solid fa-file-excel"></i> ดาวน์โหลดรายงาน Excel
             </button>
@@ -1132,12 +1132,12 @@
 
         <!-- Testing Buttons -->
         <div class="flex gap-md printer-btn-container" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
-          <button class="btn btn-secondary" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+          <button class="btn btn-primary" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingPrint" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-file-invoice"></i>
             {{ isTestingPrint ? 'กำลังทดสอบ...' : 'ทดสอบพิมพ์ใบเสร็จ' }}
           </button>
-          <button class="btn btn-secondary" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+          <button class="btn btn-primary" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingKick" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-key"></i>
             {{ isTestingKick ? 'กำลังทดสอบ...' : 'ทดสอบเปิดลิ้นชัก' }}
