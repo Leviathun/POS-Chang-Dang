@@ -160,11 +160,11 @@
               <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
                 {{ displayedDailyReport.all_orders }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">บิลทั้งหมด</small>
               </span>
-              <div class="flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
+              <div class="stat-sub-meta flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
                 <span style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                   <i class="fa-solid fa-circle-check" style="font-size: 0.7rem;"></i> ชำระแล้ว {{ displayedDailyReport.total_orders }} บิล
                 </span>
-                <span style="color: var(--border-color-light);">|</span>
+                <span class="stat-sub-sep" style="color: var(--border-color-light);">|</span>
                 <span style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                   <i class="fa-solid fa-ban" style="font-size: 0.7rem;"></i> ยกเลิก {{ displayedDailyReport.cancelled_orders }} บิล
                 </span>
@@ -203,9 +203,9 @@
                 </div>
               </div>
               <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
-              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="flex align-center text-xs tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 5px; margin-top: 4px; font-size: 0.78rem;">
+              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="stat-sub-meta flex align-center text-xs tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 5px; margin-top: 4px; font-size: 0.78rem;">
                 <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
-                <span style="color: var(--border-color-light);">|</span>
+                <span class="stat-sub-sep" style="color: var(--border-color-light);">|</span>
                 <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
                   <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.72rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
                 </span>
@@ -5322,12 +5322,28 @@ select.reports-filter-control,
 /* Clean 3-Metric Stats Grid (Pure White, No Cream) */
 .sales-clean-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   background: #ffffff;
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: var(--space-md) var(--space-lg);
   gap: var(--space-md);
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .sales-clean-stat {
+    justify-content: flex-start !important;
+    min-width: 0;
+  }
+  .sales-clean-stat .stat-sub-meta {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+    white-space: normal !important;
+  }
+  .sales-clean-stat .stat-sub-sep {
+    display: none !important;
+  }
 }
 @media (max-width: 640px) {
   .top-menus-period-sub {
