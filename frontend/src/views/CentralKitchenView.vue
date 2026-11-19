@@ -298,7 +298,7 @@
                 <i class="fa-solid fa-arrows-rotate text-primary"></i>
                 <span>แปลงหน่วย:</span>
               </span>
-              <span class="font-bold text-primary" style="font-size: 0.85rem;">
+              <span class="font-bold text-primary item-pack-val" style="font-size: var(--font-sm); white-space: nowrap;">
                 1 {{ item.unit }} = {{ item.pack_size }} ชิ้น
               </span>
             </div>
@@ -545,7 +545,7 @@
                     @change="setDispatchCartQty(item, $event.target.value)"
                     @focus="$event.target.select()" 
                     class="form-input text-center font-bold qty-card-input" 
-                    style="flex: 1; height: 36px; padding: 2px; font-size: 0.95rem; border-radius: var(--radius-sm);" 
+                    style="flex: 1; height: 36px; padding: 2px; font-size: var(--font-sm); border-radius: var(--radius-sm);" 
                     title="พิมพ์จำนวนที่ต้องการจ่ายได้ทันที"
                   />
                   <button class="btn-qty" :disabled="getDispatchCartQty(item.id) >= item.quantity" @click="increaseDispatchQty(getDispatchCartItem(item.id))" title="เพิ่มจำนวน">+</button>
@@ -591,7 +591,7 @@
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-xs text-secondary font-medium" style="margin-bottom: 2px;">สาขาที่จะตัดยอดเข้า:</div>
-                <div class="font-bold text-sm text-primary truncate" style="font-size: 0.95rem;">
+                <div class="font-bold text-sm text-primary truncate" style="font-size: var(--font-sm);">
                   {{ selectedDispatchBranchName || 'ยังไม่ได้เลือกสาขา' }}
                 </div>
               </div>
@@ -701,7 +701,7 @@
           <div class="cart-info" @click="isDispatchMobileDrawerOpen = !isDispatchMobileDrawerOpen">
             <span class="cart-count">
               {{ totalDispatchQty }} รายการ
-              <i :class="isDispatchMobileDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: 0.75rem; margin-left: 2px;"></i>
+              <i :class="isDispatchMobileDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: var(--font-xxs); margin-left: 2px;"></i>
             </span>
             <span class="cart-total">฿{{ formatNumber(totalDispatchCost) }}</span>
           </div>
@@ -739,8 +739,8 @@
             <div class="cart-item-info">
               <div class="cart-item-name">{{ getItemNameParts(c.item_name).main }}</div>
               <div class="cart-item-price">
-                ฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}
-                <span v-if="c.pack_size > 1" class="text-primary font-semibold"> (เติม {{ c.quantity * c.pack_size }} ชิ้น)</span>
+                <div>฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}</div>
+                <div v-if="c.pack_size > 1" class="text-primary font-semibold" style="margin-top: 2px;">(เติม {{ c.quantity * c.pack_size }} ชิ้น)</div>
               </div>
             </div>
             <div class="cart-item-qty">
@@ -1869,18 +1869,6 @@
                 <span class="history-tab-count">{{ receivablesBreakdown?.total_reimbursed_count || 0 }}</span>
               </button>
             </div>
-
-            <!-- Refresh Button -->
-            <button 
-              type="button" 
-              class="btn btn-secondary btn-sm" 
-              :disabled="isLoadingReceivables"
-              @click="loadReceivablesBreakdown"
-              title="รีเฟรชข้อมูล"
-            >
-              <i class="fa-solid fa-arrows-rotate mr-1" :class="{ 'fa-spin': isLoadingReceivables }"></i>
-              <span>รีเฟรช</span>
-            </button>
           </div>
 
           <!-- Overview Banner Card -->
@@ -2320,7 +2308,7 @@
               <span 
                 class="badge font-bold" 
                 :class="settlementData.net_profit >= 0 ? 'badge-success' : 'badge-danger'" 
-                style="font-size: 10px; padding: 2px 7px; border-radius: var(--radius-sm); margin-left: auto;"
+                style="font-size: var(--font-xxs); padding: 2px 7px; border-radius: var(--radius-sm); margin-left: auto;"
               >
                 {{ settlementData.net_profit >= 0 ? 'กำไรสุทธิ' : 'ขาดทุนสุทธิ' }}
               </span>
@@ -3025,10 +3013,10 @@
                   </span>
                 </span>
               </label>
-              <span v-if="itemForm.linked_menu_item_name" class="badge badge-success text-2xs" style="font-size: 11px; padding: 2px 8px; flex-shrink: 0;">
+              <span v-if="itemForm.linked_menu_item_name" class="badge badge-success text-2xs" style="font-size: var(--font-xxs); padding: 2px 8px; flex-shrink: 0;">
                 <i class="fa-solid fa-check"></i> ผูกแล้ว
               </span>
-              <span v-else class="badge badge-secondary text-2xs" style="font-size: 11px; padding: 2px 8px; flex-shrink: 0;">
+              <span v-else class="badge badge-secondary text-2xs" style="font-size: var(--font-xxs); padding: 2px 8px; flex-shrink: 0;">
                 ไม่ผูก
               </span>
             </div>
@@ -5538,7 +5526,7 @@ onUnmounted(() => {
 }
 
 .mobile-menu-card-name {
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   font-weight: bold;
   color: var(--text-primary);
   line-height: 1.3;
@@ -5559,7 +5547,7 @@ onUnmounted(() => {
 /* POS Menu Stock Linking Styles */
 .custom-select-group-header {
   padding: 6px 14px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 700;
   color: var(--text-secondary, #718096);
   background: rgba(0, 0, 0, 0.04);
@@ -5615,7 +5603,7 @@ onUnmounted(() => {
 }
 
 .btn-stock-choice-sub {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   color: var(--text-secondary, #718096);
   line-height: 1.3;
 }
@@ -5637,7 +5625,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: 700;
   color: var(--text-primary, #1f2937);
   margin-bottom: 10px;
@@ -5683,7 +5671,7 @@ onUnmounted(() => {
   border: 1px solid rgba(30, 144, 255, 0.2);
   border-radius: 8px;
   color: #1e5bb8;
-  font-size: 12px;
+  font-size: var(--font-xs);
   line-height: 1.4;
   margin-top: 10px;
 }
@@ -5705,13 +5693,29 @@ onUnmounted(() => {
     padding: 12px 10px !important;
   }
   .btn-stock-choice-title {
-    font-size: 14px !important;
+    font-size: var(--font-sm) !important;
   }
   .btn-stock-choice-sub {
-    font-size: 10px !important;
+    font-size: var(--font-xxs) !important;
   }
 }
 
+@media (min-width: 641px) and (max-width: 1023px) {
+  .grid-cards { gap: 12px !important; }
+  .item-card { padding: 12px !important; }
+  .item-img-container { height: 170px !important; margin-bottom: 8px !important; }
+  .card-badge-category { font-size: var(--font-xs) !important; padding: 3px 10px !important; }
+  .card-badge-status { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: var(--font-xs) !important; }
+  .item-name, .item-name-main { font-size: var(--font-md) !important; }
+  .item-meta-label { font-size: var(--font-sm) !important; }
+}
+@media (max-width: 640px) {
+  .item-img-container { height: 100px !important; }
+  .item-name, .item-name-main { font-size: var(--font-sm) !important; }
+  .item-meta-label, .item-unit-slash { font-size: var(--font-xxs) !important; }
+  .item-cost-val, .item-stock-val { font-size: var(--font-sm) !important; white-space: nowrap !important; }
+  .item-pack-val { font-size: var(--font-xxs) !important; white-space: nowrap !important; }
+}
 @media (min-width: 769px) {
   .mobile-only {
     display: none !important;
@@ -5779,7 +5783,7 @@ onUnmounted(() => {
 }
 
 .card-badge-category {
-  font-size: 11.5px !important;
+  font-size: var(--font-xs) !important;
   padding: 3px 10px !important;
   border-radius: var(--radius-full) !important;
   background: var(--bg-secondary) !important;
@@ -5795,7 +5799,7 @@ onUnmounted(() => {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 12px !important;
+  font-size: var(--font-xs) !important;
   padding: 0 !important;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -5830,9 +5834,9 @@ onUnmounted(() => {
 }
 
 .item-name {
-  font-size: 0.92rem;
+  font-size: var(--font-base);
   line-height: 1.35;
-  min-height: 42px;
+  min-height: unset;
   color: var(--text-primary);
   margin-bottom: var(--space-xs);
   width: 100%;
@@ -5845,7 +5849,7 @@ onUnmounted(() => {
 }
 
 .item-name-sub {
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
   white-space: nowrap;
@@ -5992,7 +5996,7 @@ onUnmounted(() => {
 .order-tab-count {
   padding: 2px 8px;
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 700;
   line-height: 1;
 }
@@ -6027,7 +6031,7 @@ onUnmounted(() => {
 }
 
 .order-branch-label i {
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
 }
 
 .order-branch-select {
@@ -6154,7 +6158,7 @@ onUnmounted(() => {
   border-radius: var(--radius-full);
   background: rgba(139, 3, 19, 0.07);
   color: var(--primary);
-  font-size: 13px;
+  font-size: var(--font-xs);
 }
 
 .order-notes-box {
@@ -6206,7 +6210,7 @@ onUnmounted(() => {
   margin-left: 2px;
   padding: 2px 8px;
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 700;
   line-height: 1;
 }
@@ -6324,7 +6328,7 @@ onUnmounted(() => {
   gap: 4px;
   color: var(--primary);
   font-weight: var(--font-weight-bold);
-  font-size: 12px;
+  font-size: var(--font-xs);
   white-space: nowrap;
   text-align: right;
   min-width: 80px;
@@ -6410,7 +6414,7 @@ onUnmounted(() => {
 }
 
 .summary-caption {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   color: var(--text-secondary);
   line-height: 1.4;
   margin-top: 4px;
@@ -6459,7 +6463,7 @@ onUnmounted(() => {
 }
 
 .finance-tab-count {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--radius-full);
@@ -6635,7 +6639,7 @@ onUnmounted(() => {
 }
 
 .sub-badge {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   background: rgba(139, 3, 19, 0.04);
   color: var(--text-secondary);
   padding: 2px 8px;
@@ -6651,7 +6655,7 @@ onUnmounted(() => {
 }
 
 .summary-formula-caption {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   color: var(--text-tertiary);
   font-style: italic;
 }
@@ -6742,7 +6746,7 @@ onUnmounted(() => {
 }
 
 .modal-item-summary-label {
-  font-size: 13px;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
   flex-shrink: 0;
@@ -6759,7 +6763,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   border-top: 1px dashed rgba(139, 3, 19, 0.12);
   padding-top: 6px;
@@ -6786,7 +6790,7 @@ onUnmounted(() => {
 }
 
 .modal-total-label {
-  font-size: 13px !important;
+  font-size: var(--font-xs) !important;
   font-weight: 700 !important;
   color: var(--text-secondary) !important;
   display: inline-flex !important;
@@ -6881,7 +6885,7 @@ onUnmounted(() => {
     align-items: center !important;
     justify-content: center !important;
     gap: 4px !important;
-    font-size: 0.84rem !important;
+    font-size: var(--font-xs) !important;
     font-weight: bold !important;
     padding: 0 6px !important;
     box-sizing: border-box !important;
@@ -6992,7 +6996,7 @@ onUnmounted(() => {
   }
 
   .card-badge-category {
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     padding: 2px 6px !important;
     max-width: calc(100% - 26px) !important;
     min-width: 0 !important;
@@ -7010,7 +7014,7 @@ onUnmounted(() => {
     width: 20px !important;
     height: 20px !important;
     min-width: 20px !important;
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     border-radius: 50% !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -7021,7 +7025,7 @@ onUnmounted(() => {
 
   /* 2. Soft Cream Image Box */
   .item-img-container {
-    height: 95px !important;
+    height: 115px !important;
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -7037,9 +7041,9 @@ onUnmounted(() => {
 
   /* 3. 2-Line Name Block */
   .item-name {
-    font-size: 0.82rem !important;
+    font-size: var(--font-base) !important;
     line-height: 1.3 !important;
-    min-height: 36px !important;
+    min-height: unset !important;
     margin-bottom: 2px !important;
     text-align: left !important;
     display: flex !important;
@@ -7053,7 +7057,7 @@ onUnmounted(() => {
   }
 
   .item-name-main {
-    font-size: 0.82rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -7068,7 +7072,7 @@ onUnmounted(() => {
 
   .item-name-sub {
     display: block !important;
-    font-size: 0.7rem !important;
+    font-size: var(--font-xxs) !important;
     color: var(--text-secondary) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -7110,7 +7114,7 @@ onUnmounted(() => {
   .item-meta-label {
     display: inline-flex !important;
     align-items: center !important;
-    font-size: 10.5px !important;
+    font-size: var(--font-xs) !important;
     color: var(--text-secondary) !important;
     font-weight: 500 !important;
     white-space: nowrap !important;
@@ -7119,11 +7123,11 @@ onUnmounted(() => {
 
   .item-unit-slash {
     display: inline !important;
-    font-size: 10px !important;
+    font-size: var(--font-xxs) !important;
   }
 
   .item-cost-val {
-    font-size: 0.88rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     color: var(--text-primary) !important;
     white-space: nowrap !important;
@@ -7131,7 +7135,7 @@ onUnmounted(() => {
   }
 
   .item-stock-val {
-    font-size: 0.88rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
@@ -7149,7 +7153,7 @@ onUnmounted(() => {
   .btn-restock-main,
   .btn-adjust-main {
     height: 36px !important;
-    font-size: 11.5px !important;
+    font-size: var(--font-xs) !important;
     padding: 0 6px !important;
     border-radius: var(--radius-sm) !important;
     display: flex !important;
@@ -7185,7 +7189,7 @@ onUnmounted(() => {
 
   .btn-card-sub {
     height: 32px !important;
-    font-size: 11px !important;
+    font-size: var(--font-xxs) !important;
     padding: 0 4px !important;
     border-radius: var(--radius-sm) !important;
     display: flex !important;
@@ -7289,13 +7293,13 @@ onUnmounted(() => {
   }
 
   .history-item-chip-name {
-    font-size: 12px !important;
+    font-size: var(--font-xs) !important;
     line-height: 1.3 !important;
   }
 
   .history-item-chip-qty {
     min-width: 76px !important;
-    font-size: 11.5px !important;
+    font-size: var(--font-xs) !important;
     gap: 3px !important;
   }
 
@@ -7328,7 +7332,7 @@ onUnmounted(() => {
   .history-sub-cost {
     text-align: right !important;
     line-height: 1.35 !important;
-    font-size: 11px !important;
+    font-size: var(--font-xxs) !important;
   }
 
   /* Finance Tab Responsive */
@@ -7383,7 +7387,7 @@ onUnmounted(() => {
   .btn-payout-header {
     height: 40px !important;
     padding: 0 14px !important;
-    font-size: 13px !important;
+    font-size: var(--font-xs) !important;
   }
 }
 
@@ -7481,7 +7485,7 @@ onUnmounted(() => {
   gap: 5px;
   color: var(--primary, #8b0313);
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   margin-top: 8px;
   opacity: 0.9;
   transition: opacity 0.15s ease;
@@ -7493,7 +7497,7 @@ onUnmounted(() => {
 }
 
 .tab-count-pill {
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   padding: 2px 8px;
   border-radius: var(--radius-full);
   background: rgba(0, 0, 0, 0.08);
@@ -7758,7 +7762,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 8px 12px;
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   width: 100%;
   box-sizing: border-box;
 }
@@ -7812,13 +7816,13 @@ onUnmounted(() => {
     width: 100% !important;
   }
   .summary-title {
-    font-size: 0.78rem !important;
+    font-size: var(--font-xxs) !important;
     line-height: 1.35 !important;
     word-break: keep-all !important;
     white-space: normal !important;
   }
   .summary-card-header .badge {
-    font-size: 0.65rem !important;
+    font-size: var(--font-xxs) !important;
     padding: 2px 6px !important;
     align-self: flex-start !important;
     margin-left: 0 !important;
@@ -7831,7 +7835,7 @@ onUnmounted(() => {
     display: none !important;
   }
   .card-click-hint {
-    font-size: 0.68rem !important;
+    font-size: var(--font-xxs) !important;
     margin-top: 4px !important;
   }
 
@@ -7923,7 +7927,7 @@ onUnmounted(() => {
   background: none;
   border: none;
   padding: 4px;
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   transition: opacity var(--transition-base);
 }
 
@@ -8000,7 +8004,7 @@ onUnmounted(() => {
 
 .btn-submit-requisition {
   height: 48px;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   font-weight: 700;
   border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(139, 3, 19, 0.2);
@@ -8034,7 +8038,7 @@ onUnmounted(() => {
   height: 26px;
   background: var(--primary, #8b0313);
   color: #ffffff;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: 700;
   border-radius: 50%;
   align-items: center;
@@ -8160,7 +8164,7 @@ onUnmounted(() => {
   }
 
   .card-badge-category {
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     padding: 2px 6px !important;
     max-width: calc(100% - 26px) !important;
     white-space: nowrap !important;
@@ -8171,12 +8175,12 @@ onUnmounted(() => {
   .card-badge-status {
     width: 20px !important;
     height: 20px !important;
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     padding: 0 !important;
   }
 
   .item-img-container {
-    height: 95px !important;
+    height: 115px !important;
     width: 100% !important;
     margin-bottom: 6px !important;
     border-radius: var(--radius-md) !important;
@@ -8184,7 +8188,7 @@ onUnmounted(() => {
   }
 
   .item-name {
-    font-size: 13px !important;
+    font-size: var(--font-base) !important;
     line-height: 1.25 !important;
     margin-bottom: 4px !important;
   }
@@ -8195,11 +8199,11 @@ onUnmounted(() => {
 
   .item-meta-row {
     padding: 1px 0 !important;
-    font-size: 11px !important;
+    font-size: var(--font-xs) !important;
   }
 
   .item-cost-val, .item-stock-val {
-    font-size: 0.9rem !important;
+    font-size: var(--font-base) !important;
   }
 
   .stock-prefix {
@@ -8219,7 +8223,7 @@ onUnmounted(() => {
   .btn-adjust-main {
     height: 34px !important;
     min-height: 34px !important;
-    font-size: 11px !important;
+    font-size: var(--font-xs) !important;
     font-weight: 700 !important;
     padding: 0 6px !important;
     border-radius: var(--radius-md) !important;
@@ -8239,7 +8243,7 @@ onUnmounted(() => {
   .btn-card-sub {
     height: 30px !important;
     min-height: 30px !important;
-    font-size: 10px !important;
+    font-size: var(--font-xxs) !important;
     font-weight: 600 !important;
     padding: 0 4px !important;
     border-radius: var(--radius-sm) !important;
@@ -8264,7 +8268,7 @@ onUnmounted(() => {
     height: 24px;
     background: var(--primary, #8b0313);
     color: #ffffff;
-    font-size: 12px;
+    font-size: var(--font-xs);
     font-weight: 700;
     border-radius: 50%;
     align-items: center;
@@ -8293,7 +8297,7 @@ onUnmounted(() => {
   border-radius: 999px;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8318,7 +8322,7 @@ onUnmounted(() => {
   border-left: 3px solid var(--primary);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 400;
   line-height: 1.6;
   box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14);
@@ -8367,7 +8371,7 @@ onUnmounted(() => {
 }
 /* --- Push Dispatch & Catalog UI Polish --- */
 .dispatch-toolbar-card h3 {
-  font-size: var(--font-lg);
+  font-size: var(--font-base);
 }
 
 .filter-bar .category-tabs {
@@ -8403,6 +8407,22 @@ onUnmounted(() => {
   min-height: 44px;
 }
 
+@media (min-width: 641px) and (max-width: 1023px) {
+  .grid-cards { gap: 12px !important; }
+  .item-card { padding: 12px !important; }
+  .item-img-container { height: 170px !important; margin-bottom: 8px !important; }
+  .card-badge-category { font-size: var(--font-xs) !important; padding: 3px 10px !important; }
+  .card-badge-status { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: var(--font-xs) !important; }
+  .item-name, .item-name-main { font-size: var(--font-md) !important; }
+  .item-meta-label { font-size: var(--font-sm) !important; }
+}
+@media (max-width: 640px) {
+  .item-img-container { height: 100px !important; }
+  .item-name, .item-name-main { font-size: var(--font-sm) !important; }
+  .item-meta-label, .item-unit-slash { font-size: var(--font-xxs) !important; }
+  .item-cost-val, .item-stock-val { font-size: var(--font-sm) !important; white-space: nowrap !important; }
+  .item-pack-val { font-size: var(--font-xxs) !important; white-space: nowrap !important; }
+}
 @media (min-width: 769px) {
   .dispatch-toolbar-card {
     padding: var(--space-xl) !important;
