@@ -24,16 +24,6 @@
         <router-link to="/stock" class="btn btn-primary btn-bulk-back">
           <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
         </router-link>
-        <button 
-          v-if="hasPendingCooks"
-          class="btn btn-primary btn-cook-save-all"
-          :disabled="isSaving"
-          @click="openBatchCookModal"
-        >
-          <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-fire-flame-curved"></i>
-          <span class="btn-text">ปรุงทั้งหมด ({{ pendingCookCount }})</span>
-        </button>
       </div>
     </div>
 
@@ -73,7 +63,7 @@
       </div>
 
       <!-- Quick Category Filter Pills -->
-      <div class="flex align-center gap-xs flex-wrap cook-filter-pills mt-md">
+      <div class="flex align-center gap-xs flex-wrap mt-md">
         <button 
           v-for="cat in filterCategories" 
           :key="cat.id" 
@@ -81,7 +71,7 @@
           :class="{ 'active': activeCategory === cat.id }"
           @click="activeCategory = cat.id"
         >
-          <i :class="cat.icon" style="margin-right: 4px;"></i> {{ cat.label }}
+          {{ cat.label }}
         </button>
       </div>
     </div>
@@ -262,7 +252,7 @@
     <!-- Standard Global CSS Modal: Red Header with White Text and White Circular Close Button -->
     <div v-if="showModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="closeModal"></div>
-      <div class="modal-content modal-center w-full max-w-md cook-white-modal" style="position:relative; z-index:2002; background: #ffffff !important; overflow: hidden;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:88dvh;">
         
         <!-- Standard Red Header matching global CSS -->
         <div class="modal-header">
@@ -270,13 +260,13 @@
             <i :class="modalMode === 'batch' ? 'fa-solid fa-fire-flame-curved' : getCookActionIcon(activeModalItem?.name)"></i>
             <span>{{ modalMode === 'batch' ? 'ยืนยันการปรุงทั้งหมด' : `ยืนยัน${getCookActionLabel(activeModalItem?.name)}สินค้า` }}</span>
           </h3>
-          <button class="modal-close" @click="closeModal">✕</button>
+          <button class="modal-close" @click="closeModal" aria-label="ปิด">✕</button>
         </div>
 
-        <div class="modal-body p-md" style="background: #ffffff !important;">
+        <div class="modal-body">
           <!-- Single Item Mode -->
           <div v-if="modalMode === 'single' && activeModalItem">
-            <div class="card p-md mb-md text-center modal-preview-card" style="background: #ffffff !important; border: 1px solid var(--border-color);">
+            <div class="card p-md mb-md text-center modal-preview-card">
               <div class="font-bold text-lg mb-xs">{{ activeModalItem.name }}</div>
               <div class="text-sm text-secondary">
                 ต้องการ{{ getCookActionLabel(activeModalItem.name) }}จำนวน
@@ -311,8 +301,8 @@
             </div>
 
             <!-- Note Input -->
-            <div class="form-group mb-md">
-              <label class="form-label font-bold text-sm">บันทึกช่วยจำ (ไม่บังคับ)</label>
+            <div class="form-group">
+              <label class="form-label font-bold">บันทึกช่วยจำ (ไม่บังคับ)</label>
               <input 
                 type="text" 
                 class="form-input" 
@@ -325,7 +315,7 @@
           <!-- Batch Mode: Highly Readable Structured Table -->
           <div v-else-if="modalMode === 'batch'">
             <!-- Summary Banner -->
-            <div class="batch-summary-header flex flex-between align-center mb-md" style="background: rgba(139, 3, 19, 0.04); border-radius: var(--radius-md); border: 1px solid rgba(139, 3, 19, 0.12); padding: 14px 18px;">
+            <div class="batch-summary-header flex flex-between align-center mb-md" style="background: #ffffff; border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 14px 18px;">
               <div>
                 <div class="text-xs text-muted mb-xs">จำนวนรายการที่เลือก</div>
                 <div class="font-bold text-base text-primary">{{ pendingCookCount }} เมนู</div>
@@ -339,10 +329,10 @@
             </div>
 
             <!-- Clean Structured Table -->
-            <div class="batch-table-container mb-md" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; max-height: 240px; overflow-y: auto;">
-              <table class="w-full text-sm" style="border-collapse: collapse;">
+            <div class="batch-table-container mb-lg" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; max-height: 240px; overflow-y: auto; background: #ffffff;">
+              <table class="w-full text-sm tabular-nums" style="border-collapse: collapse;">
                 <thead>
-                  <tr style="background: #f9f9f9; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: var(--font-xs);">
+                  <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: var(--font-xs);">
                     <th style="padding: 10px 12px; text-align: left; width: 45%;">เมนู</th>
                     <th style="padding: 10px 12px; text-align: center; width: 25%;">ประเภท</th>
                     <th style="padding: 10px 12px; text-align: right; width: 30%;">จำนวน</th>
@@ -372,15 +362,15 @@
             </div>
 
             <!-- Batch Linkage Deduction Hints (Requested by user) -->
-            <div v-if="getBatchLinkageNotices.length > 0" class="mb-md flex flex-col gap-xs" style="background: rgba(139, 3, 19, 0.04); border-left: 3px solid var(--primary); border-radius: var(--radius-md); border: 1px solid rgba(139, 3, 19, 0.08); padding: 12px 16px; font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5;">
+            <div v-if="getBatchLinkageNotices.length > 0" class="mb-md flex flex-col gap-xs" style="background: #ffffff; border-left: 3px solid var(--primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 12px 16px; font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5;">
               <div v-for="notice in getBatchLinkageNotices" :key="notice" class="flex align-center gap-sm">
                 <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: 14px;"></i>
                 <span>{{ notice }}</span>
               </div>
             </div>
 
-            <div class="form-group mb-md">
-              <label class="form-label font-bold text-sm">บันทึกช่วยจำสำหรับชุดนี้ (ไม่บังคับ)</label>
+            <div class="form-group">
+              <label class="form-label font-bold">บันทึกช่วยจำสำหรับชุดนี้ (ไม่บังคับ)</label>
               <input 
                 type="text" 
                 class="form-input" 
@@ -392,17 +382,18 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" :disabled="isSaving" @click="closeModal" style="border-radius: var(--radius-md) !important; height: 44px;">
+            <button type="button" class="btn-modal btn-modal-secondary flex-1" :disabled="isSaving" @click="closeModal">
               ยกเลิก
             </button>
             <button 
-              class="btn btn-primary flex-1" 
+              type="button"
+              class="btn-modal btn-modal-primary flex-1" 
               :disabled="isSaving"
               @click="confirmCookAction"
-              style="border-radius: var(--radius-md) !important; height: 44px;"
             >
               <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-              {{ isSaving ? 'กำลังบันทึก...' : 'ยืนยัน' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSaving ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -968,8 +959,7 @@ onUnmounted(() => {
 }
 
 /* Header buttons: Standard size matching reference image & StockBulk */
-.btn-bulk-back,
-.btn-cook-save-all {
+.btn-bulk-back {
   height: 44px !important;
   padding: 10px 18px !important;
   font-size: var(--font-base) !important;
@@ -1305,80 +1295,6 @@ onUnmounted(() => {
   pointer-events: none !important;
 }
 
-/* Floating Batch Bar: elevated cleanly above mobile bottom nav */
-.cook-floating-batch-bar {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 14px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 32px);
-  max-width: 600px;
-  z-index: 900;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
-  border-radius: var(--radius-lg);
-  border: 1.5px solid var(--primary);
-  padding: var(--space-sm) var(--space-md);
-}
-
-.floating-batch-icon {
-  font-size: 1.3rem;
-  color: var(--primary);
-}
-
-.btn-batch-clear-link {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: var(--font-xs);
-  font-weight: bold;
-  padding: 4px 8px;
-  text-decoration: underline;
-}
-
-.btn-batch-clear-link:hover {
-  opacity: 0.8;
-}
-
-.btn-save-batch-full {
-  height: 44px !important;
-  font-size: var(--font-base) !important;
-  font-weight: bold !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translate(-50%, 20px);
-}
-
-/* Modal styling: elevated cleanly above mobile bottom nav */
-.modal-container {
-  z-index: 2000 !important;
-}
-
-.modal-overlay {
-  z-index: 2001 !important;
-}
-
-.cook-white-modal {
-  border-radius: var(--radius-2xl);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-color);
-  max-height: 85vh;
-  overflow-y: auto;
-  z-index: 2002 !important;
-}
-
 .modal-stock-preview-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1412,8 +1328,18 @@ onUnmounted(() => {
   color: var(--text-tertiary);
 }
 
-/* Mobile Responsiveness */
+/* Mobile & Tablet Responsiveness */
 @media (max-width: 768px) {
+  .mobile-stock-header-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    text-align: center !important;
+  }
+
+  .mobile-stock-header-card > div {
+    text-align: center !important;
+  }
+
   .title-tooltip-wrapper {
     width: 100%;
     justify-content: center;
@@ -1429,28 +1355,16 @@ onUnmounted(() => {
     font-weight: bold !important;
     text-align: center !important;
   }
-}
-
-@media (max-width: 576px) {
-  .mobile-stock-header-card {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    text-align: center !important;
-  }
-
-  .mobile-stock-header-card > div {
-    text-align: center !important;
-  }
 
   .mobile-stock-header-card .mobile-header-actions {
     display: flex !important;
     flex-direction: row !important;
+    justify-content: center !important;
     gap: var(--space-xs) !important;
     width: 100% !important;
   }
 
-  .btn-bulk-back,
-  .btn-cook-save-all {
+  .btn-bulk-back {
     flex: 1 !important;
     width: auto !important;
     height: 44px !important;
@@ -1458,7 +1372,9 @@ onUnmounted(() => {
     padding: 10px 12px !important;
     font-size: var(--font-sm) !important;
   }
+}
 
+@media (max-width: 576px) {
   .cook-items-grid {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
@@ -1476,43 +1392,12 @@ onUnmounted(() => {
     min-width: unset;
     justify-content: center;
   }
-
-  .cook-filter-pills {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .cook-filter-pills .filter-pill {
-    flex-shrink: 0;
-  }
-
-  /* Floating Bar elevated safely above #bottom-nav */
-  .cook-floating-batch-bar {
-    bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 14px) !important;
-    width: calc(100% - 24px) !important;
-    padding: 10px 14px;
-  }
-
-  /* Modal lifted above mobile bottom menu */
-  .modal-container {
-    padding-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 20px) !important;
-    align-items: flex-end !important;
-  }
-
-  .cook-white-modal {
-    margin-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 10px) !important;
-    max-height: calc(100vh - var(--bottom-nav-height, 64px) - var(--safe-bottom, 0px) - 50px) !important;
-    width: calc(100% - 24px) !important;
-  }
 }
 @media (min-width: 769px) {
   .mobile-stock-header-card {
     padding: var(--space-xl) !important;
   }
-  .btn-bulk-back,
-  .btn-cook-save-all {
+  .btn-bulk-back {
     height: auto !important;
     padding: var(--space-md) var(--space-xl) !important;
   }

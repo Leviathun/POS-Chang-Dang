@@ -4,14 +4,14 @@
     <!-- Tab Selector (Hidden from frontend view while preserving code structure) -->
     <div class="category-tabs mb-lg" v-if="false">
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'menu_items' }"
         @click="activeTab = 'menu_items'"
       >
         <i class="fa-solid fa-drumstick-bite"></i> สินค้าและเมนู
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'modifiers' }"
         @click="activeTab = 'modifiers'"
       >
@@ -487,7 +487,7 @@
             <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
               <button 
                 v-for="preset in wastePresets" :key="preset.label"
-                class="btn btn-secondary btn-sm"
+                class="filter-pill"
                 :class="{ 'active': actionForm.note === preset.label }"
                 @click="actionForm.note = actionForm.note === preset.label ? '' : preset.label"
                 type="button"

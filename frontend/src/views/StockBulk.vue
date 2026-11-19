@@ -29,15 +29,6 @@
         <router-link to="/stock" class="btn btn-secondary btn-bulk-back">
           <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
         </router-link>
-        <button 
-          class="btn btn-primary btn-bulk-header-save" 
-          :disabled="isSaving"
-          @click="handleSaveBulkAdjust"
-        >
-          <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-floppy-disk"></i>
-          <span>{{ isSaving ? 'กำลังบันทึก...' : (changedCount > 0 ? `บันทึก (${changedCount})` : 'บันทึก') }}</span>
-        </button>
       </div>
     </div>
 
@@ -63,20 +54,6 @@
             ✕
           </button>
         </div>
-
-        <div class="flex align-center gap-sm flex-wrap">
-          <span class="text-sm font-semibold tabular-nums" :class="changedCount > 0 ? 'text-primary' : 'text-secondary'">
-            แก้ไขแล้ว {{ changedCount }} รายการ
-          </span>
-          <button 
-            v-if="changedCount > 0"
-            type="button"
-            class="btn btn-secondary btn-sm"
-            @click="resetAllChanges"
-          >
-            <i class="fa-solid fa-rotate-left"></i> รีเซ็ต
-          </button>
-        </div>
       </div>
     </div>
 
@@ -85,14 +62,14 @@
       <!-- Outer Category Tabs: Menu Items vs Modifiers (Hidden while preserving structure) -->
       <div class="category-tabs mb-lg" v-if="false">
         <button 
-          class="btn btn-secondary" 
+          class="category-tab" 
           :class="{ 'active': activeStockType === 'menu_items' }"
           @click="activeStockType = 'menu_items'"
         >
           <i class="fa-solid fa-drumstick-bite"></i> สินค้าและเมนู
         </button>
         <button 
-          class="btn btn-secondary" 
+          class="category-tab" 
           :class="{ 'active': activeStockType === 'modifiers' }"
           @click="activeStockType = 'modifiers'"
         >
@@ -233,56 +210,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Reason presets & Note -->
-        <div class="absolute-reason-section mt-xl">
-          <div class="form-group mb-0">
-            <label class="form-label font-bold text-sm text-secondary mb-xs block">
-              <i class="fa-solid fa-clipboard-check text-primary" style="margin-right: 4px;"></i> เหตุผลในการปรับยอดจริง *
-            </label>
-            <div class="reason-preset-group" role="radiogroup" aria-label="เหตุผลในการปรับยอดจริง">
-              <button
-                v-for="opt in reasonOptions"
-                :key="opt.value"
-                type="button"
-                class="reason-preset-btn"
-                :class="{ active: bulkReasonPreset === opt.value }"
-                @click="bulkReasonPreset = opt.value"
-              >
-                <i :class="opt.icon"></i>
-                <span>{{ opt.label }}</span>
-              </button>
-            </div>
-          </div>
-          <div class="form-group mb-0">
-            <label for="bulk-note-menu" class="form-label font-bold text-sm text-secondary mb-xs block">
-              <i class="fa-solid fa-pen-to-square text-primary" style="margin-right: 4px;"></i> คำอธิบายเพิ่มเติม (ถ้ามี)
-            </label>
-            <input 
-              id="bulk-note-menu"
-              type="text" 
-              v-model="bulkNote" 
-              placeholder="ระบุข้อความเพื่อบันทึกประวัติ..." 
-              class="form-input"
-            />
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex gap-lg mt-xl bulk-action-buttons">
-          <router-link to="/stock" class="btn-modal btn-modal-secondary flex-1">
-            ยกเลิก
-          </router-link>
-          <button 
-            class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
-            :disabled="isSaving"
-            @click="handleSaveBulkAdjust"
-          >
-            <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-            <i v-else class="fa-solid fa-floppy-disk"></i>
-            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : (changedCount > 0 ? `บันทึกการเปลี่ยนแปลง (${changedCount})` : 'บันทึก') }}
-          </button>
-        </div>
       </div>
 
       <!-- Form Grid/Table for Modifiers -->
@@ -355,19 +282,98 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Reason presets & Note -->
-        <div class="absolute-reason-section mt-xl">
-          <div class="form-group mb-0">
-            <label class="form-label font-bold text-sm text-secondary mb-xs block">
-              <i class="fa-solid fa-clipboard-check text-primary" style="margin-right: 4px;"></i> เหตุผลในการปรับยอดจริง *
-            </label>
-            <div class="reason-preset-group" role="radiogroup" aria-label="เหตุผลในการปรับยอดจริง">
+    <!-- Floating Batch Action Bar (Matches StockCook.vue Master Design) -->
+    <transition name="slide-up">
+      <div v-if="changedCount > 0" class="cook-floating-batch-bar card p-sm flex flex-col gap-xs" style="background: #ffffff;">
+        <div class="flex flex-between align-center w-full px-xs">
+          <div class="flex align-center gap-xs">
+            <i class="fa-solid fa-boxes-stacked floating-batch-icon"></i>
+            <span class="font-bold text-sm tabular-nums">รอปรับปรุงยอด {{ changedCount }} รายการ</span>
+          </div>
+          <button 
+            type="button"
+            class="btn-batch-clear-link text-danger" 
+            @click="resetAllChanges"
+            :disabled="isSaving"
+          >
+            ล้างทั้งหมด
+          </button>
+        </div>
+
+        <button 
+          type="button"
+          class="btn btn-primary btn-save-batch-full w-full tabular-nums" 
+          :disabled="isSaving"
+          @click="showConfirmModal = true"
+        >
+          <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+          <i v-else class="fa-solid fa-check"></i>
+          ยืนยันปรับปรุงยอด ({{ changedCount }} รายการ)
+        </button>
+      </div>
+    </transition>
+
+    <!-- Confirmation Modal with Summary Table, Reason Pills & Note (Option A) -->
+    <div v-if="showConfirmModal" class="modal-container active flex align-center justify-center">
+      <div class="modal-overlay" @click="showConfirmModal = false"></div>
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:88dvh;">
+        <div class="modal-header">
+          <h3>
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>ยืนยันปรับยอด</span>
+          </h3>
+          <button class="modal-close" @click="showConfirmModal = false" aria-label="ปิด">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Summary Table of Modified Items -->
+          <div class="mb-lg" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; max-height: 220px; overflow-y: auto; background: #ffffff;">
+            <table class="w-full text-sm tabular-nums" style="border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: var(--font-xs);">
+                  <th style="padding: 10px 12px; text-align: left;">รายการ</th>
+                  <th style="padding: 10px 12px; text-align: right;">การเปลี่ยนแปลง</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="(entry, idx) in modifiedSummaryList" 
+                  :key="entry.key"
+                  style="border-bottom: 1px solid var(--border-color);"
+                  :style="{ background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }"
+                >
+                  <td style="padding: 10px 12px; font-weight: bold; color: var(--text-primary); text-align: left;">
+                    <div>{{ entry.name }}</div>
+                    <div class="text-xs text-secondary font-normal">{{ entry.label }}</div>
+                  </td>
+                  <td style="padding: 10px 12px; text-align: right; white-space: nowrap;">
+                    <span class="text-secondary">{{ entry.from }}</span>
+                    <span class="mx-xs">➔</span>
+                    <strong class="text-primary">{{ entry.to }}</strong>
+                    <span 
+                      class="ml-xs font-bold text-xs"
+                      :class="entry.delta > 0 ? 'text-success' : 'text-danger'"
+                    >
+                      ({{ formatDelta(entry.delta) }})
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Reason Presets (.filter-pill) -->
+          <div class="form-group">
+            <label class="form-label font-bold">เหตุผลในการปรับยอดจริง *</label>
+            <div class="flex flex-wrap gap-xs" role="radiogroup" aria-label="เหตุผลในการปรับยอดจริง">
               <button
                 v-for="opt in reasonOptions"
                 :key="opt.value"
                 type="button"
-                class="reason-preset-btn"
+                class="filter-pill"
                 :class="{ active: bulkReasonPreset === opt.value }"
                 @click="bulkReasonPreset = opt.value"
               >
@@ -376,34 +382,35 @@
               </button>
             </div>
           </div>
-          <div class="form-group mb-0">
-            <label for="bulk-note-mod" class="form-label font-bold text-sm text-secondary mb-xs block">
-              <i class="fa-solid fa-pen-to-square text-primary" style="margin-right: 4px;"></i> คำอธิบายเพิ่มเติม (ถ้ามี)
-            </label>
+
+          <!-- Note Input -->
+          <div class="form-group">
+            <label for="bulk-note-modal" class="form-label font-bold">คำอธิบายเพิ่มเติม (ถ้ามี)</label>
             <input 
-              id="bulk-note-mod"
+              id="bulk-note-modal"
               type="text" 
               v-model="bulkNote" 
               placeholder="ระบุข้อความเพื่อบันทึกประวัติ..." 
               class="form-input"
             />
           </div>
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="flex gap-lg mt-xl bulk-action-buttons">
-          <router-link to="/stock" class="btn-modal btn-modal-secondary flex-1">
-            ยกเลิก
-          </router-link>
-          <button 
-            class="btn-modal btn-modal-primary btn-bulk-save flex-1" 
-            :disabled="isSaving"
-            @click="handleSaveBulkAdjust"
-          >
-            <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-            <i v-else class="fa-solid fa-floppy-disk"></i>
-            {{ isSaving ? 'กำลังบันทึกข้อมูล...' : (changedCount > 0 ? `บันทึกการเปลี่ยนแปลง (${changedCount})` : 'บันทึก') }}
-          </button>
+          <!-- Modal Actions -->
+          <div class="flex gap-md mt-lg">
+            <button type="button" class="btn-modal btn-modal-secondary flex-1" :disabled="isSaving" @click="showConfirmModal = false">
+              ยกเลิก
+            </button>
+            <button 
+              type="button"
+              class="btn-modal btn-modal-primary flex-1" 
+              :disabled="isSaving"
+              @click="handleSaveBulkAdjust"
+            >
+              <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSaving ? 'กำลังบันทึก...' : 'บันทึก' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -575,6 +582,56 @@ const getProductMethodIcon = (name) => {
 };
 
 const showHintTooltip = ref(false);
+const showConfirmModal = ref(false);
+
+const modifiedSummaryList = computed(() => {
+  const list = [];
+  if (activeStockType.value === 'menu_items') {
+    for (const item of bulkFormItems.value) {
+      const uom = item.uom || 'ชิ้น';
+      if (item.raw_quantity !== null && item.raw_quantity !== undefined) {
+        const rawDelta = getDelta(item.raw, item.raw_quantity);
+        if (rawDelta !== 0) {
+          list.push({
+            key: `raw-${item.menu_item_id}`,
+            name: item.name,
+            label: 'ของสด',
+            from: `${round2(item.raw_quantity)} ${uom}`,
+            to: `${round2(item.raw)} ${uom}`,
+            delta: rawDelta
+          });
+        }
+      }
+      const cookedDelta = getDelta(item.cooked, item.quantity ?? 0);
+      if (cookedDelta !== 0) {
+        list.push({
+          key: `cooked-${item.menu_item_id}`,
+          name: item.name,
+          label: getProductMethodLabel(item.name),
+          from: `${round2(item.quantity ?? 0)} ${uom}`,
+          to: `${round2(item.cooked)} ${uom}`,
+          delta: cookedDelta
+        });
+      }
+    }
+  } else {
+    for (const item of bulkModifiersFormItems.value) {
+      const delta = getDelta(item.value, item.total_servings);
+      if (delta !== 0) {
+        const uom = item.category === 'sauce_small' ? 'ซอง' : 'รอบ';
+        list.push({
+          key: `mod-${item.modifier_id}`,
+          name: item.name,
+          label: getModifierCategoryLabel(item.category),
+          from: `${round2(item.total_servings)} ${uom}`,
+          to: `${round2(item.value)} ${uom}`,
+          delta
+        });
+      }
+    }
+  }
+  return list;
+});
 const reasonOptions = [
   { value: 'นับยอดขาด/เกิน', label: 'นับยอดขาด/เกิน', icon: 'fa-solid fa-chart-simple' },
   { value: 'กรอกผิด', label: 'กรอกผิด (แก้ไขยอด)', icon: 'fa-solid fa-pen-to-square' },
@@ -712,6 +769,7 @@ const handleSaveBulkAdjust = async () => {
       
       const res = await api.stock.bulkAdjust(payload);
       if (res && res.success) {
+        showConfirmModal.value = false;
         if (res.updatedItems && Array.isArray(res.updatedItems)) {
           res.updatedItems.forEach(item => {
             store.updateStock(item.id, item.stock, item.raw_stock);
@@ -755,6 +813,7 @@ const handleSaveBulkAdjust = async () => {
       
       const res = await api.modifiers.bulkAdjust(payload);
       if (res && res.success) {
+        showConfirmModal.value = false;
         if (res.updatedModifiers && Array.isArray(res.updatedModifiers)) {
           res.updatedModifiers.forEach(m => {
             const idx = store.modifiers.findIndex(x => x.id === m.id);
@@ -886,8 +945,7 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
-.btn-bulk-back,
-.btn-bulk-header-save {
+.btn-bulk-back {
   height: 44px !important;
   min-width: 132px;
   padding: 0 var(--space-lg) !important;
@@ -902,16 +960,8 @@ onUnmounted(() => {
   touch-action: manipulation;
 }
 
-.btn-bulk-save {
-  min-height: 44px;
-  touch-action: manipulation;
-}
-
-.bulk-action-buttons {
-  display: flex;
-  gap: var(--space-lg);
-  justify-content: flex-end;
-  width: 100%;
+#stock-bulk-page {
+  padding-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 120px);
 }
 
 .bulk-stock-table-container {
@@ -933,8 +983,6 @@ onUnmounted(() => {
 }
 
 .bulk-stock-rows-container {
-  max-height: 55vh;
-  overflow-y: auto;
   border: 1px solid var(--border-color);
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
@@ -956,11 +1004,6 @@ onUnmounted(() => {
   .bulk-stock-row:hover {
     background: rgba(139, 3, 19, 0.015);
   }
-}
-
-.bulk-stock-row.is-modified {
-  background: rgba(139, 3, 19, 0.035);
-  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .bulk-stock-row.has-linkage-warning {
@@ -1031,14 +1074,9 @@ onUnmounted(() => {
 }
 
 .bulk-input-wrapper input:focus-visible {
-  border-color: var(--border-color-focus);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  border-color: var(--border-color);
+  box-shadow: none;
   outline: none;
-}
-
-.bulk-input-wrapper input.input-changed {
-  border-color: var(--primary);
-  background: var(--card-bg);
 }
 
 .bulk-input-wrapper input.disabled-input {
@@ -1070,65 +1108,6 @@ onUnmounted(() => {
 
 .mobile-label {
   display: none;
-}
-
-.absolute-reason-section {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: var(--space-lg);
-  padding: var(--space-lg);
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  text-align: left;
-  align-items: start;
-}
-
-.reason-preset-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.reason-preset-btn {
-  min-height: 44px;
-  padding: 0 var(--space-md);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-medium);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.reason-preset-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.reason-preset-btn.active {
-  border-color: var(--primary);
-  background: rgba(139, 3, 19, 0.08);
-  color: var(--primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.reason-preset-btn:focus-visible {
-  outline: 2px solid var(--border-color-focus);
-  outline-offset: 2px;
-}
-
-.absolute-reason-section .form-input {
-  min-height: 44px;
-  font-size: var(--font-base);
-  width: 100%;
 }
 
 /* Responsive Styles */
@@ -1216,8 +1195,7 @@ onUnmounted(() => {
   .mobile-stock-header-card {
     padding: var(--space-xl) !important;
   }
-  .btn-bulk-back,
-  .btn-bulk-header-save {
+  .btn-bulk-back {
     height: auto !important;
     padding: var(--space-md) var(--space-xl) !important;
   }
@@ -1238,20 +1216,9 @@ onUnmounted(() => {
     width: 100%;
   }
 
-  .btn-bulk-back,
-  .btn-bulk-header-save {
+  .btn-bulk-back {
     flex: 1;
     justify-content: center;
-  }
-
-  .absolute-reason-section {
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-    padding: var(--space-md);
-  }
-
-  .bulk-action-buttons {
-    gap: var(--space-md);
   }
 }
 </style>
