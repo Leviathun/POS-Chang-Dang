@@ -871,9 +871,17 @@ ul, ol { list-style: none; }
 .modal-content.modal-center {
   border-radius: var(--radius-2xl);
   margin: auto;
+  width: calc(100% - 32px) !important;
   max-height: 85vh;
   max-height: 85dvh;
   animation: scaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (max-width: 1024px) {
+  .modal-content.modal-center {
+    width: calc(100% - 48px) !important;
+    margin: auto 24px !important;
+  }
 }
 
 @media (max-width: 576px) {
@@ -1764,9 +1772,7 @@ select.form-input:focus {
   position: relative;
   z-index: 1;
 }
-.category-tabs .btn,
-.category-tabs .btn-secondary {
-  border-radius: var(--radius-full) !important;
+.category-tabs .category-tab {
   flex-shrink: 0 !important;
 }
 .category-tabs::-webkit-scrollbar {
@@ -1875,11 +1881,15 @@ select.form-input:focus {
 
 /* --- Bulk Hint Box end --- */
 
-/* --- Page-Switching Tabs (.tab-category & .category-tab) start --- */
-.category-tab,
-.tab-category .btn,
-.tab-category .btn-secondary {
-  padding: var(--space-sm) var(--space-lg);
+/* --- Page-Switching Tabs (.category-tab) start --- */
+.category-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  height: 42px;
+  padding: 0 18px;
+  line-height: 1;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
@@ -1891,14 +1901,10 @@ select.form-input:focus {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.category-tab:active,
-.tab-category .btn:active,
-.tab-category .btn-secondary:active {
+.category-tab:active {
   transform: scale(0.97);
 }
-.category-tab.active,
-.tab-category .btn.active,
-.tab-category .btn-secondary.active {
+.category-tab.active {
   background: var(--gradient-primary);
   color: white;
   border-color: transparent;
@@ -1909,8 +1915,11 @@ select.form-input:focus {
 .filter-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: var(--space-sm) var(--space-lg);
+  height: 38px;
+  padding: 0 var(--space-lg);
+  line-height: 1;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
@@ -1951,16 +1960,7 @@ select.form-input:focus {
   box-shadow: 0 2px 6px rgba(40, 167, 69, 0.25);
 }
 
-/* --- Category Tab end --- */
-
-/* --- Preset Button start --- */
-.preset-btn {
-  padding: 6px 12px !important;
-  font-size: var(--font-xs) !important;
-  border-radius: var(--radius-full) !important;
-  min-height: unset !important;
-}
-/* --- Preset Button end --- */
+/* --- Category Tab & Filter Pill end --- */
 
 /* --- Mobile Universal Design start --- */
 @media (max-width: 768px) {
@@ -1978,17 +1978,12 @@ select.form-input:focus {
     padding: 12px 18px !important;
   }
 
-  /* Restore original mobile pill sizing for page-switching tabs (.tab-category / .category-tabs) */
-  .category-tab,
-  .tab-category .btn,
-  .tab-category .btn-secondary,
-  .category-tabs .btn-secondary,
-  .category-tabs .btn,
-  .period-tabs .btn,
+  /* Restore original mobile pill sizing for secondary utility buttons */
   .csv-export-btn,
-  .preset-btn,
   .change-method-btn {
-    padding: 8px 14px !important;
+    height: 36px !important;
+    padding: 0 14px !important;
+    line-height: 1 !important;
     font-size: var(--font-xs) !important;
     border-radius: var(--radius-full) !important;
     min-height: unset !important;
@@ -2177,6 +2172,348 @@ select.form-input:focus {
   position: relative !important;
 }
 
+/* --- Universal Mobile Floating Cart Bar & Detail Panel (POS Master Design) start --- */
+.cart-bar {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: var(--max-width);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(139, 3, 19, 0.96);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 2px solid var(--accent);
+  z-index: 50;
+  animation: slideUp 0.3s ease;
+  box-sizing: border-box;
+}
+
+.cart-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  width: 100% !important;
+}
+
+.cart-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.cart-count {
+  font-size: var(--font-sm);
+  color: rgba(255, 247, 223, 0.85);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cart-total {
+  font-size: var(--font-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-pay-btn {
+  padding: var(--space-md) var(--space-2xl);
+  background: var(--accent);
+  color: var(--primary-dark);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 15px rgba(255, 171, 43, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cart-pay-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 0 25px rgba(255, 171, 43, 0.5);
+}
+
+.cart-detail-panel {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height, 60px) + 8px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: var(--max-width);
+  max-height: 45vh;
+  background: var(--bg-secondary);
+  border: 2px solid var(--primary-light) !important;
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto;
+  z-index: 49;
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.cart-detail-panel.hidden {
+  display: none !important;
+}
+
+.cart-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px !important;
+  border-bottom: 2px dashed rgba(139, 3, 19, 0.15) !important;
+  position: sticky;
+  top: 0;
+  background: rgba(255, 247, 223, 0.98) !important;
+  z-index: 1;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(139, 3, 19, 0.08);
+  background: rgba(255, 255, 255, 0.4) !important;
+}
+
+.cart-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-item-name {
+  font-size: var(--font-base) !important;
+  font-weight: var(--font-weight-bold) !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cart-item-price {
+  font-size: var(--font-xs) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-item-qty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.qty-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-bold);
+  transition: var(--transition-base);
+}
+
+.qty-btn:active {
+  transform: scale(0.9);
+  background: var(--card-bg-active);
+}
+
+.qty-btn.minus {
+  color: var(--danger-light);
+}
+
+.qty-value {
+  min-width: 24px;
+  text-align: center;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-item-subtotal {
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
+  font-size: var(--font-sm);
+  min-width: 60px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* --- Universal Mobile Floating Cart Bar & Detail Panel end --- */
+
+/* --- Universal Category Management Modal (Central Kitchen Master Design) start --- */
+.ck-cat-form-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ck-cat-form-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.ck-cat-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.ck-cat-form-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: stretch;
+}
+
+.ck-cat-form-actions .btn {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border-radius: var(--radius-md) !important;
+}
+
+.ck-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ck-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 10px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.ck-cat-action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.ck-cat-action-btn.edit {
+  color: var(--primary);
+}
+
+.ck-cat-action-btn.edit:hover {
+  background: rgba(139, 3, 19, 0.08);
+  border-color: var(--primary);
+}
+
+.ck-cat-action-btn.delete {
+  color: var(--danger);
+}
+
+.ck-cat-action-btn.delete:hover {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: var(--danger);
+}
+/* --- Universal Category Management Modal end --- */
+
+/* --- Universal Floating Batch Bar (StockCook & StockBulk Master Design) start --- */
+.cook-floating-batch-bar {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 600px;
+  z-index: 900;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--primary);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.floating-batch-icon {
+  font-size: 1.3rem;
+  color: var(--primary);
+}
+
+.btn-batch-clear-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-xs);
+  font-weight: bold;
+  padding: 4px 8px;
+  text-decoration: underline;
+}
+
+.btn-batch-clear-link:hover {
+  opacity: 0.8;
+}
+
+.btn-save-batch-full {
+  height: 44px !important;
+  font-size: var(--font-base) !important;
+  font-weight: bold !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+
+@media (max-width: 576px) {
+  .cook-floating-batch-bar {
+    bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 14px) !important;
+    width: calc(100% - 24px) !important;
+    padding: 10px 14px;
+  }
+}
+/* --- Universal Floating Batch Bar end --- */
+
 
 /* --- Web Interface Guidelines: Tabular Numbers & Touch Action --- */
 .tabular-nums, .table td, .qty-badge, .sidebar-badge {
@@ -2186,12 +2523,35 @@ select.form-input:focus {
   touch-action: manipulation;
 }
 
+/* --- 3-Tier Responsive Scale for Pills (Desktop > 1024px | Tablet 641px-1024px | Mobile <= 640px) --- */
 @media (max-width: 1024px) {
-  .filter-pill {
-    height: 34px !important;
-    padding: 0 10px !important;
-    font-size: 12px !important;
+  .category-tab {
+    height: 40px !important;
+    padding: 0 16px !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
     border-radius: var(--radius-full) !important;
     min-height: unset !important;
+  }
+  .filter-pill {
+    height: 36px !important;
+    padding: 0 14px !important;
+    font-size: 13.5px !important;
+    line-height: 1 !important;
+    border-radius: var(--radius-full) !important;
+    min-height: unset !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .category-tab {
+    height: 36px !important;
+    padding: 0 13px !important;
+    font-size: 13px !important;
+  }
+  .filter-pill {
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
   }
 }
