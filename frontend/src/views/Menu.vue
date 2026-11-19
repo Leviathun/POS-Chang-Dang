@@ -114,7 +114,7 @@
                 <!-- Drag Handle -->
                 <div 
                   class="drag-handle" 
-                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: 1.2rem; color: var(--text-tertiary);"
+                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: var(--font-md); color: var(--text-tertiary);"
                   @touchstart="handleTouchStart(index, $event)"
                   @touchmove.prevent="handleTouchMove"
                   @touchend="handleTouchEnd"
@@ -126,7 +126,7 @@
                 <!-- Product Image -->
                 <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
                   <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
-                  <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i></div>
+                  <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: var(--font-md); color: var(--text-tertiary);"></i></div>
                 </div>
                 
                 <!-- Middle: Name & Category -->
@@ -281,7 +281,7 @@
                 <!-- Left: Product Image / Emoji -->
                 <div class="mobile-menu-card-img-container">
                   <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
-                  <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: 1.2rem; color: var(--text-tertiary);"></i></div>
+                  <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: var(--font-md); color: var(--text-tertiary);"></i></div>
                 </div>
                 
                 <!-- Middle: Name & Category -->
@@ -1674,7 +1674,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--text-tertiary);
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
