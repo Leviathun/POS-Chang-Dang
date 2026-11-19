@@ -155,16 +155,16 @@
         >
           <div class="flex flex-between align-center gap-xs">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ emp.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ emp.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
-                <span class="font-bold text-primary" style="font-size: 12px;">รหัส PIN: {{ emp.pin }}</span>
+                <span class="font-bold text-primary" style="font-size: var(--font-xs);">รหัส PIN: {{ emp.pin }}</span>
               </div>
             </div>
             <div class="flex gap-2xs flex-wrap justify-end" style="gap: 4px;">
-              <span class="capsule-badge" :class="emp.role === 'admin' ? 'badge-primary' : emp.role === 'manager' ? 'badge-warning' : 'badge-neutral'" style="font-size: 11px; padding: 3px 8px;">
+              <span class="capsule-badge" :class="emp.role === 'admin' ? 'badge-primary' : emp.role === 'manager' ? 'badge-warning' : 'badge-neutral'" style="font-size: var(--font-xxs); padding: 3px 8px;">
                 {{ getRoleLabel(emp.role) }}
               </span>
-              <span class="skill-badge" :class="emp.skill_level" style="font-size: 11px; padding: 3px 8px;">
+              <span class="skill-badge" :class="emp.skill_level" style="font-size: var(--font-xxs); padding: 3px 8px;">
                 <i :class="getSkillIcon(emp.skill_level)"></i> {{ getSkillLabel(emp.skill_level) }}
               </span>
             </div>
@@ -172,15 +172,15 @@
           <div class="flex flex-between align-center text-sm staff-mobile-divider">
             <div>
               <span class="text-secondary text-xs">อัตราค่าจ้าง:</span>
-              <span class="font-bold text-base text-primary ml-xs" style="font-size: 15px;">{{ formatCurrency(emp.wage_rate) }}</span>
+              <span class="font-bold text-base text-primary ml-xs" style="font-size: var(--font-sm);">{{ formatCurrency(emp.wage_rate) }}</span>
               <span class="text-xs text-secondary"> / {{ emp.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
             </div>
-            <span class="benefit-tag" style="font-size: 11px; padding: 3px 9px;">
+            <span class="benefit-tag" style="font-size: var(--font-xxs); padding: 3px 9px;">
               <i class="fa-solid fa-bowl-rice text-warning"></i> {{ emp.benefits || 'ข้าวเที่ยงฟรี' }}
             </span>
           </div>
           <div v-if="isAdminUser" style="margin-top: 2px;">
-            <button class="btn btn-secondary w-full" style="height: 40px; font-size: 13px; font-weight: 600; border-radius: var(--radius-md);" @click="openEditCompensationModal(emp)">
+            <button class="btn btn-secondary w-full" style="height: 40px; font-size: var(--font-xs); font-weight: 600; border-radius: var(--radius-md);" @click="openEditCompensationModal(emp)">
               <i class="fa-solid fa-sliders mr-xs"></i> ปรับค่าแรงและสวัสดิการ
             </button>
           </div>
@@ -237,7 +237,7 @@
               class="picker-trigger-btn" 
               :class="{ 'active': isCalendarMonthDropdownOpen }" 
               @click="toggleCalendarMonthDropdown"
-              style="width: 100%; height: 38px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: 13px; white-space: nowrap;"
+              style="width: 100%; height: 38px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: var(--font-xs); white-space: nowrap;"
             >
               <span class="flex align-center gap-xs" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 <i class="fa-solid fa-calendar-days text-primary flex-shrink-0"></i>
@@ -279,10 +279,10 @@
 
         <!-- Sub-bar: Hint and Current Month Button -->
         <div class="flex flex-between align-center flex-wrap gap-xs" style="margin-top: 2px;">
-          <div style="font-size: 11px; color: var(--text-tertiary);">
-            <i class="fa-solid fa-circle-info text-primary mr-2xs" style="font-size: 10px;"></i> คลิกที่ช่องวันที่เพื่อดูสรุปรายละเอียดประจำวัน
+          <div style="font-size: var(--font-xxs); color: var(--text-tertiary);">
+            <i class="fa-solid fa-circle-info text-primary mr-2xs" style="font-size: var(--font-xxs);"></i> คลิกที่ช่องวันที่เพื่อดูสรุปรายละเอียดประจำวัน
           </div>
-          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: 11px; white-space: nowrap;" @click="setCalendarCurrentMonth">
+          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: var(--font-xxs); white-space: nowrap;" @click="setCalendarCurrentMonth">
             <i class="fa-solid fa-clock-rotate-left mr-2xs"></i> เดือนปัจจุบัน
           </button>
         </div>
@@ -466,14 +466,14 @@
             </div>
           </div>
 
-          <button type="button" class="picker-current-btn" style="height: 38px; padding: 0 10px; font-size: 12px;" @click="setTodayAttendance">
+          <button type="button" class="picker-current-btn" style="height: 38px; padding: 0 10px; font-size: var(--font-xs);" @click="setTodayAttendance">
             วันนี้
           </button>
         </div>
 
         <button 
           class="btn btn-primary" 
-          style="height: 38px; font-size: 13px;"
+          style="height: 38px; font-size: var(--font-xs);"
           :disabled="savingAttendance || attendanceRecords.length === 0"
           @click="handleSaveAttendance"
         >
@@ -529,9 +529,9 @@
                 <td class="text-center p-md">
                   <div class="font-bold text-base text-primary">{{ rec.name }}</div>
                   <div class="text-xs text-secondary mt-2xs">
-                    <span class="skill-badge" :class="rec.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(rec.skill_level) }}</span>
+                    <span class="skill-badge" :class="rec.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(rec.skill_level) }}</span>
                     <span v-if="(rec.default_wage_rate || rec.wage_rate) > 0" class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
-                    <span v-else class="text-warning ml-xs font-semibold" style="font-size: 11px;">• ยังไม่ตั้งฐานค่าแรง</span>
+                    <span v-else class="text-warning ml-xs font-semibold" style="font-size: var(--font-xxs);">• ยังไม่ตั้งฐานค่าแรง</span>
                   </div>
                 </td>
                 <td class="text-center p-md">
@@ -634,7 +634,7 @@
           <!-- Card Header: Name & Lunch -->
           <div class="flex flex-between align-center gap-xs">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ rec.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ rec.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <span class="skill-badge" :class="rec.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(rec.skill_level) }}</span>
                 <span v-if="(rec.default_wage_rate || rec.wage_rate) > 0" class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
@@ -650,7 +650,7 @@
                 class="lunch-benefit-checkbox"
               />
               <span class="lunch-benefit-content" style="font-size: 11.5px;">
-                <span class="lunch-benefit-icon" style="font-size: 14px;">🍚</span>
+                <span class="lunch-benefit-icon" style="font-size: var(--font-sm);">🍚</span>
                 <span class="lunch-benefit-text">ข้าวเที่ยง</span>
               </span>
             </label>
@@ -661,7 +661,7 @@
             <button 
               type="button"
               class="status-btn w-full"
-              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
+              style="padding: 9px 2px; font-size: var(--font-xs); height: 38px; border-radius: 8px; justify-content: center;"
               :class="{ 'active-present': rec.status === 'present' }"
               @click="rec.status = 'present'; rec.had_lunch_benefit = 1; if (!rec.daily_wage) rec.daily_wage = (rec.default_wage_rate || rec.wage_rate || 0);"
             >
@@ -670,7 +670,7 @@
             <button 
               type="button"
               class="status-btn w-full"
-              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
+              style="padding: 9px 2px; font-size: var(--font-xs); height: 38px; border-radius: 8px; justify-content: center;"
               :class="{ 'active-leave': rec.status === 'leave_unpaid' }"
               @click="rec.status = 'leave_unpaid'; rec.had_lunch_benefit = 0;"
             >
@@ -679,7 +679,7 @@
             <button 
               type="button"
               class="status-btn w-full"
-              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
+              style="padding: 9px 2px; font-size: var(--font-xs); height: 38px; border-radius: 8px; justify-content: center;"
               :class="{ 'active-absent': rec.status === 'absent' }"
               @click="rec.status = 'absent'; rec.had_lunch_benefit = 0;"
             >
@@ -832,12 +832,12 @@
         >
           <div class="flex flex-between align-center">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ ev.event_name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ ev.event_name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <i class="fa-solid fa-calendar-day mr-2xs text-primary"></i> {{ formatDate(ev.event_date) }}
               </div>
             </div>
-            <div class="font-bold text-success text-base" style="font-size: 16px;">
+            <div class="font-bold text-success text-base" style="font-size: var(--font-base);">
               +{{ formatCurrency(ev.amount_per_person) }} <span class="text-xs text-secondary font-normal">/คน</span>
             </div>
           </div>
@@ -849,7 +849,7 @@
                 v-for="p in ev.participants" 
                 :key="'m-p-' + p.user_id" 
                 class="capsule-badge badge-neutral text-xs"
-                style="font-size: 11px; padding: 3px 8px;"
+                style="font-size: var(--font-xxs); padding: 3px 8px;"
               >
                 <i class="fa-solid fa-user mr-xs"></i> {{ p.name }}
               </span>
@@ -857,7 +857,7 @@
           </div>
           <div v-if="isAdminUser" class="flex flex-between align-center staff-mobile-divider" style="margin-top: 0;">
             <span class="text-2xs text-secondary">โดย: {{ ev.creator_name || 'แอดมิน' }}</span>
-            <button class="btn btn-sm btn-action-delete" :disabled="deletingEventOtId === ev.id" @click="handleDeleteEventOt(ev.id)" style="padding: 5px 14px; font-size: 12px; height: 34px;">
+            <button class="btn btn-sm btn-action-delete" :disabled="deletingEventOtId === ev.id" @click="handleDeleteEventOt(ev.id)" style="padding: 5px 14px; font-size: var(--font-xs); height: 34px;">
               <i v-if="deletingEventOtId === ev.id" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-trash-can"></i>
               <span>{{ deletingEventOtId === ev.id ? ' กำลังลบ...' : ' ลบ' }}</span>
@@ -926,7 +926,7 @@
                 <td class="text-center p-md">
                   <div class="font-bold text-base text-primary">{{ adv.name }}</div>
                   <div class="text-xs text-secondary mt-2xs">
-                    <span class="skill-badge" :class="adv.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(adv.skill_level) }}</span>
+                    <span class="skill-badge" :class="adv.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(adv.skill_level) }}</span>
                   </div>
                 </td>
                 <td class="text-center p-md font-bold text-danger text-base">
@@ -992,17 +992,17 @@
         >
           <div class="flex flex-between align-center">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ adv.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ adv.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <span class="skill-badge" :class="adv.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(adv.skill_level) }}</span>
                 <span class="ml-xs">{{ formatDate(adv.advance_date) }}</span>
               </div>
             </div>
             <div class="text-right">
-              <div class="font-bold text-danger text-base" :style="adv.status === 'cancelled' ? 'text-decoration: line-through;' : ''" style="font-size: 16px;">
+              <div class="font-bold text-danger text-base" :style="adv.status === 'cancelled' ? 'text-decoration: line-through;' : ''" style="font-size: var(--font-base);">
                 -{{ formatCurrency(adv.amount) }}
               </div>
-              <span class="capsule-badge mt-2xs" :class="adv.payment_method === 'transfer' ? 'badge-primary' : 'badge-warning'" style="font-size: 11px; padding: 2px 8px; margin-top: 4px;">
+              <span class="capsule-badge mt-2xs" :class="adv.payment_method === 'transfer' ? 'badge-primary' : 'badge-warning'" style="font-size: var(--font-xxs); padding: 2px 8px; margin-top: 4px;">
                 <i :class="adv.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
                 {{ adv.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด' }}
               </span>
@@ -1013,7 +1013,7 @@
               class="capsule-badge" 
               :class="adv.status === 'deducted' ? 'badge-success' : (adv.status === 'cancelled' ? 'badge-neutral' : 'badge-warning')"
               :style="adv.status === 'cancelled' ? 'background: rgba(139, 3, 19, 0.08); color: var(--primary); border-color: rgba(139, 3, 19, 0.2);' : ''"
-              style="font-size: 11px; padding: 3px 9px;"
+              style="font-size: var(--font-xxs); padding: 3px 9px;"
             >
               <i :class="adv.status === 'deducted' ? 'fa-solid fa-check' : (adv.status === 'cancelled' ? 'fa-solid fa-rotate-left text-primary' : 'fa-solid fa-clock')"></i>
               {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : (adv.status === 'cancelled' ? 'ยกเลิกเบิกสำเร็จ' : 'เบิกสำเร็จ รอหักในบัญชี') }}
@@ -1025,7 +1025,7 @@
                 class="btn-action btn-action-delete" 
                 :disabled="deletingAdvanceId === adv.id"
                 @click="handleDeleteAdvance(adv.id)"
-                style="padding: 5px 14px; font-size: 12px; height: 34px;"
+                style="padding: 5px 14px; font-size: var(--font-xs); height: 34px;"
               >
                 <i v-if="deletingAdvanceId === adv.id" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-rotate-left"></i>
@@ -1063,7 +1063,7 @@
               class="picker-trigger-btn" 
               :class="{ 'active': isPayrollMonthDropdownOpen }" 
               @click="togglePayrollMonthDropdown"
-              style="width: 100%; height: 40px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: 14px; white-space: nowrap;"
+              style="width: 100%; height: 40px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: var(--font-sm); white-space: nowrap;"
             >
               <span class="flex align-center gap-xs" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 <i class="fa-solid fa-calendar-days text-primary flex-shrink-0"></i>
@@ -1105,10 +1105,10 @@
 
         <!-- Sub-bar: Short Hint and Current Month Button -->
         <div class="flex flex-between align-center flex-wrap gap-xs" style="margin-top: 2px;">
-          <div style="font-size: 11px; color: var(--text-tertiary);">
-            <i class="fa-solid fa-circle-check text-success mr-2xs" style="font-size: 10px;"></i> ตัดจ่ายเข้าบัญชีรายจ่ายสาขาอัตโนมัติเมื่อยืนยัน
+          <div style="font-size: var(--font-xxs); color: var(--text-tertiary);">
+            <i class="fa-solid fa-circle-check text-success mr-2xs" style="font-size: var(--font-xxs);"></i> ตัดจ่ายเข้าบัญชีรายจ่ายสาขาอัตโนมัติเมื่อยืนยัน
           </div>
-          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: 11px; white-space: nowrap;" @click="setPayrollCurrentMonth">
+          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: var(--font-xxs); white-space: nowrap;" @click="setPayrollCurrentMonth">
             <i class="fa-solid fa-clock-rotate-left mr-2xs"></i> เดือนปัจจุบัน
           </button>
         </div>
@@ -1126,11 +1126,11 @@
               <h4 class="font-bold text-base" style="margin: 0; color: var(--text-primary);">
                 กองทุนเงินประกันพนักงาน
               </h4>
-              <span class="capsule-badge badge-warning" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">
+              <span class="capsule-badge badge-warning" style="padding: 1px 6px; font-size: var(--font-xxs); font-weight: bold;">
                 สภาพคล่องร้าน
               </span>
             </div>
-            <p class="text-xs text-secondary mt-2xs" style="margin: 0; font-size: 11px; color: var(--text-tertiary);">
+            <p class="text-xs text-secondary mt-2xs" style="margin: 0; font-size: var(--font-xxs); color: var(--text-tertiary);">
               เงินสดหมุนเวียน (ไม่นับเป็นยอดขายอาหาร และจะคืนเมื่อลาออก)
             </p>
           </div>
@@ -1140,7 +1140,7 @@
         <div class="grid gap-sm" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-md); padding: 10px 14px;">
           <!-- Tile 1: Total Held -->
           <div>
-            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ยอดถือครองทั้งหมด</div>
+            <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ยอดถือครองทั้งหมด</div>
             <div class="font-bold" style="font-size: 1.25rem; color: #b45309; line-height: 1.2;">
               {{ formatCurrency(guaranteePoolSummary.totalHeld) }}
             </div>
@@ -1148,16 +1148,16 @@
           
           <!-- Tile 2: Staff Count -->
           <div>
-            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ผู้วางประกัน</div>
+            <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ผู้วางประกัน</div>
             <div class="font-bold" style="font-size: 1.1rem; color: var(--text-primary); line-height: 1.2;">
-              {{ guaranteePoolSummary.heldStaffCount }} <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">คน</span>
+              {{ guaranteePoolSummary.heldStaffCount }} <span style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: normal;">คน</span>
             </div>
           </div>
 
           <!-- Tile 3: Channels -->
           <div>
-            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ช่องทางถือครอง</div>
-            <div style="font-size: 12px; font-weight: bold; color: var(--text-primary); line-height: 1.2;">
+            <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ช่องทางถือครอง</div>
+            <div style="font-size: var(--font-xs); font-weight: bold; color: var(--text-primary); line-height: 1.2;">
               สด: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.cashHeld) }}</span> | 
               โอน: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.transferHeld) }}</span>
             </div>
@@ -1166,14 +1166,14 @@
 
         <!-- Staff with held guarantee tags -->
         <div v-if="guaranteePoolSummary.heldStaffCount > 0" class="mt-xs pt-xs flex align-center gap-xs flex-wrap" style="border-top: 1px dashed rgba(245, 158, 11, 0.2);">
-          <span style="font-size: 10px; color: var(--text-secondary); font-weight: 600;">รายชื่อ:</span>
+          <span style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">รายชื่อ:</span>
           <span 
             v-for="st in guaranteePoolSummary.heldStaffList" 
             :key="st.name" 
             class="capsule-badge badge-neutral" 
-            style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3); color: #92400e; padding: 2px 8px; font-size: 11px;"
+            style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3); color: #92400e; padding: 2px 8px; font-size: var(--font-xxs);"
           >
-            <i class="fa-solid fa-user-shield mr-2xs" style="color: #d97706; font-size: 10px;"></i>
+            <i class="fa-solid fa-user-shield mr-2xs" style="color: #d97706; font-size: var(--font-xxs);"></i>
             <strong>{{ st.name }}</strong> ({{ formatCurrency(st.amount) }} • {{ st.method === 'cash' ? 'เงินสด' : 'เงินโอน' }})
           </span>
         </div>
@@ -1222,7 +1222,7 @@
                 <td class="text-center p-md">
                   <div class="font-bold text-base text-primary">{{ item.name }}</div>
                   <div class="text-xs text-secondary mt-2xs">
-                    <span class="skill-badge" :class="item.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(item.skill_level) }}</span> • {{ formatCurrency(item.wage_rate) }}/วัน
+                    <span class="skill-badge" :class="item.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(item.skill_level) }}</span> • {{ formatCurrency(item.wage_rate) }}/วัน
                   </div>
                 </td>
                 <td class="text-center p-md">
@@ -1316,7 +1316,7 @@
           <!-- Header: Employee info + Net amount -->
           <div class="flex flex-between align-center">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ item.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ item.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <span class="skill-badge" :class="item.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(item.skill_level) }}</span>
                 <span class="ml-xs font-semibold">{{ formatCurrency(item.wage_rate) }}/วัน</span>
@@ -1355,13 +1355,13 @@
           <!-- Guarantee & History status -->
           <div class="flex flex-between align-center flex-wrap gap-xs staff-mobile-divider">
             <div>
-              <span v-if="item.guarantee && item.guarantee.status === 'held'" class="capsule-badge badge-success text-2xs" style="padding: 3px 8px; font-size: 11px;">
+              <span v-if="item.guarantee && item.guarantee.status === 'held'" class="capsule-badge badge-success text-2xs" style="padding: 3px 8px; font-size: var(--font-xxs);">
                 <i class="fa-solid fa-shield-halved"></i> วางประกันแล้ว
               </span>
-              <span v-else-if="item.guarantee && item.guarantee.status === 'refunded'" class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: 11px;">
+              <span v-else-if="item.guarantee && item.guarantee.status === 'refunded'" class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: var(--font-xxs);">
                 <i class="fa-solid fa-check"></i> คืนประกันแล้ว
               </span>
-              <span v-else class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: 11px; opacity: 0.75;">
+              <span v-else class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: var(--font-xxs); opacity: 0.75;">
                 <i class="fa-solid fa-hourglass-half"></i> รอหักประกัน
               </span>
             </div>
@@ -1398,7 +1398,7 @@
             >
               <i class="fa-solid fa-money-bill-wave mr-xs"></i> สั่งจ่ายค่าจ้าง
             </button>
-            <div v-else class="flex-1 text-center py-xs text-xs text-success font-bold" style="background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">
+            <div v-else class="flex-1 text-center py-xs text-xs text-success font-bold" style="background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; height: 40px; font-size: var(--font-xs);">
               <i class="fa-solid fa-circle-check mr-2xs"></i> จ่ายครบแล้ว
             </div>
           </div>
@@ -1580,7 +1580,7 @@
                     <input type="checkbox" :value="emp.id" v-model="eventOtForm.user_ids" style="width: 18px; height: 18px; accent-color: var(--primary);" />
                     <span class="font-semibold text-sm">{{ emp.name }}</span>
                   </div>
-                  <span class="skill-badge" :class="emp.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(emp.skill_level) }}</span>
+                  <span class="skill-badge" :class="emp.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(emp.skill_level) }}</span>
                 </label>
               </div>
             </div>
@@ -1635,7 +1635,7 @@
                       @click="selectAdvanceStaff(emp.id)"
                     >
                       <span>{{ emp.name }}</span>
-                      <span class="skill-badge" :class="emp.skill_level" style="font-size: 10px; padding: 1px 6px;">
+                      <span class="skill-badge" :class="emp.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">
                         {{ getSkillLabel(emp.skill_level) }}
                       </span>
                     </div>
@@ -1657,7 +1657,7 @@
                     {{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }}
                   </span>
                 </div>
-                <div class="text-2xs text-secondary flex flex-between flex-wrap gap-2xs" style="font-size: 11px;">
+                <div class="text-2xs text-secondary flex flex-between flex-wrap gap-2xs" style="font-size: var(--font-xxs);">
                   <div class="flex align-center gap-xs flex-wrap">
                     <span>วันทำงาน: {{ selectedStaffAvailableWage.unpaidDays }} วัน ({{ formatCurrency(selectedStaffAvailableWage.unpaidBase) }})</span>
                     <span v-if="selectedStaffAvailableWage.eventOt > 0" class="text-success font-semibold">
@@ -1688,7 +1688,7 @@
                 style="background: rgba(255, 149, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-sm);"
               >
                 <div class="flex align-start gap-xs text-xs font-semibold text-warning" style="line-height: 1.4;">
-                  <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; margin-top: 2px;"></i>
+                  <i class="fa-solid fa-triangle-exclamation" style="font-size: var(--font-sm); margin-top: 2px;"></i>
                   <div>
                     <strong>คำเตือน:</strong> จำนวนเงินที่ขอเบิก ({{ formatCurrency(advanceForm.amount) }}) <strong>เกินกว่ายอดค่าแรงสะสม</strong> ที่ทำได้ในปัจจุบัน ({{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }})
                     <div class="text-2xs text-secondary font-normal mt-2xs">
@@ -1807,7 +1807,7 @@
               </div>
               <div class="text-xs text-secondary flex flex-between">
                 <span>อัตราค่าจ้าง: {{ formatCurrency(payingItem?.wage_rate || (payingItem?.unpaid_days_worked ? Math.round(payingItem?.unpaid_base_salary / payingItem?.unpaid_days_worked) : 0)) }}/{{ payingItem?.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
-                <span class="skill-badge" :class="payingItem?.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(payingItem?.skill_level) }}</span>
+                <span class="skill-badge" :class="payingItem?.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(payingItem?.skill_level) }}</span>
               </div>
             </div>
 
@@ -1965,7 +1965,7 @@
                   {{ formatCurrency(computedNetPayable) }}
                 </span>
               </div>
-              <div class="text-secondary mt-xs" style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">
+              <div class="text-secondary mt-xs" style="font-size: var(--font-xxs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">
                 * ยอดเงินนี้จะถูกบันทึกเป็นรายจ่ายสาขา (คำนวณอัตโนมัติตามรายการที่เลือก)
               </div>
             </div>
@@ -2307,7 +2307,7 @@
             <div class="form-group" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
               <div class="flex flex-between align-center mb-xs">
                 <span class="font-bold text-sm text-primary">{{ currentCalendarStaff?.name }}</span>
-                <span class="skill-badge" :class="currentCalendarStaff?.skill_level" style="font-size: 10px; padding: 1px 6px;">
+                <span class="skill-badge" :class="currentCalendarStaff?.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">
                   {{ getSkillLabel(currentCalendarStaff?.skill_level) }}
                 </span>
               </div>
@@ -2326,7 +2326,7 @@
                 <span v-else-if="selectedDayDetail?.status === 'leave_unpaid'" class="capsule-badge badge-warning text-xs">
                   <i class="fa-solid fa-calendar-xmark"></i> ลาหยุด (ไม่ได้รับค่าจ้าง)
                 </span>
-                <span v-else-if="selectedDayDetail?.status === 'absent'" class="capsule-badge" style="background: rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.3); font-size: 11px;">
+                <span v-else-if="selectedDayDetail?.status === 'absent'" class="capsule-badge" style="background: rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.3); font-size: var(--font-xxs);">
                   <i class="fa-solid fa-circle-xmark"></i> ขาดงาน (ไม่ได้รับค่าจ้าง)
                 </span>
                 <span v-else class="text-xs text-muted">ไม่มีการบันทึกเวลา</span>
@@ -4165,10 +4165,10 @@ onUnmounted(() => {
   color: white;
   padding: 1px 6px;
   border-radius: 9999px;
-  font-size: 10px;
+  font-size: var(--font-xxs);
 }
 .status-indicator {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 .status-indicator.present {
   color: #10b981;
@@ -4186,7 +4186,7 @@ onUnmounted(() => {
   margin-top: 4px;
 }
 .day-badge {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   padding: 2px 4px;
   border-radius: 4px;
   white-space: nowrap;
@@ -4236,7 +4236,7 @@ onUnmounted(() => {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 9999px !important;
-  font-size: 12px !important;
+  font-size: var(--font-xs) !important;
   padding: 0 12px !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
@@ -4251,7 +4251,7 @@ onUnmounted(() => {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 9999px !important;
-  font-size: 12px !important;
+  font-size: var(--font-xs) !important;
   padding: 0 12px !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
@@ -4304,14 +4304,14 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .calendar-weekday-cell {
-    font-size: 10px;
+    font-size: var(--font-xxs);
   }
   .calendar-day-cell {
     min-height: 60px;
     padding: 3px;
   }
   .day-badge {
-    font-size: 9px;
+    font-size: var(--font-xxs);
     padding: 1px 2px;
   }
 }

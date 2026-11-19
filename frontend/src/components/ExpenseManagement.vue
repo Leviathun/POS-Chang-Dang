@@ -261,7 +261,7 @@
             <strong class="text-primary font-bold text-sm">{{ formatCurrency(activeHeldGuaranteesTotal) }}</strong>
             <span class="text-secondary text-xs">({{ activeHeldGuaranteesCount }} คน)</span>
           </div>
-          <div class="flex align-center gap-xs text-secondary" style="font-size: 11px;">
+          <div class="flex align-center gap-xs text-secondary" style="font-size: var(--font-xxs);">
             <i class="fa-solid fa-circle-info"></i>
             <span>ไม่รวมในยอดขายอาหาร</span>
           </div>
@@ -407,14 +407,14 @@
               <td class="text-left" style="padding: 14px var(--space-md); vertical-align: middle; font-weight: 500; word-break: break-word;">
                 <div :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''">{{ item.name }}</div>
                 <div v-if="item.staffName" class="text-xs text-secondary mt-xxs">
-                  <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
+                  <i class="fa-solid fa-user-pen" style="font-size: var(--font-xxs);"></i> โดย: {{ item.staffName }}
                 </div>
                 <div v-if="item.isCKTransfer" class="ck-expense-note">
                   <i class="fa-solid fa-circle-info"></i>
                   <span>ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)</span>
                 </div>
                 <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mt-xxs font-semibold">
-                  <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
+                  <i class="fa-solid fa-circle-info" style="font-size: var(--font-xxs);"></i> {{ item.cancelReason }}
                 </div>
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; white-space: nowrap;">
@@ -502,15 +502,15 @@
               <span class="category-badge" :class="item.badgeClass">
                 <i :class="item.icon"></i> {{ item.categoryLabel }}
               </span>
-              <span v-if="item.isRefund" class="font-bold text-success text-base" style="font-size: 16px;">+{{ formatCurrency(item.amount) }}</span>
-              <span v-else-if="item.isCancelled" class="font-bold text-tertiary text-sm" style="text-decoration: line-through; font-size: 14px;">{{ formatCurrency(item.amount) }}</span>
-              <span v-else class="font-bold text-danger text-base" style="font-size: 16px;">{{ formatCurrency(item.amount) }}</span>
+              <span v-if="item.isRefund" class="font-bold text-success text-base" style="font-size: var(--font-base);">+{{ formatCurrency(item.amount) }}</span>
+              <span v-else-if="item.isCancelled" class="font-bold text-tertiary text-sm" style="text-decoration: line-through; font-size: var(--font-sm);">{{ formatCurrency(item.amount) }}</span>
+              <span v-else class="font-bold text-danger text-base" style="font-size: var(--font-base);">{{ formatCurrency(item.amount) }}</span>
             </div>
-            <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word; font-size: 14px; line-height: 1.4;">
+            <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word; font-size: var(--font-sm); line-height: 1.4;">
               {{ item.name }}
             </div>
             <div v-if="item.staffName" class="text-xs text-secondary mb-xs">
-              <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
+              <i class="fa-solid fa-user-pen" style="font-size: var(--font-xxs);"></i> โดย: {{ item.staffName }}
             </div>
             <!-- CK Note banner in mobile card body -->
             <div v-if="item.isCKTransfer" class="ck-expense-note mb-xs" style="margin-bottom: 6px;">
@@ -518,10 +518,10 @@
               <span>ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)</span>
             </div>
             <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mb-xs font-semibold" style="margin-top: 4px;">
-              <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
+              <i class="fa-solid fa-circle-info" style="font-size: var(--font-xxs);"></i> {{ item.cancelReason }}
             </div>
             <div class="flex flex-between align-center text-xs text-secondary" style="border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: 6px; gap: 8px;">
-              <span style="white-space: nowrap; flex-shrink: 0; font-size: 11px;">{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
+              <span style="white-space: nowrap; flex-shrink: 0; font-size: var(--font-xxs);">{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
               <div class="flex align-center gap-xs" style="flex-shrink: 0;">
                 <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
                   <i v-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button mr-1"></i>
@@ -529,14 +529,14 @@
                   <span>{{ item.paymentLabel }}</span>
                 </span>
                 <!-- Reversal Badges / Buttons for Mobile -->
-                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 4px 10px; font-size: 11px;">
+                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 4px 10px; font-size: var(--font-xxs);">
                   <i class="fa-solid fa-circle-check"></i> คืนเงินแล้ว
                 </span>
-                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'" style="padding: 4px 10px; font-size: 11px;">
+                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'" style="padding: 4px 10px; font-size: var(--font-xxs);">
                   <i :class="item.category === 'salary' ? 'fa-solid fa-user-clock' : 'fa-solid fa-ban'"></i>
                   {{ item.category === 'salary' ? 'คืนบัญชีพนักงาน' : 'ยกเลิกแล้ว' }}
                 </span>
-                <span v-else-if="item.isCancelled" class="badge-status-pill badge-stock-cancelled" style="padding: 4px 10px; font-size: 11px;">
+                <span v-else-if="item.isCancelled" class="badge-status-pill badge-stock-cancelled" style="padding: 4px 10px; font-size: var(--font-xxs);">
                   <i class="fa-solid fa-rotate-left"></i> คืนสต็อกแล้ว
                 </span>
                 <button 
@@ -719,7 +719,7 @@
             <div class="profit-sharing-section card p-md" style="background: rgba(139, 3, 19, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
               <div class="flex align-center mb-sm">
                 <span class="font-bold text-xs flex align-center" style="color: var(--text-primary); gap: 8px;">
-                  <i class="fa-solid fa-handshake-angle" style="color: var(--text-primary); font-size: 14px;"></i>
+                  <i class="fa-solid fa-handshake-angle" style="color: var(--text-primary); font-size: var(--font-sm);"></i>
                   <span>การจัดสรรส่วนแบ่งกำไร</span>
                 </span>
               </div>
@@ -728,10 +728,10 @@
                 <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
                   <div class="flex flex-between align-center text-xs text-secondary mb-xs">
                     <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
-                      <i class="fa-solid fa-store text-primary" style="font-size: 14px;"></i> 
+                      <i class="fa-solid fa-store text-primary" style="font-size: var(--font-sm);"></i> 
                       <span>ร้าน / บริหาร</span>
                     </span>
-                    <span class="badge font-bold" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: 11px;">60%</span>
+                    <span class="badge font-bold" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: var(--font-xxs);">60%</span>
                   </div>
                   <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2;" :class="profitShare60 >= 0 ? 'text-primary' : 'text-danger'">
                     {{ formatCurrency(profitShare60) }}
@@ -743,10 +743,10 @@
                 <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
                   <div class="flex flex-between align-center text-xs text-secondary mb-xs">
                     <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
-                      <i class="fa-solid fa-user-tie" style="color: #cc8000; font-size: 14px;"></i> 
+                      <i class="fa-solid fa-user-tie" style="color: #cc8000; font-size: var(--font-sm);"></i> 
                       <span>ผู้ร่วมทุน / หุ้นส่วน</span>
                     </span>
-                    <span class="badge font-bold" style="background: rgba(255, 171, 43, 0.18); color: #b26a00; padding: 2px 8px; border-radius: 6px; font-size: 11px;">40%</span>
+                    <span class="badge font-bold" style="background: rgba(255, 171, 43, 0.18); color: #b26a00; padding: 2px 8px; border-radius: 6px; font-size: var(--font-xxs);">40%</span>
                   </div>
                   <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2; color: #cc8000;" :class="profitShare40 < 0 ? 'text-danger' : ''">
                     {{ formatCurrency(profitShare40) }}
@@ -1854,7 +1854,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   opacity: 0.65;
   background: rgba(0, 0, 0, 0.06);
   transition: all 0.15s ease;
@@ -1960,7 +1960,7 @@ onMounted(() => {
 }
 
 .sub-badge {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   background: rgba(139, 3, 19, 0.04);
   color: var(--text-secondary);
   padding: 2px 6px;
@@ -1970,7 +1970,7 @@ onMounted(() => {
 }
 
 .summary-formula-caption {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   color: var(--text-tertiary);
   font-style: italic;
 }
@@ -1993,7 +1993,7 @@ onMounted(() => {
 }
 
 .filter-count-badge {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   background: rgba(0,0,0,0.06);
   padding: 1px 6px;
   border-radius: 10px;
@@ -2049,7 +2049,7 @@ onMounted(() => {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: var(--font-weight-bold, 700);
   background: rgba(139, 3, 19, 0.06);
   color: var(--text-primary);
@@ -2058,7 +2058,7 @@ onMounted(() => {
 }
 
 .category-badge i {
-  font-size: 13px;
+  font-size: var(--font-xs);
 }
 
 .top-cat-badge {
@@ -2070,7 +2070,7 @@ onMounted(() => {
 }
 
 .top-cat-badge i {
-  font-size: 11px !important;
+  font-size: var(--font-xxs) !important;
 }
 
 .badge-cat-central-kitchen, .badge-cat-raw_materials { background: rgba(139, 3, 19, 0.12); color: var(--primary, #8b0313); border: 1px solid rgba(139, 3, 19, 0.25); }
@@ -2097,7 +2097,7 @@ onMounted(() => {
   gap: 5px;
   padding: 5px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: var(--font-weight-bold, 700);
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0,0,0,0.03);
@@ -2105,7 +2105,7 @@ onMounted(() => {
 }
 
 .badge-status-pill i {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 
 .table-action-btn {
@@ -2144,14 +2144,14 @@ onMounted(() => {
   gap: 5px;
   padding: 4px 11px;
   border-radius: 16px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 600;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
 .payment-method-badge i {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 
 .ck-expense-note {
@@ -2164,7 +2164,7 @@ onMounted(() => {
   color: #7f1d1d;
   border: 1px solid rgba(139, 3, 19, 0.16);
   border-radius: 6px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 500;
   line-height: 1.3;
 }
@@ -2330,30 +2330,30 @@ onMounted(() => {
 
 .expense-mobile-card .category-badge {
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   border-radius: 6px;
   gap: 4px;
 }
 
 .expense-mobile-card .category-badge i {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 
 .expense-mobile-card .payment-method-badge {
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   border-radius: 6px;
   gap: 4px;
 }
 
 .expense-mobile-card .payment-method-badge i {
-  font-size: 10px;
+  font-size: var(--font-xxs);
 }
 
 .expense-mobile-card .badge-status-pill {
   min-width: unset;
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   border-radius: 6px;
   gap: 4px;
 }
@@ -2406,7 +2406,7 @@ onMounted(() => {
     font-size: 1.35rem;
   }
   .cat-name {
-    font-size: 12px;
+    font-size: var(--font-xs);
   }
   .quick-notes-grid-6 {
     grid-template-columns: repeat(3, 1fr);
@@ -2456,12 +2456,12 @@ onMounted(() => {
     padding: 10px 8px;
   }
   .top-expense-note {
-    font-size: 12px;
+    font-size: var(--font-xs);
   }
   .rank-indicator {
     width: 24px;
     height: 24px;
-    font-size: 11px;
+    font-size: var(--font-xxs);
   }
 }
 
