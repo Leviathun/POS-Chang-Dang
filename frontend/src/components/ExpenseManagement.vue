@@ -588,7 +588,7 @@
         <!-- Chart 1: Category Breakdown (Including Waste & Credit) -->
         <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
           <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <i class="fa-solid fa-chart-pie text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+            <i class="fa-solid fa-chart-pie text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i> 
             <div class="flex flex-col">
               <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.3;">สัดส่วนค่าใช้จ่าย & ของเสีย</span>
               <span class="text-xs text-secondary font-medium" style="margin-top: 2px;">({{ ledgerPeriodLabel }})</span>
@@ -636,7 +636,7 @@
         <!-- Chart 2: Revenue vs Expenses vs Waste Comparison -->
         <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
           <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+            <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i> 
             <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.35;">
               เปรียบเทียบ รายรับ vs รายจ่าย
             </span>
@@ -733,7 +733,7 @@
                     </span>
                     <span class="badge font-bold" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: var(--font-xxs);">60%</span>
                   </div>
-                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2;" :class="profitShare60 >= 0 ? 'text-primary' : 'text-danger'">
+                  <div class="font-bold my-xs" style="font-size: var(--font-xl); line-height: 1.2;" :class="profitShare60 >= 0 ? 'text-primary' : 'text-danger'">
                     {{ formatCurrency(profitShare60) }}
                   </div>
                   <div class="text-xs text-tertiary mt-2xs font-medium">60% ของกำไรจริง</div>
@@ -748,7 +748,7 @@
                     </span>
                     <span class="badge font-bold" style="background: rgba(255, 171, 43, 0.18); color: #b26a00; padding: 2px 8px; border-radius: 6px; font-size: var(--font-xxs);">40%</span>
                   </div>
-                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2; color: #cc8000;" :class="profitShare40 < 0 ? 'text-danger' : ''">
+                  <div class="font-bold my-xs" style="font-size: var(--font-xl); line-height: 1.2; color: #cc8000;" :class="profitShare40 < 0 ? 'text-danger' : ''">
                     {{ formatCurrency(profitShare40) }}
                   </div>
                   <div class="text-xs text-tertiary mt-2xs font-medium">ยอดจ่ายให้ผู้ร่วมทุน (40%)</div>
@@ -764,7 +764,7 @@
       <!-- Top 5 Highest Expenses -->
       <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
         <div class="card-title font-bold text-base mb-md flex align-center gap-xs" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-          <i class="fa-solid fa-ranking-star text-primary" style="font-size: 1.1rem;"></i> 
+          <i class="fa-solid fa-ranking-star text-primary" style="font-size: var(--font-md);"></i> 
           <span>5 อันดับรายการจ่ายสูงสุด</span>
         </div>
         <div v-if="topExpenses.length === 0" class="text-secondary text-sm text-center py-xl">
@@ -1641,7 +1641,7 @@ onMounted(() => {
 }
 
 .cat-icon-wrap {
-  font-size: 1.75rem;
+  font-size: var(--font-2xl);
   line-height: 1;
   color: var(--text-secondary);
   transition: color var(--transition-fast, 0.15s ease);
@@ -1717,7 +1717,7 @@ onMounted(() => {
   border: 1.5px solid var(--primary);
   border-radius: var(--radius-md, 12px);
   color: #ffffff;
-  font-size: 1.15rem;
+  font-size: var(--font-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1754,7 +1754,7 @@ onMounted(() => {
   position: absolute;
   left: 14px;
   color: var(--text-tertiary);
-  font-size: 1rem;
+  font-size: var(--font-base);
 }
 
 .custom-input {
@@ -1947,7 +1947,7 @@ onMounted(() => {
 }
 
 .summary-value {
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   font-weight: var(--font-weight-bold, 700);
   line-height: 1.2;
   margin-bottom: 6px;
@@ -2376,7 +2376,7 @@ onMounted(() => {
     gap: 6px;
   }
   .cat-icon-wrap {
-    font-size: 1.5rem;
+    font-size: var(--font-xl);
   }
   .cat-name {
     font-size: 12.5px;
@@ -2403,7 +2403,7 @@ onMounted(() => {
     gap: 5px;
   }
   .cat-icon-wrap {
-    font-size: 1.35rem;
+    font-size: var(--font-lg);
   }
   .cat-name {
     font-size: var(--font-xs);
@@ -2436,7 +2436,7 @@ onMounted(() => {
     border-radius: 10px;
   }
   .cat-icon-wrap {
-    font-size: 1.2rem;
+    font-size: var(--font-md);
   }
   .cat-name {
     font-size: 11.5px;

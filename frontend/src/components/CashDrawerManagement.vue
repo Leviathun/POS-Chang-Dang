@@ -172,7 +172,7 @@
           </div>
           <div class="grid-item">
             <span class="grid-label">เงินสดที่ควรมี</span>
-            <span class="grid-value font-bold text-primary" style="font-size: 1.05rem;">{{ formatCurrency(session.calculated_expected_cash) }}</span>
+            <span class="grid-value font-bold text-primary" style="font-size: var(--font-base);">{{ formatCurrency(session.calculated_expected_cash) }}</span>
           </div>
           <div class="grid-item full-width">
             <span class="grid-label">เงินสดนับจริง</span>
@@ -243,7 +243,7 @@
               </div>
               <div class="flex flex-between align-center font-bold text-base text-primary" style="border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: 2px;">
                 <span>เงินสดที่ควรมีในลิ้นชัก:</span>
-                <span style="font-size: 1.15rem;">{{ formatCurrency(activeAuditSession?.calculated_expected_cash) }}</span>
+                <span style="font-size: var(--font-md);">{{ formatCurrency(activeAuditSession?.calculated_expected_cash) }}</span>
               </div>
             </div>
 

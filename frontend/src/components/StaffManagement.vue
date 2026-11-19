@@ -1118,7 +1118,7 @@
       <div class="card p-md" style="background: #ffffff; border: 1px solid var(--border-color); border-left: 4px solid var(--warning, #f59e0b);">
         <!-- Header -->
         <div class="flex align-center gap-sm mb-sm">
-          <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: #d97706; flex-shrink: 0;">
+          <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; font-size: var(--font-md); color: #d97706; flex-shrink: 0;">
             <i class="fa-solid fa-shield-halved"></i>
           </div>
           <div class="flex-1 min-w-0">
@@ -1141,7 +1141,7 @@
           <!-- Tile 1: Total Held -->
           <div>
             <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ยอดถือครองทั้งหมด</div>
-            <div class="font-bold" style="font-size: 1.25rem; color: #b45309; line-height: 1.2;">
+            <div class="font-bold" style="font-size: var(--font-lg); color: #b45309; line-height: 1.2;">
               {{ formatCurrency(guaranteePoolSummary.totalHeld) }}
             </div>
           </div>
@@ -1149,7 +1149,7 @@
           <!-- Tile 2: Staff Count -->
           <div>
             <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ผู้วางประกัน</div>
-            <div class="font-bold" style="font-size: 1.1rem; color: var(--text-primary); line-height: 1.2;">
+            <div class="font-bold" style="font-size: var(--font-md); color: var(--text-primary); line-height: 1.2;">
               {{ guaranteePoolSummary.heldStaffCount }} <span style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: normal;">คน</span>
             </div>
           </div>
@@ -1238,7 +1238,7 @@
                   <span v-if="item.advance_deducted_amount > 0">-{{ formatCurrency(item.advance_deducted_amount) }}</span>
                   <span v-else class="text-muted">0</span>
                 </td>
-                <td class="text-center p-md font-bold text-lg text-primary" style="font-size: 1.15rem;">
+                <td class="text-center p-md font-bold text-lg text-primary" style="font-size: var(--font-md);">
                   {{ formatCurrency(item.net_payable_round) }}
                 </td>
                 <!-- Guarantee Deposit Column -->
@@ -1324,7 +1324,7 @@
             </div>
             <div class="text-right">
               <div class="text-2xs text-secondary">ยอดจ่ายสุทธิรอบนี้</div>
-              <div class="font-bold text-lg text-primary" style="font-size: 1.3rem;">
+              <div class="font-bold text-lg text-primary" style="font-size: var(--font-lg);">
                 {{ formatCurrency(item.net_payable_round) }}
               </div>
             </div>
@@ -4078,7 +4078,7 @@ onUnmounted(() => {
 }
 
 .lunch-benefit-icon {
-  font-size: 1.1rem;
+  font-size: var(--font-md);
   line-height: 1;
   display: inline-flex;
   align-items: center;
