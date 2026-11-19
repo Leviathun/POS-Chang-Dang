@@ -28,7 +28,7 @@
       v-model:end-time="customEndTime"
     >
       <!-- Branch Selector for Admin (aligned right) -->
-      <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center" style="margin-left: auto;">
+      <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center management-branch-selector">
         <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
         <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
           <div 
@@ -212,6 +212,16 @@ onUnmounted(() => {
 @media (min-width: 769px) {
   #management-page > .card:first-child {
     padding: var(--space-xl) !important;
+  }
+}
+
+.management-branch-selector {
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .management-branch-selector {
+    margin-left: 0 !important;
   }
 }
 </style>
