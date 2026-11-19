@@ -116,7 +116,7 @@
               <i class="fa-solid fa-sack-dollar text-primary"></i>
               <span>ยอดขายวันนี้</span>
             </div>
-            <div class="font-bold text-primary tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px;">
+            <div class="font-bold text-primary tabular-nums" style="font-size: var(--font-2xl); line-height: 1.2; margin: 4px 0 8px;">
               {{ formatCurrency(summary.today_sales) }}
             </div>
             <div class="inline-flex align-center gap-xs text-xs text-muted font-medium" style="white-space: nowrap;">
@@ -130,7 +130,7 @@
               <i class="fa-solid fa-calendar-check" style="color: #b45309;"></i>
               <span>ยอดรวมเดือนนี้</span>
             </div>
-            <div class="font-bold tabular-nums" style="font-size: 1.85rem; line-height: 1.2; margin: 4px 0 8px; color: #b45309;">
+            <div class="font-bold tabular-nums" style="font-size: var(--font-2xl); line-height: 1.2; margin: 4px 0 8px; color: #b45309;">
               {{ formatCurrency(summary.month_sales) }}
             </div>
             <div class="inline-flex align-center gap-xs text-xs text-muted font-medium">
@@ -1015,7 +1015,7 @@
                 <div class="skeleton mt-xs" style="height: 14px; width: 110px; border-radius: 4px;"></div>
               </template>
               <template v-else>
-                <span class="stat-clean-val tabular-nums" style="color: #b45309; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <span class="stat-clean-val tabular-nums" style="color: #b45309; font-size: var(--font-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   {{ topRevenueItem ? topRevenueItem.item_name : '-' }}
                 </span>
                 <div v-if="topRevenueItem" class="flex align-center gap-xs text-xs tabular-nums" style="margin-top: 4px; color: var(--text-secondary);">
@@ -1643,7 +1643,7 @@
         </div>
         <div v-else-if="filteredStockLogs.length === 0" class="text-center text-secondary py-lg text-sm" style="padding: var(--space-lg); background: #ffffff; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
           <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(139, 3, 19, 0.06); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
-            <i class="fa-solid fa-box-open" style="font-size: 1rem;"></i>
+            <i class="fa-solid fa-box-open" style="font-size: var(--font-base);"></i>
           </div>
           <div class="font-bold text-sm mb-xs" style="color: var(--text-primary);">
             ไม่พบประวัติสต็อก ({{ periodMode === 'daily' ? formatDate(selectedDate) : (periodMode === 'monthly' ? selectedMonth : selectedYear) }})
@@ -1923,7 +1923,7 @@
             </div>
             <div class="grid-item">
               <span class="grid-label">เงินสดที่ควรมี</span>
-              <span class="grid-value font-bold text-primary" style="font-size: 1.05rem;">{{ formatCurrency(session.calculated_expected_cash) }}</span>
+              <span class="grid-value font-bold text-primary" style="font-size: var(--font-base);">{{ formatCurrency(session.calculated_expected_cash) }}</span>
             </div>
             <div class="grid-item full-width">
               <span class="grid-label">เงินสดนับจริง</span>
@@ -5382,7 +5382,7 @@ select.reports-filter-control,
   font-weight: 500;
 }
 .stat-clean-val {
-  font-size: 1.4rem;
+  font-size: var(--font-xl);
   font-weight: 800;
   line-height: 1.2;
 }
