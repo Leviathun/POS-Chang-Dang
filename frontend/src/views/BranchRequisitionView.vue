@@ -12,27 +12,25 @@
           เลือกรายการของที่ต้องการจากคลังส่วนกลาง เมื่อได้รับของแล้วยอดเงินจะถูกบันทึกเป็นต้นทุนของสาขาอัตโนมัติ
         </p>
       </div>
+    </div>
 
-      <!-- Tab Switcher (44px Touch Buttons) - No Parentheses in 'เลือกของเบิก' -->
-      <div class="requisition-tabs flex gap-xs align-center">
-        <button 
-          class="requisition-tab-btn" 
-          :class="{ active: currentTab === 'shop' }"
-          @click="currentTab = 'shop'"
-        >
-          <i class="fa-solid fa-cart-plus mr-1"></i>
-          <span>เลือกของเบิก</span>
-        </button>
-        <button 
-          class="requisition-tab-btn relative" 
-          :class="{ active: currentTab === 'my_orders' }"
-          @click="currentTab = 'my_orders'"
-        >
-          <i class="fa-solid fa-receipt mr-1"></i>
-          <span>รายการที่ขอเบิก</span>
-          <span v-if="dispatchedCount > 0" class="badge-count animate-pulse">{{ dispatchedCount }}</span>
-        </button>
-      </div>
+    <!-- Main Navigation Tabs (Below Header Card, matching Management.vue) -->
+    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+      <button 
+        class="category-tab" 
+        :class="{ active: currentTab === 'shop' }"
+        @click="currentTab = 'shop'"
+      >
+        <i class="fa-solid fa-cart-plus"></i> เลือกของเบิก
+      </button>
+      <button 
+        class="category-tab relative" 
+        :class="{ active: currentTab === 'my_orders' }"
+        @click="currentTab = 'my_orders'"
+      >
+        <i class="fa-solid fa-receipt"></i> รายการที่ขอเบิก
+        <span v-if="dispatchedCount > 0" class="badge-count animate-pulse">{{ dispatchedCount }}</span>
+      </button>
     </div>
 
     <!-- ────────────────────────────────────────────────────────── -->
@@ -68,7 +66,7 @@
             <button 
               v-for="cat in categories" 
               :key="cat.id" 
-              class="category-tab"
+              class="filter-pill"
               :class="{ active: selectedCategory === cat.id }"
               @click="selectedCategory = cat.id"
             >
@@ -356,132 +354,78 @@
 
     <!-- Mobile-only Docked Cart Bar (เหมือนหน้าขาย POS บนมือถือ) -->
     <div 
-      v-if="currentTab === 'shop' && cart.length > 0 && !isCartDrawerOpen" 
+      v-if="currentTab === 'shop' && cart.length > 0" 
       class="cart-bar mobile-only-cart"
     >
       <div class="cart-bar-inner">
-        <div class="cart-info" style="cursor: pointer;" @click="isCartDrawerOpen = true">
-          <span class="cart-count">{{ totalCartQty }} รายการ</span>
+        <div class="cart-info" @click="isCartDrawerOpen = !isCartDrawerOpen">
+          <span class="cart-count">
+            {{ totalCartQty }} รายการ
+            <i :class="isCartDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: 0.75rem; margin-left: 2px;"></i>
+          </span>
           <span class="cart-total">฿{{ formatNumber(totalCartCost) }}</span>
         </div>
         <button 
-          class="cart-pay-btn flex align-center justify-center gap-xs" 
-          @click="isCartDrawerOpen = true"
+          class="cart-pay-btn" 
+          :disabled="cart.length === 0 || isSubmitting"
+          @click="submitRequisition"
         >
-          <i class="fa-solid fa-cart-shopping"></i>
-          <span>ดูรายการเบิก</span>
+          <i v-if="isSubmitting" class="fa-solid fa-spinner fa-spin"></i>
+          <i v-else class="fa-solid fa-paper-plane"></i>
+          <span>{{ isSubmitting ? 'กำลังส่ง...' : 'ยื่นขอเบิก' }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Mobile-only Slide-up Cart Drawer Overlay & Panel (Bottom Sheet) -->
-    <div 
-      v-if="currentTab === 'shop' && cart.length > 0 && isCartDrawerOpen" 
-      class="cart-drawer-overlay mobile-only-cart"
-      @click="isCartDrawerOpen = false"
-    ></div>
-
+    <!-- Mobile-only Slide-up Cart Detail Panel (POS Master Design) -->
     <div 
       v-if="currentTab === 'shop' && cart.length > 0" 
       class="cart-detail-panel mobile-only-cart"
       :class="{ 'hidden': !isCartDrawerOpen }"
     >
-      <!-- Drawer Header -->
       <div class="cart-detail-header">
-        <span class="font-bold text-base flex align-center gap-xs">
-          <i class="fa-solid fa-cart-shopping text-primary"></i>
-          <span>รายการที่ขอเบิก</span>
-          <span class="badge badge-primary font-bold">{{ totalCartQty }}</span>
+        <span class="font-semibold text-md" style="display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-cart-shopping"></i> รายการที่ขอเบิก
         </span>
-        <div class="flex align-center gap-sm">
-          <button class="btn btn-ghost btn-sm text-danger" @click="clearCart">ล้างทั้งหมด</button>
-          <button class="modal-close" @click="isCartDrawerOpen = false">✕</button>
-        </div>
+        <button class="btn btn-ghost btn-sm text-danger" @click="clearCart">ล้างทั้งหมด</button>
       </div>
 
-      <!-- Drawer Scrollable Content (Only Items & Notes Scroll!) -->
-      <div class="cart-drawer-scroll-body flex flex-col gap-md">
-        <!-- Cart Items List: Spacious 2-Tier Cards -->
-        <div class="cart-items-list flex flex-col gap-sm">
-          <div 
-            v-for="c in cart" 
-            :key="c.item_id" 
-            class="cart-row p-sm flex flex-col justify-between"
-          >
-            <!-- Tier 1: Item Name + Subtotal -->
-            <div class="flex flex-between align-start gap-xs mb-xs">
-              <div class="flex-1 min-w-0 pr-xs">
-                <div class="cart-item-name font-bold text-sm text-primary">
-                  {{ getItemNameParts(c.item_name).main }}
-                </div>
-                <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
-                  {{ getItemNameParts(c.item_name).sub }}
-                </div>
-                <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
-                  <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
-                </div>
-              </div>
-              <div class="text-right flex-shrink-0 pl-xs">
-                <span class="font-bold text-sm text-primary">฿{{ formatNumber(c.quantity * c.cost_price) }}</span>
-              </div>
+      <div style="overflow-y: auto; max-height: calc(45vh - 60px); padding-bottom: 16px;">
+        <div 
+          v-for="c in cart" 
+          :key="c.item_id" 
+          class="cart-item animate-fade-in"
+        >
+          <div class="cart-item-info">
+            <div class="cart-item-name">{{ getItemNameParts(c.item_name).main }}</div>
+            <div class="cart-item-price">
+              ฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}
+              <span v-if="c.pack_size > 1" class="text-primary font-semibold"> (เติม {{ c.quantity * c.pack_size }} ชิ้น)</span>
             </div>
-
-            <!-- Tier 2: Unit price + Stepper with direct typing input -->
-            <div class="flex flex-between align-center cart-item-bottom">
-              <span class="text-xs text-secondary">
-                ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
-              </span>
-              <div class="flex align-center gap-xs flex-shrink-0">
-                <button class="btn-qty" @click="decreaseQty(c)" title="ลดจำนวน">-</button>
-                <input 
-                  type="number" 
-                  inputmode="numeric" 
-                  min="1" 
-                  :max="c.max_quantity" 
-                  v-model.number="c.quantity" 
-                  class="form-input text-center text-sm font-bold qty-input-field" 
-                  style="width: 62px; height: 32px; padding: 2px; border-radius: var(--radius-sm);" 
-                  @focus="$event.target.select()" 
-                  @change="validateCartQty(c)"
-                  title="คลิกเพื่อพิมพ์จำนวนได้โดยตรง"
-                />
-                <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
-              </div>
-            </div>
+          </div>
+          <div class="cart-item-qty">
+            <button class="qty-btn minus" @click="decreaseQty(c)">−</button>
+            <span class="qty-value">{{ c.quantity }}</span>
+            <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)">+</button>
+          </div>
+          <div class="cart-item-subtotal">
+            ฿{{ formatNumber(c.quantity * c.cost_price) }}
           </div>
         </div>
 
-        <!-- Notes Field -->
-        <div class="form-group">
-          <label class="form-label text-xs font-bold text-secondary mb-xs block">
-            <i class="fa-solid fa-pen-to-square mr-1"></i> บันทึก/เหตุผลในการเบิก (ถ้ามี):
-          </label>
+        <!-- Notes Area (Matching POS Mobile Discount Selector Area) -->
+        <div style="padding: 12px 20px;">
+          <div class="font-bold text-sm text-primary flex align-center gap-xs" style="margin-bottom: 6px;">
+            <i class="fa-solid fa-pen-to-square"></i> บันทึก/เหตุผลในการเบิก (ถ้ามี)
+          </div>
           <input 
             type="text" 
             v-model="cartNote" 
-            placeholder="เช่น ของใกล้หมดสต็อก, เตรียมรับรอบเย็น" 
-            class="form-input text-sm w-full"
+            placeholder="เช่น ของใกล้หมดสต็อก, เตรียมรับรอบเย็น..." 
+            class="form-input"
+            style="font-size: var(--font-sm); padding: 6px 12px; height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
           />
         </div>
-      </div>
-
-      <!-- Drawer Fixed Footer (Always visible, perfectly padded, never cut off!) -->
-      <div class="cart-drawer-footer">
-        <!-- Unboxed Total Cost -->
-        <div class="cart-total-row flex flex-between align-baseline mb-sm">
-          <span class="text-sm font-bold text-secondary">มูลค่าต้นทุนรวม:</span>
-          <span class="text-2xl font-bold text-primary">฿{{ formatNumber(totalCartCost) }}</span>
-        </div>
-
-        <!-- 48px Submit Button -->
-        <button 
-          class="btn btn-primary btn-submit-requisition w-full"
-          :disabled="cart.length === 0 || isSubmitting"
-          @click="submitRequisition"
-        >
-          <i class="fa-solid fa-paper-plane mr-2"></i>
-          <span>{{ isSubmitting ? 'กำลังส่งคำขอ...' : 'ยื่นคำขอเบิกของจากครัวกลาง' }}</span>
-        </button>
       </div>
     </div>
 
@@ -1148,46 +1092,8 @@ onMounted(() => {
   border-radius: var(--radius-lg);
 }
 
-/* 44px Touch Friendly Tab Switcher */
-.requisition-tabs {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: center;
-}
-
 .relative {
   position: relative !important;
-}
-
-.requisition-tab-btn {
-  position: relative !important;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  user-select: none;
-}
-
-.requisition-tab-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.requisition-tab-btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.2);
 }
 
 .badge-count {
@@ -1210,7 +1116,7 @@ onMounted(() => {
   z-index: 2;
 }
 
-.requisition-tab-btn.active .badge-count {
+.category-tab.active .badge-count {
   background-color: var(--accent, #ffab2b) !important;
   color: var(--primary-dark, #500000) !important;
   border-color: #ffffff !important;
@@ -1297,43 +1203,6 @@ onMounted(() => {
 
 .search-clear-btn:hover {
   color: var(--text-primary);
-}
-
-/* 44px Capsule Category Filter Tabs */
-.category-tabs {
-  display: flex;
-  gap: var(--space-xs);
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.category-tab {
-  height: 44px;
-  padding: 0 18px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  user-select: none;
-}
-
-.category-tab:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.category-tab.active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.2);
 }
 
 .category-count {
@@ -1806,150 +1675,6 @@ onMounted(() => {
   box-shadow: var(--shadow-md);
 }
 
-/* ============================================================ */
-/* MOBILE DOCKED CART BAR & BOTTOM SHEET DRAWER (POS DESIGN)    */
-/* ============================================================ */
-.cart-bar {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width);
-  height: var(--cart-bar-height, 60px);
-  padding: 0 var(--space-lg);
-  background: rgba(139, 3, 19, 0.96);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-top: 2px solid var(--accent, #ffab2b);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  animation: slideUp 0.3s ease;
-  box-sizing: border-box;
-}
-
-.cart-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  width: 100% !important;
-}
-
-.cart-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.cart-count {
-  font-size: var(--font-xs);
-  color: rgba(255, 247, 223, 0.85);
-  line-height: 1.2;
-}
-
-.cart-total {
-  font-size: var(--font-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--accent, #ffab2b);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-
-.cart-pay-btn {
-  padding: 8px 18px;
-  background: var(--accent, #ffab2b);
-  color: var(--primary-dark, #500000);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-md);
-  box-shadow: 0 0 15px rgba(255, 171, 43, 0.35);
-  border: none;
-  cursor: pointer;
-  font-size: var(--font-sm);
-  transition: all var(--transition-base);
-}
-
-.cart-pay-btn:active {
-  transform: scale(0.96);
-  box-shadow: 0 0 25px rgba(255, 171, 43, 0.5);
-}
-
-/* Mobile Slide-up Drawer Overlay */
-.cart-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  z-index: 55;
-  animation: fadeIn 0.2s ease;
-}
-
-/* Mobile Slide-up Cart Drawer Panel */
-.cart-detail-panel {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width);
-  max-height: 75vh;
-  background: var(--bg-secondary, #fff8ee);
-  border: 2px solid var(--primary-light, #ad281e) !important;
-  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  z-index: 56;
-  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  overflow: hidden;
-}
-
-.cart-detail-panel.hidden {
-  display: none !important;
-}
-
-.cart-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px !important;
-  border-bottom: 2px dashed rgba(139, 3, 19, 0.15) !important;
-  background: rgba(255, 247, 223, 0.98) !important;
-  z-index: 1;
-  flex-shrink: 0;
-}
-
-.cart-drawer-scroll-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 14px 18px;
-  max-height: calc(75vh - 165px);
-}
-
-.cart-drawer-footer {
-  flex-shrink: 0;
-  background: #ffffff;
-  border-top: 1px solid rgba(139, 3, 19, 0.12);
-  padding: 12px 18px 16px 18px;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.cart-drawer-footer .cart-total-row {
-  margin-bottom: 10px;
-}
-
-.cart-drawer-footer .btn-submit-requisition {
-  height: 48px;
-  font-size: 15px;
-  font-weight: 700;
-  border-radius: var(--radius-md);
-}
-
 /* Orders Tab: Desktop Table vs Mobile Itemized Cards */
 .desktop-only-orders-table {
   display: block;
@@ -1990,36 +1715,17 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  /* Toolbar Tabs: 50/50 Full Width */
   .toolbar-card {
     padding: var(--space-sm) !important;
   }
 
-  .requisition-tabs {
-    width: 100%;
-  }
-
-  .requisition-tab-btn {
-    flex: 1;
-    padding: 0 12px;
-    height: 42px;
-    font-size: 13px;
-  }
-
   /* Filter Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
-  .category-tabs {
+  .filter-bar .category-tabs {
     flex-wrap: wrap !important;
     overflow-x: visible !important;
     padding-bottom: 0 !important;
     gap: 6px !important;
     width: 100% !important;
-  }
-
-  .category-tab {
-    flex-shrink: 0 !important;
-    height: 34px !important;
-    padding: 0 10px !important;
-    font-size: 12px !important;
   }
 
   /* ========================================================== */
@@ -2336,7 +2042,6 @@ onMounted(() => {
   }
 }
 /* --- Redesign Polish & Web Interface Guidelines --- */
-.requisition-tab-btn,
 .category-tab,
 .btn-qty,
 .btn-restock-main,
@@ -2348,7 +2053,6 @@ onMounted(() => {
   touch-action: manipulation;
 }
 
-.requisition-tab-btn:focus-visible,
 .category-tab:focus-visible,
 .btn-qty:focus-visible,
 .btn-restock-main:focus-visible,
@@ -2419,12 +2123,6 @@ onMounted(() => {
 @media (min-width: 769px) {
   .branch-requisition-view > .toolbar-card {
     padding: var(--space-xl) !important;
-  }
-  .requisition-tab-btn {
-    height: auto;
-    padding: var(--space-md) var(--space-xl);
-    font-size: var(--font-base);
-    border-radius: var(--radius-md);
   }
 }
 </style>
