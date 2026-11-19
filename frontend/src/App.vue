@@ -1248,7 +1248,7 @@ onUnmounted(() => {
 }
 
 .sheet-option-card.current {
-  background: rgba(139, 3, 19, 0.06);
+  background: #ffffff;
   border-color: var(--primary);
 }
 
