@@ -244,8 +244,8 @@
               <div class="card" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: var(--space-lg) var(--space-xl);">
                 
                 <!-- Grouped header showing active channel and change method button -->
-                <div v-if="paymentMethod" class="flex flex-between align-center mb-lg" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-                  <span class="font-bold text-primary text-md">
+                <div v-if="paymentMethod" class="flex flex-between align-center mb-lg" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm); gap: var(--space-xs);">
+                  <span class="font-bold text-primary text-md whitespace-nowrap">
                     <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> ช่องทาง: {{ getPaymentMethodLabel(paymentMethod) }}
                   </span>
                   <button class="btn btn-secondary change-method-btn" @click="paymentMethod = null">
@@ -302,7 +302,7 @@
                   <!-- Quick Amount Selector -->
                   <div class="quick-amounts flex gap-sm mb-md" style="overflow-x: auto; padding-bottom: var(--space-xs);">
                     <button 
-                      class="quick-amount-btn" 
+                      class="filter-pill quick-amount-btn tabular-nums" 
                       :class="{ 'active': Number(enteredAmount) === netTotal }"
                       @click="enteredAmount = netTotal"
                     >
@@ -311,7 +311,7 @@
                     <button 
                       v-for="amt in quickAmountOptions" 
                       :key="amt" 
-                      class="quick-amount-btn"
+                      class="filter-pill quick-amount-btn tabular-nums"
                       :class="{ 'active': Number(enteredAmount) === amt }"
                       @click="enteredAmount = amt"
                     >
@@ -590,9 +590,9 @@ const pressNum = (key) => {
 const getPaymentMethodLabel = (method) => {
   const map = {
     'cash': 'เงินสด',
-    'qr': 'QR / โอน',
-    'gov': 'โครงการรัฐ',
-    'delivery': 'เดลิเวอรี'
+    'qr': 'QR',
+    'gov': 'รัฐ',
+    'delivery': 'เดลิ'
   };
   return map[method] || method;
 };
@@ -929,31 +929,15 @@ const confirmDeliveryPayment = () => {
 
 .quick-amounts::-webkit-scrollbar { display: none; }
 
-.quick-amount-btn {
-  padding: var(--space-sm) var(--space-lg);
+.quick-amount-btn:not(.active) {
   background: rgba(139, 3, 19, 0.05);
-  border: 1px solid rgba(139, 3, 19, 0.15);
-  border-radius: var(--radius-full);
+  border-color: rgba(139, 3, 19, 0.15);
   color: var(--primary);
-  font-size: var(--font-sm);
   font-weight: var(--font-weight-semibold);
-  white-space: nowrap;
-  transition: var(--transition-base);
-  cursor: pointer;
 }
 
 .quick-amount-btn:hover:not(.active) {
   background: rgba(139, 3, 19, 0.10);
-}
-
-.quick-amount-btn.active {
-  background: var(--primary);
-  color: white;
-  border-color: transparent;
-}
-
-.quick-amount-btn:active {
-  transform: scale(0.95);
 }
 
 /* --- Payment Methods --- */
