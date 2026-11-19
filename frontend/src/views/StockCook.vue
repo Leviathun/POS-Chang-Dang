@@ -296,7 +296,7 @@
 
             <!-- Linkage Deduction Hint in Confirmation Modal (Requested by user) -->
             <div v-if="getLinkageDeductionNotice(activeModalItem, modalQuantity)" class="mb-md flex align-center gap-sm" style="background: rgba(139, 3, 19, 0.04); border-left: 3px solid var(--primary); border-radius: var(--radius-md); border: 1px solid rgba(139, 3, 19, 0.08); padding: 12px 16px; font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5;">
-              <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: 14px;"></i>
+              <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: var(--font-sm);"></i>
               <span>{{ getLinkageDeductionNotice(activeModalItem, modalQuantity) }}</span>
             </div>
 
@@ -364,7 +364,7 @@
             <!-- Batch Linkage Deduction Hints (Requested by user) -->
             <div v-if="getBatchLinkageNotices.length > 0" class="mb-md flex flex-col gap-xs" style="background: #ffffff; border-left: 3px solid var(--primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 12px 16px; font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5;">
               <div v-for="notice in getBatchLinkageNotices" :key="notice" class="flex align-center gap-sm">
-                <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: 14px;"></i>
+                <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: var(--font-sm);"></i>
                 <span>{{ notice }}</span>
               </div>
             </div>
@@ -1041,7 +1041,7 @@ onUnmounted(() => {
   border: none;
   color: var(--text-tertiary);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-sm);
 }
 
 /* Stable Filter Toggle (No resizing or layout shifts) */

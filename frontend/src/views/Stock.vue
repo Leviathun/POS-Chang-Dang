@@ -572,16 +572,16 @@
                     <span 
                       class="badge flex-shrink-0" 
                       :style="isRawLog(log) 
-                        ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;' 
-                        : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;'"
+                        ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 2px 7px; font-size: var(--font-xxs); font-weight: bold; display: inline-flex; align-items: center; gap: 4px;' 
+                        : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 2px 7px; font-size: var(--font-xxs); font-weight: bold; display: inline-flex; align-items: center; gap: 4px;'"
                     >
-                      <i :class="isRawLog(log) ? 'fa-solid fa-box' : (isFriedFoodItem(activeItem?.name) ? 'fa-solid fa-drumstick-bite' : 'fa-solid fa-circle-check')" style="font-size: 10px;"></i>
+                      <i :class="isRawLog(log) ? 'fa-solid fa-box' : (isFriedFoodItem(activeItem?.name) ? 'fa-solid fa-drumstick-bite' : 'fa-solid fa-circle-check')" style="font-size: var(--font-xxs);"></i>
                       {{ isRawLog(log) ? 'ของสด' : 'พร้อมขาย' }}
                     </span>
 
                     <!-- Action / Movement Title -->
-                    <span class="font-bold truncate text-primary flex align-center gap-xs" style="font-size: 13px;">
-                      <i :class="getReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
+                    <span class="font-bold truncate text-primary flex align-center gap-xs" style="font-size: var(--font-xs);">
+                      <i :class="getReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: var(--font-xxs);"></i>
                       <span>{{ getStockLogActionLabel(log) }}</span>
                     </span>
                   </div>
@@ -590,8 +590,8 @@
                   <span 
                     class="flex-shrink-0"
                     :style="log.change_qty > 0 
-                      ? 'background: rgba(22, 101, 52, 0.12); color: #15803d; font-weight: bold; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(22, 101, 52, 0.2);' 
-                      : 'background: rgba(220, 38, 38, 0.12); color: #dc2626; font-weight: bold; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(220, 38, 38, 0.2);'"
+                      ? 'background: rgba(22, 101, 52, 0.12); color: #15803d; font-weight: bold; font-size: var(--font-xs); padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(22, 101, 52, 0.2);' 
+                      : 'background: rgba(220, 38, 38, 0.12); color: #dc2626; font-weight: bold; font-size: var(--font-xs); padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(220, 38, 38, 0.2);'"
                   >
                     {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} {{ activeItem?.uom || 'ชิ้น' }}
                   </span>
@@ -599,19 +599,19 @@
 
                 <!-- Row 2: Status Explanation & Meaningful Note (Full width, no wrapping collisions) -->
                 <div v-if="formatLogNote(log, isRawLog(log))" class="text-xs text-secondary flex align-start gap-xs" style="background: rgba(0,0,0,0.02); padding: 5px 8px; border-radius: var(--radius-sm); border-left: 2.5px solid var(--border-color); line-height: 1.4; word-break: break-word;">
-                  <i class="fa-solid fa-circle-info text-muted" style="margin-top: 2px; font-size: 10px; flex-shrink: 0;"></i>
+                  <i class="fa-solid fa-circle-info text-muted" style="margin-top: 2px; font-size: var(--font-xxs); flex-shrink: 0;"></i>
                   <span>{{ formatLogNote(log, isRawLog(log)) }}</span>
                 </div>
 
                 <!-- Row 3: Footer (Staff, Timestamp & Remaining Balance) -->
                 <div class="flex flex-between align-center pt-xs text-xs text-muted" style="border-top: 1px dashed var(--border-color); margin-top: 2px; gap: 8px;">
-                  <div class="truncate text-muted" style="font-size: 11px;">
+                  <div class="truncate text-muted" style="font-size: var(--font-xxs);">
                     <i class="fa-regular fa-user" style="margin-right: 3px;"></i>{{ log.staff_name || 'ระบบ' }}
                     <span style="margin: 0 4px; opacity: 0.5;">•</span>
                     {{ formatDateTime(log.created_at) }}
                   </div>
-                  <div class="flex-shrink-0" style="font-size: 12px; font-variant-numeric: tabular-nums;">
-                    <span style="font-size: 11px; color: var(--text-tertiary); margin-right: 4px;">{{ activeIsModifier ? 'คงเหลือ' : (isRawLog(log) ? 'ของสดคงเหลือ' : 'พร้อมขายคงเหลือ') }}:</span>
+                  <div class="flex-shrink-0" style="font-size: var(--font-xs); font-variant-numeric: tabular-nums;">
+                    <span style="font-size: var(--font-xxs); color: var(--text-tertiary); margin-right: 4px;">{{ activeIsModifier ? 'คงเหลือ' : (isRawLog(log) ? 'ของสดคงเหลือ' : 'พร้อมขายคงเหลือ') }}:</span>
                     <strong style="color: var(--text-primary);">{{ log.new_stock }} {{ activeItem?.uom || 'ชิ้น' }}</strong>
                   </div>
                 </div>
@@ -624,9 +624,9 @@
                 style="margin: -6px 0; z-index: 2; position: relative;"
               >
                 <div 
-                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.06);"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: var(--font-xxs); font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.06);"
                 >
-                  <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
+                  <i class="fa-solid fa-arrow-down" style="font-size: var(--font-xxs);"></i>
                   <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
                 </div>
               </div>
