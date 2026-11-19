@@ -3,14 +3,18 @@
     
     <!-- Top Action Toolbar Card -->
     <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div>
-        <h2 class="font-bold text-lg mb-xs flex align-center gap-xs">
-          <i class="fa-solid fa-boxes-packing text-primary"></i>
-          <span>ระบบขอเบิกของจากครัวกลาง</span>
-        </h2>
-        <p class="text-secondary text-xs">
-          เลือกรายการของที่ต้องการจากคลังส่วนกลาง เมื่อได้รับของแล้วยอดเงินจะถูกบันทึกเป็นต้นทุนของสาขาอัตโนมัติ
-        </p>
+      <div class="flex align-center gap-md">
+        <div class="header-icon-circle">
+          <i class="fa-solid fa-boxes-packing text-primary" style="font-size: 1.3rem;"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-lg text-primary" style="margin: 0;">
+            ระบบขอเบิกของจากครัวกลาง
+          </h2>
+          <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+            เลือกรายการของที่ต้องการจากคลังส่วนกลาง เมื่อได้รับของแล้วยอดเงินจะถูกบันทึกเป็นต้นทุนของสาขาอัตโนมัติ
+          </p>
+        </div>
       </div>
     </div>
 
@@ -170,7 +174,7 @@
             <div class="item-meta-box">
               <div class="item-meta-row flex flex-between align-center text-xs py-1">
                 <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
-                <span class="font-bold text-primary item-cost-val" style="font-size: 1rem;">
+                <span class="font-bold text-primary item-cost-val" style="font-size: var(--font-base);">
                   ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
                 </span>
               </div>
@@ -187,7 +191,7 @@
                     'text-warning': item.quantity > 0 && item.quantity <= (item.min_stock_alert || 5),
                     'text-success': item.quantity > (item.min_stock_alert || 5)
                   }"
-                  style="font-size: 1rem;"
+                  style="font-size: var(--font-base);"
                 >
                   <span class="stock-prefix">เหลือ </span>{{ formatNumber(item.quantity) }} {{ item.unit }}
                 </span>
@@ -198,7 +202,7 @@
                   <i class="fa-solid fa-arrows-rotate text-primary"></i>
                   <span>แปลงหน่วย:</span>
                 </span>
-                <span class="font-bold text-primary" style="font-size: 0.85rem;">
+                <span class="font-bold text-primary item-pack-val" style="font-size: var(--font-sm);">
                   1 {{ item.unit }} = {{ item.pack_size }} ชิ้น
                 </span>
               </div>
@@ -399,8 +403,8 @@
           <div class="cart-item-info">
             <div class="cart-item-name">{{ getItemNameParts(c.item_name).main }}</div>
             <div class="cart-item-price">
-              ฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}
-              <span v-if="c.pack_size > 1" class="text-primary font-semibold"> (เติม {{ c.quantity * c.pack_size }} ชิ้น)</span>
+              <div>฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}</div>
+              <div v-if="c.pack_size > 1" class="text-primary font-semibold" style="margin-top: 2px;">(เติม {{ c.quantity * c.pack_size }} ชิ้น)</div>
             </div>
           </div>
           <div class="cart-item-qty">
@@ -487,10 +491,6 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-secondary btn-sm flex align-center gap-xs" @click="loadMyTransfers">
-            <i class="fa-solid fa-rotate-right"></i>
-            <span>รีเฟรช</span>
-          </button>
         </div>
       </div>
 
@@ -1085,6 +1085,7 @@ onMounted(() => {
   width: 100%;
 }
 
+.header-icon-circle { width: 44px; height: 44px; border-radius: 50%; background: rgba(139, 3, 19, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .toolbar-card {
   box-shadow: var(--shadow-sm);
   background: var(--card-bg);
@@ -1278,7 +1279,7 @@ onMounted(() => {
 }
 
 .card-badge-category {
-  font-size: 11.5px !important;
+  font-size: var(--font-xs) !important;
   padding: 3px 10px !important;
   border-radius: var(--radius-full) !important;
   background: var(--bg-secondary) !important;
@@ -1335,9 +1336,9 @@ onMounted(() => {
 
 /* 2-Line Name Block */
 .item-name {
-  font-size: 0.92rem;
+  font-size: var(--font-base);
   line-height: 1.35;
-  min-height: 42px;
+  min-height: unset;
   color: var(--text-primary);
   margin-bottom: var(--space-xs);
   width: 100%;
@@ -1715,7 +1716,7 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .toolbar-card {
+  .filter-bar {
     padding: var(--space-sm) !important;
   }
 
@@ -1800,7 +1801,7 @@ onMounted(() => {
   }
 
   .card-badge-category {
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     padding: 2px 6px !important;
     max-width: calc(100% - 26px) !important;
     min-width: 0 !important;
@@ -1818,7 +1819,7 @@ onMounted(() => {
     width: 20px !important;
     height: 20px !important;
     min-width: 20px !important;
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     border-radius: 50% !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -1829,7 +1830,7 @@ onMounted(() => {
 
   /* 2. Soft Cream Image Box */
   .item-img-container {
-    height: 95px !important;
+    height: 115px !important;
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -1845,9 +1846,9 @@ onMounted(() => {
 
   /* 3. 2-Line Name Block */
   .item-name {
-    font-size: 0.82rem !important;
+    font-size: var(--font-base) !important;
     line-height: 1.3 !important;
-    min-height: 36px !important;
+    min-height: unset !important;
     margin-bottom: 2px !important;
     text-align: left !important;
     display: flex !important;
@@ -1861,7 +1862,7 @@ onMounted(() => {
   }
 
   .item-name-main {
-    font-size: 0.82rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -1876,7 +1877,7 @@ onMounted(() => {
 
   .item-name-sub {
     display: block !important;
-    font-size: 0.7rem !important;
+    font-size: var(--font-xs) !important;
     color: var(--text-secondary) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -1892,8 +1893,8 @@ onMounted(() => {
   /* 4. Meta Box: Dashed divider + ราคาเบิก / คงเหลือ rows (เส้นประมีระยะห่างสบายตา ไม่ชิด) */
   .item-meta-box {
     border-top: 1px dashed var(--border-color) !important;
-    margin-top: 10px !important;
-    padding-top: 8px !important;
+    margin-top: 6px !important;
+    padding-top: 6px !important;
     margin-bottom: 0 !important;
     display: flex !important;
     flex-direction: column !important;
@@ -1918,7 +1919,7 @@ onMounted(() => {
   .item-meta-label {
     display: inline-flex !important;
     align-items: center !important;
-    font-size: 10.5px !important;
+    font-size: var(--font-xs) !important;
     color: var(--text-secondary) !important;
     font-weight: 500 !important;
     white-space: nowrap !important;
@@ -1927,11 +1928,11 @@ onMounted(() => {
 
   .item-unit-slash {
     display: inline !important;
-    font-size: 10px !important;
+    font-size: var(--font-xs) !important;
   }
 
   .item-cost-val {
-    font-size: 0.88rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     color: var(--text-primary) !important;
     white-space: nowrap !important;
@@ -1939,7 +1940,7 @@ onMounted(() => {
   }
 
   .item-stock-val {
-    font-size: 0.88rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
@@ -2003,7 +2004,21 @@ onMounted(() => {
   }
 }
 
+@media (min-width: 641px) and (max-width: 1023px) {
+  .grid-cards { gap: 12px !important; }
+  .item-card { padding: 12px !important; }
+  .item-img-container { height: 170px !important; margin-bottom: 8px !important; }
+  .card-badge-category { font-size: var(--font-xs) !important; padding: 3px 10px !important; }
+  .card-badge-status { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: var(--font-xs) !important; }
+  .item-name, .item-name-main { font-size: var(--font-md) !important; }
+  .item-meta-label { font-size: var(--font-sm) !important; }
+}
 @media (max-width: 640px) {
+  .item-img-container { height: 100px !important; }
+  .item-name, .item-name-main { font-size: var(--font-sm) !important; }
+  .item-meta-label, .item-unit-slash { font-size: var(--font-xxs) !important; }
+  .item-cost-val, .item-stock-val { font-size: var(--font-sm) !important; white-space: nowrap !important; }
+  .item-pack-val { font-size: var(--font-xxs) !important; white-space: nowrap !important; }
   /* Orders Tab Table vs Mobile Itemized Cards */
   .desktop-only-orders-table {
     display: none !important;
