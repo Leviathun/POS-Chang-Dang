@@ -1295,7 +1295,7 @@
     <div class="mobile-logout-section card mt-xl">
       <div class="flex flex-between align-center">
         <div class="flex align-center gap-sm">
-          <i class="fa-solid fa-circle-user text-primary" style="font-size: 1.5rem;"></i>
+          <i class="fa-solid fa-circle-user text-primary" style="font-size: var(--font-xl);"></i>
           <div>
             <div class="font-bold text-base text-primary">{{ currentUser?.name }}</div>
             <div class="text-xs text-secondary">{{ getRoleLabel(currentUser?.role) }}</div>
@@ -2501,7 +2501,7 @@ input:checked + .slider:before {
   position: absolute;
   top: 8px;
   right: 8px;
-  font-size: 1rem;
+  font-size: var(--font-base);
   color: var(--primary);
   opacity: 0;
   transform: scale(0.5);
@@ -2582,7 +2582,7 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: var(--font-md);
   flex-shrink: 0;
 }
 .diner-header-title {
@@ -2592,7 +2592,7 @@ input:checked + .slider:before {
 }
 .diner-header-title strong {
   color: var(--primary);
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
 }
 .diner-header-actions {
   display: flex;
@@ -2662,7 +2662,7 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: var(--font-md);
   flex-shrink: 0;
 }
 .diner-icon-badge.is-solid {
