@@ -158,15 +158,15 @@
             <div class="sales-clean-stat border-sides">
               <span class="stat-clean-label">จำนวนคำสั่งซื้อ</span>
               <span class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
-                {{ displayedDailyReport.all_orders }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">บิลทั้งหมด</small>
+                {{ displayedDailyReport.all_orders }} <small style="font-size: var(--font-xs); font-weight: normal; color: var(--text-secondary);">บิลทั้งหมด</small>
               </span>
               <div class="stat-sub-meta flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
                 <span style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-circle-check" style="font-size: 0.7rem;"></i> ชำระแล้ว {{ displayedDailyReport.total_orders }} บิล
+                  <i class="fa-solid fa-circle-check" style="font-size: var(--font-xxs);"></i> ชำระแล้ว {{ displayedDailyReport.total_orders }} บิล
                 </span>
                 <span class="stat-sub-sep" style="color: var(--border-color-light);">|</span>
                 <span style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fa-solid fa-ban" style="font-size: 0.7rem;"></i> ยกเลิก {{ displayedDailyReport.cancelled_orders }} บิล
+                  <i class="fa-solid fa-ban" style="font-size: var(--font-xxs);"></i> ยกเลิก {{ displayedDailyReport.cancelled_orders }} บิล
                 </span>
               </div>
             </div>
@@ -178,7 +178,7 @@
                     type="button"
                     @click="showAvgBillInfo = !showAvgBillInfo"
                     aria-label="ดูสูตรการคำนวณ"
-                    style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                    style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: var(--font-sm); display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
                     :style="showAvgBillInfo ? { color: 'var(--primary)', background: 'rgba(139, 3, 19, 0.08)' } : {}"
                   >
                     <i class="fa-solid fa-circle-info"></i>
@@ -191,7 +191,7 @@
                   >
                     <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(139, 3, 19, 0.18); border-left: 1px solid rgba(139, 3, 19, 0.18); transform: rotate(45deg);"></div>
                     <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                      <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
+                      <i class="fa-solid fa-calculator" style="font-size: var(--font-xxs);"></i>
                       <span>สูตรการคำนวณ</span>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -203,14 +203,14 @@
                 </div>
               </div>
               <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
-              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="stat-sub-meta flex align-center text-xs tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 5px; margin-top: 4px; font-size: 0.78rem;">
+              <div v-if="displayedDailyReport.historical_avg_bill > 0" class="stat-sub-meta flex align-center text-xs tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 5px; margin-top: 4px; font-size: var(--font-xxs);">
                 <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
                 <span class="stat-sub-sep" style="color: var(--border-color-light);">|</span>
                 <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
-                  <i class="fa-solid fa-arrow-trend-up" style="font-size: 0.72rem;"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
+                  <i class="fa-solid fa-arrow-trend-up" style="font-size: var(--font-xxs);"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
                 </span>
                 <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
-                  <i class="fa-solid fa-arrow-trend-down" style="font-size: 0.72rem;"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
+                  <i class="fa-solid fa-arrow-trend-down" style="font-size: var(--font-xxs);"></i> -{{ formatCurrency(displayedDailyReport.historical_avg_bill - displayedDailyReport.average_bill) }} (ต่ำกว่าเกณฑ์)
                 </span>
               </div>
             </div>
@@ -370,7 +370,7 @@
                   <div class="flex align-center" style="flex-wrap: wrap; gap: 14px;">
                     <!-- 2. เวลา -->
                     <span class="text-xs text-muted tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <i class="fa-regular fa-clock" style="font-size: var(--font-xxs);"></i>
                       <span>{{ formatTime(order.created_at) }}</span>
                     </span>
                     <!-- 3. ประเภทการชำระเงิน -->
@@ -605,17 +605,17 @@
                   <div class="flex align-center" style="flex-wrap: wrap; gap: 14px;">
                     <!-- Date & Time -->
                     <span class="text-xs text-muted tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <i class="fa-regular fa-clock" style="font-size: var(--font-xxs);"></i>
                       <span>{{ formatDate(order.created_at) }} {{ formatTime(order.created_at) }}</span>
                     </span>
                     <!-- Staff -->
                     <span class="text-xs text-secondary" v-if="order.staff_name" style="display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
+                      <i class="fa-regular fa-user" style="font-size: var(--font-xxs);"></i>
                       <span>{{ order.staff_name }}</span>
                     </span>
                     <!-- Branch -->
                     <span class="text-xs text-secondary" v-if="order.branch_name && !selectedBranchId" style="display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-solid fa-store" style="font-size: 0.75rem;"></i>
+                      <i class="fa-solid fa-store" style="font-size: var(--font-xxs);"></i>
                       <span>{{ order.branch_name }}</span>
                     </span>
                     <!-- Payment Method -->
@@ -1005,7 +1005,7 @@
               <span class="stat-clean-label">จำนวนเมนูที่ขายได้</span>
               <div v-if="loading || topItemsLoading" class="skeleton mt-xs" style="height: 28px; width: 90px; border-radius: 6px;"></div>
               <span v-else class="stat-clean-val tabular-nums" style="color: var(--text-primary);">
-                {{ topItems.length }} <small style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">รายการ</small>
+                {{ topItems.length }} <small style="font-size: var(--font-xs); font-weight: normal; color: var(--text-secondary);">รายการ</small>
               </span>
             </div>
             <div class="sales-clean-stat">
@@ -1264,8 +1264,8 @@
                 </div>
                 <div class="log-details tabular-nums">{{ formatActivityDetails(log) }}</div>
                 <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-                  <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-user" style="font-size: 0.75rem;"></i><span>{{ log.staff_name || 'ระบบ' }}</span></span>
-                  <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i><span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span></span>
+                  <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-user" style="font-size: var(--font-xxs);"></i><span>{{ log.staff_name || 'ระบบ' }}</span></span>
+                  <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-regular fa-clock" style="font-size: var(--font-xxs);"></i><span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span></span>
                 </div>
               </div>
             </div>
@@ -1360,7 +1360,7 @@
         >
           <div class="flex flex-between align-center mb-xs">
             <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
-              <span class="sales-kpi-icon-badge" style="background: rgba(220, 38, 38, 0.1); color: #dc2626;"><i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i></span>
+              <span class="sales-kpi-icon-badge" style="background: rgba(220, 38, 38, 0.1); color: #dc2626;"><i class="fa-solid fa-trash-can" style="font-size: var(--font-xxs);"></i></span>
               สินค้าเสีย / ทิ้ง
             </span>
             <span class="badge badge-danger tabular-nums" style="font-size: var(--font-xxs);">{{ stockWasteCount }} รายการ</span>
@@ -1390,7 +1390,7 @@
         >
           <div class="flex flex-between align-center mb-xs">
             <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
-              <span class="sales-kpi-icon-badge" style="background: rgba(234, 88, 12, 0.1); color: #ea580c;"><i class="fa-solid fa-utensils" style="font-size: 0.75rem;"></i></span>
+              <span class="sales-kpi-icon-badge" style="background: rgba(234, 88, 12, 0.1); color: #ea580c;"><i class="fa-solid fa-utensils" style="font-size: var(--font-xxs);"></i></span>
               เครดิตพนักงาน / สวัสดิการ
             </span>
             <span class="badge tabular-nums" style="background: rgba(234, 88, 12, 0.12); color: #ea580c; font-size: var(--font-xxs);">{{ stockStaffCreditCount }} รายการ</span>
@@ -1420,7 +1420,7 @@
         >
           <div class="flex flex-between align-center mb-xs">
             <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
-              <span class="sales-kpi-icon-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-boxes-packing" style="font-size: 0.75rem;"></i></span>
+              <span class="sales-kpi-icon-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-boxes-packing" style="font-size: var(--font-xxs);"></i></span>
               การเติมสต็อกรวม
             </span>
             <div class="flex align-center gap-xs">
@@ -1430,7 +1430,7 @@
                   type="button"
                   @click="showRestockValueInfo = !showRestockValueInfo"
                   aria-label="ดูที่มาของมูลค่าเติมสต็อก"
-                  style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                  style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: var(--font-sm); display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
                   :style="showRestockValueInfo ? { color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' } : {}"
                 >
                   <i class="fa-solid fa-circle-info"></i>
@@ -1442,7 +1442,7 @@
                 >
                   <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(16, 185, 129, 0.25); border-left: 1px solid rgba(16, 185, 129, 0.25); transform: rotate(45deg);"></div>
                   <div style="font-weight: 700; color: #059669; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-calculator" style="font-size: 0.75rem;"></i>
+                    <i class="fa-solid fa-calculator" style="font-size: var(--font-xxs);"></i>
                     <span>ที่มาของมูลค่าเติมสต็อก</span>
                   </div>
                   <div>คำนวณจาก <strong>ราคาขายหน้าร้าน × จำนวนชิ้นที่เติม</strong> ไม่ใช่ราคาทุนวัตถุดิบ</div>
@@ -1704,11 +1704,11 @@
 
                   <div class="log-meta" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                     <span class="log-user" style="display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-regular fa-user" style="font-size: 0.75rem;"></i>
+                      <i class="fa-regular fa-user" style="font-size: var(--font-xxs);"></i>
                       <span>{{ log.staff_name || 'ระบบ' }}</span>
                     </span>
                     <span class="log-time tabular-nums" style="display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="fa-regular fa-clock" style="font-size: 0.75rem;"></i>
+                      <i class="fa-regular fa-clock" style="font-size: var(--font-xxs);"></i>
                       <span>{{ formatDate(log.created_at) }} {{ formatTime(log.created_at) }}</span>
                     </span>
                   </div>
@@ -1721,7 +1721,7 @@
                   </div>
                   <div v-if="log.previous_stock !== null && log.previous_stock !== undefined" class="stock-balance-flow">
                     <span>{{ log.previous_stock }}</span>
-                    <i class="fa-solid fa-arrow-right" style="font-size: 9px; opacity: 0.6;"></i>
+                    <i class="fa-solid fa-arrow-right" style="font-size: var(--font-xxs); opacity: 0.6;"></i>
                     <strong style="color: var(--text-primary);">{{ log.new_stock }}</strong>
                   </div>
                 </div>
@@ -1735,9 +1735,9 @@
               >
                 <div 
                   class="cook-pair-pill"
-                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: border-color var(--transition-base), box-shadow var(--transition-base);"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: var(--font-xxs); font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: border-color var(--transition-base), box-shadow var(--transition-base);"
                 >
-                  <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
+                  <i class="fa-solid fa-arrow-down" style="font-size: var(--font-xxs);"></i>
                   <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
                 </div>
               </div>
@@ -1895,7 +1895,7 @@
           <div class="cash-card-header">
             <div class="flex flex-col gap-2xs">
               <span class="session-date">{{ formatDate(session.session_date) }}</span>
-              <span v-if="selectedBranchId === null && isAdminUser" style="font-size: 11px; color: var(--primary); font-weight: 600;">
+              <span v-if="selectedBranchId === null && isAdminUser" style="font-size: var(--font-xxs); color: var(--primary); font-weight: 600;">
                 <i class="fa-solid fa-store" style="margin-right: 3px;"></i>{{ session.branch_name || 'สาขา #' + session.branch_id }}
               </span>
             </div>
@@ -1931,7 +1931,7 @@
                 <span v-if="session.status === 'closed'" class="font-bold text-base">
                   {{ formatCurrency(session.actual_cash) }}
                 </span>
-                <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">ยังไม่ได้ตรวจนับ</span>
+                <span v-else class="text-secondary" style="font-size: var(--font-xs); font-weight: 500;">ยังไม่ได้ตรวจนับ</span>
               </span>
             </div>
             <div class="grid-item full-width">
@@ -1948,18 +1948,18 @@
                     ขาด -{{ formatCurrency(Math.abs(session.difference)) }}
                   </span>
                 </span>
-                <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">รอปิดยอดประจำวัน</span>
+                <span v-else class="text-secondary" style="font-size: var(--font-xs); font-weight: 500;">รอปิดยอดประจำวัน</span>
               </span>
             </div>
           </div>
 
           <!-- Card Actions: Buttons (Equal Width and Height) -->
           <div class="cash-card-actions">
-            <button class="btn btn-secondary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" @click="openOpeningCashModal(session)">
-              <i class="fa-solid fa-coins text-warning" style="font-size: 14px;"></i> กรอกยอดเงินทอน
+            <button class="btn btn-secondary flex-1" style="height: 42px; font-size: var(--font-xs); font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" @click="openOpeningCashModal(session)">
+              <i class="fa-solid fa-coins text-warning" style="font-size: var(--font-sm);"></i> กรอกยอดเงินทอน
             </button>
-            <button class="btn btn-primary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(139,3,19,0.2);" @click="openAuditModal(session)">
-              <i class="fa-solid fa-circle-check" style="font-size: 14px;"></i> ปิดยอดประจำวัน
+            <button class="btn btn-primary flex-1" style="height: 42px; font-size: var(--font-xs); font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(139,3,19,0.2);" @click="openAuditModal(session)">
+              <i class="fa-solid fa-circle-check" style="font-size: var(--font-sm);"></i> ปิดยอดประจำวัน
             </button>
           </div>
         </div>
@@ -4775,7 +4775,7 @@ select.reports-filter-control,
   }
 
   .log-details {
-    font-size: 0.8125rem;
+    font-size: var(--font-xs);
     line-height: 1.6;
     white-space: pre-line;
   }
@@ -5212,12 +5212,12 @@ select.reports-filter-control,
 }
 
 .cash-card-grid .grid-label {
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
 }
 
 .cash-card-grid .grid-value {
-  font-size: 14px;
+  font-size: var(--font-sm);
   color: var(--text-primary);
   font-weight: 700;
   white-space: nowrap;
@@ -5274,7 +5274,7 @@ select.reports-filter-control,
   flex: 1 1 0;
   width: 50%;
   height: 42px !important;
-  font-size: 13px !important;
+  font-size: var(--font-xs) !important;
   font-weight: 700 !important;
   border-radius: 8px !important;
   display: inline-flex !important;
@@ -5439,7 +5439,7 @@ select.reports-filter-control,
   color: var(--text-secondary);
 }
 .pay-card .pay-pct-badge {
-  font-size: 0.7rem;
+  font-size: var(--font-xxs);
   padding: 1px 6px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.04);
@@ -5489,7 +5489,7 @@ select.reports-filter-control,
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
@@ -5502,7 +5502,7 @@ select.reports-filter-control,
 .order-status-pill.pill-cancelled {
   background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
@@ -5510,7 +5510,7 @@ select.reports-filter-control,
 .order-discount-pill {
   background: rgba(239, 68, 68, 0.08);
   color: #dc2626;
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
@@ -5531,7 +5531,7 @@ select.reports-filter-control,
   align-items: center;
   justify-content: center;
   color: var(--text-tertiary);
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   transition: transform 0.2s ease;
 }
 .order-chevron-btn.rotate {
@@ -5552,7 +5552,7 @@ select.reports-filter-control,
 .order-item-qty {
   background: rgba(139, 3, 19, 0.06);
   color: var(--primary);
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   font-weight: 700;
   padding: 2px 6px;
   border-radius: var(--radius-sm);

@@ -1243,7 +1243,7 @@
           </div>
 
           <!-- Process Explanation & Safeguards -->
-          <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 16px;">
+          <div style="font-size: var(--font-xs); line-height: 1.6; color: var(--text-secondary); margin-bottom: 16px;">
             <div class="flex align-center gap-xs mb-xs" style="color: var(--success, #2a9d8f); font-weight: bold;">
               <i class="fa-solid fa-circle-check"></i>
               <span>ระบบจะดาวน์โหลดไฟล์ CSV สำรองข้อมูลลงเครื่องให้โดยอัตโนมัติก่อนเริ่มลบเสมอ</span>
@@ -2613,7 +2613,7 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
 }
 .btn-pin-toggle:hover {
   background: rgba(139, 3, 19, 0.16);
