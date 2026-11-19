@@ -913,10 +913,10 @@
         <div>
           <div class="text-xs font-bold text-secondary mb-sm">สำรองข้อมูลทั้งระบบ:</div>
           <div class="flex gap-md backup-btns-container">
-            <button class="btn btn-secondary flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <button class="btn btn-primary btn-bulk-back flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-database"></i> สำรองข้อมูล (.json)
             </button>
-            <button class="btn btn-secondary flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <button class="btn btn-primary btn-bulk-back flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูล (.db)
             </button>
           </div>
@@ -1132,12 +1132,12 @@
 
         <!-- Testing Buttons -->
         <div class="flex gap-md printer-btn-container" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
-          <button class="btn btn-primary" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+          <button class="btn btn-primary btn-bulk-back" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingPrint" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-file-invoice"></i>
             {{ isTestingPrint ? 'กำลังทดสอบ...' : 'ทดสอบพิมพ์ใบเสร็จ' }}
           </button>
-          <button class="btn btn-primary" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+          <button class="btn btn-primary btn-bulk-back" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingKick" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-key"></i>
             {{ isTestingKick ? 'กำลังทดสอบ...' : 'ทดสอบเปิดลิ้นชัก' }}
