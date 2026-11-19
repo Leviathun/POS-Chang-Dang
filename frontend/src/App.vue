@@ -251,8 +251,8 @@
           <!-- Desktop Page Title Header (Visible on Desktop) -->
           <div class="desktop-content-header">
             <h2 class="desktop-page-title flex align-center gap-xs">
-              <i v-if="route.path.startsWith('/central-kitchen')" class="fa-solid fa-warehouse text-primary mr-1" style="font-size: 1.15rem;"></i>
-              <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: 1.15rem;"></i>
+              <i v-if="route.path.startsWith('/central-kitchen')" class="fa-solid fa-warehouse text-primary mr-1" style="font-size: var(--font-md);"></i>
+              <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: var(--font-md);"></i>
               <span>{{ activeTitle }}</span>
             </h2>
             <div class="desktop-branch-badge" v-if="user">
@@ -390,11 +390,11 @@
       <transition-group name="toast-anim">
         <div v-for="t in uiState.toasts" :key="t.id" class="toast" :class="t.type">
           <span class="toast-icon inline-flex align-center">
-            <i v-if="t.type === 'success'" class="fa-solid fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i>
-            <i v-else-if="t.type === 'error'" class="fa-solid fa-circle-xmark" style="color: var(--danger); font-size: 1.2rem;"></i>
-            <i v-else-if="t.type === 'info'" class="fa-solid fa-circle-info" style="color: var(--accent); font-size: 1.2rem;"></i>
-            <i v-else-if="t.type === 'warning'" class="fa-solid fa-triangle-exclamation" style="color: var(--warning); font-size: 1.2rem;"></i>
-            <i v-else class="fa-solid fa-circle-info" style="font-size: 1.2rem;"></i>
+            <i v-if="t.type === 'success'" class="fa-solid fa-circle-check" style="color: var(--success); font-size: var(--font-md);"></i>
+            <i v-else-if="t.type === 'error'" class="fa-solid fa-circle-xmark" style="color: var(--danger); font-size: var(--font-md);"></i>
+            <i v-else-if="t.type === 'info'" class="fa-solid fa-circle-info" style="color: var(--accent); font-size: var(--font-md);"></i>
+            <i v-else-if="t.type === 'warning'" class="fa-solid fa-triangle-exclamation" style="color: var(--warning); font-size: var(--font-md);"></i>
+            <i v-else class="fa-solid fa-circle-info" style="font-size: var(--font-md);"></i>
           </span>
           <span class="toast-message">{{ t.message }}</span>
         </div>
@@ -1076,7 +1076,7 @@ onUnmounted(() => {
 
 .header-user-badge .user-icon,
 .header-branch-badge .branch-icon {
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   color: var(--primary, #8b0313);
   display: inline-flex;
   align-items: center;
@@ -1258,7 +1258,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   flex-shrink: 0;
 }
 
@@ -1407,7 +1407,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--danger);
-  font-size: 1.6rem;
+  font-size: var(--font-xl);
 }
 
 .confirm-title {
@@ -1610,7 +1610,7 @@ onUnmounted(() => {
   }
 
   .sidebar-user .user-avatar {
-    font-size: 1.5rem;
+    font-size: var(--font-xl);
     background: transparent;
     width: 40px;
     height: 40px;
@@ -1696,7 +1696,7 @@ onUnmounted(() => {
     background-color: var(--primary);
     color: white;
     border-radius: 999px;
-    font-size: 0.75rem;
+    font-size: var(--font-xxs);
     padding: 2px 8px;
     font-weight: bold;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -1795,7 +1795,7 @@ onUnmounted(() => {
   }
 
   .desktop-content-header .desktop-branch-badge .branch-icon {
-    font-size: 1.05rem;
+    font-size: var(--font-base);
     color: var(--primary, #8b0313);
     display: inline-flex;
     align-items: center;
