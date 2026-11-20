@@ -3225,7 +3225,7 @@
           <div class="flex gap-md mt-xl">
             <button class="btn-modal btn-modal-secondary flex-1" @click="showRestockModal = false">ยกเลิก</button>
             <button class="btn-modal btn-modal-primary flex-1" @click="submitQuickRestock">
-              <i class="fa-solid fa-check"></i> ยืนยัน
+              <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
           </div>
         </div>
@@ -3354,7 +3354,7 @@
               :disabled="adjustForm.actual_quantity === null || adjustForm.actual_quantity === undefined || adjustForm.actual_quantity < 0 || diffQuantity === 0"
               @click="submitAdjustStock"
             >
-              <i class="fa-solid fa-check"></i> ยืนยัน
+              <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
           </div>
         </div>
@@ -3449,8 +3449,8 @@
             <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingTransaction" @click="showTransactionModal = false">ยกเลิก</button>
             <button class="btn-modal btn-modal-primary flex-1" :disabled="isSavingTransaction" @click="submitTransaction">
               <i v-if="isSavingTransaction" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-check"></i>
-              {{ isSavingTransaction ? 'กำลังบันทึก...' : 'บันทึกรายการ' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingTransaction ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -3535,8 +3535,8 @@
             <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingWaste" @click="showWasteModal = false">ยกเลิก</button>
             <button class="btn-modal btn-modal-primary flex-1" :disabled="isSavingWaste" @click="submitWaste">
               <i v-if="isSavingWaste" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-trash-can"></i>
-              {{ isSavingWaste ? 'กำลังตัดสต็อก...' : 'ยืนยันตัดของเสีย' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingWaste ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -3591,8 +3591,8 @@
             <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingReimburse" @click="showReimburseModal = false">ยกเลิก</button>
             <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingReimburse" @click="submitReimburseBranch">
               <i v-if="isSubmittingReimburse" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-check"></i>
-              {{ isSubmittingReimburse ? 'กำลังบันทึก...' : 'ยืนยันโอนเงินคืน' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSubmittingReimburse ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -3663,7 +3663,7 @@
             <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingPayout" @click="showPayoutModal = false">ยกเลิก</button>
             <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingPayout" @click="submitPayout">
               <i v-if="isSubmittingPayout" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-check"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSubmittingPayout ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
@@ -3755,8 +3755,8 @@
               @click="submitAdjustItem"
             >
               <i v-if="isSubmittingAdjust" class="fa-solid fa-spinner fa-spin mr-1"></i>
-              <i v-else class="fa-solid fa-check mr-1"></i>
-              {{ isSubmittingAdjust ? 'กำลังบันทึก...' : 'ยืนยันปรับลดยอด' }}
+              <i v-else class="fa-solid fa-floppy-disk mr-1"></i>
+              {{ isSubmittingAdjust ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
