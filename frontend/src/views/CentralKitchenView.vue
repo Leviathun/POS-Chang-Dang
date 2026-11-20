@@ -341,14 +341,18 @@
     <div v-if="activeTab === 'dispatch'" class="dispatch-section">
       <!-- Top Action Toolbar Card -->
       <div class="card mb-lg p-md flex flex-between align-center toolbar-card dispatch-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div>
-          <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
-            <i class="fa-solid fa-truck-arrow-right text-primary"></i>
-            <span>ระบบจ่ายของให้สาขา (Push Model)</span>
-          </h3>
-          <p class="text-secondary text-xs">
-            ครัวกลางจัดส่งของให้สาขาโดยตรง เมื่อกดยืนยันจะตัดสต็อกครัวกลาง บันทึกเป็นรายจ่ายสาขา และเติมสต็อก POS ให้อัตโนมัติ
-          </p>
+        <div class="flex align-center gap-md">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-truck-arrow-right text-primary" style="font-size: var(--font-lg);"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-lg text-primary" style="margin: 0;">
+              ระบบจ่ายของให้สาขา (Push Model)
+            </h2>
+            <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+              ครัวกลางจัดส่งของให้สาขาโดยตรง เมื่อกดยืนยันจะตัดสต็อกครัวกลาง บันทึกเป็นรายจ่ายสาขา และเติมสต็อก POS ให้อัตโนมัติ
+            </p>
+          </div>
         </div>
 
         <!-- Target Branch Selector (Prominent in Toolbar) -->
@@ -1425,14 +1429,18 @@
     <div v-if="activeTab === 'finance' || activeTab === 'receivables'" class="finance-section">
       <!-- Toolbar Header -->
       <div class="card mb-lg p-md flex flex-between align-center toolbar-card finance-toolbar" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div>
-          <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
-            <i class="fa-solid fa-vault text-primary"></i>
-            <span>สมุดบัญชี & กระเป๋าเงินกองกลาง</span>
-          </h3>
-          <p class="text-secondary text-xs">
-            บันทึกเงินทุนตั้งต้นของเจ้าของร้าน, บันทึกเงินจ่ายซื้อของสดตุนเข้าคลัง, และติดตามเงินที่สาขาโอนคืนค่าของ
-          </p>
+        <div class="flex align-center gap-md">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-vault text-primary" style="font-size: var(--font-lg);"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-lg text-primary" style="margin: 0;">
+              สมุดบัญชี & กระเป๋าเงินกองกลาง
+            </h2>
+            <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+              บันทึกเงินทุนตั้งต้นของเจ้าของร้าน, บันทึกเงินจ่ายซื้อของสดตุนเข้าคลัง, และติดตามเงินที่สาขาโอนคืนค่าของ
+            </p>
+          </div>
         </div>
 
         <div class="finance-action-buttons flex align-center gap-sm flex-wrap">
@@ -2135,14 +2143,18 @@
     <div v-if="activeTab === 'partners'" class="partners-section">
       <!-- Store Selector Header Card -->
       <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div>
-          <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
-            <i class="fa-solid fa-calculator text-primary"></i>
-            <span>ระบบคำนวณกำไร & ปันผลหุ้นส่วน</span>
-          </h3>
-          <p class="text-secondary text-xs">
-            คำนวณกำไรสุทธิของแต่ละสาขาหลังหักต้นทุนของที่เบิกจากครัวกลาง และแบ่งปันผลอัตโนมัติ
-          </p>
+        <div class="flex align-center gap-md">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-calculator text-primary" style="font-size: var(--font-lg);"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-lg text-primary" style="margin: 0;">
+              ระบบคำนวณกำไร & ปันผลหุ้นส่วน
+            </h2>
+            <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+              คำนวณกำไรสุทธิของแต่ละสาขาหลังหักต้นทุนของที่เบิกจากครัวกลาง และแบ่งปันผลอัตโนมัติ
+            </p>
+          </div>
         </div>
 
         <div class="flex align-center gap-sm partner-branch-filter-box" style="flex-shrink: 0;">
@@ -8072,7 +8084,7 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   /* Toolbar Card on mobile */
   .dispatch-toolbar-card {
-    padding: var(--space-sm) 12px !important;
+    padding: var(--space-md) !important;
   }
 
   /* Fix Dropdown exceeding frame on mobile */

@@ -1156,6 +1156,17 @@ ul, ol { list-style: none; }
   margin: 0 !important;
 }
 
+.header-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(139, 3, 19, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 /* --- Control Bar Navigation & Picker Utilities start --- */
 .picker-nav-btn {
   height: 42px !important;
