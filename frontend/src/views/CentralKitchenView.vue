@@ -2142,7 +2142,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'partners'" class="partners-section">
       <!-- Store Selector Header Card -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card mb-lg p-md flex flex-between align-center toolbar-card partner-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
         <div class="flex align-center gap-md">
           <div class="header-icon-circle">
             <i class="fa-solid fa-calculator text-primary" style="font-size: var(--font-lg);"></i>
@@ -8436,8 +8436,18 @@ onUnmounted(() => {
   .item-pack-val { font-size: var(--font-xxs) !important; white-space: nowrap !important; }
 }
 @media (min-width: 769px) {
-  .dispatch-toolbar-card {
+  .dispatch-toolbar-card,
+  .finance-toolbar,
+  .partner-toolbar-card {
     padding: var(--space-xl) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .dispatch-toolbar-card,
+  .finance-toolbar,
+  .partner-toolbar-card {
+    padding: var(--space-md) !important;
   }
 }
 
