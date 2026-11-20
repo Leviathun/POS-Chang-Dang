@@ -2647,7 +2647,7 @@ input:checked + .slider:before {
 }
 .diner-module-card.is-active {
   border: 2px solid var(--primary);
-  background: rgba(139, 3, 19, 0.03);
+  background: #ffffff;
 }
 .diner-module-card .btn-primary {
   min-width: 192px;
