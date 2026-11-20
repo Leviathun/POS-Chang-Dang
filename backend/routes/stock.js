@@ -547,8 +547,14 @@ router.get('/logs/all', async (req, res) => {
     query += appendStockLogDateFilter(req.query, params);
 
     if (req.query.reason && req.query.reason !== 'all') {
-      query += ` AND sl.reason = ? `;
-      params.push(req.query.reason);
+      const reasons = String(req.query.reason).split(',').map(r => r.trim()).filter(Boolean);
+      if (reasons.length === 1) {
+        query += ` AND sl.reason = ? `;
+        params.push(reasons[0]);
+      } else if (reasons.length > 1) {
+        query += ` AND sl.reason IN (${reasons.map(() => '?').join(',')}) `;
+        params.push(...reasons);
+      }
     }
 
     if (req.query.menu_item_id && req.query.menu_item_id !== 'all') {
