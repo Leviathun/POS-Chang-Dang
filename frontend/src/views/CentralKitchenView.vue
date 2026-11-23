@@ -1446,25 +1446,72 @@
               </div>
             </div>
 
-            <!-- Restock Item Details Box (Clean White Box) -->
-            <div class="history-restock-detail-box p-md rounded mb-xs flex flex-between align-center flex-wrap gap-md">
-              <div class="flex align-center gap-md">
-                <div class="font-bold text-base text-main">
-                  {{ getItemNameParts(h.item_name).main }}
-                  <span v-if="getItemNameParts(h.item_name).sub" class="text-xs text-secondary font-normal ml-xs">
-                    {{ getItemNameParts(h.item_name).sub }}
-                  </span>
-                </div>
+            <!-- Items Table (Desktop >= 641px) -->
+            <div class="history-items-container mb-xs">
+              <div class="order-items-title flex flex-between align-center mb-xs">
+                <span class="text-xs font-bold text-secondary">
+                  <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการสินค้าที่เติมเข้าคลัง
+                </span>
               </div>
-              <div class="flex align-center gap-lg flex-wrap">
-                <div class="text-xs text-secondary">
-                  ราคาต้นทุน: <strong class="text-main">฿{{ formatNumber(h.unit_cost) }}</strong> / {{ h.unit || 'หน่วย' }}
-                </div>
-                <div class="font-bold text-base" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
-                  จำนวน: {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit || 'หน่วย' }}
-                </div>
-                <div class="font-bold text-base text-primary">
-                  รวม: ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+
+              <div class="history-items-table-wrapper desktop-only-orders-table">
+                <table class="history-items-table">
+                  <thead>
+                    <tr>
+                      <th class="col-item text-left">ชื่อสินค้า</th>
+                      <th class="col-price text-right">ราคาต้นทุน/หน่วย</th>
+                      <th class="col-qty text-center">จำนวน</th>
+                      <th class="col-total text-right">รวมมูลค่า</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="col-item">
+                        <div class="item-name-main font-bold text-sm">{{ getItemNameParts(h.item_name).main }}</div>
+                        <div v-if="getItemNameParts(h.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(h.item_name).sub }}</div>
+                      </td>
+                      <td class="col-price text-right text-sm text-secondary">
+                        ฿{{ formatNumber(h.unit_cost) }} <span class="text-xs text-muted">/ {{ h.unit || 'หน่วย' }}</span>
+                      </td>
+                      <td class="col-qty text-center">
+                        <span class="history-qty-pill font-bold" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                          {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit || 'หน่วย' }}
+                        </span>
+                      </td>
+                      <td class="col-total text-right font-bold text-sm" :class="h.quantity < 0 ? 'text-warning' : 'text-primary'">
+                        ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile List (< 640px) -->
+              <div class="history-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
+                <div class="order-mobile-item-card">
+                  <div class="flex flex-between align-start gap-xs">
+                    <div class="flex-1 min-w-0 pr-xs">
+                      <div class="order-mobile-item-name font-bold text-sm text-primary">
+                        {{ getItemNameParts(h.item_name).main }}
+                      </div>
+                      <div v-if="getItemNameParts(h.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
+                        {{ getItemNameParts(h.item_name).sub }}
+                      </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 pl-xs">
+                      <span class="order-mobile-item-total font-bold text-sm text-primary">
+                        ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex flex-between align-center order-mobile-item-bottom">
+                    <span class="text-xs text-secondary">
+                      ฿{{ formatNumber(h.unit_cost) }} / {{ h.unit || 'หน่วย' }}
+                    </span>
+                    <span class="history-qty-pill font-bold" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                      {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit || 'หน่วย' }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -6444,16 +6491,16 @@ onUnmounted(() => {
 
 .order-items-table th {
   background: var(--bg-secondary) !important;
-  font-size: 12.5px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--text-secondary) !important;
-  padding: 10px 16px !important;
+  padding: 14px 20px !important;
   border-bottom: 1px solid var(--border-color) !important;
   letter-spacing: 0.02em;
 }
 
 .order-items-table td {
-  padding: 12px 16px !important;
+  padding: 16px 20px !important;
   border-bottom: 1px solid var(--border-color-light) !important;
   vertical-align: middle;
 }
@@ -8804,17 +8851,17 @@ onUnmounted(() => {
 
 .history-items-table th {
   background: var(--bg-secondary) !important;
-  font-size: 12.5px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--text-secondary) !important;
-  padding: 10px 16px !important;
+  padding: 14px 20px !important;
   border-bottom: 1px solid var(--border-color) !important;
   letter-spacing: 0.02em;
 }
 
 .history-items-table td {
   background: #ffffff;
-  padding: 12px 16px !important;
+  padding: 16px 20px !important;
   border-bottom: 1px solid var(--border-color-light) !important;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
