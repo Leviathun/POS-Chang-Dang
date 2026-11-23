@@ -347,7 +347,7 @@
           </div>
           <div>
             <h2 class="font-bold text-lg text-primary" style="margin: 0;">
-              ระบบจ่ายของให้สาขา (Push Model)
+              ระบบจ่ายของให้สาขา
             </h2>
             <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
               ครัวกลางจัดส่งของให้สาขาโดยตรง เมื่อกดยืนยันจะตัดสต็อกครัวกลาง บันทึกเป็นรายจ่ายสาขา และเติมสต็อก POS ให้อัตโนมัติ
