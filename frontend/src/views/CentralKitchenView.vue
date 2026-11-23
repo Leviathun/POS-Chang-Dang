@@ -855,6 +855,30 @@
             <i class="fa-solid fa-circle-check mr-1"></i> อนุมัติแล้ว
             <span class="order-tab-count">{{ receivedOrdersCount }}</span>
           </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: orderFilterStatus === 'pull' }"
+            @click="orderFilterStatus = 'pull'"
+          >
+            <i class="fa-solid fa-hand-holding-hand mr-1"></i> สาขาขอเบิก
+            <span class="order-tab-count">{{ pullOrdersCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: orderFilterStatus === 'push' }"
+            @click="orderFilterStatus = 'push'"
+          >
+            <i class="fa-solid fa-truck-arrow-right mr-1"></i> ครัวกลางจ่ายให้
+            <span class="order-tab-count">{{ pushOrdersCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: orderFilterStatus === 'cancelled' }"
+            @click="orderFilterStatus = 'cancelled'"
+          >
+            <i class="fa-solid fa-ban mr-1"></i> ยกเลิก
+            <span class="order-tab-count">{{ cancelledOrdersCount }}</span>
+          </button>
         </div>
 
         <!-- Right: Requester Filter Dropdown -->
@@ -1131,7 +1155,7 @@
                 <i class="fa-solid fa-truck-ramp-box"></i> ส่งของออกจากครัวกลางแล้ว
               </span>
               <span v-else-if="order.status === 'received'" class="text-success font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-circle-check"></i> อนุมัติสำเร็จ & บันทึกเป็น Expense สาขาเรียบร้อย (เติมสต็อก POS แล้ว)
+                <i class="fa-solid fa-circle-check"></i> อนุมัติสำเร็จ & บันทึกเป็นรายจ่ายสาขาเรียบร้อย (เติมสต็อก POS แล้ว)
               </span>
               <span v-else-if="order.status === 'cancelled'" class="text-danger font-bold flex align-center gap-xs">
                 <i class="fa-solid fa-ban"></i> ใบเบิกถูกยกเลิก และคืนสต็อกสินค้ากลับเข้าครัวกลางเรียบร้อยแล้ว
@@ -1159,7 +1183,7 @@
                 @click="cancelTransferOrder(order)"
                 title="ยกเลิกใบเบิกนี้และดึงสต็อกกลับคืน"
               >
-                <i class="fa-solid fa-ban mr-1"></i> ยกเลิกใบเบิก (Rollback ทั้งหมด)
+                <i class="fa-solid fa-ban mr-1"></i> ยกเลิกใบเบิกและคืนค่าทั้งหมด
               </button>
             </div>
           </div>
@@ -1171,7 +1195,7 @@
     <!-- TAB 3: HISTORY (การ์ดประวัติการเติม & การเบิก) -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'history'" class="history-section">
-      <!-- Date & Period Filter Card (Same 2-Row Card Layout as POS) -->
+      <!-- Date & Period Filter Card (Same 2-Row Card Layout as Orders) -->
       <DatePeriodFilter
         v-model:period-mode="periodMode"
         v-model:selected-date="selectedDate"
@@ -1180,105 +1204,128 @@
         v-model:start-time="customStartTime"
         v-model:end-time="customEndTime"
         @change="refreshActivePeriodTab"
-      />
-
-      <!-- History Type & Extended Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-col gap-md toolbar-card history-toolbar">
-        <!-- Row 1: Type Tabs -->
-        <div class="flex flex-between align-center flex-wrap gap-sm">
-          <div class="history-status-tabs flex gap-xs align-center flex-wrap">
-            <button 
-              class="filter-pill" 
-              :class="{ active: historyFilter === 'all' }"
-              @click="historyFilter = 'all'"
+      >
+        <!-- Right: Branch Filter Dropdown (Matches Orders Tab) -->
+        <div class="order-branch-filter" style="margin-left: auto;">
+          <label class="order-branch-label">
+            <i class="fa-solid fa-store text-primary"></i>
+            <span>สาขา:</span>
+          </label>
+          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
+            <div 
+              class="custom-select-trigger order-branch-select" 
+              :class="{ 'active': isHistoryBranchDropdownOpen }" 
+              @click="isHistoryBranchDropdownOpen = !isHistoryBranchDropdownOpen; isHistoryRequesterDropdownOpen = false; isHistoryItemDropdownOpen = false;"
+              style="height: 38px;"
             >
-              <span>ทั้งหมด</span>
-              <span class="history-tab-count">{{ historyTotalCount }}</span>
-            </button>
-            <button 
-              class="filter-pill" 
-              :class="{ active: historyFilter === 'restock' }"
-              @click="historyFilter = 'restock'"
-            >
-              <i class="fa-solid fa-circle-plus"></i>
-              <span>เติมสต็อกเข้าคลัง</span>
-              <span class="history-tab-count">{{ historyRestockCount }}</span>
-            </button>
-            <button 
-              class="filter-pill" 
-              :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
-              @click="historyFilter = 'transfer'"
-            >
-              <i class="fa-solid fa-truck-fast"></i>
-              <span>สาขาเบิกของ</span>
-              <span class="history-tab-count">{{ historyTransferCount }}</span>
-            </button>
+              <span class="custom-select-text font-bold">
+                {{ selectedHistoryBranchName }}
+              </span>
+            </div>
+            <div v-if="isHistoryBranchDropdownOpen" class="custom-select-dropdown">
+              <div 
+                class="custom-select-option"
+                :class="{ 'selected': historyBranchFilter === 'all' }"
+                @click="historyBranchFilter = 'all'; isHistoryBranchDropdownOpen = false;"
+              >
+                ทุกสาขา
+              </div>
+              <div 
+                v-for="b in retailBranches" 
+                :key="b.id" 
+                class="custom-select-option"
+                :class="{ 'selected': Number(historyBranchFilter) === Number(b.id) }"
+                @click="historyBranchFilter = b.id; isHistoryBranchDropdownOpen = false;"
+              >
+                {{ b.name }}
+              </div>
+            </div>
           </div>
         </div>
+      </DatePeriodFilter>
 
-        <!-- Row 2: Search Input + Branch Filter + Requester Filter -->
-        <div class="history-filter-controls-row flex align-center gap-md flex-wrap">
-          <!-- 1. Search Catalog Item -->
-          <div class="search-input-box" style="position: relative; flex: 1; min-width: 220px;">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input 
-              type="text" 
-              v-model="historySearchQuery" 
-              placeholder="ค้นหาชื่อสินค้าในประวัติ เช่น ขนมจีบ, ไก่..." 
-              class="form-input search-input"
-              style="padding-left: 40px; padding-right: 32px; width: 100%; border-radius: var(--radius-md); font-size: var(--font-sm); height: 38px;"
-            />
-            <button 
-              v-if="historySearchQuery" 
-              type="button"
-              class="search-clear-btn" 
-              @click="historySearchQuery = ''"
-              title="ล้างคำค้นหา"
-              style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
+      <!-- History Type & Extended Filter Toolbar -->
+      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card history-toolbar">
+        <!-- Type Tabs -->
+        <div class="history-status-tabs flex gap-xs align-center flex-wrap">
+          <button 
+            class="filter-pill" 
+            :class="{ active: historyFilter === 'all' }"
+            @click="historyFilter = 'all'"
+          >
+            <span>ทั้งหมด</span>
+            <span class="history-tab-count">{{ historyTotalCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: historyFilter === 'restock' }"
+            @click="historyFilter = 'restock'"
+          >
+            <i class="fa-solid fa-circle-plus mr-1"></i>
+            <span>เติมสต็อกเข้าคลัง</span>
+            <span class="history-tab-count">{{ historyRestockCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
+            @click="historyFilter = 'transfer'"
+          >
+            <i class="fa-solid fa-truck-fast mr-1"></i>
+            <span>สาขาเบิกของ</span>
+            <span class="history-tab-count">{{ historyTransferCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: historyFilter === 'cancelled' }"
+            @click="historyFilter = 'cancelled'"
+          >
+            <i class="fa-solid fa-ban mr-1"></i>
+            <span>ยกเลิก</span>
+            <span class="history-tab-count">{{ historyCancelledCount }}</span>
+          </button>
+        </div>
 
-          <!-- 2. Branch Filter Dropdown -->
+        <!-- Right: Central Kitchen Menu Dropdown + Requester Dropdown -->
+        <div class="flex align-center gap-md flex-wrap">
+          <!-- Dropdown เมนูในครัวกลาง (Item filter) -->
           <div class="order-branch-filter flex align-center gap-xs">
             <label class="order-branch-label" style="white-space: nowrap;">
-              <i class="fa-solid fa-store text-primary"></i>
-              <span>สาขา:</span>
+              <i class="fa-solid fa-utensils text-primary"></i>
+              <span>สินค้า:</span>
             </label>
-            <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
+            <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 170px;">
               <div 
                 class="custom-select-trigger order-branch-select" 
-                :class="{ 'active': isHistoryBranchDropdownOpen }" 
-                @click="isHistoryBranchDropdownOpen = !isHistoryBranchDropdownOpen; isHistoryRequesterDropdownOpen = false;"
+                :class="{ 'active': isHistoryItemDropdownOpen }" 
+                @click="isHistoryItemDropdownOpen = !isHistoryItemDropdownOpen; isHistoryRequesterDropdownOpen = false;"
                 style="height: 38px;"
               >
-                <span class="custom-select-text font-bold">
-                  {{ selectedHistoryBranchName }}
+                <span class="custom-select-text font-bold" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  {{ selectedHistoryItemName }}
                 </span>
               </div>
-              <div v-if="isHistoryBranchDropdownOpen" class="custom-select-dropdown">
+              <div v-if="isHistoryItemDropdownOpen" class="custom-select-dropdown" style="max-height: 280px; overflow-y: auto;">
                 <div 
                   class="custom-select-option"
-                  :class="{ 'selected': historyBranchFilter === 'all' }"
-                  @click="historyBranchFilter = 'all'; isHistoryBranchDropdownOpen = false;"
+                  :class="{ 'selected': historyItemFilter === 'all' }"
+                  @click="historyItemFilter = 'all'; isHistoryItemDropdownOpen = false;"
                 >
-                  ทุกสาขา
+                  สินค้าทั้งหมด
                 </div>
                 <div 
-                  v-for="b in retailBranches" 
-                  :key="b.id" 
+                  v-for="item in sortedKitchenItems" 
+                  :key="item.id" 
                   class="custom-select-option"
-                  :class="{ 'selected': Number(historyBranchFilter) === Number(b.id) }"
-                  @click="historyBranchFilter = b.id; isHistoryBranchDropdownOpen = false;"
+                  :class="{ 'selected': historyItemFilter === item.name }"
+                  @click="historyItemFilter = item.name; isHistoryItemDropdownOpen = false;"
                 >
-                  {{ b.name }}
+                  {{ item.name }}
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 3. Requester Filter Dropdown -->
+          <!-- Dropdown ผู้ขอเบิก -->
           <div class="order-branch-filter flex align-center gap-xs">
             <label class="order-branch-label" style="white-space: nowrap;">
               <i class="fa-solid fa-user text-primary"></i>
@@ -1288,7 +1335,7 @@
               <div 
                 class="custom-select-trigger order-branch-select" 
                 :class="{ 'active': isHistoryRequesterDropdownOpen }" 
-                @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen; isHistoryBranchDropdownOpen = false;"
+                @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen; isHistoryItemDropdownOpen = false;"
                 style="height: 38px;"
               >
                 <span class="custom-select-text font-bold">
@@ -3936,6 +3983,17 @@ const isHistoryRequesterDropdownOpen = ref(false);
 const historySearchQuery = ref('');
 const historyBranchFilter = ref('all');
 const isHistoryBranchDropdownOpen = ref(false);
+const historyItemFilter = ref('all');
+const isHistoryItemDropdownOpen = ref(false);
+
+const sortedKitchenItems = computed(() => {
+  return [...items.value].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'));
+});
+
+const selectedHistoryItemName = computed(() => {
+  if (historyItemFilter.value === 'all') return 'สินค้าทั้งหมด';
+  return historyItemFilter.value;
+});
 
 const selectedHistoryBranchName = computed(() => {
   if (historyBranchFilter.value === 'all') return 'ทุกสาขา';
@@ -3979,6 +4037,7 @@ const closeOrderBranchDropdown = () => {
   isOrderRequesterDropdownOpen.value = false;
   isHistoryRequesterDropdownOpen.value = false;
   isHistoryBranchDropdownOpen.value = false;
+  isHistoryItemDropdownOpen.value = false;
 };
 
 const closePartnerBranchDropdown = () => {
@@ -4498,7 +4557,7 @@ const partnerSumPercentage = computed(() => {
 });
 
 // Date & Period Filter State (for Orders & History tabs)
-const periodMode = ref('monthly'); // 'daily' | 'monthly' | 'yearly'
+const periodMode = ref('daily'); // 'daily' | 'monthly' | 'yearly'
 const selectedDate = ref(getToday());
 const selectedMonth = ref(getToday().substring(0, 7));
 const selectedYear = ref(getToday().substring(0, 4));
@@ -4544,6 +4603,9 @@ const periodMatchedOrders = computed(() => {
 
 const pendingOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'pending').length);
 const receivedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'received' || o.status === 'dispatched').length);
+const pullOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.dispatch_type !== 'push').length);
+const pushOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.dispatch_type === 'push').length);
+const cancelledOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'cancelled').length);
 
 const periodMatchedHistory = computed(() => {
   return history.value.filter(h => {
@@ -4556,10 +4618,7 @@ const historyRestockCount = computed(() => {
   return periodMatchedHistory.value.filter(h => {
     if (h.type !== 'restock') return false;
     if (historyBranchFilter.value !== 'all') return false;
-    if (historySearchQuery.value && historySearchQuery.value.trim()) {
-      const q = historySearchQuery.value.trim().toLowerCase();
-      return (h.item_name && h.item_name.toLowerCase().includes(q)) || (h.note && h.note.toLowerCase().includes(q));
-    }
+    if (historyItemFilter.value !== 'all' && h.item_name !== historyItemFilter.value) return false;
     return true;
   }).length;
 });
@@ -4568,19 +4627,36 @@ const historyTransferCount = computed(() => {
   return periodMatchedHistory.value.filter(h => {
     if (h.type !== 'transfer' && h.type !== 'requisition') return false;
     if (historyBranchFilter.value !== 'all' && Number(h.branch_id) !== Number(historyBranchFilter.value)) return false;
-    if (historySearchQuery.value && historySearchQuery.value.trim()) {
-      const q = historySearchQuery.value.trim().toLowerCase();
-      const matchTransferNo = h.transfer_no && h.transfer_no.toLowerCase().includes(q);
-      const matchBranchName = h.branch_name && h.branch_name.toLowerCase().includes(q);
-      const matchItems = h.items && h.items.some(it => it.item_name && it.item_name.toLowerCase().includes(q));
-      const matchNote = h.note && h.note.toLowerCase().includes(q);
-      return matchTransferNo || matchBranchName || matchItems || matchNote;
+    if (historyItemFilter.value !== 'all') {
+      const matchItem = h.items && h.items.some(it => it.item_name === historyItemFilter.value);
+      if (!matchItem) return false;
     }
     return true;
   }).length;
 });
 
-const historyTotalCount = computed(() => historyRestockCount.value + historyTransferCount.value);
+const historyCancelledCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (h.status !== 'cancelled') return false;
+    if (historyBranchFilter.value !== 'all' && Number(h.branch_id) !== Number(historyBranchFilter.value)) return false;
+    if (historyItemFilter.value !== 'all') {
+      const matchItem = (h.items && h.items.some(it => it.item_name === historyItemFilter.value)) || (h.item_name === historyItemFilter.value);
+      if (!matchItem) return false;
+    }
+    return true;
+  }).length;
+});
+
+const historyTotalCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (historyBranchFilter.value !== 'all' && (h.type === 'transfer' || h.type === 'requisition') && Number(h.branch_id) !== Number(historyBranchFilter.value)) return false;
+    if (historyItemFilter.value !== 'all') {
+      const matchItem = (h.items && h.items.some(it => it.item_name === historyItemFilter.value)) || (h.item_name === historyItemFilter.value);
+      if (!matchItem) return false;
+    }
+    return true;
+  }).length;
+});
 
 const getCategoryCount = (catId) => {
   if (catId === 'all') return items.value.length;
@@ -4597,8 +4673,20 @@ const filteredItems = computed(() => {
 
 const filteredOrders = computed(() => {
   if (orderFilterStatus.value === 'all') return periodMatchedOrders.value;
+  if (orderFilterStatus.value === 'pending') {
+    return periodMatchedOrders.value.filter(o => o.status === 'pending');
+  }
   if (orderFilterStatus.value === 'received') {
     return periodMatchedOrders.value.filter(o => o.status === 'received' || o.status === 'dispatched');
+  }
+  if (orderFilterStatus.value === 'pull') {
+    return periodMatchedOrders.value.filter(o => o.dispatch_type !== 'push');
+  }
+  if (orderFilterStatus.value === 'push') {
+    return periodMatchedOrders.value.filter(o => o.dispatch_type === 'push');
+  }
+  if (orderFilterStatus.value === 'cancelled') {
+    return periodMatchedOrders.value.filter(o => o.status === 'cancelled');
   }
   return periodMatchedOrders.value.filter(o => o.status === orderFilterStatus.value);
 });
@@ -4606,11 +4694,13 @@ const filteredOrders = computed(() => {
 const filteredHistory = computed(() => {
   let list = periodMatchedHistory.value;
 
-  // 1. Filter by Type
+  // 1. Filter by Type / Status
   if (historyFilter.value === 'restock') {
     list = list.filter(h => h.type === 'restock');
   } else if (historyFilter.value === 'transfer' || historyFilter.value === 'requisition') {
     list = list.filter(h => h.type === 'transfer' || h.type === 'requisition');
+  } else if (historyFilter.value === 'cancelled') {
+    list = list.filter(h => h.status === 'cancelled');
   }
 
   // 2. Filter by Branch
@@ -4619,20 +4709,14 @@ const filteredHistory = computed(() => {
     list = list.filter(h => (h.type === 'transfer' || h.type === 'requisition') && Number(h.branch_id) === bId);
   }
 
-  // 3. Filter by Search Query (Catalog Item name, transfer no, branch name, note)
-  if (historySearchQuery.value && historySearchQuery.value.trim()) {
-    const q = historySearchQuery.value.trim().toLowerCase();
+  // 3. Filter by Kitchen Item Dropdown
+  if (historyItemFilter.value !== 'all') {
     list = list.filter(h => {
       if (h.type === 'restock') {
-        return (h.item_name && h.item_name.toLowerCase().includes(q)) ||
-               (h.note && h.note.toLowerCase().includes(q));
+        return h.item_name === historyItemFilter.value;
       }
       if (h.type === 'transfer' || h.type === 'requisition') {
-        const matchTransferNo = h.transfer_no && h.transfer_no.toLowerCase().includes(q);
-        const matchBranchName = h.branch_name && h.branch_name.toLowerCase().includes(q);
-        const matchItems = h.items && h.items.some(it => it.item_name && it.item_name.toLowerCase().includes(q));
-        const matchNote = h.note && h.note.toLowerCase().includes(q);
-        return matchTransferNo || matchBranchName || matchItems || matchNote;
+        return h.items && h.items.some(it => it.item_name === historyItemFilter.value);
       }
       return false;
     });
@@ -6186,9 +6270,9 @@ onUnmounted(() => {
 /* Order Cards */
 .order-card {
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: #ffffff !important;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
@@ -6268,9 +6352,9 @@ onUnmounted(() => {
 }
 
 .order-items-table th {
-  background: var(--bg-secondary) !important;
+  background: #ffffff !important;
   font-size: 12.5px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   color: var(--text-secondary) !important;
   padding: 10px 16px !important;
   border-bottom: 1px solid var(--border-color) !important;
@@ -6301,8 +6385,8 @@ onUnmounted(() => {
 }
 
 .order-notes-box {
-  background: var(--bg-secondary);
-  border: 1px dashed var(--border-color);
+  background: #ffffff;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 8px 14px;
 }
@@ -6367,9 +6451,9 @@ onUnmounted(() => {
 /* History Feed Cards */
 .history-feed-card {
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: #ffffff !important;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
@@ -6439,8 +6523,9 @@ onUnmounted(() => {
   max-height: 48px;
   box-sizing: border-box;
   border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color-light);
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   width: 100%;
 }
 
