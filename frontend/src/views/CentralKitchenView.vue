@@ -8803,9 +8803,9 @@ onUnmounted(() => {
 }
 
 .history-items-table th {
-  background: #ffffff !important;
+  background: var(--bg-secondary) !important;
   font-size: 12.5px !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   color: var(--text-secondary) !important;
   padding: 10px 16px !important;
   border-bottom: 1px solid var(--border-color) !important;
