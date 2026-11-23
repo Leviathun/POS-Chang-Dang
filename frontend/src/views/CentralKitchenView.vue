@@ -876,7 +876,7 @@
             :class="{ active: orderFilterStatus === 'cancelled' }"
             @click="orderFilterStatus = 'cancelled'"
           >
-            <i class="fa-solid fa-ban mr-1"></i> ยกเลิก
+            <i class="fa-solid fa-ban mr-1"></i> ยกเลิก & คืนแล้ว
             <span class="order-tab-count">{{ cancelledOrdersCount }}</span>
           </button>
         </div>
@@ -1148,23 +1148,36 @@
           <!-- Order Card Footer Action -->
           <div class="order-card-footer flex flex-between align-center flex-wrap gap-md pt-sm">
             <div class="order-footer-notice text-xs">
-              <span v-if="order.status === 'pending'" class="text-warning font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span class="notice-main">ตรวจสอบก่อนอนุมัติ</span>
-                <span class="notice-sub text-muted font-normal">(จะหักต้นทุนสาขา & เติมสต็อก POS ทันที)</span>
-              </span>
-              <span v-else-if="order.status === 'dispatched'" class="text-info font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-truck-ramp-box"></i> ส่งของออกจากครัวกลางแล้ว
-              </span>
-              <span v-else-if="order.status === 'received'" class="text-success font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-circle-check"></i>
-                <span class="notice-main">อนุมัติสำเร็จ & บันทึกเป็นรายจ่ายสาขาเรียบร้อย</span>
-                <span class="notice-sub text-muted font-normal">(เติมสต็อก POS แล้ว)</span>
-              </span>
-              <span v-else-if="order.status === 'cancelled'" class="text-danger font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-ban"></i>
-                <span class="notice-main">ใบเบิกถูกยกเลิก และคืนสต็อกเข้าครัวกลาง</span>
-              </span>
+              <div v-if="order.status === 'pending'" class="text-warning font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span class="notice-main">ตรวจสอบก่อนอนุมัติ</span>
+                </div>
+                <div class="notice-line-2 text-muted font-normal">
+                  (จะหักต้นทุนสาขา & เติมสต็อก POS ทันที)
+                </div>
+              </div>
+              <div v-else-if="order.status === 'dispatched'" class="text-info font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-truck-ramp-box"></i>
+                  <span class="notice-main">ส่งของออกจากครัวกลางแล้ว</span>
+                </div>
+              </div>
+              <div v-else-if="order.status === 'received'" class="text-success font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span class="notice-main">อนุมัติสำเร็จ & บันทึกเป็นรายจ่ายสาขาเรียบร้อย</span>
+                </div>
+                <div class="notice-line-2 text-muted font-normal">
+                  (เติมสต็อก POS แล้ว)
+                </div>
+              </div>
+              <div v-else-if="order.status === 'cancelled'" class="text-danger font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-ban"></i>
+                  <span class="notice-main">ใบเบิกถูกยกเลิก และคืนสต็อกเข้าครัวกลาง</span>
+                </div>
+              </div>
             </div>
 
             <div class="order-footer-actions flex align-center gap-sm flex-wrap">
@@ -1285,7 +1298,7 @@
             @click="historyFilter = 'cancelled'"
           >
             <i class="fa-solid fa-ban mr-1"></i>
-            <span>ยกเลิก</span>
+            <span>ยกเลิก & คืนแล้ว</span>
             <span class="history-tab-count">{{ historyCancelledCount }}</span>
           </button>
         </div>
@@ -8886,16 +8899,44 @@ onUnmounted(() => {
   border-radius: var(--radius-md);
 }
 
+.order-footer-notice .notice-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs, 6px);
+  flex-wrap: wrap;
+}
+
+.order-footer-notice .notice-line-1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.order-footer-notice .notice-line-2 {
+  display: inline-block;
+  font-size: 11.5px;
+}
+
 @media (max-width: 640px) {
-  .order-footer-notice .flex {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 3px !important;
+  .order-footer-notice .notice-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
-  .order-footer-notice .notice-sub {
-    display: block !important;
-    margin-left: 20px !important;
-    font-size: 11px !important;
+  .order-footer-notice .notice-line-1 {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: normal;
+  }
+  .order-footer-notice .notice-line-2 {
+    display: block;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    font-size: 11px;
+    text-align: left;
   }
 }
 
