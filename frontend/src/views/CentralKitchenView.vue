@@ -139,7 +139,7 @@
       <!-- ────────────────────────────────────────────────────────── -->
       <div v-else>
       <!-- Action & Filter Bar (Requirement 2 & 3) -->
-      <div class="card mb-lg p-md toolbar-card">
+      <div class="card mb-lg p-md">
         <!-- Top Row: Full Width Search Input (100%) -->
         <div class="search-input-box mb-md" style="position: relative; width: 100%;">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -340,7 +340,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'dispatch'" class="dispatch-section">
       <!-- Top Action Toolbar Card -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card dispatch-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card mb-lg p-md flex flex-between align-center dispatch-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
         <div class="flex align-center gap-md">
           <div class="header-icon-circle">
             <i class="fa-solid fa-truck-arrow-right text-primary" style="font-size: var(--font-lg);"></i>
@@ -395,7 +395,7 @@
         <!-- Left: Items Catalog -->
         <div class="catalog-main">
           <!-- Search & Category Filters -->
-          <div class="card p-md mb-md toolbar-card filter-bar">
+          <div class="card p-md mb-md filter-bar">
             <!-- Full Width Search -->
             <div class="search-input-box mb-md" style="position: relative; width: 100%;">
               <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -828,7 +828,7 @@
       </DatePeriodFilter>
 
       <!-- Orders Status & Requester Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card orders-toolbar">
+      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md orders-toolbar">
         <!-- Status Filter Tabs -->
         <div class="order-status-tabs flex gap-xs align-center flex-wrap">
           <button 
@@ -1149,16 +1149,21 @@
           <div class="order-card-footer flex flex-between align-center flex-wrap gap-md pt-sm">
             <div class="order-footer-notice text-xs">
               <span v-if="order.status === 'pending'" class="text-warning font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-triangle-exclamation"></i> กรุณาตรวจสอบสต็อกจริงก่อนกดอนุมัติ (ระบบจะหักต้นทุนสาขา & เติมสต็อก POS ทันที)
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span class="notice-main">ตรวจสอบก่อนอนุมัติ</span>
+                <span class="notice-sub text-muted font-normal">(จะหักต้นทุนสาขา & เติมสต็อก POS ทันที)</span>
               </span>
               <span v-else-if="order.status === 'dispatched'" class="text-info font-bold flex align-center gap-xs">
                 <i class="fa-solid fa-truck-ramp-box"></i> ส่งของออกจากครัวกลางแล้ว
               </span>
               <span v-else-if="order.status === 'received'" class="text-success font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-circle-check"></i> อนุมัติสำเร็จ & บันทึกเป็นรายจ่ายสาขาเรียบร้อย (เติมสต็อก POS แล้ว)
+                <i class="fa-solid fa-circle-check"></i>
+                <span class="notice-main">อนุมัติสำเร็จ & บันทึกเป็นรายจ่ายสาขาเรียบร้อย</span>
+                <span class="notice-sub text-muted font-normal">(เติมสต็อก POS แล้ว)</span>
               </span>
               <span v-else-if="order.status === 'cancelled'" class="text-danger font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-ban"></i> ใบเบิกถูกยกเลิก และคืนสต็อกสินค้ากลับเข้าครัวกลางเรียบร้อยแล้ว
+                <i class="fa-solid fa-ban"></i>
+                <span class="notice-main">ใบเบิกถูกยกเลิก และคืนสต็อกเข้าครัวกลาง</span>
               </span>
             </div>
 
@@ -1245,7 +1250,7 @@
       </DatePeriodFilter>
 
       <!-- History Type & Extended Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card history-toolbar">
+      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md history-toolbar">
         <!-- Type Tabs -->
         <div class="history-status-tabs flex gap-xs align-center flex-wrap">
           <button 
@@ -1404,123 +1409,192 @@
           class="card p-lg history-feed-card"
           :class="h.type === 'restock' ? 'border-restock-feed' : 'border-transfer-feed'"
         >
-          <!-- RESTOCK & ADJUSTMENT FEED CARD -->
-          <div v-if="h.type === 'restock'" class="history-card-inner flex flex-between align-start flex-wrap gap-md">
-            <div class="flex gap-md align-start flex-1 min-w-0">
-              <div class="feed-icon-circle" :class="h.quantity < 0 ? 'bg-warning-light text-warning' : 'bg-success-light text-success'">
-                <i :class="h.quantity < 0 ? 'fa-solid fa-sliders' : 'fa-solid fa-circle-plus'"></i>
+          <!-- 1. RESTOCK & ADJUSTMENT CARD -->
+          <div v-if="h.type === 'restock'" class="history-card-restock">
+            <!-- Header Row -->
+            <div class="history-card-header flex flex-between align-center flex-wrap gap-md mb-md pb-md">
+              <div class="flex align-center gap-sm flex-wrap">
+                <span class="order-no-title font-bold">
+                  <i :class="h.quantity < 0 ? 'fa-solid fa-sliders text-warning' : 'fa-solid fa-circle-plus text-success'"></i>
+                  <span>{{ h.quantity < 0 ? 'ปรับปรุงสต็อก' : 'เติมสต็อกเข้าคลัง' }}</span>
+                </span>
+                <span class="badge font-bold" :class="h.quantity < 0 ? 'badge-warning' : 'badge-success'">
+                  {{ h.quantity < 0 ? 'ลดสต็อก' : 'เติมเข้า' }}
+                </span>
+                <span class="badge badge-neutral font-bold">
+                  <i class="fa-solid fa-box"></i>
+                  <span>{{ getItemNameParts(h.item_name).main }}</span>
+                </span>
               </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex align-center gap-sm mb-xs flex-wrap">
-                  <span class="badge font-bold" :class="h.quantity < 0 ? 'badge-warning' : 'badge-success'">
-                    <i :class="h.quantity < 0 ? 'fa-solid fa-sliders' : 'fa-solid fa-circle-plus'"></i>
-                    <span>{{ h.quantity < 0 ? 'ปรับปรุงสต็อก' : 'เติมสต็อกเข้าคลัง' }}</span>
-                  </span>
-                  <span class="font-bold text-base text-main">{{ getItemNameParts(h.item_name).main }}</span>
-                  <span v-if="getItemNameParts(h.item_name).sub" class="text-xs text-secondary font-medium">
-                    {{ getItemNameParts(h.item_name).sub }}
-                  </span>
-                </div>
 
-                <div class="history-meta-row text-xs text-secondary flex align-center gap-md flex-wrap mb-xs">
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-clock text-muted"></i>
-                    <span>{{ formatDateTime(h.created_at) }}</span>
-                  </span>
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-user text-muted"></i>
-                    <span>โดย: <strong class="text-main">{{ h.created_by }}</strong></span>
-                  </span>
-                  <span v-if="h.note" class="inline-flex align-center gap-xs">
-                    <i class="fa-solid fa-tag text-muted"></i>
-                    <span>แหล่งซื้อ/หมายเหตุ: <span class="text-main">{{ h.note }}</span></span>
-                  </span>
-                </div>
+              <div class="order-total-header">
+                <span class="order-total-label">{{ h.quantity < 0 ? 'มูลค่าผลต่าง:' : 'ยอดเงินที่ซื้อ:' }}</span>
+                <span class="order-total-amount font-bold" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                  ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+                </span>
               </div>
             </div>
 
-            <!-- Restock Right Details -->
-            <div class="history-amount-box text-right">
-              <div class="history-qty-value font-bold text-lg" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
-                {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit }}
+            <!-- Metadata Row -->
+            <div class="history-meta-row flex flex-between align-center text-xs text-secondary mb-md flex-wrap gap-sm">
+              <div class="flex align-center gap-md flex-wrap">
+                <span><i class="fa-regular fa-user mr-1 text-muted"></i> โดย: <strong class="text-main">{{ h.created_by }}</strong></span>
+                <span><i class="fa-regular fa-clock mr-1 text-muted"></i> วันที่ทำรายการ: <span class="text-main">{{ formatDateTime(h.created_at) }}</span></span>
               </div>
-              <div class="history-sub-cost text-xs text-secondary">
-                <span>{{ h.quantity < 0 ? 'มูลค่าผลต่าง: ' : 'ยอดเงินที่ซื้อ: ' }}</span>
-                <strong class="text-main">฿{{ formatNumber(Math.abs(h.total_amount)) }}</strong> 
-                <span class="text-muted ml-xs font-medium">(ต้นทุน ฿{{ formatNumber(h.unit_cost) }} / {{ h.unit || 'หน่วย' }})</span>
+              <div v-if="h.note" class="history-meta-note">
+                <i class="fa-solid fa-tag mr-1 text-muted"></i> แหล่งซื้อ/หมายเหตุ: <span class="text-main">{{ h.note }}</span>
+              </div>
+            </div>
+
+            <!-- Restock Item Details Box (Clean White Box) -->
+            <div class="history-restock-detail-box p-md rounded mb-xs flex flex-between align-center flex-wrap gap-md">
+              <div class="flex align-center gap-md">
+                <div class="font-bold text-base text-main">
+                  {{ getItemNameParts(h.item_name).main }}
+                  <span v-if="getItemNameParts(h.item_name).sub" class="text-xs text-secondary font-normal ml-xs">
+                    {{ getItemNameParts(h.item_name).sub }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex align-center gap-lg flex-wrap">
+                <div class="text-xs text-secondary">
+                  ราคาต้นทุน: <strong class="text-main">฿{{ formatNumber(h.unit_cost) }}</strong> / {{ h.unit || 'หน่วย' }}
+                </div>
+                <div class="font-bold text-base" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                  จำนวน: {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit || 'หน่วย' }}
+                </div>
+                <div class="font-bold text-base text-primary">
+                  รวม: ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- TRANSFER FEED CARD -->
-          <div v-else class="history-card-inner flex flex-between align-start flex-wrap gap-md">
-            <div class="flex gap-md align-start flex-1 min-w-0">
-              <div class="feed-icon-circle bg-primary-light text-primary">
-                <i class="fa-solid fa-truck-fast"></i>
+          <!-- 2. TRANSFER FEED CARD (Structure matching Orders Card) -->
+          <div v-else class="history-card-transfer">
+            <!-- Header Row -->
+            <div class="history-card-header flex flex-between align-center flex-wrap gap-md mb-md pb-md">
+              <div class="flex align-center gap-sm flex-wrap">
+                <span class="order-no-title font-bold">
+                  <i class="fa-solid fa-receipt text-primary"></i>
+                  <span>#{{ h.transfer_no }}</span>
+                </span>
+                <span class="badge badge-primary font-bold">
+                  <i class="fa-solid fa-store"></i>
+                  <span>{{ h.branch_name }}</span>
+                </span>
+                <!-- Dispatch Type Badge -->
+                <span v-if="h.dispatch_type === 'push'" class="badge badge-info font-bold" title="ครัวกลางจ่ายให้โดยตรง">
+                  <i class="fa-solid fa-truck-arrow-right"></i> ครัวกลางจ่ายให้
+                </span>
+                <span v-else class="badge badge-neutral font-bold" title="สาขาขอเบิก">
+                  <i class="fa-solid fa-hand-holding-hand"></i> สาขาขอเบิก
+                </span>
+                <span class="badge font-bold" :class="getStatusBadgeClass(h.status)">
+                  <i v-if="h.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
+                  <i v-else-if="h.status === 'dispatched' || h.status === 'received'" class="fa-solid fa-circle-check"></i>
+                  <i v-else-if="h.status === 'cancelled'" class="fa-solid fa-ban"></i>
+                  <span>{{ getStatusLabel(h.status) }}</span>
+                </span>
+                <span v-if="h.status === 'cancelled'" class="badge badge-success font-bold">
+                  <i class="fa-solid fa-rotate-left"></i>
+                  <span>คืนแล้ว</span>
+                </span>
               </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex align-center gap-sm mb-xs flex-wrap">
-                  <span class="badge badge-primary font-bold">
-                    <i class="fa-solid fa-truck"></i>
-                    <span>ส่งของให้สาขา</span>
-                  </span>
-                  <span class="font-bold text-base text-main">{{ h.branch_name }}</span>
-                  <span class="order-no-title font-bold text-sm">
-                    <i class="fa-solid fa-receipt text-primary"></i>
-                    <span>#{{ h.transfer_no }}</span>
-                  </span>
-                  <span class="badge font-bold" :class="getStatusBadgeClass(h.status)">
-                    <i v-if="h.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
-                    <i v-else-if="h.status === 'dispatched'" class="fa-solid fa-truck-fast"></i>
-                    <i v-else-if="h.status === 'received'" class="fa-solid fa-circle-check"></i>
-                    <i v-else-if="h.status === 'cancelled'" class="fa-solid fa-ban"></i>
-                    <span>{{ getStatusLabel(h.status) }}</span>
-                  </span>
-                  <span v-if="h.status === 'cancelled'" class="badge badge-success font-bold">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span>คืนแล้ว</span>
-                  </span>
-                </div>
 
-                <div class="history-meta-row text-xs text-secondary flex align-center gap-md flex-wrap mb-sm">
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-clock text-muted"></i>
-                    <span>{{ formatDateTime(h.created_at) }}</span>
-                  </span>
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-user text-muted"></i>
-                    <span>ผู้ขอเบิก: <strong class="text-main">{{ h.created_by }}</strong></span>
-                  </span>
-                </div>
-
-                <!-- Items Mini Preview Chips -->
-                <div v-if="h.items && h.items.length" class="history-items-chips">
-                  <div 
-                    v-for="it in h.items" 
-                    :key="it.id" 
-                    class="history-item-chip"
-                  >
-                    <div class="history-item-chip-name" :title="it.item_name">
-                      {{ it.item_name }}
-                    </div>
-                    <div class="history-item-chip-qty">
-                      <span class="history-item-chip-num">× {{ it.quantity }}</span>
-                      <span class="history-item-chip-unit" :title="it.unit">{{ it.unit }}</span>
-                    </div>
-                  </div>
-                </div>
+              <div class="order-total-header">
+                <span class="order-total-label">ยอดต้นทุนตัดเข้าสาขา:</span>
+                <span 
+                  class="order-total-amount font-bold"
+                  :class="h.status === 'cancelled' ? 'text-muted' : 'text-primary'"
+                  :style="h.status === 'cancelled' ? 'text-decoration: line-through; opacity: 0.65;' : ''"
+                >
+                  ฿{{ formatNumber(h.total_cost || h.total_amount) }}
+                </span>
               </div>
             </div>
 
-            <!-- Transfer Right Details -->
-            <div class="history-amount-box text-right">
-              <div class="history-total-label text-xs text-secondary">มูลค่าของที่ตัดบัญชี:</div>
-              <div 
-                class="history-total-amount font-bold text-lg"
-                :class="h.status === 'cancelled' ? 'text-muted' : 'text-primary'"
-                :style="h.status === 'cancelled' ? 'text-decoration: line-through; opacity: 0.65;' : ''"
-              >
-                ฿{{ formatNumber(h.total_cost) }}
+            <!-- Metadata Info -->
+            <div class="history-meta-row flex flex-between align-center text-xs text-secondary mb-md flex-wrap gap-sm">
+              <div class="flex align-center gap-md flex-wrap">
+                <span>
+                  <i class="fa-regular fa-user mr-1 text-muted"></i> ผู้ขอเบิก: <strong class="text-main">{{ h.created_by || 'ไม่ระบุ' }}</strong>
+                </span>
+                <span>
+                  <i class="fa-regular fa-clock mr-1 text-muted"></i> วันที่ทำรายการ: <span class="text-main">{{ formatDateTime(h.created_at) }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Items Table (Desktop >= 641px) -->
+            <div v-if="h.items && h.items.length" class="history-items-container mb-xs">
+              <div class="order-items-title flex flex-between align-center mb-xs">
+                <span class="text-xs font-bold text-secondary">
+                  <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการของที่เบิก ({{ h.items.length }} รายการ)
+                </span>
+              </div>
+
+              <div class="history-items-table-wrapper desktop-only-orders-table">
+                <table class="history-items-table">
+                  <thead>
+                    <tr>
+                      <th class="col-item text-left">ชื่อสินค้า</th>
+                      <th class="col-price text-right">ราคาเบิก/หน่วย</th>
+                      <th class="col-qty text-center">จำนวน</th>
+                      <th class="col-total text-right">รวมมูลค่า</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="it in h.items" :key="it.id">
+                      <td class="col-item">
+                        <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
+                        <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
+                      </td>
+                      <td class="col-price text-right text-sm text-secondary">
+                        ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
+                      </td>
+                      <td class="col-qty text-center">
+                        <span class="history-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
+                      </td>
+                      <td class="col-total text-right font-bold text-sm text-primary">
+                        ฿{{ formatNumber(it.quantity * it.cost_price) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile List (< 640px) -->
+              <div class="history-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
+                <div 
+                  v-for="it in h.items" 
+                  :key="it.id" 
+                  class="order-mobile-item-card"
+                >
+                  <div class="flex flex-between align-start gap-xs">
+                    <div class="flex-1 min-w-0 pr-xs">
+                      <div class="order-mobile-item-name font-bold text-sm text-primary">
+                        {{ getItemNameParts(it.item_name).main }}
+                      </div>
+                      <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
+                        {{ getItemNameParts(it.item_name).sub }}
+                      </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 pl-xs">
+                      <span class="order-mobile-item-total font-bold text-sm text-primary">
+                        ฿{{ formatNumber(it.quantity * it.cost_price) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex flex-between align-center order-mobile-item-bottom">
+                    <span class="text-xs text-secondary">
+                      ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
+                    </span>
+                    <span class="history-qty-pill font-bold">
+                      {{ it.quantity }} {{ it.unit }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1533,7 +1607,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'finance' || activeTab === 'receivables'" class="finance-section">
       <!-- Toolbar Header -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card finance-toolbar" style="gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card mb-lg p-md flex flex-between align-center finance-toolbar" style="gap: var(--space-md); flex-wrap: wrap;">
         <div class="flex align-center gap-md">
           <div class="header-icon-circle">
             <i class="fa-solid fa-vault text-primary" style="font-size: var(--font-lg);"></i>
@@ -1958,7 +2032,7 @@
           </DatePeriodFilter>
 
           <!-- Status Filter Toolbar (Exact style from Orders / History for 100% unity) -->
-          <div class="card mb-md p-md flex flex-between align-center flex-wrap gap-md toolbar-card">
+          <div class="card mb-md p-md flex flex-between align-center flex-wrap gap-md">
             <!-- Status Toggle Buttons -->
             <div class="order-status-tabs flex gap-xs align-center">
               <button 
@@ -2247,7 +2321,7 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'partners'" class="partners-section">
       <!-- Store Selector Header Card -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card partner-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
+      <div class="card mb-lg p-md flex flex-between align-center partner-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
         <div class="flex align-center gap-md">
           <div class="header-icon-circle">
             <i class="fa-solid fa-calculator text-primary" style="font-size: var(--font-lg);"></i>
@@ -3987,7 +4061,25 @@ const historyItemFilter = ref('all');
 const isHistoryItemDropdownOpen = ref(false);
 
 const sortedKitchenItems = computed(() => {
-  return [...items.value].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'));
+  const map = new Map();
+  for (const it of items.value) {
+    if (it && it.name && it.name.trim()) {
+      map.set(it.name.trim().toLowerCase(), { id: it.id, name: it.name.trim() });
+    }
+  }
+  for (const h of history.value) {
+    if (h.item_name && h.item_name.trim()) {
+      map.set(h.item_name.trim().toLowerCase(), { id: h.item_name.trim(), name: h.item_name.trim() });
+    }
+    if (h.items && Array.isArray(h.items)) {
+      for (const it of h.items) {
+        if (it && it.item_name && it.item_name.trim()) {
+          map.set(it.item_name.trim().toLowerCase(), { id: it.item_name.trim(), name: it.item_name.trim() });
+        }
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'th'));
 });
 
 const selectedHistoryItemName = computed(() => {
@@ -5600,7 +5692,10 @@ watch(selectedPartnerBranch, () => {
 watch(activeTab, (tab) => {
   if (tab === 'catalog' || tab === 'dispatch') loadItems();
   else if (tab === 'orders') loadOrders();
-  else if (tab === 'history') loadHistory();
+  else if (tab === 'history') {
+    loadHistory();
+    if (items.value.length === 0) loadItems();
+  }
   else if (tab === 'partners') loadPartnerData();
   else if (tab === 'finance' || tab === 'receivables') {
     if (tab === 'receivables') financeSubTab.value = 'receivables';
@@ -6348,9 +6443,9 @@ onUnmounted(() => {
 }
 
 .order-items-table th {
-  background: #ffffff !important;
+  background: var(--bg-secondary) !important;
   font-size: 12.5px !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   color: var(--text-secondary) !important;
   padding: 10px 16px !important;
   border-bottom: 1px solid var(--border-color) !important;
@@ -6381,8 +6476,8 @@ onUnmounted(() => {
 }
 
 .order-notes-box {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
   border-radius: var(--radius-md);
   padding: 8px 14px;
 }
@@ -8689,4 +8784,72 @@ onUnmounted(() => {
     min-width: 0 !important;
   }
 }
+
+/* History Card Structure & Table Styling */
+.history-card-header {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.history-items-table-wrapper {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.history-items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-items-table th {
+  background: #ffffff !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
+  padding: 10px 16px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  letter-spacing: 0.02em;
+}
+
+.history-items-table td {
+  background: #ffffff;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border-color-light) !important;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-items-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.history-qty-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(139, 3, 19, 0.07);
+  color: var(--primary);
+  font-size: var(--font-xs);
+}
+
+.history-restock-detail-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .order-footer-notice .flex {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+  }
+  .order-footer-notice .notice-sub {
+    display: block !important;
+    margin-left: 20px !important;
+    font-size: 11px !important;
+  }
+}
+
 </style>
