@@ -1686,7 +1686,7 @@
         </div>
 
         <!-- Pill Navigation Tabs (Exact style from Management.vue & User reference) -->
-        <div id="finance-subtabs-nav" class="category-tabs flex gap-xs">
+        <div id="finance-subtabs-nav" class="category-tabs mb-lg flex gap-xs">
           <button 
             type="button"
             class="category-tab" 
@@ -2290,7 +2290,7 @@
       </div>
 
       <!-- Pill Tabs (แท็บหลอดยา): หุ้นส่วน vs ประวัติปันผล -->
-      <div class="category-tabs mb-lg flex gap-xs" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+      <div class="category-tabs mb-lg flex gap-xs">
         <button 
           type="button"
           class="category-tab" 
@@ -5952,18 +5952,14 @@ onUnmounted(() => {
 .toolbar-card {
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: #ffffff !important;
+  border-radius: var(--radius-lg);
 }
 
-.category-tabs {
+.filter-bar .category-tabs {
   border-bottom: none !important;
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-.category-tabs::-webkit-scrollbar {
-  display: none !important;
 }
 
 
