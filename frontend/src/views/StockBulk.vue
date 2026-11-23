@@ -305,7 +305,7 @@
 
         <button 
           type="button"
-          class="btn btn-primary btn-save-batch-full w-full tabular-nums" 
+          class="btn btn-primary w-full tabular-nums" 
           :disabled="isSaving"
           @click="showConfirmModal = true"
         >

@@ -328,22 +328,7 @@ ul, ol { list-style: none; }
   height: 32px;
 }
 
-.btn-outline-primary {
-  background: #ffffff !important;
-  color: var(--primary) !important;
-  border: 1.5px solid var(--primary) !important;
-  font-weight: var(--font-weight-semibold);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-}
 
-.btn-outline-primary:hover,
-.btn-outline-primary:active {
-  background: var(--gradient-primary) !important;
-  color: #ffffff !important;
-  border-color: transparent !important;
-  box-shadow: var(--shadow-glow-primary) !important;
-}
 
 .btn-action {
   height: 46px; 
@@ -395,14 +380,7 @@ ul, ol { list-style: none; }
   background: rgba(239, 68, 68, 0.25) !important;
 }
 
-.btn-action-success {
-  background: linear-gradient(135deg, #e63946, #b7091b) !important;
-  color: white !important;
-  border: none !important;
-}
-.btn-action-success:active {
-  background: linear-gradient(135deg, #b7091b, #8b0313) !important;
-}
+
 
 .btn-action-primary {
   background: var(--primary) !important;
@@ -414,33 +392,11 @@ ul, ol { list-style: none; }
   background: var(--primary-dark) !important;
 }
 
-.btn-action-fry {
-  background: var(--primary) !important;
-  color: white !important;
-  border: none !important;
-  font-weight: bold;
-}
-.btn-action-fry:active {
-  background: var(--primary-dark) !important;
-}
 
-.btn-action-waste {
-  background: rgba(255, 59, 48, 0.1) !important;
-  color: #ff3b30 !important;
-  border: 1px solid rgba(255, 59, 48, 0.2) !important;
-}
-.btn-action-waste:active {
-  background: rgba(255, 59, 48, 0.2) !important;
-}
 
-.btn-action-credit {
-  background: rgba(255, 149, 0, 0.1) !important;
-  color: #ff9500 !important;
-  border: 1px solid rgba(255, 149, 0, 0.2) !important;
-}
-.btn-action-credit:active {
-  background: rgba(255, 149, 0, 0.2) !important;
-}
+
+
+
 
 /* 4. ปุ่มใน Modal - สี่เหลี่ยมผืนผ้ายาวขอบมน */
 .btn-modal {
@@ -1795,7 +1751,6 @@ select.form-input:focus {
 /* --- Category Tabs Wrapper end --- */
 
 /* --- Global Back Button / Secondary Action Button --- */
-.btn-back,
 .btn-bulk-back {
   background: #ffffff !important;
   color: var(--text-secondary) !important;
@@ -1809,35 +1764,17 @@ select.form-input:focus {
   transition: transform var(--transition-base);
 }
 
-.btn-back i,
 .btn-bulk-back i {
   color: var(--text-secondary) !important;
 }
 
-.btn-back:active,
 .btn-bulk-back:active {
   transform: scale(0.97);
   background: #ffffff !important;
   color: var(--text-secondary) !important;
 }
 
-.btn-bulk-save,
-.btn-bulk-header-save {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-glow-primary) !important;
-  cursor: pointer;
-  font-weight: var(--font-weight-semibold);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
-}
 
-.btn-bulk-save:active,
-.btn-bulk-header-save:active {
-  transform: scale(0.97);
-  box-shadow: 0 0 30px rgba(230, 57, 70, 0.5) !important;
-}
 
 /* Icon spacing inside buttons */
 .btn i, .btn-action i, .btn-modal i, .btn-upload i {
@@ -2513,16 +2450,7 @@ select.form-input:focus {
   opacity: 0.8;
 }
 
-.btn-save-batch-full {
-  height: 44px !important;
-  font-size: var(--font-base) !important;
-  font-weight: bold !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
+
 
 .slide-up-enter-active,
 .slide-up-leave-active {

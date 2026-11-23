@@ -29,7 +29,7 @@
           </div>
           <div class="menu-action-buttons">
             <button class="btn btn-primary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
-            <button class="btn btn-primary btn-bulk-header-save" :disabled="isSavingReorder" @click="handleSaveReorder">
+            <button class="btn btn-primary" :disabled="isSavingReorder" @click="handleSaveReorder">
               <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSavingReorder ? 'กำลังบันทึก...' : 'บันทึก' }}

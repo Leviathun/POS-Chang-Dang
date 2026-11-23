@@ -16,7 +16,7 @@
           </div>
           <div class="menu-action-buttons">
             <button class="btn btn-primary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
-            <button class="btn btn-primary btn-bulk-header-save" :disabled="isSavingReorder" @click="handleSaveReorder">
+            <button class="btn btn-primary" :disabled="isSavingReorder" @click="handleSaveReorder">
               <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSavingReorder ? 'กำลังบันทึก...' : 'บันทึก' }}
@@ -321,7 +321,7 @@
               <button class="btn-action btn-action-edit flex-1 btn-card-sub" @click="openEditItemModal(item)" title="แก้ไขข้อมูลสินค้า">
                 <i class="fa-solid fa-pen"></i> แก้ไข
               </button>
-              <button class="btn-action btn-action-waste flex-1 btn-card-sub" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
+              <button class="btn-action btn-action-delete flex-1 btn-card-sub" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
                 <i class="fa-solid fa-dumpster"></i> ของเสีย
               </button>
               <button class="btn-action btn-card-sub text-danger" style="flex: 0 0 36px; padding: 0;" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">

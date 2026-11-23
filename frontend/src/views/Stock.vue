@@ -110,8 +110,8 @@
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm">
 
-                    <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
-                    <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
+                    <button class="btn-action btn-action-delete" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
+                    <button class="btn-action btn-action-edit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
                   </div>
                 </td>
               </tr>
@@ -201,8 +201,8 @@
             
             <!-- Bottom Stock Actions -->
             <div class="mobile-stock-card-actions">
-              <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
-              <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
+              <button class="btn-action btn-action-delete" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
+              <button class="btn-action btn-action-edit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
             </div>
           </div>
         </div>
@@ -284,7 +284,7 @@
                 <!-- Actions -->
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div v-if="isManagerOrAdminUser" class="stock-actions flex justify-center gap-sm">
-                    <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
+                    <button class="btn-action btn-action-primary" @click="openActionModal('restock', item, true)">
                       <i class="fa-solid fa-plus"></i> เติมสต็อก
                     </button>
                     <button class="btn-action btn-action-edit" @click="openActionModal('adjust', item, true)">
@@ -356,7 +356,7 @@
             
             <!-- Bottom Stock Actions -->
             <div v-if="isManagerOrAdminUser" class="mobile-stock-card-actions">
-              <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
+              <button class="btn-action btn-action-primary" @click="openActionModal('restock', item, true)">
                 <i class="fa-solid fa-plus"></i> เติมสต็อก
               </button>
               <button class="btn-action btn-action-edit" @click="openActionModal('adjust', item, true)">
@@ -401,7 +401,7 @@
             <div style="display:flex; gap:var(--space-sm); margin-bottom:var(--space-md);">
               <button 
                 class="btn-action flex-1"
-                :class="actionForm.stock_type === 'cooked' ? 'btn-action-fry' : ''"
+                :class="actionForm.stock_type === 'cooked' ? 'btn-action-primary' : ''"
                 @click="actionForm.stock_type = 'cooked'"
                 type="button"
               >
@@ -409,7 +409,7 @@
               </button>
               <button 
                 class="btn-action flex-1"
-                :class="actionForm.stock_type === 'raw' ? 'btn-action-fry' : ''"
+                :class="actionForm.stock_type === 'raw' ? 'btn-action-primary' : ''"
                 @click="actionForm.stock_type = 'raw'"
                 type="button"
               >

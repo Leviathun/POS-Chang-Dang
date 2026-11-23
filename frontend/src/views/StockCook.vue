@@ -238,7 +238,7 @@
 
         <!-- Bottom row: 100% full width cook button -->
         <button 
-          class="btn btn-primary btn-save-batch-full w-full" 
+          class="btn btn-primary w-full" 
           :disabled="isSaving"
           @click="openBatchCookModal"
         >
