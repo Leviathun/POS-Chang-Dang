@@ -830,7 +830,7 @@
       <!-- Orders Status & Requester Filter Toolbar -->
       <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card orders-toolbar">
         <!-- Status Filter Tabs -->
-        <div class="order-status-tabs flex gap-xs align-center">
+        <div class="order-status-tabs flex gap-xs align-center flex-wrap">
           <button 
             class="filter-pill" 
             :class="{ active: orderFilterStatus === 'all' }"
@@ -844,23 +844,15 @@
             :class="{ active: orderFilterStatus === 'pending' }"
             @click="orderFilterStatus = 'pending'"
           >
-            <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง 
+            <i class="fa-solid fa-hourglass-start mr-1"></i> ยังไม่อนุมัติ 
             <span class="order-tab-count">{{ pendingOrdersCount }}</span>
-          </button>
-          <button 
-            class="filter-pill" 
-            :class="{ active: orderFilterStatus === 'dispatched' }"
-            @click="orderFilterStatus = 'dispatched'"
-          >
-            <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง 
-            <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
           </button>
           <button 
             class="filter-pill" 
             :class="{ active: orderFilterStatus === 'received' }"
             @click="orderFilterStatus = 'received'"
           >
-            <i class="fa-solid fa-circle-check mr-1"></i> สาขารับแล้ว
+            <i class="fa-solid fa-circle-check mr-1"></i> อนุมัติแล้ว
             <span class="order-tab-count">{{ receivedOrdersCount }}</span>
           </button>
         </div>
@@ -974,8 +966,7 @@
               </span>
               <span class="badge font-bold" :class="getStatusBadgeClass(order.status)">
                 <i v-if="order.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
-                <i v-else-if="order.status === 'dispatched'" class="fa-solid fa-truck-fast"></i>
-                <i v-else-if="order.status === 'received'" class="fa-solid fa-circle-check"></i>
+                <i v-else-if="order.status === 'dispatched' || order.status === 'received'" class="fa-solid fa-circle-check"></i>
                 <i v-else-if="order.status === 'cancelled'" class="fa-solid fa-ban"></i>
                 <span>{{ getStatusLabel(order.status) }}</span>
               </span>
@@ -1191,69 +1182,136 @@
         @change="refreshActivePeriodTab"
       />
 
-      <!-- History Type & Requester Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card history-toolbar">
-        <div class="history-status-tabs flex gap-xs align-center">
-          <button 
-            class="filter-pill" 
-            :class="{ active: historyFilter === 'all' }"
-            @click="historyFilter = 'all'"
-          >
-            <span>ทั้งหมด</span>
-            <span class="history-tab-count">{{ periodMatchedHistory.length }}</span>
-          </button>
-          <button 
-            class="filter-pill" 
-            :class="{ active: historyFilter === 'restock' }"
-            @click="historyFilter = 'restock'"
-          >
-            <i class="fa-solid fa-circle-plus"></i>
-            <span>เติมสต็อกเข้าคลัง</span>
-            <span class="history-tab-count">{{ restockHistoryCount }}</span>
-          </button>
-          <button 
-            class="filter-pill" 
-            :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
-            @click="historyFilter = 'transfer'"
-          >
-            <i class="fa-solid fa-truck-fast"></i>
-            <span>สาขาเบิกของ</span>
-            <span class="history-tab-count">{{ transferHistoryCount }}</span>
-          </button>
+      <!-- History Type & Extended Filter Toolbar -->
+      <div class="card mb-lg p-md flex flex-col gap-md toolbar-card history-toolbar">
+        <!-- Row 1: Type Tabs -->
+        <div class="flex flex-between align-center flex-wrap gap-sm">
+          <div class="history-status-tabs flex gap-xs align-center flex-wrap">
+            <button 
+              class="filter-pill" 
+              :class="{ active: historyFilter === 'all' }"
+              @click="historyFilter = 'all'"
+            >
+              <span>ทั้งหมด</span>
+              <span class="history-tab-count">{{ historyTotalCount }}</span>
+            </button>
+            <button 
+              class="filter-pill" 
+              :class="{ active: historyFilter === 'restock' }"
+              @click="historyFilter = 'restock'"
+            >
+              <i class="fa-solid fa-circle-plus"></i>
+              <span>เติมสต็อกเข้าคลัง</span>
+              <span class="history-tab-count">{{ historyRestockCount }}</span>
+            </button>
+            <button 
+              class="filter-pill" 
+              :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
+              @click="historyFilter = 'transfer'"
+            >
+              <i class="fa-solid fa-truck-fast"></i>
+              <span>สาขาเบิกของ</span>
+              <span class="history-tab-count">{{ historyTransferCount }}</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Right: Requester Filter Dropdown -->
-        <div class="order-branch-filter">
-          <label class="order-branch-label">
-            <i class="fa-solid fa-user text-primary"></i>
-            <span>ผู้ขอเบิก:</span>
-          </label>
-          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
-            <div 
-              class="custom-select-trigger order-branch-select" 
-              :class="{ 'active': isHistoryRequesterDropdownOpen }" 
-              @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen"
+        <!-- Row 2: Search Input + Branch Filter + Requester Filter -->
+        <div class="history-filter-controls-row flex align-center gap-md flex-wrap">
+          <!-- 1. Search Catalog Item -->
+          <div class="search-input-box" style="position: relative; flex: 1; min-width: 220px;">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input 
+              type="text" 
+              v-model="historySearchQuery" 
+              placeholder="ค้นหาชื่อสินค้าในประวัติ เช่น ขนมจีบ, ไก่..." 
+              class="form-input search-input"
+              style="padding-left: 40px; padding-right: 32px; width: 100%; border-radius: var(--radius-md); font-size: var(--font-sm); height: 38px;"
+            />
+            <button 
+              v-if="historySearchQuery" 
+              type="button"
+              class="search-clear-btn" 
+              @click="historySearchQuery = ''"
+              title="ล้างคำค้นหา"
+              style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;"
             >
-              <span class="custom-select-text font-bold">
-                {{ historyRequesterFilter === 'all' ? 'ทุกคน' : historyRequesterFilter }}
-              </span>
-            </div>
-            <div v-if="isHistoryRequesterDropdownOpen" class="custom-select-dropdown">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- 2. Branch Filter Dropdown -->
+          <div class="order-branch-filter flex align-center gap-xs">
+            <label class="order-branch-label" style="white-space: nowrap;">
+              <i class="fa-solid fa-store text-primary"></i>
+              <span>สาขา:</span>
+            </label>
+            <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
               <div 
-                class="custom-select-option"
-                :class="{ 'selected': historyRequesterFilter === 'all' }"
-                @click="historyRequesterFilter = 'all'; isHistoryRequesterDropdownOpen = false;"
+                class="custom-select-trigger order-branch-select" 
+                :class="{ 'active': isHistoryBranchDropdownOpen }" 
+                @click="isHistoryBranchDropdownOpen = !isHistoryBranchDropdownOpen; isHistoryRequesterDropdownOpen = false;"
+                style="height: 38px;"
               >
-                ทุกคน
+                <span class="custom-select-text font-bold">
+                  {{ selectedHistoryBranchName }}
+                </span>
               </div>
+              <div v-if="isHistoryBranchDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  class="custom-select-option"
+                  :class="{ 'selected': historyBranchFilter === 'all' }"
+                  @click="historyBranchFilter = 'all'; isHistoryBranchDropdownOpen = false;"
+                >
+                  ทุกสาขา
+                </div>
+                <div 
+                  v-for="b in retailBranches" 
+                  :key="b.id" 
+                  class="custom-select-option"
+                  :class="{ 'selected': Number(historyBranchFilter) === Number(b.id) }"
+                  @click="historyBranchFilter = b.id; isHistoryBranchDropdownOpen = false;"
+                >
+                  {{ b.name }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Requester Filter Dropdown -->
+          <div class="order-branch-filter flex align-center gap-xs">
+            <label class="order-branch-label" style="white-space: nowrap;">
+              <i class="fa-solid fa-user text-primary"></i>
+              <span>ผู้ขอเบิก:</span>
+            </label>
+            <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 150px;">
               <div 
-                v-for="reqName in availableHistoryRequesters" 
-                :key="reqName" 
-                class="custom-select-option"
-                :class="{ 'selected': historyRequesterFilter === reqName }"
-                @click="historyRequesterFilter = reqName; isHistoryRequesterDropdownOpen = false;"
+                class="custom-select-trigger order-branch-select" 
+                :class="{ 'active': isHistoryRequesterDropdownOpen }" 
+                @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen; isHistoryBranchDropdownOpen = false;"
+                style="height: 38px;"
               >
-                {{ reqName }}
+                <span class="custom-select-text font-bold">
+                  {{ historyRequesterFilter === 'all' ? 'ทุกคน' : historyRequesterFilter }}
+                </span>
+              </div>
+              <div v-if="isHistoryRequesterDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  class="custom-select-option"
+                  :class="{ 'selected': historyRequesterFilter === 'all' }"
+                  @click="historyRequesterFilter = 'all'; isHistoryRequesterDropdownOpen = false;"
+                >
+                  ทุกคน
+                </div>
+                <div 
+                  v-for="reqName in availableHistoryRequesters" 
+                  :key="reqName" 
+                  class="custom-select-option"
+                  :class="{ 'selected': historyRequesterFilter === reqName }"
+                  @click="historyRequesterFilter = reqName; isHistoryRequesterDropdownOpen = false;"
+                >
+                  {{ reqName }}
+                </div>
               </div>
             </div>
           </div>
@@ -3875,6 +3933,15 @@ const isOrderBranchDropdownOpen = ref(false);
 const isOrderRequesterDropdownOpen = ref(false);
 const historyRequesterFilter = ref('all');
 const isHistoryRequesterDropdownOpen = ref(false);
+const historySearchQuery = ref('');
+const historyBranchFilter = ref('all');
+const isHistoryBranchDropdownOpen = ref(false);
+
+const selectedHistoryBranchName = computed(() => {
+  if (historyBranchFilter.value === 'all') return 'ทุกสาขา';
+  const found = retailBranches.value.find(b => Number(b.id) === Number(historyBranchFilter.value));
+  return found ? found.name : 'ทุกสาขา';
+});
 const isPartnerBranchDropdownOpen = ref(false);
 
 const availableOrderRequesters = computed(() => {
@@ -3911,6 +3978,7 @@ const closeOrderBranchDropdown = () => {
   isOrderBranchDropdownOpen.value = false;
   isOrderRequesterDropdownOpen.value = false;
   isHistoryRequesterDropdownOpen.value = false;
+  isHistoryBranchDropdownOpen.value = false;
 };
 
 const closePartnerBranchDropdown = () => {
@@ -4430,7 +4498,7 @@ const partnerSumPercentage = computed(() => {
 });
 
 // Date & Period Filter State (for Orders & History tabs)
-const periodMode = ref('daily'); // 'daily' | 'monthly' | 'yearly'
+const periodMode = ref('monthly'); // 'daily' | 'monthly' | 'yearly'
 const selectedDate = ref(getToday());
 const selectedMonth = ref(getToday().substring(0, 7));
 const selectedYear = ref(getToday().substring(0, 4));
@@ -4475,8 +4543,7 @@ const periodMatchedOrders = computed(() => {
 });
 
 const pendingOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'pending').length);
-const dispatchedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'dispatched').length);
-const receivedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'received').length);
+const receivedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'received' || o.status === 'dispatched').length);
 
 const periodMatchedHistory = computed(() => {
   return history.value.filter(h => {
@@ -4485,8 +4552,35 @@ const periodMatchedHistory = computed(() => {
   });
 });
 
-const restockHistoryCount = computed(() => periodMatchedHistory.value.filter(h => h.type === 'restock').length);
-const transferHistoryCount = computed(() => periodMatchedHistory.value.filter(h => h.type === 'transfer').length);
+const historyRestockCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (h.type !== 'restock') return false;
+    if (historyBranchFilter.value !== 'all') return false;
+    if (historySearchQuery.value && historySearchQuery.value.trim()) {
+      const q = historySearchQuery.value.trim().toLowerCase();
+      return (h.item_name && h.item_name.toLowerCase().includes(q)) || (h.note && h.note.toLowerCase().includes(q));
+    }
+    return true;
+  }).length;
+});
+
+const historyTransferCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (h.type !== 'transfer' && h.type !== 'requisition') return false;
+    if (historyBranchFilter.value !== 'all' && Number(h.branch_id) !== Number(historyBranchFilter.value)) return false;
+    if (historySearchQuery.value && historySearchQuery.value.trim()) {
+      const q = historySearchQuery.value.trim().toLowerCase();
+      const matchTransferNo = h.transfer_no && h.transfer_no.toLowerCase().includes(q);
+      const matchBranchName = h.branch_name && h.branch_name.toLowerCase().includes(q);
+      const matchItems = h.items && h.items.some(it => it.item_name && it.item_name.toLowerCase().includes(q));
+      const matchNote = h.note && h.note.toLowerCase().includes(q);
+      return matchTransferNo || matchBranchName || matchItems || matchNote;
+    }
+    return true;
+  }).length;
+});
+
+const historyTotalCount = computed(() => historyRestockCount.value + historyTransferCount.value);
 
 const getCategoryCount = (catId) => {
   if (catId === 'all') return items.value.length;
@@ -4503,15 +4597,48 @@ const filteredItems = computed(() => {
 
 const filteredOrders = computed(() => {
   if (orderFilterStatus.value === 'all') return periodMatchedOrders.value;
+  if (orderFilterStatus.value === 'received') {
+    return periodMatchedOrders.value.filter(o => o.status === 'received' || o.status === 'dispatched');
+  }
   return periodMatchedOrders.value.filter(o => o.status === orderFilterStatus.value);
 });
 
 const filteredHistory = computed(() => {
-  if (historyFilter.value === 'all') return periodMatchedHistory.value;
-  if (historyFilter.value === 'transfer' || historyFilter.value === 'requisition') {
-    return periodMatchedHistory.value.filter(h => h.type === 'transfer' || h.type === 'requisition');
+  let list = periodMatchedHistory.value;
+
+  // 1. Filter by Type
+  if (historyFilter.value === 'restock') {
+    list = list.filter(h => h.type === 'restock');
+  } else if (historyFilter.value === 'transfer' || historyFilter.value === 'requisition') {
+    list = list.filter(h => h.type === 'transfer' || h.type === 'requisition');
   }
-  return periodMatchedHistory.value.filter(h => h.type === historyFilter.value);
+
+  // 2. Filter by Branch
+  if (historyBranchFilter.value !== 'all') {
+    const bId = Number(historyBranchFilter.value);
+    list = list.filter(h => (h.type === 'transfer' || h.type === 'requisition') && Number(h.branch_id) === bId);
+  }
+
+  // 3. Filter by Search Query (Catalog Item name, transfer no, branch name, note)
+  if (historySearchQuery.value && historySearchQuery.value.trim()) {
+    const q = historySearchQuery.value.trim().toLowerCase();
+    list = list.filter(h => {
+      if (h.type === 'restock') {
+        return (h.item_name && h.item_name.toLowerCase().includes(q)) ||
+               (h.note && h.note.toLowerCase().includes(q));
+      }
+      if (h.type === 'transfer' || h.type === 'requisition') {
+        const matchTransferNo = h.transfer_no && h.transfer_no.toLowerCase().includes(q);
+        const matchBranchName = h.branch_name && h.branch_name.toLowerCase().includes(q);
+        const matchItems = h.items && h.items.some(it => it.item_name && it.item_name.toLowerCase().includes(q));
+        const matchNote = h.note && h.note.toLowerCase().includes(q);
+        return matchTransferNo || matchBranchName || matchItems || matchNote;
+      }
+      return false;
+    });
+  }
+
+  return list;
 });
 
 // Helpers
@@ -4560,9 +4687,9 @@ const getStatusBadgeClass = (st) => {
 
 const getStatusLabel = (st) => {
   const map = {
-    'pending': 'รอจัดส่ง',
-    'dispatched': 'กำลังส่ง',
-    'received': 'สาขารับแล้ว',
+    'pending': 'ยังไม่อนุมัติ',
+    'dispatched': 'อนุมัติแล้ว',
+    'received': 'อนุมัติแล้ว',
     'cancelled': 'ยกเลิก'
   };
   return map[st] || st;
@@ -8465,6 +8592,20 @@ onUnmounted(() => {
     flex: 1;
     min-height: 120px;
     max-height: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .history-filter-controls-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
+  }
+  .history-filter-controls-row .search-input-box,
+  .history-filter-controls-row .order-branch-filter,
+  .history-filter-controls-row .order-branch-select-wrapper {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
 </style>
