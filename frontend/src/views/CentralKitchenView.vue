@@ -170,13 +170,13 @@
 
         <!-- Bottom Row: Separate Action Buttons Row -->
         <div class="catalog-toolbar-actions">
-          <button class="btn btn-secondary toolbar-btn" @click="openCategoryModal" title="จัดการหมวดหมู่สินค้าในครัวกลาง">
+          <button class="btn btn-secondary" @click="openCategoryModal" title="จัดการหมวดหมู่สินค้าในครัวกลาง">
             <i class="fa-solid fa-folder-open"></i> <span>จัดการหมวด</span>
           </button>
-          <button class="btn btn-secondary toolbar-btn" @click="openReorderMode" title="จัดเรียงลำดับการแสดงแคตตาล็อก">
+          <button class="btn btn-secondary" @click="openReorderMode" title="จัดเรียงลำดับการแสดงแคตตาล็อก">
             <i class="fa-solid fa-sort"></i> <span>เรียงลำดับ</span>
           </button>
-          <button class="btn btn-primary btn-add-item toolbar-btn" @click="openCreateItemModal">
+          <button class="btn btn-primary" @click="openCreateItemModal">
             <i class="fa-solid fa-plus"></i> <span>สร้างใหม่</span>
           </button>
         </div>
@@ -1683,11 +1683,11 @@
         </div>
 
         <div class="finance-action-buttons flex align-center gap-sm flex-wrap">
-          <button class="btn btn-primary btn-finance-action" @click="openTransactionModal('capital_in')">
+          <button class="btn btn-primary" @click="openTransactionModal('capital_in')">
             <i class="fa-solid fa-circle-plus"></i>
             <span>เติมเงินทุนกองกลาง</span>
           </button>
-          <button class="btn btn-secondary btn-finance-action" @click="openTransactionModal('operating_expense_out')">
+          <button class="btn btn-secondary" @click="openTransactionModal('operating_expense_out')">
             <i class="fa-solid fa-circle-minus"></i>
             <span>จ่ายค่าใช้จ่ายครัวกลาง</span>
           </button>
@@ -2702,7 +2702,7 @@
                       </div>
                       <button 
                         v-if="settlementData.net_profit > 0" 
-                        class="btn btn-primary btn-payout-partner w-full"
+                        class="btn btn-primary w-full mt-md"
                         @click="openPayoutModal(p)"
                       >
                         <i class="fa-solid fa-paper-plane mr-1"></i> บันทึกจ่ายปันผล
@@ -5802,19 +5802,6 @@ onUnmounted(() => {
   border-top: 1px solid var(--border-color);
 }
 
-.toolbar-btn {
-  height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 0 16px;
-  font-size: var(--font-base);
-  font-weight: bold;
-  white-space: nowrap;
-  border-radius: var(--radius-md);
-  box-sizing: border-box;
-}
 
 .menu-top-action-card {
   display: flex;
@@ -6743,18 +6730,6 @@ onUnmounted(() => {
   border-bottom: none !important;
 }
 
-.btn-finance-action {
-  height: 44px;
-  padding: 0 var(--space-lg);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: var(--font-sm);
-  border-radius: var(--radius-md);
-  white-space: nowrap;
-}
 
 .card-accent-primary {
   border-top: 3.5px solid var(--primary) !important;
@@ -7069,17 +7044,6 @@ onUnmounted(() => {
   border-radius: var(--radius-md);
 }
 
-.btn-payout-partner {
-  height: 42px;
-  font-size: var(--font-sm);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: var(--radius-md);
-  margin-top: 14px;
-}
 
 /* ────────────────────────────────────────────────────────── */
 /* MODAL SUMMARY CARDS (Spacious, Breathing Room, Not Cramped) */
@@ -7252,11 +7216,7 @@ onUnmounted(() => {
     border-radius: var(--radius-md) !important;
   }
 
-  .btn-add-item {
-    flex: unset !important;
-    width: 100% !important;
-  }
-
+  
   /* Reorder View on Mobile */
   .menu-top-action-card {
     flex-direction: column !important;
@@ -7705,12 +7665,7 @@ onUnmounted(() => {
     gap: 8px !important;
   }
 
-  .btn-finance-action {
-    width: 100% !important;
-    height: 44px !important;
-    justify-content: center !important;
-  }
-
+  
   .ledger-header {
     flex-direction: column !important;
     align-items: flex-start !important;

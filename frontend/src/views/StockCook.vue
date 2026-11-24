@@ -205,7 +205,7 @@
 
           <!-- Cook button: Separate full-width row for big, easy tapping -->
           <button 
-            class="btn btn-primary btn-cook-submit w-full"
+            class="btn btn-primary w-full"
             :disabled="!canCookItem(item)"
             @click="openSingleCookModal(item)"
           >
@@ -1262,29 +1262,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* Cook submit button: Large, prominent, and full-width */
-.btn-cook-submit {
-  height: 44px !important;
-  font-size: var(--font-base) !important;
-  font-weight: bold !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.15);
-}
-
-.btn-cook-submit:disabled {
-  opacity: 1 !important;
-  background: var(--primary) !important;
-  color: #ffffff !important;
-  border: 1px solid var(--primary) !important;
-  box-shadow: none !important;
-  cursor: not-allowed !important;
-  pointer-events: none !important;
-}
 
 .modal-stock-preview-grid {
   display: grid;

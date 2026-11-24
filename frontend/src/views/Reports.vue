@@ -899,7 +899,7 @@
                 <td class="text-center" style="width: 10%; padding: var(--space-sm) var(--space-md); vertical-align: middle;">
                   <button 
                     v-if="item.type === 'expense'" 
-                    class="btn-delete-action"
+                    class="btn-action btn-action-delete btn-xs"
                     @click="handleDeleteExpense(item.id)"
                   >
                     <i class="fa-solid fa-trash-can"></i> ลบ
@@ -5573,22 +5573,6 @@ select.reports-filter-control,
   color: #ffffff !important;
 }
 
-.btn-delete-action {
-  background: rgba(255, 59, 48, 0.1) !important;
-  color: #ff3b30 !important;
-  border: 1px solid rgba(255, 59, 48, 0.2) !important;
-  padding: 4px 8px !important;
-  min-height: 28px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  border-radius: var(--radius-sm) !important;
-  cursor: pointer;
-}
-
-.btn-delete-action:active {
-  background: rgba(255, 59, 48, 0.2) !important;
-}
 
 .btn-drawer-action {
   width: 180px !important;
