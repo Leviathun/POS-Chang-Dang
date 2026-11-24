@@ -250,7 +250,7 @@
             <span>ยอดสุทธิ</span>
             <span class="text-accent text-lg">{{ formatCurrency(netCartTotal) }}</span>
           </div>
-          <button class="btn btn-primary mt-lg" @click="handleCheckout">
+          <button class="btn btn-primary w-full mt-lg" @click="handleCheckout">
             <i class="fa-solid fa-wallet"></i> ชำระเงิน
           </button>
         </div>

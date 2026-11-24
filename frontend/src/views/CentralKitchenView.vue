@@ -3384,10 +3384,10 @@
           </div>
 
           <!-- Buttons -->
-          <div class="flex justify-end gap-md mt-xl">
-            <button class="btn btn-secondary" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
+          <div class="flex gap-md mt-xl">
+            <button class="btn btn-secondary flex-1" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
             <button 
-              class="btn btn-primary" 
+              class="btn btn-primary flex-1" 
               :disabled="isSavingItem || !itemForm.name?.trim()"
               @click="saveItem"
             >
@@ -7499,11 +7499,6 @@ onUnmounted(() => {
     width: 18px !important;
     height: 18px !important;
     margin-top: 2px !important;
-  }
-
-  .btn {
-    white-space: nowrap !important;
-    padding: 0 16px !important;
   }
 
   .btn-card-sub {

@@ -1431,11 +1431,6 @@ onUnmounted(() => {
   gap: var(--space-md);
 }
 
-.confirm-actions .btn {
-  height: 46px;
-  font-size: var(--font-base);
-  border-radius: var(--radius-md);
-}
 
 /* --- Keypad --- */
 .keypad {

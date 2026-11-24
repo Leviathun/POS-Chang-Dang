@@ -913,10 +913,10 @@
         <div>
           <div class="text-xs font-bold text-secondary mb-sm">สำรองข้อมูลทั้งระบบ:</div>
           <div class="flex gap-md backup-btns-container">
-            <button class="btn btn-primary btn-secondary flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <button class="btn btn-secondary flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-database"></i> สำรองข้อมูล (.json)
             </button>
-            <button class="btn btn-primary btn-secondary flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <button class="btn btn-secondary flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูล (.db)
             </button>
           </div>

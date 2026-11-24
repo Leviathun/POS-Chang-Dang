@@ -301,7 +301,7 @@ ul, ol { list-style: none; }
   border: 1px solid var(--border-color) !important;
   border-radius: var(--radius-md) !important;
   font-size: var(--font-base);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-secondary) !important;
   white-space: nowrap;
   transition: transform var(--transition-base);
@@ -318,6 +318,17 @@ ul, ol { list-style: none; }
   transform: scale(0.97);
   background: #ffffff !important;
   color: var(--text-secondary) !important;
+}
+
+.btn-secondary.active {
+  background: var(--gradient-primary) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: var(--shadow-glow-primary) !important;
+}
+
+.btn-secondary.active i {
+  color: #ffffff !important;
 }
 
 .btn-secondary:disabled {
@@ -1918,11 +1929,6 @@ select.form-input:focus {
 }
 @media (max-width: 768px) {
   /* Touch Target Heights (Android / iOS standard >= 44px - 48px) */
-  
-  /* Increase padding for secondary buttons (tabs, etc.) */
-  .btn-secondary {
-    padding: 12px 18px !important;
-  }
 
   /* Restore original mobile pill sizing for secondary utility buttons */
   .csv-export-btn,

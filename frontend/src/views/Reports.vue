@@ -441,7 +441,7 @@
                 <div v-if="order.status === 'completed'" style="display: flex; justify-content: flex-end; width: 100%; margin-top: var(--space-md);">
                   <button 
                     type="button"
-                    class="btn btn-outline-danger btn-sm" 
+                    class="btn btn-outline-danger" 
                     style="margin-left: auto;"
                     @click.stop="openVoidModal(order)"
                   >
@@ -683,7 +683,7 @@
                 <div v-if="order.status === 'completed'" class="flex justify-end mt-sm" style="width: 100%;">
                   <button 
                     type="button"
-                    class="btn btn-outline-danger btn-sm" 
+                    class="btn btn-outline-danger" 
                     style="margin-left: auto;"
                     @click.stop="openVoidModal(order)"
                   >

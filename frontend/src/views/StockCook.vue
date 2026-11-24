@@ -958,19 +958,6 @@ onUnmounted(() => {
   text-align: left;
 }
 
-/* Header buttons: Standard size matching reference image & StockBulk */
-.btn-secondary {
-  height: 44px !important;
-  padding: 10px 18px !important;
-  font-size: var(--font-base) !important;
-  font-weight: var(--font-weight-semibold) !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-sizing: border-box !important;
-}
 
 .title-tooltip-wrapper {
   position: relative;
@@ -1332,13 +1319,9 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .btn-secondary {
+  .mobile-header-actions .btn {
     flex: 1 !important;
-    width: auto !important;
-    height: 44px !important;
     justify-content: center !important;
-    padding: 10px 12px !important;
-    font-size: var(--font-sm) !important;
   }
 }
 
@@ -1364,10 +1347,6 @@ onUnmounted(() => {
 @media (min-width: 769px) {
   .mobile-stock-header-card {
     padding: var(--space-xl) !important;
-  }
-  .btn-secondary {
-    height: auto !important;
-    padding: var(--space-md) var(--space-xl) !important;
   }
 }
 </style>

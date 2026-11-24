@@ -945,20 +945,6 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
-.btn-secondary {
-  height: 44px !important;
-  min-width: 132px;
-  padding: 0 var(--space-lg) !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: var(--font-base) !important;
-  font-weight: var(--font-weight-semibold);
-  box-sizing: border-box;
-  touch-action: manipulation;
-}
 
 #stock-bulk-page {
   padding-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 120px);
@@ -1195,10 +1181,6 @@ onUnmounted(() => {
   .mobile-stock-header-card {
     padding: var(--space-xl) !important;
   }
-  .btn-secondary {
-    height: auto !important;
-    padding: var(--space-md) var(--space-xl) !important;
-  }
 }
 
 @media (max-width: 768px) {
@@ -1216,7 +1198,7 @@ onUnmounted(() => {
     width: 100%;
   }
 
-  .btn-secondary {
+  .mobile-header-actions .btn {
     flex: 1;
     justify-content: center;
   }
