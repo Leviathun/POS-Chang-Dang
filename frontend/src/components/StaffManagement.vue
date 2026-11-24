@@ -1484,9 +1484,9 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showCompModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showCompModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingComp"
                 @click="handleSaveCompensation"
               >
@@ -1586,9 +1586,9 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showAddEventOtModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showAddEventOtModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingEventOt || !eventOtForm.event_name || !eventOtForm.amount_per_person || eventOtForm.user_ids.length === 0"
                 @click="handleSaveEventOt"
               >
@@ -1773,9 +1773,9 @@
             </div>
 
             <div class="flex gap-md mt-lg" style="margin-top: auto; padding-top: var(--space-md);">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showAddAdvanceModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showAddAdvanceModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingAdvance || !advanceForm.user_id || !advanceForm.amount || advanceForm.amount <= 0"
                 @click="handleSaveAdvance"
               >
@@ -2044,9 +2044,9 @@
 
 
             <div class="flex gap-md mt-md">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showPayModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showPayModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="processingPayout || payForm.custom_net_paid === null || payForm.custom_net_paid === undefined || payForm.custom_net_paid < 0"
                 @click="handleConfirmPayout"
               >
@@ -2168,7 +2168,7 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showHistoryModal = false">ปิด</button>
+              <button class="btn btn-secondary flex-1" @click="showHistoryModal = false">ปิด</button>
             </div>
           </div>
         </div>
@@ -2278,9 +2278,9 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showRefundModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showRefundModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingRefund"
                 @click="handleConfirmRefundGuarantee"
               >
@@ -2374,8 +2374,8 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showDayDetailModal = false">ปิด</button>
-              <button class="btn-modal btn-modal-primary flex-1" @click="jumpToAttendanceEdit(selectedDayDetail?.dateStr)">
+              <button class="btn btn-secondary flex-1" @click="showDayDetailModal = false">ปิด</button>
+              <button class="btn btn-primary flex-1" @click="jumpToAttendanceEdit(selectedDayDetail?.dateStr)">
                 <i class="fa-solid fa-pen-to-square"></i> แก้ไขการลงเวลา
               </button>
             </div>

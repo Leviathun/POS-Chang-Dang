@@ -411,8 +411,8 @@
         <div class="confirm-title">{{ uiState.confirm.title }}</div>
         <div class="confirm-message">{{ uiState.confirm.message }}</div>
         <div class="confirm-actions">
-          <button class="btn-modal btn-modal-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
-          <button class="btn-modal btn-modal-primary flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
+          <button class="btn btn-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
+          <button class="btn btn-primary flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
         </div>
       </div>
     </div>
@@ -1431,7 +1431,7 @@ onUnmounted(() => {
   gap: var(--space-md);
 }
 
-.confirm-actions .btn-modal {
+.confirm-actions .btn {
   height: 46px;
   font-size: var(--font-base);
   border-radius: var(--radius-md);

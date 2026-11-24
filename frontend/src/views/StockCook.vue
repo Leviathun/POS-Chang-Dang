@@ -21,7 +21,7 @@
         </div>
       </div>
       <div class="flex align-center gap-xs flex-wrap mobile-header-actions">
-        <router-link to="/stock" class="btn btn-primary btn-bulk-back">
+        <router-link to="/stock" class="btn btn-secondary">
           <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
         </router-link>
       </div>
@@ -382,12 +382,12 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-md mt-lg">
-            <button type="button" class="btn-modal btn-modal-secondary flex-1" :disabled="isSaving" @click="closeModal">
+            <button type="button" class="btn btn-secondary flex-1" :disabled="isSaving" @click="closeModal">
               ยกเลิก
             </button>
             <button 
               type="button"
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isSaving"
               @click="confirmCookAction"
             >
@@ -959,7 +959,7 @@ onUnmounted(() => {
 }
 
 /* Header buttons: Standard size matching reference image & StockBulk */
-.btn-bulk-back {
+.btn-secondary {
   height: 44px !important;
   padding: 10px 18px !important;
   font-size: var(--font-base) !important;
@@ -1332,7 +1332,7 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .btn-bulk-back {
+  .btn-secondary {
     flex: 1 !important;
     width: auto !important;
     height: 44px !important;
@@ -1365,7 +1365,7 @@ onUnmounted(() => {
   .mobile-stock-header-card {
     padding: var(--space-xl) !important;
   }
-  .btn-bulk-back {
+  .btn-secondary {
     height: auto !important;
     padding: var(--space-md) var(--space-xl) !important;
   }

@@ -158,7 +158,7 @@
 
             <div class="w-full flex gap-md success-actions" style="display: flex; gap: var(--space-md); width: 100%;">
               <button 
-                class="btn-modal btn-modal-secondary flex-1" 
+                class="btn btn-secondary flex-1" 
                 @click="() => handlePrintReceipt()"
                 :disabled="isCheckingOut || printLoading"
                 style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
@@ -168,7 +168,7 @@
                 <span>พิมพ์ใบเสร็จ</span>
               </button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="isCheckingOut" 
                 @click="finishPayment" 
                 style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
@@ -354,7 +354,7 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmQRPayment">
+                  <button class="btn btn-primary" :disabled="isCheckingOut" @click="confirmQRPayment">
                     <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
                     <i v-else class="fa-solid fa-circle-check"></i>
                     <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการชำระเงิน' }}</span>
@@ -374,7 +374,7 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmGovPayment">
+                  <button class="btn btn-primary" :disabled="isCheckingOut" @click="confirmGovPayment">
                     <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
                     <i v-else class="fa-solid fa-circle-check"></i>
                     <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการโครงการรัฐ' }}</span>
@@ -394,7 +394,7 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmDeliveryPayment">
+                  <button class="btn btn-primary" :disabled="isCheckingOut" @click="confirmDeliveryPayment">
                     <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
                     <i v-else class="fa-solid fa-circle-check"></i>
                     <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการเดลิเวอรี' }}</span>
@@ -1057,7 +1057,7 @@ const confirmDeliveryPayment = () => {
     flex-direction: column !important;
     gap: var(--space-sm) !important;
   }
-  .success-actions .btn-modal {
+  .success-actions .btn {
     width: 100% !important;
     flex: none !important;
   }

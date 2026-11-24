@@ -15,7 +15,7 @@
             จัดเรียงลำดับสินค้า: <strong>{{ reorderItems.length }}</strong> รายการ
           </div>
           <div class="menu-action-buttons">
-            <button class="btn btn-primary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
+            <button class="btn btn-secondary" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
             <button class="btn btn-primary" :disabled="isSavingReorder" @click="handleSaveReorder">
               <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
@@ -3385,9 +3385,9 @@
 
           <!-- Buttons -->
           <div class="flex justify-end gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary" 
+              class="btn btn-primary" 
               :disabled="isSavingItem || !itemForm.name?.trim()"
               @click="saveItem"
             >
@@ -3474,8 +3474,8 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showRestockModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" @click="submitQuickRestock">
+            <button class="btn btn-secondary flex-1" @click="showRestockModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" @click="submitQuickRestock">
               <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
           </div>
@@ -3599,9 +3599,9 @@
 
           <!-- ปุ่มกดยืนยัน / ยกเลิก -->
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showAdjustModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" @click="showAdjustModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="adjustForm.actual_quantity === null || adjustForm.actual_quantity === undefined || adjustForm.actual_quantity < 0 || diffQuantity === 0"
               @click="submitAdjustStock"
             >
@@ -3697,8 +3697,8 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingTransaction" @click="showTransactionModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSavingTransaction" @click="submitTransaction">
+            <button class="btn btn-secondary flex-1" :disabled="isSavingTransaction" @click="showTransactionModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSavingTransaction" @click="submitTransaction">
               <i v-if="isSavingTransaction" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSavingTransaction ? 'กำลังบันทึก...' : 'บันทึก' }}
@@ -3783,8 +3783,8 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingWaste" @click="showWasteModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSavingWaste" @click="submitWaste">
+            <button class="btn btn-secondary flex-1" :disabled="isSavingWaste" @click="showWasteModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSavingWaste" @click="submitWaste">
               <i v-if="isSavingWaste" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSavingWaste ? 'กำลังบันทึก...' : 'บันทึก' }}
@@ -3839,8 +3839,8 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingReimburse" @click="showReimburseModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingReimburse" @click="submitReimburseBranch">
+            <button class="btn btn-secondary flex-1" :disabled="isSubmittingReimburse" @click="showReimburseModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSubmittingReimburse" @click="submitReimburseBranch">
               <i v-if="isSubmittingReimburse" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSubmittingReimburse ? 'กำลังบันทึก...' : 'บันทึก' }}
@@ -3911,8 +3911,8 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingPayout" @click="showPayoutModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingPayout" @click="submitPayout">
+            <button class="btn btn-secondary flex-1" :disabled="isSubmittingPayout" @click="showPayoutModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSubmittingPayout" @click="submitPayout">
               <i v-if="isSubmittingPayout" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSubmittingPayout ? 'กำลังบันทึก...' : 'บันทึก' }}
@@ -3999,9 +3999,9 @@
 
           <!-- Actions -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingAdjust" @click="showAdjustItemModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSubmittingAdjust" @click="showAdjustItemModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isSubmittingAdjust || adjustNewQty < 0 || adjustNewQty >= adjustingItem.quantity"
               @click="submitAdjustItem"
             >
@@ -7501,7 +7501,7 @@ onUnmounted(() => {
     margin-top: 2px !important;
   }
 
-  .btn-modal {
+  .btn {
     white-space: nowrap !important;
     padding: 0 16px !important;
   }

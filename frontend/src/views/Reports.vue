@@ -441,7 +441,7 @@
                 <div v-if="order.status === 'completed'" style="display: flex; justify-content: flex-end; width: 100%; margin-top: var(--space-md);">
                   <button 
                     type="button"
-                    class="btn order-void-btn" 
+                    class="btn btn-outline-danger btn-sm" 
                     style="margin-left: auto;"
                     @click.stop="openVoidModal(order)"
                   >
@@ -683,7 +683,7 @@
                 <div v-if="order.status === 'completed'" class="flex justify-end mt-sm" style="width: 100%;">
                   <button 
                     type="button"
-                    class="btn order-void-btn" 
+                    class="btn btn-outline-danger btn-sm" 
                     style="margin-left: auto;"
                     @click.stop="openVoidModal(order)"
                   >
@@ -1068,9 +1068,9 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isVoidingOrder" @click="showVoidModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isVoidingOrder" @click="showVoidModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="!voidReason || (voidReason === 'custom' && !voidCustomReason.trim()) || isVoidingOrder"
               @click="handleVoidOrder"
             >
@@ -4695,21 +4695,6 @@ select.reports-filter-control,
   font-weight: 700;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
-}
-.order-void-btn {
-  border: 1.5px solid rgba(239, 68, 68, 0.3) !important;
-  background: rgba(239, 68, 68, 0.05) !important;
-  color: #dc2626 !important;
-  font-size: var(--font-sm);
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  padding: 8px var(--space-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-.order-void-btn:hover {
-  background: #dc2626 !important;
-  color: #ffffff !important;
 }
 
 

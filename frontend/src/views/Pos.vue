@@ -250,7 +250,7 @@
             <span>ยอดสุทธิ</span>
             <span class="text-accent text-lg">{{ formatCurrency(netCartTotal) }}</span>
           </div>
-          <button class="btn-modal btn-modal-primary mt-lg" @click="handleCheckout">
+          <button class="btn btn-primary mt-lg" @click="handleCheckout">
             <i class="fa-solid fa-wallet"></i> ชำระเงิน
           </button>
         </div>
@@ -504,8 +504,8 @@
 
           <!-- Confirmation Buttons -->
           <div class="flex gap-md">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showOptionsModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" @click="confirmSelection">ใส่ตะกร้า</button>
+            <button class="btn btn-secondary flex-1" @click="showOptionsModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" @click="confirmSelection">ใส่ตะกร้า</button>
           </div>
         </div>
       </div>

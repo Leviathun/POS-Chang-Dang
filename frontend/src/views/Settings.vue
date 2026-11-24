@@ -434,9 +434,9 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingUser" @click="showUserModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSavingUser" @click="showUserModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="!userForm.name || !userForm.pin || userForm.pin.length !== 4 || isSavingUser"
               @click="handleSaveUser"
             >
@@ -633,9 +633,9 @@
           </div>
 
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="!branchForm.name || !branchForm.name.trim() || isSavingBranch"
               @click="handleSaveBranch"
             >
@@ -913,10 +913,10 @@
         <div>
           <div class="text-xs font-bold text-secondary mb-sm">สำรองข้อมูลทั้งระบบ:</div>
           <div class="flex gap-md backup-btns-container">
-            <button class="btn btn-primary btn-bulk-back flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <button class="btn btn-primary btn-secondary flex-1" @click="downloadJSONBackup" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-database"></i> สำรองข้อมูล (.json)
             </button>
-            <button class="btn btn-primary btn-bulk-back flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <button class="btn btn-primary btn-secondary flex-1" @click="downloadSQLiteDB" style="min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-download"></i> ดาวน์โหลดฐานข้อมูล (.db)
             </button>
           </div>
@@ -1132,12 +1132,12 @@
 
         <!-- Testing Buttons -->
         <div class="flex gap-md printer-btn-container" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
-          <button class="btn btn-primary btn-bulk-back" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+          <button class="btn btn-secondary" :disabled="isTestingPrint" @click="handleTestPrint" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingPrint" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-file-invoice"></i>
             {{ isTestingPrint ? 'กำลังทดสอบ...' : 'ทดสอบพิมพ์ใบเสร็จ' }}
           </button>
-          <button class="btn btn-primary btn-bulk-back" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
+          <button class="btn btn-secondary" :disabled="isTestingKick" @click="handleTestKick" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px;">
             <i v-if="isTestingKick" class="fa-solid fa-spinner fa-spin"></i>
             <i v-else class="fa-solid fa-key"></i>
             {{ isTestingKick ? 'กำลังทดสอบ...' : 'ทดสอบเปิดลิ้นชัก' }}
@@ -1203,9 +1203,9 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingPreset" @click="showPresetModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSavingPreset" @click="showPresetModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="!presetForm.name.trim() || presetForm.modifier_ids.length === 0 || isSavingPreset"
               @click="handleSavePreset"
             >
@@ -1273,11 +1273,11 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isPurging" @click="showPurgeModal = false">
+            <button class="btn btn-secondary flex-1" :disabled="isPurging" @click="showPurgeModal = false">
               ยกเลิก
             </button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isPurging || (purgeConfirmInput !== 'ยืนยันลบข้อมูล' && purgeConfirmInput !== 'CONFIRM')"
               @click="handleExecutePurgeCloud"
               style="background: var(--danger, #c0392b); border-color: var(--danger, #c0392b);"
@@ -2318,7 +2318,7 @@ onUnmounted(() => {
     gap: var(--space-sm) !important;
   }
   .backup-btns-container .btn,
-  .backup-btns-container .btn-modal {
+  .backup-btns-container .btn {
     width: 100% !important;
     flex: none !important;
     height: 48px !important;

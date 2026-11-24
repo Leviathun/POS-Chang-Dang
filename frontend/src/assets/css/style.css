@@ -290,11 +290,12 @@ ul, ol { list-style: none; }
   transform: scale(0.97);
 }
 
-/* 2. ปุ่มรองมาตรฐาน - สี่เหลี่ยมผืนผ้าขอบมน */
+/* 2. ปุ่มรองมาตรฐาน - สี่เหลี่ยมผืนผ้าขอบมน พื้นขาว ขอบเทาอ่อน */
 .btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-sm);
   padding: var(--space-md) var(--space-xl);
   background: #ffffff !important;
   border: 1px solid var(--border-color) !important;
@@ -303,24 +304,27 @@ ul, ol { list-style: none; }
   font-weight: var(--font-weight-medium);
   color: var(--text-secondary) !important;
   white-space: nowrap;
-  transition: all var(--transition-base);
+  transition: transform var(--transition-base);
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
 }
 
-.btn-secondary:hover {
-  background: rgba(139, 3, 19, 0.04) !important;
-  color: var(--primary) !important;
-  border-color: var(--primary) !important;
+.btn-secondary i {
+  color: var(--text-secondary) !important;
 }
 
-.btn-secondary:active, 
-.btn-secondary.active {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  border-color: transparent !important;
-  box-shadow: var(--shadow-glow-primary) !important;
+.btn-secondary:active {
+  transform: scale(0.97);
+  background: #ffffff !important;
+  color: var(--text-secondary) !important;
 }
+
+.btn-secondary:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 
 /* 3. ปุ่มขอบเส้นสีแดง (Danger Outline Button) */
 .btn-outline-danger {
@@ -437,47 +441,6 @@ ul, ol { list-style: none; }
 
 
 
-/* 4. ปุ่มใน Modal - สี่เหลี่ยมผืนผ้ายาวขอบมน */
-.btn-modal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  width: 100%;
-  height: 56px; /* Locked height for absolute consistency and tablet touch targets */
-  padding: 0 var(--space-xl); /* Removed vertical padding to let height control centering */
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-base);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  border: none;
-}
-
-.btn-modal:active {
-  transform: scale(0.97);
-}
-
-.btn-modal:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  pointer-events: none;
-  box-shadow: none !important;
-}
-
-.btn-modal-primary {
-  background: var(--gradient-primary);
-  color: white !important;
-  box-shadow: var(--shadow-glow-primary);
-  border: none !important;
-}
-
-.btn-modal-secondary {
-  background: #ffffff !important;
-  color: var(--text-secondary) !important;
-  border: 1px solid var(--border-color) !important; /* Soft warm reddish border, no dark border */
-  box-shadow: var(--shadow-sm);
-}
 
 /* 5. ปุ่มอัปโหลดรูปภาพในฟอร์ม */
 .btn-upload {
@@ -1789,34 +1752,11 @@ select.form-input:focus {
 
 /* --- Category Tabs Wrapper end --- */
 
-/* --- Global Back Button / Secondary Action Button --- */
-.btn-bulk-back {
-  background: #ffffff !important;
-  color: var(--text-secondary) !important;
-  border: 1px solid var(--border-color) !important;
-  box-shadow: var(--shadow-sm) !important;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-base);
-  text-decoration: none;
-  cursor: pointer;
-  transition: transform var(--transition-base);
-}
-
-.btn-bulk-back i {
-  color: var(--text-secondary) !important;
-}
-
-.btn-bulk-back:active {
-  transform: scale(0.97);
-  background: #ffffff !important;
-  color: var(--text-secondary) !important;
-}
 
 
 
 /* Icon spacing inside buttons */
-.btn i, .btn-action i, .btn-modal i, .btn-upload i {
+.btn i, .btn-action i, .btn-upload i {
   margin-right: var(--space-xs) !important;
 }
 

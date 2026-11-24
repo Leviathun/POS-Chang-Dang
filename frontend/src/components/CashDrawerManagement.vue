@@ -314,8 +314,8 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showAuditModal = false">ยกเลิก</button>
-              <button class="btn-modal btn-modal-primary flex-1" @click="submitCashAudit" :disabled="actualCashInput === '' || actualCashInput === null || actualCashInput < 0 || savingAudit">
+              <button class="btn btn-secondary flex-1" @click="showAuditModal = false">ยกเลิก</button>
+              <button class="btn btn-primary flex-1" @click="submitCashAudit" :disabled="actualCashInput === '' || actualCashInput === null || actualCashInput < 0 || savingAudit">
                 <i v-if="savingAudit" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-circle-check"></i>
                 <span>{{ savingAudit ? ' กำลังปิดยอด...' : ' ปิดยอด' }}</span>
@@ -356,8 +356,8 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showOpeningCashModal = false">ยกเลิก</button>
-              <button class="btn-modal btn-modal-primary flex-1" @click="submitOpeningCash" :disabled="openingCashInput === '' || openingCashInput === null || openingCashInput < 0 || savingOpeningCash">
+              <button class="btn btn-secondary flex-1" @click="showOpeningCashModal = false">ยกเลิก</button>
+              <button class="btn btn-primary flex-1" @click="submitOpeningCash" :disabled="openingCashInput === '' || openingCashInput === null || openingCashInput < 0 || savingOpeningCash">
                 <i v-if="savingOpeningCash" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-floppy-disk"></i>
                 <span>{{ savingOpeningCash ? ' กำลังบันทึก...' : ' บันทึกเงินทอน' }}</span>

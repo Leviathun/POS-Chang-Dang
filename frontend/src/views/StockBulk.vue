@@ -26,7 +26,7 @@
         </div>
       </div>
       <div class="flex align-center gap-sm flex-wrap mobile-header-actions">
-        <router-link to="/stock" class="btn btn-secondary btn-bulk-back">
+        <router-link to="/stock" class="btn btn-secondary">
           <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
         </router-link>
       </div>
@@ -397,12 +397,12 @@
 
           <!-- Modal Actions -->
           <div class="flex gap-md mt-lg">
-            <button type="button" class="btn-modal btn-modal-secondary flex-1" :disabled="isSaving" @click="showConfirmModal = false">
+            <button type="button" class="btn btn-secondary flex-1" :disabled="isSaving" @click="showConfirmModal = false">
               ยกเลิก
             </button>
             <button 
               type="button"
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isSaving"
               @click="handleSaveBulkAdjust"
             >
@@ -945,7 +945,7 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
-.btn-bulk-back {
+.btn-secondary {
   height: 44px !important;
   min-width: 132px;
   padding: 0 var(--space-lg) !important;
@@ -1195,7 +1195,7 @@ onUnmounted(() => {
   .mobile-stock-header-card {
     padding: var(--space-xl) !important;
   }
-  .btn-bulk-back {
+  .btn-secondary {
     height: auto !important;
     padding: var(--space-md) var(--space-xl) !important;
   }
@@ -1216,7 +1216,7 @@ onUnmounted(() => {
     width: 100%;
   }
 
-  .btn-bulk-back {
+  .btn-secondary {
     flex: 1;
     justify-content: center;
   }

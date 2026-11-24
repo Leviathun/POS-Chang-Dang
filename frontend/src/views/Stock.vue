@@ -511,9 +511,9 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSaving" @click="showActionModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSaving" @click="showActionModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isSaving || actionForm.quantity === '' || actionForm.quantity === null" 
               @click="handleSaveAction"
             >
