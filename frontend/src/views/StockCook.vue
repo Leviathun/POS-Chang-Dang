@@ -53,7 +53,7 @@
         <!-- Toggle: Only with Raw Stock (Stable size, no text or width jumping) -->
         <button 
           class="btn btn-raw-toggle"
-          :class="{ 'btn-primary': onlyWithRawStock, 'btn-secondary-rect': !onlyWithRawStock }"
+          :class="{ 'btn-primary': onlyWithRawStock, 'btn-secondary': !onlyWithRawStock }"
           @click="onlyWithRawStock = !onlyWithRawStock"
           title="สลับการแสดงผลเฉพาะสินค้าที่มีวัตถุดิบพร้อมปรุง"
         >
@@ -1059,16 +1059,7 @@ onUnmounted(() => {
   min-width: 200px;
 }
 
-.btn-secondary-rect {
-  background: #ffffff !important;
-  color: var(--text-secondary) !important;
-  border: 1px solid var(--border-color) !important;
-}
 
-.btn-secondary-rect:hover {
-  border-color: var(--primary) !important;
-  color: var(--primary) !important;
-}
 
 /* Grid of Cook Items */
 .cook-items-grid {

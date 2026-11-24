@@ -1955,10 +1955,10 @@
 
           <!-- Card Actions: Buttons (Equal Width and Height) -->
           <div class="cash-card-actions">
-            <button class="btn btn-secondary flex-1" style="height: 42px; font-size: var(--font-xs); font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" @click="openOpeningCashModal(session)">
+            <button class="btn btn-secondary flex-1" @click="openOpeningCashModal(session)">
               <i class="fa-solid fa-coins text-warning" style="font-size: var(--font-sm);"></i> กรอกยอดเงินทอน
             </button>
-            <button class="btn btn-primary flex-1" style="height: 42px; font-size: var(--font-xs); font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(139,3,19,0.2);" @click="openAuditModal(session)">
+            <button class="btn btn-primary flex-1" @click="openAuditModal(session)">
               <i class="fa-solid fa-circle-check" style="font-size: var(--font-sm);"></i> ปิดยอดประจำวัน
             </button>
           </div>

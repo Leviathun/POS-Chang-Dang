@@ -290,31 +290,62 @@ ul, ol { list-style: none; }
   transform: scale(0.97);
 }
 
-/* 2. ปุ่มยาเม็ดเลือกหน้า/แท็บ - ยาเม็ด */
+/* 2. ปุ่มรองมาตรฐาน - สี่เหลี่ยมผืนผ้าขอบมน */
 .btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-sm) var(--space-lg);
+  padding: var(--space-md) var(--space-xl);
   background: #ffffff !important;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full); /* capsule shape default for tabs */
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
   font-size: var(--font-base);
   font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
+  color: var(--text-secondary) !important;
   white-space: nowrap;
   transition: all var(--transition-base);
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.btn-secondary:hover, 
+.btn-secondary:hover {
+  background: rgba(139, 3, 19, 0.04) !important;
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
 .btn-secondary:active, 
 .btn-secondary.active {
   background: var(--gradient-primary) !important;
   color: white !important;
   border-color: transparent !important;
   box-shadow: var(--shadow-glow-primary) !important;
+}
+
+/* 3. ปุ่มขอบเส้นสีแดง (Danger Outline Button) */
+.btn-outline-danger {
+  background: #ffffff !important;
+  color: var(--danger, #ad281e) !important;
+  border: 1.5px solid var(--danger, #ad281e) !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--font-base);
+  transition: all var(--transition-base);
+}
+
+.btn-outline-danger:hover,
+.btn-outline-danger:active {
+  background: rgba(173, 40, 30, 0.08) !important;
+  color: var(--danger, #ad281e) !important;
+  transform: scale(0.97);
 }
 
 .btn-sm {
@@ -348,6 +379,14 @@ ul, ol { list-style: none; }
   -webkit-tap-highlight-color: transparent;
   box-shadow: var(--shadow-sm);
   white-space: nowrap;
+}
+
+.btn-action.btn-xs {
+  height: 32px !important;
+  padding: 0 12px !important;
+  font-size: var(--font-xs) !important;
+  min-width: unset !important;
+  gap: 4px !important;
 }
 
 .btn-action:active {

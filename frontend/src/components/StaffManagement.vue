@@ -180,7 +180,7 @@
             </span>
           </div>
           <div v-if="isAdminUser" style="margin-top: 2px;">
-            <button class="btn btn-secondary w-full" style="height: 40px; font-size: var(--font-xs); font-weight: 600; border-radius: var(--radius-md);" @click="openEditCompensationModal(emp)">
+            <button class="btn btn-secondary w-full" style="height: 40px; font-size: var(--font-xs); font-weight: 600;" @click="openEditCompensationModal(emp)">
               <i class="fa-solid fa-sliders mr-xs"></i> ปรับค่าแรงและสวัสดิการ
             </button>
           </div>

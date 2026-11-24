@@ -1069,7 +1069,7 @@
                     <td v-if="order.status === 'received'" class="col-actions text-center">
                       <button 
                         v-if="it.quantity > 0"
-                        class="btn-action-edit-compact mx-auto" 
+                        class="btn-action btn-action-edit btn-xs mx-auto" 
                         title="ปรับยอดสินค้า / แจ้งของชำรุด"
                         @click="openAdjustItemModal(order, it)"
                       >
@@ -1128,7 +1128,7 @@
                 <!-- Row 3: Action for received items -->
                 <div v-if="order.status === 'received' && it.quantity > 0" class="flex justify-end pt-xs mt-xs border-t">
                   <button 
-                    class="btn-action-edit-compact" 
+                    class="btn-action btn-action-edit btn-xs" 
                     @click="openAdjustItemModal(order, it)"
                   >
                     <i class="fa-solid fa-pen-to-square"></i>
@@ -1183,21 +1183,21 @@
             <div class="order-footer-actions flex align-center gap-sm flex-wrap">
               <button 
                 v-if="order.status === 'pending'" 
-                class="btn btn-primary btn-dispatch-order"
+                class="btn btn-primary"
                 @click="dispatchOrder(order)"
               >
                 <i class="fa-solid fa-circle-check mr-2"></i> อนุมัติ & ตัดจ่ายเข้าสาขาทันที
               </button>
               <button 
                 v-if="order.status === 'pending'" 
-                class="btn-outline-danger"
+                class="btn btn-outline-danger"
                 @click="cancelTransferOrder(order)"
               >
                 <i class="fa-solid fa-xmark mr-1"></i> ยกเลิกคำขอ
               </button>
               <button 
                 v-if="order.status === 'received'" 
-                class="btn-outline-danger-subtle"
+                class="btn btn-outline-danger btn-sm"
                 @click="cancelTransferOrder(order)"
                 title="ยกเลิกใบเบิกนี้และดึงสต็อกกลับคืน"
               >
@@ -6546,23 +6546,7 @@ onUnmounted(() => {
   display: none;
 }
 
-.btn-dispatch-order {
-  height: 48px;
-  padding: 0 24px;
-  font-size: var(--font-base);
-  font-weight: var(--font-weight-bold);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-}
 
-.btn-dispatch-order:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
 
 /* ============================================================ */
 /* HISTORY TAB STYLING                                          */
@@ -7634,10 +7618,7 @@ onUnmounted(() => {
     align-items: stretch;
   }
 
-  .btn-dispatch-order {
-    width: 100%;
-    height: 48px;
-  }
+  .order-footer-actions .btn { width: 100%; justify-content: center; }
 
   /* History Tab Responsive */
   .history-toolbar {
@@ -8940,80 +8921,5 @@ onUnmounted(() => {
   }
 }
 
-
-/* Standard Rectangular Action Buttons (Non-pill, border-radius: var(--radius-md)) */
-.btn-action-edit-compact {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  background: rgba(255, 171, 43, 0.12);
-  color: #b45309;
-  border: 1px solid rgba(255, 171, 43, 0.35);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
-}
-
-.btn-action-edit-compact:hover,
-.btn-action-edit-compact:active {
-  background: rgba(255, 171, 43, 0.22);
-  border-color: #d97706;
-  transform: scale(0.97);
-}
-
-.btn-outline-danger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 48px;
-  padding: 0 18px;
-  background: #ffffff;
-  color: var(--danger, #ad281e);
-  border: 1.5px solid var(--danger, #ad281e);
-  border-radius: var(--radius-md);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
-}
-
-.btn-outline-danger:hover,
-.btn-outline-danger:active {
-  background: rgba(173, 40, 30, 0.08);
-  transform: scale(0.97);
-}
-
-.btn-outline-danger-subtle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  background: #ffffff;
-  color: var(--danger, #ad281e);
-  border: 1px solid rgba(173, 40, 30, 0.35);
-  border-radius: var(--radius-md);
-  font-size: var(--font-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  white-space: nowrap;
-}
-
-.btn-outline-danger-subtle:hover,
-.btn-outline-danger-subtle:active {
-  background: rgba(173, 40, 30, 0.08);
-  border-color: var(--danger, #ad281e);
-  transform: scale(0.97);
-}
 
 </style>

@@ -708,7 +708,7 @@
             <div class="order-footer-actions">
               <button 
                 v-if="t.status === 'dispatched'" 
-                class="btn btn-primary btn-dispatch-order"
+                class="btn btn-primary"
                 @click="confirmReceive(t)"
               >
                 <i class="fa-solid fa-box-open mr-2"></i>
@@ -1654,27 +1654,7 @@ onMounted(() => {
   padding-top: var(--space-sm);
 }
 
-.btn-dispatch-order {
-  height: 48px;
-  padding: 0 24px;
-  font-size: var(--font-base);
-  font-weight: var(--font-weight-bold);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-  background: var(--gradient-primary, linear-gradient(135deg, #8b0313 0%, #68000b 100%));
-  color: #ffffff;
-  border: none;
-  cursor: pointer;
-}
 
-.btn-dispatch-order:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
 
 /* Orders Tab: Desktop Table vs Mobile Itemized Cards */
 .desktop-only-orders-table {
@@ -1998,10 +1978,7 @@ onMounted(() => {
     align-items: stretch;
   }
 
-  .btn-dispatch-order {
-    width: 100%;
-    height: 48px;
-  }
+  .order-footer-actions .btn { width: 100%; justify-content: center; }
 }
 
 @media (min-width: 641px) and (max-width: 1023px) {
@@ -2061,7 +2038,6 @@ onMounted(() => {
 .btn-qty,
 .btn-restock-main,
 .btn-submit-requisition,
-.btn-dispatch-order,
 .clear-cart-btn,
 .search-clear-btn,
 .cart-pay-btn {
@@ -2072,7 +2048,6 @@ onMounted(() => {
 .btn-qty:focus-visible,
 .btn-restock-main:focus-visible,
 .btn-submit-requisition:focus-visible,
-.btn-dispatch-order:focus-visible,
 .qty-card-input:focus-visible,
 .qty-input-field:focus-visible {
   outline: 2px solid var(--border-color-focus);
