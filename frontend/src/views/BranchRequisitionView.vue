@@ -211,7 +211,7 @@
             <!-- 5. ปุ่มแอ็กชัน (รองรับพิมพ์จำนวนโดยตรง และปุ่มเพิ่ม) -->
             <div class="card-footer-actions">
               <div v-if="getCartQty(item.id) > 0" class="flex align-center gap-xs w-full" @click.stop>
-                <button class="btn-qty" @click="decreaseQty(getCartItem(item.id))" title="ลด">-</button>
+                <button class="qty-btn" @click="decreaseQty(getCartItem(item.id))" title="ลด">-</button>
                 <input 
                   type="number" 
                   inputmode="numeric" 
@@ -224,11 +224,11 @@
                   style="flex: 1; height: 40px; padding: 2px; font-size: var(--font-sm); border-radius: var(--radius-sm);" 
                   title="พิมพ์จำนวนที่ต้องการเบิกได้ทันที"
                 />
-                <button class="btn-qty" :disabled="getCartQty(item.id) >= item.quantity" @click="increaseQty(getCartItem(item.id))" title="เพิ่ม">+</button>
+                <button class="qty-btn" :disabled="getCartQty(item.id) >= item.quantity" @click="increaseQty(getCartItem(item.id))" title="เพิ่ม">+</button>
               </div>
               <button 
                 v-else
-                class="btn-action btn-action-primary w-full btn-restock-main" 
+                class="btn-action btn-action-primary w-full" 
                 :disabled="item.quantity <= 0"
                 @click.stop="addToCart(item)"
               >
@@ -303,7 +303,7 @@
 
                 <!-- Qty Stepper with direct typing input -->
                 <div class="flex align-center gap-xs flex-shrink-0">
-                  <button class="btn-qty" @click="decreaseQty(c)" title="ลดจำนวน">-</button>
+                  <button class="qty-btn" @click="decreaseQty(c)" title="ลดจำนวน">-</button>
                   <input 
                     type="number" 
                     inputmode="numeric" 
@@ -316,7 +316,7 @@
                     @change="validateCartQty(c)"
                     title="คลิกเพื่อพิมพ์จำนวนได้โดยตรง"
                   />
-                  <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
+                  <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
                 </div>
               </div>
             </div>
@@ -345,7 +345,7 @@
 
           <!-- 48px Submit Button -->
           <button 
-            class="btn btn-primary btn-submit-requisition w-full"
+            class="btn btn-primary w-full"
             :disabled="cart.length === 0 || isSubmitting"
             @click="submitRequisition"
           >
@@ -1186,25 +1186,6 @@ onMounted(() => {
   outline: none;
 }
 
-.search-clear-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  padding: 4px;
-  font-size: var(--font-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-clear-btn:hover {
-  color: var(--text-primary);
-}
 
 .category-count {
   font-size: 0.85em;
@@ -1378,35 +1359,11 @@ onMounted(() => {
   margin-top: auto;
 }
 
-.btn-restock-main {
+.card-footer-actions > .btn-action {
   height: 42px !important;
   width: 100% !important;
   font-size: var(--font-sm) !important;
-  border-radius: var(--radius-md) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
   min-width: unset !important;
-  box-sizing: border-box !important;
-  background: var(--gradient-primary, linear-gradient(135deg, #8b0313 0%, #68000b 100%)) !important;
-  color: #ffffff !important;
-  border: none !important;
-  font-weight: 700 !important;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(139, 3, 19, 0.25);
-  transition: all var(--transition-base);
-}
-
-.btn-restock-main:hover:not(:disabled) {
-  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.35);
-  transform: translateY(-1px);
-}
-
-.btn-restock-main:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
 }
 
 /* Cart Sidebar */
@@ -1477,33 +1434,7 @@ onMounted(() => {
 }
 
 /* 32px Circle Stepper Buttons */
-.btn-qty {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: var(--font-base);
-  color: var(--text-primary);
-  transition: all var(--transition-base);
-  padding: 0;
-  line-height: 1;
-}
 
-.btn-qty:hover {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
-
-.qty-display {
-  min-width: 28px;
-}
 
 /* Unboxed Cart Total Row */
 .cart-total-row {
@@ -1511,13 +1442,6 @@ onMounted(() => {
 }
 
 /* 48px Cart Submit Button */
-.btn-submit-requisition {
-  height: 48px;
-  font-size: var(--font-sm);
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.2);
-}
 
 /* ============================================================ */
 /* MY ORDERS TAB - EXACT ORDERS CARD FROM CENTRAL KITCHEN       */
@@ -1645,9 +1569,6 @@ onMounted(() => {
   padding: 8px 14px;
 }
 
-.mobile-only-price {
-  display: none;
-}
 
 .order-card-footer {
   border-top: 1px dashed var(--border-color);
@@ -2035,9 +1956,6 @@ onMounted(() => {
 }
 /* --- Redesign Polish & Web Interface Guidelines --- */
 .category-tab,
-.btn-qty,
-.btn-restock-main,
-.btn-submit-requisition,
 .clear-cart-btn,
 .search-clear-btn,
 .cart-pay-btn {
@@ -2045,9 +1963,6 @@ onMounted(() => {
 }
 
 .category-tab:focus-visible,
-.btn-qty:focus-visible,
-.btn-restock-main:focus-visible,
-.btn-submit-requisition:focus-visible,
 .qty-card-input:focus-visible,
 .qty-input-field:focus-visible {
   outline: 2px solid var(--border-color-focus);
@@ -2080,19 +1995,11 @@ onMounted(() => {
   background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
 }
 
-.btn-qty {
-  width: 40px;
-  height: 40px;
-  background: var(--card-bg);
-}
 
 .cart-row {
   background: var(--card-bg);
 }
 
-.btn-dispatch-order {
-  min-height: 44px;
-}
 
 @media (min-width: 1024px) {
   .cart-sidebar {

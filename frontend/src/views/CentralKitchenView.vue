@@ -307,24 +307,24 @@
           <!-- 5. ปุ่มแอ็กชัน (อ้างอิงความกว้างเต็มเท่ารูปภาพ ซ้าย-ขวาเต็ม ไม่โดนบีบ) -->
           <div class="card-footer-actions">
             <!-- ปุ่มเติมสต็อกด่วน เต็มความกว้างซ้าย-ขวา -->
-            <button class="btn-action btn-action-primary w-full btn-restock-main" @click="openQuickRestockModal(item)">
+            <button class="btn-action btn-action-primary w-full" @click="openQuickRestockModal(item)">
               <i class="fa-solid fa-plus-circle"></i> เติมสต็อกด่วน
             </button>
             
             <!-- ปุ่มปรับปรุงสต็อก ยาวสีแดง คล้ายเติมสต็อกด่วน เอาไว้ใต้ เติมสต็อกด่วน -->
-            <button class="btn-action btn-action-adjust w-full btn-adjust-main" @click="openAdjustStockModal(item)">
+            <button class="btn-action btn-action-primary w-full" @click="openAdjustStockModal(item)">
               <i class="fa-solid fa-sliders"></i> ปรับปรุงสต็อก
             </button>
             
             <!-- ปุ่มแก้ไข, ของเสีย, และลบสินค้า ขยายซ้าย-ขวาเต็ม -->
             <div class="card-sub-actions flex gap-xs w-full">
-              <button class="btn-action btn-action-edit flex-1 btn-card-sub" @click="openEditItemModal(item)" title="แก้ไขข้อมูลสินค้า">
+              <button class="btn-action btn-action-edit flex-1" @click="openEditItemModal(item)" title="แก้ไขข้อมูลสินค้า">
                 <i class="fa-solid fa-pen"></i> แก้ไข
               </button>
-              <button class="btn-action btn-action-delete flex-1 btn-card-sub" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
+              <button class="btn-action btn-action-delete flex-1" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
                 <i class="fa-solid fa-dumpster"></i> ของเสีย
               </button>
-              <button class="btn-action btn-card-sub text-danger" style="flex: 0 0 36px; padding: 0;" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">
+              <button class="btn-action text-danger" style="flex: 0 0 36px; padding: 0;" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -539,7 +539,7 @@
               <!-- Action Button (Direct Quantity Stepper & Input) -->
               <div class="card-footer-actions">
                 <div v-if="getDispatchCartQty(item.id) > 0" class="flex align-center gap-xs w-full" @click.stop>
-                  <button class="btn-qty" @click="decreaseDispatchQty(getDispatchCartItem(item.id))" title="ลดจำนวน">-</button>
+                  <button class="qty-btn" @click="decreaseDispatchQty(getDispatchCartItem(item.id))" title="ลดจำนวน">-</button>
                   <input 
                     type="number" 
                     inputmode="numeric" 
@@ -552,11 +552,11 @@
                     style="flex: 1; height: 36px; padding: 2px; font-size: var(--font-sm); border-radius: var(--radius-sm);" 
                     title="พิมพ์จำนวนที่ต้องการจ่ายได้ทันที"
                   />
-                  <button class="btn-qty" :disabled="getDispatchCartQty(item.id) >= item.quantity" @click="increaseDispatchQty(getDispatchCartItem(item.id))" title="เพิ่มจำนวน">+</button>
+                  <button class="qty-btn" :disabled="getDispatchCartQty(item.id) >= item.quantity" @click="increaseDispatchQty(getDispatchCartItem(item.id))" title="เพิ่มจำนวน">+</button>
                 </div>
                 <button 
                   v-else
-                  class="btn-action btn-action-primary w-full btn-restock-main" 
+                  class="btn-action btn-action-primary w-full" 
                   :disabled="item.quantity <= 0"
                   @click.stop="addDispatchItem(item)"
                 >
@@ -642,7 +642,7 @@
                   </span>
 
                   <div class="flex align-center gap-xs flex-shrink-0">
-                    <button class="btn-qty" @click="decreaseDispatchQty(c)">-</button>
+                    <button class="qty-btn" @click="decreaseDispatchQty(c)">-</button>
                     <input 
                       type="number" 
                       inputmode="numeric" 
@@ -654,7 +654,7 @@
                       @change="validateDispatchQty(c)"
                       @focus="$event.target.select()"
                     />
-                    <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)">+</button>
+                    <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)">+</button>
                     <button class="btn btn-ghost btn-xs text-danger ml-xs" @click="removeDispatchItem(c.item_id)">✕</button>
                   </div>
                 </div>
@@ -684,7 +684,7 @@
 
             <!-- Submit Button (48px) -->
             <button 
-              class="btn btn-primary btn-submit-requisition w-full"
+              class="btn btn-primary w-full"
               :disabled="dispatchCart.length === 0 || !dispatchBranchId || isSubmittingDispatch"
               @click="submitPushDispatch"
             >
@@ -5967,11 +5967,6 @@ onUnmounted(() => {
   color: #ffffff !important;
 }
 
-.btn-stock-choice-sub {
-  font-size: var(--font-xxs);
-  color: var(--text-secondary, #718096);
-  line-height: 1.3;
-}
 
 .btn-stock-choice.active .btn-stock-choice-sub {
   color: rgba(255, 255, 255, 0.9) !important;
@@ -6041,12 +6036,6 @@ onUnmounted(() => {
   margin-top: 10px;
 }
 
-.stock-sync-empty-note {
-  padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.025);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-md);
-}
 
 /* Responsive visibility helpers */
 @media (max-width: 768px) {
@@ -6234,8 +6223,7 @@ onUnmounted(() => {
   margin-top: auto;
 }
 
-.btn-restock-main,
-.btn-adjust-main {
+.card-footer-actions > .btn-action {
   height: 42px !important;
   width: 100% !important;
   font-size: var(--font-sm) !important;
@@ -6248,20 +6236,6 @@ onUnmounted(() => {
   box-sizing: border-box !important;
 }
 
-.btn-action-adjust {
-  background: var(--primary) !important;
-  color: white !important;
-  border: none !important;
-  font-weight: bold;
-}
-
-.btn-action-adjust:hover {
-  background: var(--primary-dark) !important;
-}
-
-.btn-action-adjust:active {
-  background: #6b020e !important;
-}
 
 /* Modal Stock Adjustment Finance Card */
 .modal-finance-adjust-card {
@@ -6310,7 +6284,7 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.btn-card-sub {
+.card-sub-actions .btn-action {
   height: 36px !important;
   flex: 1 !important;
   font-size: var(--font-xs) !important;
@@ -6529,9 +6503,6 @@ onUnmounted(() => {
   padding: 8px 14px;
 }
 
-.mobile-only-price {
-  display: none;
-}
 
 
 
@@ -6626,102 +6597,8 @@ onUnmounted(() => {
   line-height: 1.6;
 }
 
-.history-items-chips {
-  margin-top: var(--space-xs);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
 
-.history-item-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 12px;
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
-  box-sizing: border-box;
-  border-radius: var(--radius-md);
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  width: 100%;
-}
 
-.history-item-chip-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.32;
-  color: var(--text-primary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: break-word;
-}
-
-.history-item-chip-qty {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  color: var(--primary);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-xs);
-  white-space: nowrap;
-  text-align: right;
-  min-width: 80px;
-}
-
-.history-item-chip-num {
-  font-weight: 700;
-  white-space: nowrap;
-  text-align: right;
-  min-width: 34px;
-}
-
-.history-item-chip-unit {
-  min-width: 30px;
-  max-width: 44px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-  text-align: left;
-}
-
-.history-amount-box {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
-.history-total-label {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.history-total-amount {
-  font-size: var(--font-lg);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.history-qty-value {
-  font-size: var(--font-lg);
-  line-height: 1.1;
-  white-space: nowrap;
-}
 
 /* ────────────────────────────────────────────────────────── */
 /* TAB 3: CENTRAL KITCHEN FINANCE (สมุดบัญชีกองกลาง)         */
@@ -7151,26 +7028,6 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 
-.btn-payout-header {
-  height: 42px !important;
-  padding: 0 18px !important;
-  font-size: 13.5px !important;
-  font-weight: 700 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px !important;
-  border-radius: var(--radius-full) !important;
-  box-shadow: 0 2px 6px rgba(139, 3, 19, 0.25) !important;
-  white-space: nowrap !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-}
-
-.btn-payout-header:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.35) !important;
-}
 
 .order-branch-select-wrapper {
   min-width: 170px;
@@ -7199,23 +7056,6 @@ onUnmounted(() => {
     width: 100% !important;
     gap: 6px !important;
   }
-
-  .toolbar-btn {
-    width: 100% !important;
-    min-width: 0 !important;
-    height: 42px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 4px !important;
-    font-size: var(--font-xs) !important;
-    font-weight: bold !important;
-    padding: 0 6px !important;
-    box-sizing: border-box !important;
-    white-space: nowrap !important;
-    border-radius: var(--radius-md) !important;
-  }
-
   
   /* Reorder View on Mobile */
   .menu-top-action-card {
@@ -7469,8 +7309,7 @@ onUnmounted(() => {
     margin-top: 8px !important;
   }
 
-  .btn-restock-main,
-  .btn-adjust-main {
+  .card-footer-actions > .btn-action {
     height: 36px !important;
     font-size: var(--font-xs) !important;
     padding: 0 6px !important;
@@ -7501,7 +7340,7 @@ onUnmounted(() => {
     margin-top: 2px !important;
   }
 
-  .btn-card-sub {
+  .card-sub-actions .btn-action {
     height: 32px !important;
     font-size: var(--font-xxs) !important;
     padding: 0 4px !important;
@@ -7590,11 +7429,7 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .history-card-inner {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-
+  
   .history-item-chip {
     height: 48px !important;
     min-height: 48px !important;
@@ -7640,12 +7475,7 @@ onUnmounted(() => {
     font-size: var(--font-md) !important;
   }
 
-  .history-sub-cost {
-    text-align: right !important;
-    line-height: 1.35 !important;
-    font-size: var(--font-xxs) !important;
-  }
-
+  
   /* Finance Tab Responsive */
   .finance-toolbar {
     flex-direction: column !important;
@@ -7688,14 +7518,7 @@ onUnmounted(() => {
   .partner-branch-select-wrapper {
     flex: 1 !important;
     width: 100% !important;
-  }
-
-  .btn-payout-header {
-    height: 40px !important;
-    padding: 0 14px !important;
-    font-size: var(--font-xs) !important;
-  }
-}
+  }}
 
 @media (max-width: 640px) {
   /* Orders Tab Table vs Mobile Itemized Cards */
@@ -8280,41 +8103,11 @@ onUnmounted(() => {
   padding-top: 8px;
 }
 
-.btn-qty {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: var(--font-base);
-  color: var(--text-primary);
-  transition: all var(--transition-base);
-  padding: 0;
-  line-height: 1;
-}
-
-.btn-qty:hover {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
 
 .cart-total-row {
   border-top: 1px dashed var(--border-color);
 }
 
-.btn-submit-requisition {
-  height: 48px;
-  font-size: var(--font-sm);
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.2);
-}
 
 .item-card {
   position: relative !important;
@@ -8525,8 +8318,7 @@ onUnmounted(() => {
     margin-top: 6px !important;
   }
 
-  .btn-restock-main,
-  .btn-adjust-main {
+  .card-footer-actions > .btn-action {
     height: 34px !important;
     min-height: 34px !important;
     font-size: var(--font-xs) !important;
@@ -8546,7 +8338,7 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .btn-card-sub {
+  .card-sub-actions .btn-action {
     height: 30px !important;
     min-height: 30px !important;
     font-size: var(--font-xxs) !important;
@@ -8559,7 +8351,7 @@ onUnmounted(() => {
     gap: 3px !important;
   }
 
-  .btn-card-sub.text-danger {
+  .card-sub-actions .btn-action.text-danger {
     flex: 0 0 30px !important;
     padding: 0 !important;
   }
@@ -8694,11 +8486,6 @@ onUnmounted(() => {
   background: rgba(0, 0, 0, 0.02);
 }
 
-.btn-qty {
-  width: 40px;
-  height: 40px;
-  touch-action: manipulation;
-}
 
 .qty-badge,
 .category-count,
@@ -8824,11 +8611,6 @@ onUnmounted(() => {
   font-size: var(--font-xs);
 }
 
-.history-restock-detail-box {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-}
 
 .order-footer-notice .notice-group {
   display: flex;

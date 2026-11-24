@@ -1929,17 +1929,6 @@ select.form-input:focus {
 }
 @media (max-width: 768px) {
   /* Touch Target Heights (Android / iOS standard >= 44px - 48px) */
-
-  /* Restore original mobile pill sizing for secondary utility buttons */
-  .csv-export-btn,
-  .change-method-btn {
-    height: 36px !important;
-    padding: 0 14px !important;
-    line-height: 1 !important;
-    font-size: var(--font-xs) !important;
-    border-radius: var(--radius-full) !important;
-    min-height: unset !important;
-  }
   
   /* Ensure btn-action touch target is at least 48px */
   .btn-action {
@@ -2267,8 +2256,8 @@ select.form-input:focus {
 }
 
 .qty-btn {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2276,18 +2265,62 @@ select.form-input:focus {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: var(--font-lg);
+  font-size: var(--font-base);
   font-weight: var(--font-weight-bold);
-  transition: var(--transition-base);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  touch-action: manipulation;
 }
 
-.qty-btn:active {
+.qty-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.qty-btn:active:not(:disabled) {
   transform: scale(0.9);
   background: var(--card-bg-active);
 }
 
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .qty-btn.minus {
   color: var(--danger-light);
+}
+
+.qty-btn.minus:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-sm);
+  touch-action: manipulation;
+  transition: all var(--transition-fast);
+}
+
+.search-clear-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
 }
 
 .qty-value {

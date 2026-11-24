@@ -42,7 +42,7 @@
             />
             <button 
               v-if="searchQuery" 
-              class="clear-search-btn" 
+              class="search-clear-btn" 
               @click="searchQuery = ''"
             >
               ✕
@@ -172,14 +172,14 @@
             <button 
               v-for="preset in [1, 5, 10, 20]" 
               :key="preset"
-              class="btn-preset-qty"
+              class="btn btn-secondary btn-xs tabular-nums"
               :disabled="getAvailableRaw(item) <= 0"
               @click="addPreset(item, preset)"
             >
               +{{ preset }}
             </button>
             <button 
-              class="btn-preset-qty btn-preset-all"
+              class="btn btn-secondary btn-xs tabular-nums"
               :disabled="getAvailableRaw(item) <= 0"
               @click="setAllRaw(item)"
             >
@@ -1021,15 +1021,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.clear-search-btn {
-  position: absolute;
-  right: 12px;
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  font-size: var(--font-sm);
-}
 
 /* Stable Filter Toggle (No resizing or layout shifts) */
 .btn-raw-toggle {
@@ -1187,36 +1178,6 @@ onUnmounted(() => {
   margin-bottom: 8px;
 }
 
-.btn-preset-qty {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 4px 10px;
-  font-size: var(--font-xs);
-  font-weight: bold;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  color: var(--text-secondary);
-}
-
-.btn-preset-qty:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: rgba(139, 3, 19, 0.05);
-}
-
-.btn-preset-qty:disabled {
-  opacity: 1 !important;
-  background: #f1f2f4 !important;
-  color: var(--text-tertiary) !important;
-  cursor: not-allowed;
-}
-
-.btn-preset-all {
-  border-color: rgba(139, 3, 19, 0.3);
-  color: var(--primary);
-}
 
 .cook-input-row {
   display: flex;

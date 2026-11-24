@@ -47,7 +47,7 @@
           <button 
             v-if="searchQuery" 
             type="button"
-            class="clear-search-btn" 
+            class="search-clear-btn" 
             aria-label="ล้างคำค้นหา"
             @click="searchQuery = ''"
           >
@@ -924,26 +924,6 @@ onUnmounted(() => {
   min-height: 44px;
 }
 
-.clear-search-btn {
-  position: absolute;
-  right: 8px;
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  touch-action: manipulation;
-}
-
-.clear-search-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--text-primary);
-}
 
 
 #stock-bulk-page {

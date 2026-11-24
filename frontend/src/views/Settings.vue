@@ -1301,7 +1301,7 @@
             <div class="text-xs text-secondary">{{ getRoleLabel(currentUser?.role) }}</div>
           </div>
         </div>
-        <button class="btn btn-danger mobile-logout-btn" @click="handleLogout">
+        <button class="btn btn-outline-danger w-full" @click="handleLogout">
           <i class="fa-solid fa-right-from-bracket mr-xs"></i>
           <span>ออกจากระบบ</span>
         </button>
@@ -2542,23 +2542,6 @@ input:checked + .slider:before {
     border: 1.5px solid rgba(173, 40, 30, 0.2);
     border-radius: var(--radius-lg);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  }
-  .mobile-logout-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    font-size: var(--font-sm);
-    font-weight: var(--font-weight-bold);
-    background: var(--danger, #ad281e);
-    color: #ffffff;
-    border-radius: var(--radius-md);
-    border: none;
-    cursor: pointer;
-    transition: all var(--transition-base);
-  }
-  .mobile-logout-btn:active {
-    transform: scale(0.96);
   }
 }
 

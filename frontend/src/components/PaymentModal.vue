@@ -248,7 +248,7 @@
                   <span class="font-bold text-primary text-md whitespace-nowrap">
                     <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> ช่องทาง: {{ getPaymentMethodLabel(paymentMethod) }}
                   </span>
-                  <button class="btn btn-secondary change-method-btn" @click="paymentMethod = null">
+                  <button class="btn btn-secondary btn-sm" @click="paymentMethod = null">
                     <i class="fa-solid fa-arrow-left"></i> เปลี่ยนช่องทาง
                   </button>
                 </div>
@@ -302,7 +302,7 @@
                   <!-- Quick Amount Selector -->
                   <div class="quick-amounts flex gap-sm mb-md" style="overflow-x: auto; padding-bottom: var(--space-xs);">
                     <button 
-                      class="filter-pill quick-amount-btn tabular-nums" 
+                      class="filter-pill tabular-nums" 
                       :class="{ 'active': Number(enteredAmount) === netTotal }"
                       @click="enteredAmount = netTotal"
                     >
@@ -311,7 +311,7 @@
                     <button 
                       v-for="amt in quickAmountOptions" 
                       :key="amt" 
-                      class="filter-pill quick-amount-btn tabular-nums"
+                      class="filter-pill tabular-nums"
                       :class="{ 'active': Number(enteredAmount) === amt }"
                       @click="enteredAmount = amt"
                     >
@@ -929,16 +929,6 @@ const confirmDeliveryPayment = () => {
 
 .quick-amounts::-webkit-scrollbar { display: none; }
 
-.quick-amount-btn:not(.active) {
-  background: rgba(139, 3, 19, 0.05);
-  border-color: rgba(139, 3, 19, 0.15);
-  color: var(--primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.quick-amount-btn:hover:not(.active) {
-  background: rgba(139, 3, 19, 0.10);
-}
 
 /* --- Payment Methods --- */
 .payment-methods {
@@ -1009,27 +999,8 @@ const confirmDeliveryPayment = () => {
   margin-bottom: var(--space-sm);
 }
 
-.success-subtitle {
-  font-size: var(--font-base);
-  color: var(--text-secondary);
-}
 
 /* Confetti particles */
-.confetti-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  overflow: hidden;
-}
-
-.confetti-piece {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  animation: confettiFall 1.5s ease forwards;
-}
 
 /* --- Keypad keys --- */
 .keypad-key {

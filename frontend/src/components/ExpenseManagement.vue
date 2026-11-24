@@ -114,12 +114,12 @@
           </div>
           <!-- Quick Amount Buttons under input -->
           <div class="quick-amount-buttons-full">
-            <button type="button" class="btn-quick-amount" @click="addAmount(50)">+50</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(100)">+100</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(200)">+200</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(500)">+500</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(1000)">+1,000</button>
-            <button type="button" class="btn-quick-amount reset-btn" @click="expenseForm.amount = null">ล้างยอด</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(50)">+50</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(100)">+100</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(200)">+200</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(500)">+500</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(1000)">+1,000</button>
+            <button type="button" class="btn btn-outline-danger btn-xs" @click="expenseForm.amount = null">ล้างยอด</button>
           </div>
         </div>
 
@@ -175,7 +175,7 @@
 
         <!-- ── ปุ่มบันทึกรายการ ── -->
         <button 
-          class="btn btn-primary btn-block submit-expense-btn" 
+          class="btn btn-primary w-full" 
           @click="handleAddExpense" 
           :disabled="!expenseForm.amount || expenseForm.amount <= 0 || saving"
         >
@@ -316,10 +316,7 @@
           </div>
           <div v-if="filteredLedgerEntries.length > 0" class="flex" style="width: 100%;">
             <button 
-              class="btn btn-secondary csv-export-btn" 
-              style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px; font-size: var(--font-sm); border-radius: 8px; width: 100%;"
-              @click="exportLedgerCSV"
-            >
+              class="btn btn-secondary btn-sm" @click="exportToCSV">
               <i class="fa-solid fa-file-csv text-primary"></i> ส่งออกบัญชี (CSV)
             </button>
           </div>
@@ -448,7 +445,7 @@
                 <!-- Case 4: Active Expense -->
                 <button 
                   v-else-if="item.type === 'expense'"
-                  class="btn-action btn-action-primary table-action-btn"
+                  class="btn-action btn-action-primary"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                   :title="item.isCKTransfer ? 'ยกเลิกรายการเบิกของจากครัวกลาง' : 'ยกเลิกและคืนยอด'"
@@ -460,7 +457,7 @@
                 <!-- Case 5: Active Stock Waste/Credit -->
                 <button 
                   v-else-if="item.type === 'waste_loss' || item.type === 'credit_loss'"
-                  class="btn-action btn-action-primary table-action-btn"
+                  class="btn-action btn-action-primary"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                   title="ยกเลิกและคืนสต็อกเข้าคลัง"
@@ -541,8 +538,7 @@
                 </span>
                 <button 
                   v-else-if="item.type === 'expense' || item.type === 'waste_loss' || item.type === 'credit_loss'"
-                  class="btn-action-reverse" 
-                  style="padding: 4px 12px; font-size: 11.5px; height: 32px;"
+                  class="btn-action btn-action-delete btn-xs"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                 >
@@ -1782,30 +1778,6 @@ onMounted(() => {
   gap: var(--space-sm, 8px);
 }
 
-.btn-quick-amount {
-  background: #ffffff;
-  border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-sm, 8px);
-  padding: var(--space-sm, 8px) var(--space-xs, 4px);
-  font-size: var(--font-xs);
-  font-weight: var(--font-weight-bold, 700);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all var(--transition-fast, 0.15s ease);
-  text-align: center;
-}
-
-.btn-quick-amount:hover {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
-
-.btn-quick-amount.reset-btn {
-  color: var(--danger);
-  border-color: var(--danger-glow);
-  background: rgba(173, 40, 30, 0.04);
-}
 
 /* 6. Quick Notes 6 Grid */
 .quick-notes-grid-6 {
@@ -1894,22 +1866,6 @@ onMounted(() => {
   box-shadow: 0 3px 10px var(--primary-glow, rgba(139, 3, 19, 0.25));
 }
 
-.submit-expense-btn {
-  height: 48px;
-  font-size: var(--font-base);
-  font-weight: var(--font-weight-bold, 700);
-  border-radius: var(--radius-md, 12px);
-  background: var(--primary);
-  border: none;
-  color: #ffffff;
-  box-shadow: 0 4px 12px var(--primary-glow);
-  transition: all var(--transition-fast, 0.15s ease);
-}
-
-.submit-expense-btn:hover:not(:disabled) {
-  background: var(--primary-light);
-  transform: translateY(-1px);
-}
 
 /* 7. Summary Cards */
 .financial-summary-grid {
@@ -2108,10 +2064,6 @@ onMounted(() => {
   font-size: var(--font-xxs);
 }
 
-.table-action-btn {
-  width: 130px !important;
-  min-width: 130px !important;
-}
 
 .badge-refund-done {
   background: rgba(52, 199, 89, 0.14);
@@ -2176,39 +2128,6 @@ onMounted(() => {
 }
 
 /* Action Reverse Button */
-.btn-action-reverse {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  background: #ffffff;
-  color: var(--primary, #8b0313);
-  border: 1.5px solid rgba(139, 3, 19, 0.35);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 11.5px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(139, 3, 19, 0.08);
-  transition: all var(--transition-fast, 0.15s ease);
-  user-select: none;
-}
-
-.btn-action-reverse:hover:not(:disabled) {
-  background: rgba(139, 3, 19, 0.06);
-  border-color: var(--primary, #8b0313);
-  transform: translateY(-1px);
-}
-
-.btn-action-reverse:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-.btn-action-reverse:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .badge-cash { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
 .badge-transfer { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; border: 1px solid rgba(59, 130, 246, 0.25); }

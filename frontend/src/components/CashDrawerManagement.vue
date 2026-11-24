@@ -123,10 +123,10 @@
             </td>
             <td class="text-center" style="padding: 18px var(--space-md); vertical-align: middle; white-space: nowrap;">
               <div class="flex flex-col align-center justify-center" style="gap: 6px; width: 100%;">
-                <button class="btn-action btn-drawer-action" @click="openOpeningCashModal(session)">
+                <button class="btn-action" style="width: 180px;" @click="openOpeningCashModal(session)">
                   <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
                 </button>
-                <button class="btn-action btn-action-primary btn-drawer-action" @click="openAuditModal(session)">
+                <button class="btn-action btn-action-primary" style="width: 180px;" @click="openAuditModal(session)">
                   <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
                 </button>
               </div>
@@ -579,19 +579,6 @@ onMounted(() => {
   display: flex;
   gap: var(--space-sm);
   align-items: flex-start;
-}
-.btn-drawer-action {
-  width: 180px !important;
-  height: 42px !important;
-  min-height: 42px !important;
-  font-size: var(--font-sm) !important;
-  font-weight: 600 !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: var(--space-xs) !important;
-  white-space: nowrap !important;
 }
 .cash-audit-mobile-list {
   display: none;
