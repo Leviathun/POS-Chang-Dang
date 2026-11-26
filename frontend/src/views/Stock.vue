@@ -1,41 +1,23 @@
 <template>
   <div id="stock-page" class="page-enter">
     
-    <!-- Tab Selector (Hidden from frontend view while preserving code structure) -->
-    <div class="category-tabs mb-lg" v-if="false">
-      <button 
-        class="btn btn-secondary" 
-        :class="{ 'active': activeTab === 'menu_items' }"
-        @click="activeTab = 'menu_items'"
-      >
-        <i class="fa-solid fa-drumstick-bite"></i> สินค้าและเมนู
-      </button>
-      <button 
-        class="btn btn-secondary" 
-        :class="{ 'active': activeTab === 'modifiers' }"
-        @click="activeTab = 'modifiers'"
-      >
-        <i class="fa-solid fa-bottle-droplet"></i> ซอสและเครื่องปรุง
-      </button>
-    </div>
-
     <!-- Info Header Card -->
-    <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div class="stock-page-title">
-        ระบบจัดการสต็อกสินค้า
-      </div>
-      <div class="flex align-center gap-xs flex-wrap mobile-header-actions">
+    <StockPageHeader
+      title="ระบบจัดการสต็อกสินค้า"
+      icon="fa-solid fa-warehouse"
+    >
+      <template #actions>
         <router-link to="/stock/cook" class="btn btn-primary btn-header-cook">
           <i class="fa-solid fa-fire-burner"></i> ปรุง
         </router-link>
         <router-link v-if="isManagerOrAdminUser" to="/stock/bulk" class="btn btn-primary">
           <i class="fa-solid fa-boxes-stacked"></i> ปรับปรุงยอด
         </router-link>
-      </div>
-    </div>
+      </template>
+    </StockPageHeader>
 
-    <!-- Tab 1: Menu Items Stock -->
-    <div v-if="activeTab === 'menu_items'">
+    <!-- Menu Items Stock -->
+    <div>
       <!-- Desktop Stock Table (Visible on desktop only) -->
       <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
         <div style="overflow-x: auto;">
@@ -110,8 +92,8 @@
                 <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
                   <div class="stock-actions flex justify-center gap-sm">
 
-                    <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
-                    <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
+                    <button class="btn-action btn-action-delete" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
+                    <button class="btn-action btn-action-edit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
                   </div>
                 </td>
               </tr>
@@ -201,167 +183,8 @@
             
             <!-- Bottom Stock Actions -->
             <div class="mobile-stock-card-actions">
-              <button class="btn-action btn-action-waste" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
-              <button class="btn-action btn-action-credit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 2: Free Modifiers Stock -->
-    <div v-else-if="activeTab === 'modifiers'">
-      <!-- Desktop Free Modifiers Table -->
-      <div class="card p-0 overflow-hidden mb-lg desktop-stock-table-container">
-        <div style="overflow-x: auto;">
-          <table class="table w-full" style="border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th class="text-left" style="padding: var(--space-md); width: 30%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
-                <th class="text-center" style="padding: var(--space-md); width: 20%;">ประเภท</th>
-                <th class="text-center" style="padding: var(--space-md); width: 20%;">ปริมาณคงเหลือ</th>
-                <th class="text-center" style="padding: var(--space-md); width: 30%;">จัดการสต็อก</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-if="loading">
-                <tr v-for="n in 4" :key="'sk-stock-' + n" style="border-bottom: 1px solid var(--border-color);">
-                  <td style="padding: var(--space-md);">
-                    <div class="skeleton mb-xs" style="height: 16px; width: 140px; border-radius: 4px;"></div>
-                    <div class="skeleton" style="height: 12px; width: 95px; border-radius: 4px;"></div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md);">
-                    <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md);">
-                    <div class="skeleton mx-auto" style="height: 18px; width: 70px; border-radius: 4px;"></div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md);">
-                    <div class="flex justify-center gap-sm">
-                      <div class="skeleton" style="height: 30px; width: 80px; border-radius: 6px;"></div>
-                      <div class="skeleton" style="height: 30px; width: 72px; border-radius: 6px;"></div>
-                      <div class="skeleton" style="height: 30px; width: 68px; border-radius: 6px;"></div>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-              <tr v-else-if="modifierItems.length === 0">
-                <td colspan="4" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
-                  ไม่มีรายการเครื่องปรุงในระบบ
-                </td>
-              </tr>
-              <tr 
-                v-else 
-                v-for="item in modifierItems" 
-                :key="item.id" 
-                style="border-bottom: 1px solid var(--border-color);"
-                :class="{ 'table-row-hover': true, 'opacity-50': !item.active }"
-              >
-                <!-- Name -->
-                <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold text-base flex align-center gap-xs">
-                    <span>{{ item.name }}</span>
-                    <span v-if="!item.active" class="badge badge-neutral">ปิดใช้งาน</span>
-                  </div>
-                  <div class="text-base text-muted flex align-center gap-sm">
-                    <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ดูประวัติสต็อก</a>
-                  </div>
-                </td>
-                <!-- Category -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge" :class="getModifierCategoryClass(item.category)">
-                    {{ getModifierCategoryLabel(item.category) }}
-                  </span>
-                </td>
-                <!-- Quantity -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span :class="{ 'text-danger font-bold': isModifierLowStock(item), 'font-semibold': !isModifierLowStock(item) }">
-                    {{ formatModifierStock(item) }}
-                    <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-triangle-exclamation text-warning" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                    <span v-if="item.total_servings <= 0" class="text-base font-normal" style="display:block;"><i class="fa-solid fa-circle-xmark text-danger" style="margin-right: 2px;"></i> หมด</span>
-                  </span>
-                </td>
-                <!-- Actions -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div v-if="isManagerOrAdminUser" class="stock-actions flex justify-center gap-sm">
-                    <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
-                      <i class="fa-solid fa-plus"></i> เติมสต็อก
-                    </button>
-                    <button class="btn-action btn-action-edit" @click="openActionModal('adjust', item, true)">
-                      <i class="fa-solid fa-wrench"></i> ปรับปรุง
-                    </button>
-                  </div>
-                  <span v-else class="text-xs text-muted">เฉพาะผู้จัดการ/เจ้าของร้าน</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Mobile Free Modifiers Card List -->
-      <div class="mobile-stock-list-container">
-        <div v-if="loading" class="mobile-stock-list">
-          <div v-for="n in 4" :key="'sk-m-stock-' + n" class="mobile-stock-card">
-            <div class="mobile-stock-card-body">
-              <div class="mobile-stock-card-details" style="flex: 1;">
-                <div class="skeleton mb-xs" style="height: 16px; width: 60%; border-radius: 4px;"></div>
-                <div class="skeleton" style="height: 12px; width: 35%; border-radius: 4px;"></div>
-              </div>
-              <div class="mobile-stock-card-meta">
-                <div class="skeleton mb-xs" style="height: 18px; width: 65px; border-radius: 4px; margin-left: auto;"></div>
-                <div class="skeleton" style="height: 14px; width: 50px; border-radius: 4px; margin-left: auto;"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
-          ไม่มีรายการเครื่องปรุงในระบบ
-        </div>
-        <div v-else class="mobile-stock-list">
-          <div 
-            v-for="item in modifierItems" 
-            :key="item.id" 
-            class="mobile-stock-card"
-            :class="{ 'out-of-stock-card': item.total_servings <= 0, 'opacity-50': !item.active }"
-          >
-            <div class="mobile-stock-card-body">
-              <!-- Left: Name & ID -->
-              <div class="mobile-stock-card-details">
-                <div class="mobile-stock-card-name flex align-center gap-xs flex-wrap">
-                  <span>{{ item.name }}</span>
-                  <span v-if="!item.active" class="badge badge-neutral">ปิดใช้งาน</span>
-                </div>
-                <div class="mobile-stock-card-id flex align-center gap-sm flex-wrap">
-                  <a href="#" style="color: var(--accent); text-decoration: underline;" @click.prevent="viewLogs(item, true)"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> ประวัติ</a>
-                </div>
-                <div style="margin-top: 4px;">
-                  <span class="badge" :class="getModifierCategoryClass(item.category)">
-                    {{ getModifierCategoryLabel(item.category) }}
-                  </span>
-                </div>
-              </div>
-              
-              <!-- Right: Stock Quantity & Badge -->
-              <div class="mobile-stock-card-meta">
-                <div class="mobile-stock-card-qty" :class="{ 'text-danger': isModifierLowStock(item) }">
-                  {{ formatModifierStock(item) }}
-                </div>
-                <div class="mobile-stock-card-badge">
-                  <span v-if="isModifierLowStock(item) && item.total_servings > 0" class="badge badge-warning badge-sm"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 2px;"></i> ใกล้หมด</span>
-                  <span v-else-if="item.total_servings <= 0" class="badge badge-danger badge-sm"><i class="fa-solid fa-circle-xmark" style="margin-right: 2px;"></i> หมด</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Bottom Stock Actions -->
-            <div v-if="isManagerOrAdminUser" class="mobile-stock-card-actions">
-              <button class="btn-action btn-action-success" @click="openActionModal('restock', item, true)">
-                <i class="fa-solid fa-plus"></i> เติมสต็อก
-              </button>
-              <button class="btn-action btn-action-edit" @click="openActionModal('adjust', item, true)">
-                <i class="fa-solid fa-wrench"></i> ปรับปรุง
-              </button>
+              <button class="btn-action btn-action-delete" @click="openActionModal('waste', item, false)"><i class="fa-solid fa-trash-can"></i> ของเสีย</button>
+              <button class="btn-action btn-action-edit" @click="openActionModal('staff_benefit', item, false)"><i class="fa-solid fa-user-check"></i> เครดิต</button>
             </div>
           </div>
         </div>
@@ -374,8 +197,8 @@
       <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
         <div class="modal-header">
           <h3>
-            <i :class="getActionIconClass(actionType, activeIsModifier)" style="margin-right: 6px;"></i>
-            {{ getActionTitleLabel(actionType, activeIsModifier) }}
+            <i :class="getActionIconClass(actionType)" style="margin-right: 6px;"></i>
+            {{ getActionTitleLabel(actionType) }}
           </h3>
           <button class="modal-close" @click="showActionModal = false">✕</button>
         </div>
@@ -384,10 +207,7 @@
             {{ activeItem?.name }}
           </div>
           <div class="text-sm text-secondary text-center mb-lg">
-            <span v-if="activeIsModifier">
-              จำนวนคงเหลือปัจจุบัน: <strong>{{ formatModifierStock(activeItem) }}</strong>
-            </span>
-            <span v-else-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined">
+            <span v-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined">
               ทอดสุกแล้ว: <strong>{{ formatStockQty(activeItem?.quantity || 0, activeItem?.uom) }}</strong> | ของสด: <strong>{{ formatStockQty(activeItem?.raw_quantity || 0, activeItem?.uom) }}</strong>
             </span>
             <span v-else>
@@ -396,20 +216,20 @@
           </div>
 
           <!-- Stock Type Selector (Only if tracks raw stock and not fry mode) -->
-          <div v-if="!activeIsModifier && activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined && actionType !== 'fry'" class="form-group">
+          <div v-if="activeItem?.raw_quantity !== null && activeItem?.raw_quantity !== undefined && actionType !== 'fry'" class="form-group">
             <label class="form-label font-bold">จัดการสต็อกส่วนใด? *</label>
             <div style="display:flex; gap:var(--space-sm); margin-bottom:var(--space-md);">
               <button 
-                class="btn-action flex-1"
-                :class="actionForm.stock_type === 'cooked' ? 'btn-action-fry' : ''"
+                class="btn btn-secondary flex-1"
+                :class="{ active: actionForm.stock_type === 'cooked' }"
                 @click="actionForm.stock_type = 'cooked'"
                 type="button"
               >
                 <i class="fa-solid fa-drumstick-bite"></i> ทอดสุก
               </button>
               <button 
-                class="btn-action flex-1"
-                :class="actionForm.stock_type === 'raw' ? 'btn-action-fry' : ''"
+                class="btn btn-secondary flex-1"
+                :class="{ active: actionForm.stock_type === 'raw' }"
                 @click="actionForm.stock_type = 'raw'"
                 type="button"
               >
@@ -420,7 +240,7 @@
 
           <!-- Quantity input -->
           <div class="form-group">
-            <template v-if="!activeIsModifier && activeItem?.uom === 'กรัม' && actionType === 'restock'">
+            <template v-if="activeItem?.uom === 'กรัม' && actionType === 'restock'">
               <div class="form-group">
                 <label class="form-label font-bold">จำนวนถุงที่ต้องการเติม *</label>
                 <input 
@@ -444,15 +264,10 @@
             </template>
             <template v-else>
               <label class="form-label font-bold">
-                <template v-if="activeIsModifier">
-                  {{ actionType === 'restock' ? (activeItem?.category === 'sauce_small' ? 'จำนวนซองที่ต้องการเติม *' : 'จำนวนถุงที่ต้องการเติม *') : 'จำนวนรอบเสิร์ฟที่ต้องการปรับ (ใส่ติดลบเพื่อหักออก) *' }}
-                </template>
-                <template v-else>
-                  <span v-if="actionType === 'fry'">จำนวนที่ต้องการ{{ activeItem ? getCookActionLabel(activeItem.name) : 'ทอด' }} (ชิ้น) *</span>
-                  <span v-else-if="actionType === 'restock'">จำนวนที่ต้องการเติม ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
-                  <span v-else-if="actionType === 'adjust'">จำนวนที่ต้องการปรับปรุง ({{ activeItem?.uom || 'ชิ้น' }}) * (ใส่ติดลบเพื่อหักออก)</span>
-                  <span v-else>จำนวนที่ต้องการหัก ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
-                </template>
+                <span v-if="actionType === 'fry'">จำนวนที่ต้องการ{{ activeItem ? getCookActionLabel(activeItem.name) : 'ทอด' }} (ชิ้น) *</span>
+                <span v-else-if="actionType === 'restock'">จำนวนที่ต้องการเติม ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
+                <span v-else-if="actionType === 'adjust'">จำนวนที่ต้องการปรับปรุง ({{ activeItem?.uom || 'ชิ้น' }}) * (ใส่ติดลบเพื่อหักออก)</span>
+                <span v-else>จำนวนที่ต้องการหัก ({{ activeItem?.uom || 'ชิ้น' }}) *</span>
               </label>
               <input 
                 type="number" 
@@ -463,7 +278,7 @@
             </template>
           </div>
 
-          <div v-if="!activeIsModifier && (activeItem?.name?.includes('แร็ปไก่') || isLinkedBun(activeItem)) && (actionType === 'restock' || actionType === 'adjust')" class="p-sm card mb-md" style="background: rgba(230, 57, 70, 0.08); border: 1.5px solid var(--primary); border-radius: var(--radius-md); text-align: left;">
+          <div v-if="(activeItem?.name?.includes('แร็ปไก่') || isLinkedBun(activeItem)) && (actionType === 'restock' || actionType === 'adjust')" class="p-sm card mb-md" style="background: rgba(230, 57, 70, 0.08); border: 1.5px solid var(--primary); border-radius: var(--radius-md); text-align: left;">
             <div class="text-sm text-danger font-bold flex align-center gap-xs">
               <i class="fa-solid fa-circle-exclamation"></i>
               <span>แจ้งเตือนการหักสต็อกอัตโนมัติ:</span>
@@ -473,21 +288,17 @@
             </div>
           </div>
 
-          <div v-if="!activeIsModifier && actionType === 'fry'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
+          <div v-if="actionType === 'fry'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
             * ย้ายจากสต็อก "ของสด" ไปยัง "{{ activeItem ? getCookActionLabel(activeItem.name) + 'สุก' : 'ทอดสุก' }}"
           </div>
 
-          <div v-if="activeIsModifier && actionType === 'restock'" class="text-xs text-muted" style="margin-top: -8px; margin-bottom: var(--space-md); text-align: left;">
-            * {{ activeItem?.category === 'sauce_small' ? 'ระบบจะเติมสต็อกตามจำนวนซองที่ระบุ' : `ระบบจะคูณด้วย ${activeItem?.servings_per_bag || 50} รอบเสิร์ฟอัตโนมัติเมื่อกดบันทึก` }}
-          </div>
-
           <!-- Waste Preset Notes -->
-          <div v-if="!activeIsModifier && actionType === 'waste'" class="form-group">
+          <div v-if="actionType === 'waste'" class="form-group">
             <label class="form-label font-bold">สาเหตุของเสีย</label>
             <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
               <button 
                 v-for="preset in wastePresets" :key="preset.label"
-                class="btn btn-secondary btn-sm"
+                class="filter-pill"
                 :class="{ 'active': actionForm.note === preset.label }"
                 @click="actionForm.note = actionForm.note === preset.label ? '' : preset.label"
                 type="button"
@@ -511,9 +322,9 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSaving" @click="showActionModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSaving" @click="showActionModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isSaving || actionForm.quantity === '' || actionForm.quantity === null" 
               @click="handleSaveAction"
             >
@@ -561,8 +372,8 @@
                 class="card p-sm text-sm"
                 :style="[
                   { background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' },
-                  isCookPair(log, logs[idx + 1]) ? { borderBottomStyle: 'dashed', borderBottomColor: 'rgba(234, 88, 12, 0.4)' } : {},
-                  idx > 0 && isCookPair(logs[idx - 1], log) ? { borderTopStyle: 'dashed', borderTopColor: 'rgba(22, 101, 52, 0.4)', marginBottom: 'var(--space-md)' } : { marginBottom: isCookPair(log, logs[idx + 1]) ? '0' : 'var(--space-sm)' }
+                  isCookPair(log, logs[idx + 1]) ? { borderBottomStyle: 'dashed', borderBottomColor: 'rgba(197, 118, 0, 0.45)' } : {},
+                  idx > 0 && isCookPair(logs[idx - 1], log) ? { borderTopStyle: 'dashed', borderTopColor: 'rgba(42, 157, 143, 0.45)', marginBottom: 'var(--space-md)' } : { marginBottom: isCookPair(log, logs[idx + 1]) ? '0' : 'var(--space-sm)' }
                 ]"
               >
                 <!-- Row 1: Header (Left: Badge & Action Title | Right: Quantity Delta Pill) -->
@@ -572,16 +383,16 @@
                     <span 
                       class="badge flex-shrink-0" 
                       :style="isRawLog(log) 
-                        ? 'background: rgba(234, 88, 12, 0.12); color: #c2410c; border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;' 
-                        : 'background: rgba(22, 101, 52, 0.1); color: #15803d; border: 1px solid rgba(22, 101, 52, 0.25); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;'"
+                        ? 'background: rgba(197, 118, 0, 0.12); color: var(--accent-dark, #c57600); border: 1px solid rgba(197, 118, 0, 0.3); border-radius: 4px; padding: 2px 7px; font-size: var(--font-xxs); font-weight: bold; display: inline-flex; align-items: center; gap: 4px;' 
+                        : 'background: rgba(42, 157, 143, 0.12); color: var(--success, #2a9d8f); border: 1px solid rgba(42, 157, 143, 0.28); border-radius: 4px; padding: 2px 7px; font-size: var(--font-xxs); font-weight: bold; display: inline-flex; align-items: center; gap: 4px;'"
                     >
-                      <i :class="isRawLog(log) ? 'fa-solid fa-box' : (isFriedFoodItem(activeItem?.name) ? 'fa-solid fa-drumstick-bite' : 'fa-solid fa-circle-check')" style="font-size: 10px;"></i>
+                      <i :class="isRawLog(log) ? 'fa-solid fa-box' : (isFriedFoodItem(activeItem?.name) ? 'fa-solid fa-drumstick-bite' : 'fa-solid fa-circle-check')" style="font-size: var(--font-xxs);"></i>
                       {{ isRawLog(log) ? 'ของสด' : 'พร้อมขาย' }}
                     </span>
 
                     <!-- Action / Movement Title -->
-                    <span class="font-bold truncate text-primary flex align-center gap-xs" style="font-size: 13px;">
-                      <i :class="getReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: 11px;"></i>
+                    <span class="font-bold truncate text-primary flex align-center gap-xs" style="font-size: var(--font-xs);">
+                      <i :class="getReasonIconClass(log.reason)" style="color: var(--text-tertiary); font-size: var(--font-xxs);"></i>
                       <span>{{ getStockLogActionLabel(log) }}</span>
                     </span>
                   </div>
@@ -590,8 +401,8 @@
                   <span 
                     class="flex-shrink-0"
                     :style="log.change_qty > 0 
-                      ? 'background: rgba(22, 101, 52, 0.12); color: #15803d; font-weight: bold; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(22, 101, 52, 0.2);' 
-                      : 'background: rgba(220, 38, 38, 0.12); color: #dc2626; font-weight: bold; font-size: 12px; padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(220, 38, 38, 0.2);'"
+                      ? 'background: rgba(42, 157, 143, 0.12); color: var(--success, #2a9d8f); font-weight: bold; font-size: var(--font-xs); padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(42, 157, 143, 0.25);' 
+                      : 'background: rgba(173, 40, 30, 0.12); color: var(--danger, #ad281e); font-weight: bold; font-size: var(--font-xs); padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; border: 1px solid rgba(173, 40, 30, 0.25);'"
                   >
                     {{ log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty }} {{ activeItem?.uom || 'ชิ้น' }}
                   </span>
@@ -599,19 +410,19 @@
 
                 <!-- Row 2: Status Explanation & Meaningful Note (Full width, no wrapping collisions) -->
                 <div v-if="formatLogNote(log, isRawLog(log))" class="text-xs text-secondary flex align-start gap-xs" style="background: rgba(0,0,0,0.02); padding: 5px 8px; border-radius: var(--radius-sm); border-left: 2.5px solid var(--border-color); line-height: 1.4; word-break: break-word;">
-                  <i class="fa-solid fa-circle-info text-muted" style="margin-top: 2px; font-size: 10px; flex-shrink: 0;"></i>
+                  <i class="fa-solid fa-circle-info text-muted" style="margin-top: 2px; font-size: var(--font-xxs); flex-shrink: 0;"></i>
                   <span>{{ formatLogNote(log, isRawLog(log)) }}</span>
                 </div>
 
                 <!-- Row 3: Footer (Staff, Timestamp & Remaining Balance) -->
                 <div class="flex flex-between align-center pt-xs text-xs text-muted" style="border-top: 1px dashed var(--border-color); margin-top: 2px; gap: 8px;">
-                  <div class="truncate text-muted" style="font-size: 11px;">
+                  <div class="truncate text-muted" style="font-size: var(--font-xxs);">
                     <i class="fa-regular fa-user" style="margin-right: 3px;"></i>{{ log.staff_name || 'ระบบ' }}
                     <span style="margin: 0 4px; opacity: 0.5;">•</span>
                     {{ formatDateTime(log.created_at) }}
                   </div>
-                  <div class="flex-shrink-0" style="font-size: 12px; font-variant-numeric: tabular-nums;">
-                    <span style="font-size: 11px; color: var(--text-tertiary); margin-right: 4px;">{{ activeIsModifier ? 'คงเหลือ' : (isRawLog(log) ? 'ของสดคงเหลือ' : 'พร้อมขายคงเหลือ') }}:</span>
+                  <div class="flex-shrink-0" style="font-size: var(--font-xs); font-variant-numeric: tabular-nums;">
+                    <span style="font-size: var(--font-xxs); color: var(--text-tertiary); margin-right: 4px;">{{ isRawLog(log) ? 'ของสดคงเหลือ' : 'พร้อมขายคงเหลือ' }}:</span>
                     <strong style="color: var(--text-primary);">{{ log.new_stock }} {{ activeItem?.uom || 'ชิ้น' }}</strong>
                   </div>
                 </div>
@@ -624,9 +435,9 @@
                 style="margin: -6px 0; z-index: 2; position: relative;"
               >
                 <div 
-                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.06);"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #ffffff; border: 1.5px solid var(--border-color); color: var(--primary, #8b0313); font-size: var(--font-xxs); font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.06);"
                 >
-                  <i class="fa-solid fa-arrow-down" style="font-size: 11px;"></i>
+                  <i class="fa-solid fa-arrow-down" style="font-size: var(--font-xxs);"></i>
                   <span style="color: var(--text-secondary); font-size: 10.5px;">นำไปปรุงสุก</span>
                 </div>
               </div>
@@ -644,8 +455,21 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import StockPageHeader from '../components/StockPageHeader.vue';
 import api from '../api';
-import { ui, formatDateTime, getUser, getToday, isManagerOrAdmin } from '../helpers';
+import {
+  ui,
+  formatDateTime,
+  getUser,
+  getToday,
+  isManagerOrAdmin,
+  formatStockQty,
+  isItemLowStock as checkLowStock,
+  getSteamedCounterpartName,
+  isLinkedBun,
+  getCookActionLabel,
+  getCookActionIcon
+} from '../helpers';
 
 import { store } from '../store';
 
@@ -653,16 +477,13 @@ const router = useRouter();
 
 // States
 const isManagerOrAdminUser = computed(() => isManagerOrAdmin());
-const activeTab = ref('menu_items'); // 'menu_items' or 'modifiers'
 const stockItems = computed(() => store.stockItems);
-const modifierItems = ref([]);
 const loading = ref(true);
 const lowStockThreshold = computed(() => store.lowStockThreshold);
 const showActionModal = ref(false);
 const showLogsModal = ref(false);
 const actionType = ref('restock'); // 'restock', 'adjust', 'waste', or 'staff_benefit'
 const activeItem = ref(null);
-const activeIsModifier = ref(false);
 const logs = ref([]);
 const logsLoading = ref(false);
 const wastePresets = [
@@ -680,54 +501,7 @@ const actionForm = ref({
   note: ''
 });
 
-const formatStockQty = (qty, uom) => {
-  if (qty === null || qty === undefined) return '';
-  const roundedQty = Math.round(Number(qty) * 100) / 100;
-  const formatted = roundedQty.toLocaleString('th-TH', { maximumFractionDigits: 2 });
-  if (uom === 'กรัม') {
-    return `${formatted} ก.`;
-  }
-  return `${formatted} ${uom || 'ชิ้น'}`;
-};
-
-const isItemLowStock = (item, qty) => {
-  if (qty === null || qty === undefined) return false;
-  if (qty <= 0) return false;
-  if (item.low_stock_threshold !== null && item.low_stock_threshold !== undefined) {
-    return qty <= Number(item.low_stock_threshold);
-  }
-  if (item.uom === 'กรัม') {
-    return qty <= 500;
-  }
-  return qty <= lowStockThreshold.value;
-};
-
-const getSteamedCounterpartName = (name) => {
-  if (!name) return '';
-  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
-    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม')) {
-      return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
-    }
-    if (name.includes('หมู')) {
-      return 'ซาลาเปาไส้หมูสับ';
-    }
-    if (name.includes('ถั่วดำ')) {
-      return 'ซาลาเปาไส้ถั่วดำ';
-    }
-    if (name.includes('ครีม')) {
-      return 'ซาลาเปาไส้ครีม';
-    }
-    if (name.includes('หมั่นโถ')) {
-      return 'หมั่นโถว';
-    }
-  }
-  return '';
-};
-
-const isLinkedBun = (item) => {
-  if (!item || !item.name) return false;
-  return !!getSteamedCounterpartName(item.name);
-};
+const isItemLowStock = (item, qty) => checkLowStock(item, qty, lowStockThreshold.value);
 
 const isSaving = ref(false);
 
@@ -753,52 +527,6 @@ const getLinkageWarningText = (item) => {
     : `ระบบจะคืนสต็อก "${targetName}"${ratioText} ให้อัตโนมัติ`;
 };
 
-const getCookActionLabel = (name) => {
-  if (!name) return 'ทอด';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป');
-  if (isWrapped) {
-    return 'ห่อ';
-  }
-  const isBunOrDumpling = name.includes('เปา') || 
-                          name.includes('หมั่นโถ') || 
-                          name.includes('ขนมจีบ');
-  if (isBunOrDumpling) {
-    if (name.includes('ทอด')) {
-      return 'ทอด';
-    }
-    if (name.includes('ปิ้ง')) {
-      return 'ปิ้ง';
-    }
-    return 'นึ่ง';
-  }
-  return 'ทอด';
-};
-
-const getCookActionIcon = (name) => {
-  if (!name) return 'fa-solid fa-fire';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป');
-  if (isWrapped) {
-    return 'fa-solid fa-box';
-  }
-  const isBunOrDumpling = name.includes('เปา') || 
-                          name.includes('หมั่นโถ') || 
-                          name.includes('ขนมจีบ');
-  if (isBunOrDumpling) {
-    if (name.includes('ทอด')) {
-      return 'fa-solid fa-fire';
-    }
-    if (name.includes('ปิ้ง')) {
-      return 'fa-solid fa-fire-flame-simple';
-    }
-    return 'fa-solid fa-cloud';
-  }
-  return 'fa-solid fa-fire';
-};
-
 // Load System Settings to check Low Stock Threshold
 const loadSettings = async () => {
   try {
@@ -811,23 +539,10 @@ const loadSettings = async () => {
   }
 };
 
-const loadModifiersData = async (force = false) => {
-  try {
-    await store.fetchModifiers(force);
-    modifierItems.value = store.modifiers || [];
-  } catch (e) {
-    console.error(e);
-    ui.showToast('ไม่สามารถโหลดข้อมูลคลังซอส/ผงปรุงรสได้', 'error');
-  }
-};
-
 const loadStockData = async (force = false) => {
   loading.value = !store.stockLoaded || force;
   try {
-    await Promise.all([
-      store.fetchStock(force),
-      loadModifiersData(force)
-    ]);
+    await store.fetchStock(force);
   } catch (e) {
     console.error(e);
     ui.showToast('ไม่สามารถโหลดข้อมูลคลังสินค้าได้', 'error');
@@ -837,10 +552,9 @@ const loadStockData = async (force = false) => {
 };
 
 // Actions Handlers
-const openActionModal = (type, item, isMod = false) => {
+const openActionModal = (type, item) => {
   actionType.value = type;
   activeItem.value = item;
-  activeIsModifier.value = isMod;
   
   let defaultNote = '';
   if (type === 'staff_benefit') {
@@ -869,7 +583,7 @@ const handleSaveAction = async () => {
     let note = actionForm.value.note.trim();
     const stockType = actionForm.value.stock_type;
 
-    if (!activeIsModifier.value && activeItem.value?.uom === 'กรัม' && actionType.value === 'restock') {
+    if (activeItem.value?.uom === 'กรัม' && actionType.value === 'restock') {
       const bags = Number(restockBags.value) || 0;
       const cap = Number(restockBagCapacity.value) || 0;
       qty = bags * cap;
@@ -878,37 +592,19 @@ const handleSaveAction = async () => {
     }
 
     let res;
-    if (activeIsModifier.value) {
-      if (actionType.value === 'restock') {
-        res = await api.modifiers.restock(itemId, qty, note);
-      } else if (actionType.value === 'adjust') {
-        res = await api.modifiers.adjust(itemId, qty, 'adjustment', note);
-      }
+    if (actionType.value === 'fry') {
+      res = await api.stock.fry(itemId, { quantity: qty, note });
+    } else if (actionType.value === 'restock') {
+      res = await api.stock.restock(itemId, { quantity: qty, stock_type: stockType, note });
     } else {
-      if (actionType.value === 'fry') {
-        res = await api.stock.fry(itemId, { quantity: qty, note });
-      } else if (actionType.value === 'restock') {
-        res = await api.stock.restock(itemId, { quantity: qty, stock_type: stockType, note });
-      } else {
-        const reason = actionType.value === 'waste' ? 'waste' : actionType.value === 'staff_benefit' ? 'staff_benefit' : 'adjustment';
-        const delta = actionType.value === 'adjust' ? qty : -Math.abs(qty);
-        res = await api.stock.adjust(itemId, { quantity: delta, reason, stock_type: stockType, note });
-      }
+      const reason = actionType.value === 'waste' ? 'waste' : actionType.value === 'staff_benefit' ? 'staff_benefit' : 'adjustment';
+      const delta = actionType.value === 'adjust' ? qty : -Math.abs(qty);
+      res = await api.stock.adjust(itemId, { quantity: delta, reason, stock_type: stockType, note });
     }
 
     if (res && res.success) {
-      if (activeIsModifier.value) {
-        if (res.data) {
-          const mId = res.data.modifier_id;
-          const idx = modifierItems.value.findIndex(m => m.id === mId);
-          if (idx !== -1) {
-            modifierItems.value[idx].total_servings = res.data.total_servings;
-          }
-        }
-      } else {
-        if (res.data) {
-          store.updateStock(res.data.id, res.data.stock, res.data.raw_stock);
-        }
+      if (res.data) {
+        store.updateStock(res.data.id, res.data.stock, res.data.raw_stock);
       }
       const wasFry = actionType.value === 'fry';
       ui.showToast('ระบบอัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
@@ -920,7 +616,6 @@ const handleSaveAction = async () => {
     }
   } catch (e) {
     console.error(e);
-    // On failure/timeout: Keep modal open and form values intact for retry!
     ui.showToast(e.message || 'บันทึกยอดคลังล้มเหลว กรุณาตรวจสอบสัญญาณเน็ตแล้วกดบันทึกใหม่อีกครั้ง', 'error');
   } finally {
     isSaving.value = false;
@@ -928,16 +623,13 @@ const handleSaveAction = async () => {
   }
 };
 
-const viewLogs = async (item, isMod = false) => {
+const viewLogs = async (item) => {
   activeItem.value = item;
-  activeIsModifier.value = isMod;
   showLogsModal.value = true;
   logsLoading.value = true;
   try {
     const today = getToday();
-    const res = isMod
-      ? await api.modifiers.getLogs(item.id, { date: today })
-      : await api.stock.getLogs(item.id, { date: today });
+    const res = await api.stock.getLogs(item.id, { date: today });
     logs.value = res.data?.logs || res.data || res || [];
   } catch (e) {
     console.error(e);
@@ -1058,10 +750,7 @@ const getReasonIconClass = (reason) => {
   return map[reason] || 'fa-solid fa-circle-info';
 };
 
-const getActionIconClass = (type, isMod) => {
-  if (isMod) {
-    return type === 'restock' ? 'fa-solid fa-plus' : 'fa-solid fa-wrench';
-  }
+const getActionIconClass = (type) => {
   if (type === 'fry') {
     return activeItem.value ? getCookActionIcon(activeItem.value.name) : 'fa-solid fa-fire';
   }
@@ -1074,10 +763,7 @@ const getActionIconClass = (type, isMod) => {
   return map[type] || 'fa-solid fa-wrench';
 };
 
-const getActionTitleLabel = (type, isMod) => {
-  if (isMod) {
-    return type === 'restock' ? 'เติมสต็อกเครื่องปรุง' : 'ปรับปรุงยอดเครื่องปรุง';
-  }
+const getActionTitleLabel = (type) => {
   if (type === 'fry') {
     const label = activeItem.value ? getCookActionLabel(activeItem.value.name) : 'ทอด';
     return `${label}สินค้า`;
@@ -1091,52 +777,6 @@ const getActionTitleLabel = (type, isMod) => {
   return map[type] || 'ปรับปรุงยอดสต็อก';
 };
 
-const formatModifierStock = (item) => {
-  if (!item) return '';
-  if (item.category === 'sauce_small') {
-    return `${item.total_servings} ซอง`;
-  }
-  const servingsPerBag = item.servings_per_bag || 50;
-  const bags = Math.floor(item.total_servings / servingsPerBag);
-  const servings = Math.round((item.total_servings % servingsPerBag) * 100) / 100;
-  
-  let text = '';
-  if (bags > 0) text += `${bags} ถุง`;
-  if (servings > 0 || bags === 0) {
-    if (text) text += ' ';
-    text += `${servings} รอบ`;
-  }
-  return text;
-};
-
-const isModifierLowStock = (item) => {
-  if (!item) return false;
-  if (item.category === 'sauce_small') {
-    return item.total_servings <= 20;
-  }
-  return item.total_servings <= 30; // under 1 bag
-};
-
-const getModifierCategoryLabel = (category) => {
-  const map = {
-    'sauce_small': 'ซอส (ซองเล็ก)',
-    'sauce_large': 'ซอส (ถุงใหญ่)',
-    'dipping': 'น้ำจิ้ม',
-    'powder': 'ผงปรุงรส'
-  };
-  return map[category] || category;
-};
-
-const getModifierCategoryClass = (category) => {
-  const map = {
-    'sauce_small': 'badge-mod-sauce-small',
-    'sauce_large': 'badge-mod-sauce-large',
-    'dipping': 'badge-mod-dipping',
-    'powder': 'badge-mod-powder'
-  };
-  return map[category] || 'badge-neutral';
-};
-
 onMounted(() => {
   loadSettings();
   loadStockData(false);
@@ -1147,69 +787,6 @@ onMounted(() => {
 /* Responsive container controls */
 .mobile-stock-list-container {
   display: none;
-}
-
-.stock-page-title {
-  font-size: var(--font-lg);
-  font-weight: bold;
-  color: var(--text-secondary);
-  text-align: left;
-}
-.mobile-header-actions .btn {
-  height: 44px !important;
-  padding: 10px 18px !important;
-  font-size: var(--font-base) !important;
-  font-weight: var(--font-weight-semibold) !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  box-sizing: border-box !important;
-  min-width: 160px !important;
-}
-@media (min-width: 769px) {
-  .mobile-stock-header-card {
-    padding: var(--space-xl) !important;
-  }
-  .mobile-header-actions {
-    gap: var(--space-sm) !important;
-  }
-  .mobile-header-actions .btn {
-    height: auto !important;
-    padding: var(--space-md) var(--space-xl) !important;
-    min-width: auto !important;
-  }
-}
-@media (max-width: 768px) {
-  .stock-page-title {
-    font-size: var(--font-lg) !important;
-    font-weight: bold !important;
-    text-align: center !important;
-  }
-}
-@media (max-width: 576px) {
-  .mobile-stock-header-card {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    text-align: center !important;
-  }
-  .mobile-stock-header-card > div {
-    text-align: center !important;
-  }
-  .mobile-stock-header-card .mobile-header-actions {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: var(--space-xs) !important;
-    width: 100% !important;
-  }
-  .mobile-stock-header-card .mobile-header-actions .btn {
-    flex: 1 !important;
-    min-width: 0 !important;
-    width: auto !important;
-    justify-content: center !important;
-    padding: 10px 12px !important;
-  }
 }
 
 .desktop-stock-table-container {

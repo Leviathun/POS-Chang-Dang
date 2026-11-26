@@ -251,8 +251,8 @@
           <!-- Desktop Page Title Header (Visible on Desktop) -->
           <div class="desktop-content-header">
             <h2 class="desktop-page-title flex align-center gap-xs">
-              <i v-if="route.path.startsWith('/central-kitchen')" class="fa-solid fa-warehouse text-primary mr-1" style="font-size: 1.15rem;"></i>
-              <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: 1.15rem;"></i>
+              <i v-if="route.path.startsWith('/central-kitchen')" class="fa-solid fa-warehouse text-primary mr-1" style="font-size: var(--font-md);"></i>
+              <i v-else-if="route.path === '/requisition'" class="fa-solid fa-boxes-packing text-primary mr-1" style="font-size: var(--font-md);"></i>
               <span>{{ activeTitle }}</span>
             </h2>
             <div class="desktop-branch-badge" v-if="user">
@@ -288,10 +288,15 @@
               </span>
               <span class="nav-label">คำขอเบิก</span>
             </router-link>
-            <router-link to="/central-kitchen/finance" class="nav-item" active-class="active">
+            <button
+              type="button"
+              class="nav-item border-0 bg-transparent cursor-pointer"
+              :class="{ 'active': route.path === '/central-kitchen/finance' || route.path === '/central-kitchen/partners' }"
+              @click="openManageChoiceSheet"
+            >
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-vault"></i></span>
               <span class="nav-label">การเงิน</span>
-            </router-link>
+            </button>
             <router-link to="/settings" class="nav-item" active-class="active">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
               <span class="nav-label">ตั้งค่า</span>
@@ -342,7 +347,7 @@
         <div class="mobile-action-sheet-content" @click.stop>
           <div class="modal-header">
             <h3>
-              <i class="fa-solid fa-briefcase"></i>
+              <i :class="isCentralKitchenSessionActive ? 'fa-solid fa-vault' : 'fa-solid fa-briefcase'"></i>
               <span>เลือกระบบที่ต้องการเข้าใช้งาน</span>
             </h3>
             <button type="button" class="modal-close" aria-label="ปิด" @click="closeManageChoiceSheet">
@@ -350,7 +355,39 @@
             </button>
           </div>
           
-          <div class="sheet-options-list">
+          <div v-if="isCentralKitchenSessionActive" class="sheet-options-list">
+            <div 
+              class="sheet-option-card" 
+              :class="{ 'current': route.path === '/central-kitchen/finance' }"
+              @click="navigateToManage('/central-kitchen/finance')"
+            >
+              <div class="option-icon-wrap management-icon">
+                <i class="fa-solid fa-vault"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">การเงินกองกลาง</div>
+                <div class="option-desc">สมุดบัญชีครัวกลาง, รายรับ-รายจ่าย, ยอดค้างชำระสาขา</div>
+              </div>
+              <i class="fa-solid fa-chevron-right option-arrow"></i>
+            </div>
+
+            <div 
+              class="sheet-option-card" 
+              :class="{ 'current': route.path === '/central-kitchen/partners' }"
+              @click="navigateToManage('/central-kitchen/partners')"
+            >
+              <div class="option-icon-wrap reports-icon">
+                <i class="fa-solid fa-handshake"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">หุ้นส่วน & ปันผล</div>
+                <div class="option-desc">จัดการสัดส่วนหุ้นส่วน, คำนวณกำไรและแบ่งปันผล</div>
+              </div>
+              <i class="fa-solid fa-chevron-right option-arrow"></i>
+            </div>
+          </div>
+
+          <div v-else class="sheet-options-list">
             <div 
               class="sheet-option-card" 
               :class="{ 'current': route.path.startsWith('/management') }"
@@ -361,7 +398,7 @@
               </div>
               <div class="option-info">
                 <div class="option-title">บริหารจัดการร้าน</div>
-                <div class="option-desc">บันทึกค่าใช้จ่าย, ตรวจสอบบิล, หุ้นส่วน & ปันผล</div>
+                <div class="option-desc">บันทึกรายจ่าย, ค่าแรงพนักงาน, รอบกะลิ้นชัก</div>
               </div>
               <i class="fa-solid fa-chevron-right option-arrow"></i>
             </div>
@@ -390,11 +427,11 @@
       <transition-group name="toast-anim">
         <div v-for="t in uiState.toasts" :key="t.id" class="toast" :class="t.type">
           <span class="toast-icon inline-flex align-center">
-            <i v-if="t.type === 'success'" class="fa-solid fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i>
-            <i v-else-if="t.type === 'error'" class="fa-solid fa-circle-xmark" style="color: var(--danger); font-size: 1.2rem;"></i>
-            <i v-else-if="t.type === 'info'" class="fa-solid fa-circle-info" style="color: var(--accent); font-size: 1.2rem;"></i>
-            <i v-else-if="t.type === 'warning'" class="fa-solid fa-triangle-exclamation" style="color: var(--warning); font-size: 1.2rem;"></i>
-            <i v-else class="fa-solid fa-circle-info" style="font-size: 1.2rem;"></i>
+            <i v-if="t.type === 'success'" class="fa-solid fa-circle-check" style="color: var(--success); font-size: var(--font-md);"></i>
+            <i v-else-if="t.type === 'error'" class="fa-solid fa-circle-xmark" style="color: var(--danger); font-size: var(--font-md);"></i>
+            <i v-else-if="t.type === 'info'" class="fa-solid fa-circle-info" style="color: var(--accent); font-size: var(--font-md);"></i>
+            <i v-else-if="t.type === 'warning'" class="fa-solid fa-triangle-exclamation" style="color: var(--warning); font-size: var(--font-md);"></i>
+            <i v-else class="fa-solid fa-circle-info" style="font-size: var(--font-md);"></i>
           </span>
           <span class="toast-message">{{ t.message }}</span>
         </div>
@@ -411,8 +448,8 @@
         <div class="confirm-title">{{ uiState.confirm.title }}</div>
         <div class="confirm-message">{{ uiState.confirm.message }}</div>
         <div class="confirm-actions">
-          <button class="btn-modal btn-modal-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
-          <button class="btn-modal btn-modal-primary flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
+          <button class="btn btn-secondary flex-1" @click="uiState.confirm.resolve(false)">ยกเลิก</button>
+          <button class="btn btn-primary flex-1" @click="uiState.confirm.resolve(true)">ยืนยัน</button>
         </div>
       </div>
     </div>
@@ -1076,7 +1113,7 @@ onUnmounted(() => {
 
 .header-user-badge .user-icon,
 .header-branch-badge .branch-icon {
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   color: var(--primary, #8b0313);
   display: inline-flex;
   align-items: center;
@@ -1238,6 +1275,7 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: all var(--transition-base);
+  min-height: 76px;
 }
 
 .sheet-option-card:active {
@@ -1247,7 +1285,7 @@ onUnmounted(() => {
 }
 
 .sheet-option-card.current {
-  background: rgba(139, 3, 19, 0.06);
+  background: #ffffff;
   border-color: var(--primary);
 }
 
@@ -1258,7 +1296,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   flex-shrink: 0;
 }
 
@@ -1407,7 +1445,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--danger);
-  font-size: 1.6rem;
+  font-size: var(--font-xl);
 }
 
 .confirm-title {
@@ -1430,11 +1468,6 @@ onUnmounted(() => {
   gap: var(--space-md);
 }
 
-.confirm-actions .btn-modal {
-  height: 46px;
-  font-size: var(--font-base);
-  border-radius: var(--radius-md);
-}
 
 /* --- Keypad --- */
 .keypad {
@@ -1610,7 +1643,7 @@ onUnmounted(() => {
   }
 
   .sidebar-user .user-avatar {
-    font-size: 1.5rem;
+    font-size: var(--font-xl);
     background: transparent;
     width: 40px;
     height: 40px;
@@ -1696,7 +1729,7 @@ onUnmounted(() => {
     background-color: var(--primary);
     color: white;
     border-radius: 999px;
-    font-size: 0.75rem;
+    font-size: var(--font-xxs);
     padding: 2px 8px;
     font-weight: bold;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -1795,7 +1828,7 @@ onUnmounted(() => {
   }
 
   .desktop-content-header .desktop-branch-badge .branch-icon {
-    font-size: 1.05rem;
+    font-size: var(--font-base);
     color: var(--primary, #8b0313);
     display: inline-flex;
     align-items: center;

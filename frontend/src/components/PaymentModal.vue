@@ -158,20 +158,20 @@
 
             <div class="w-full flex gap-md success-actions" style="display: flex; gap: var(--space-md); width: 100%;">
               <button 
-                class="btn-modal btn-modal-secondary flex-1" 
+                class="btn btn-secondary flex-1" 
                 @click="() => handlePrintReceipt()"
                 :disabled="isCheckingOut || printLoading"
-                style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
+                
               >
                 <i v-if="printLoading" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-print"></i>
                 <span>พิมพ์ใบเสร็จ</span>
               </button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="isCheckingOut" 
                 @click="finishPayment" 
-                style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; font-size: var(--font-base);"
+                
               >
                 <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-circle-check"></i>
@@ -244,11 +244,11 @@
               <div class="card" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: var(--space-lg) var(--space-xl);">
                 
                 <!-- Grouped header showing active channel and change method button -->
-                <div v-if="paymentMethod" class="flex flex-between align-center mb-lg" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
-                  <span class="font-bold text-primary text-md">
+                <div v-if="paymentMethod" class="flex flex-between align-center mb-lg" style="border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm); gap: var(--space-xs);">
+                  <span class="font-bold text-primary text-md whitespace-nowrap">
                     <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> ช่องทาง: {{ getPaymentMethodLabel(paymentMethod) }}
                   </span>
-                  <button class="btn btn-secondary change-method-btn" @click="paymentMethod = null">
+                  <button class="btn btn-secondary btn-sm" @click="paymentMethod = null">
                     <i class="fa-solid fa-arrow-left"></i> เปลี่ยนช่องทาง
                   </button>
                 </div>
@@ -302,7 +302,7 @@
                   <!-- Quick Amount Selector -->
                   <div class="quick-amounts flex gap-sm mb-md" style="overflow-x: auto; padding-bottom: var(--space-xs);">
                     <button 
-                      class="quick-amount-btn" 
+                      class="filter-pill tabular-nums" 
                       :class="{ 'active': Number(enteredAmount) === netTotal }"
                       @click="enteredAmount = netTotal"
                     >
@@ -311,7 +311,7 @@
                     <button 
                       v-for="amt in quickAmountOptions" 
                       :key="amt" 
-                      class="quick-amount-btn"
+                      class="filter-pill tabular-nums"
                       :class="{ 'active': Number(enteredAmount) === amt }"
                       @click="enteredAmount = amt"
                     >
@@ -354,7 +354,7 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmQRPayment">
+                  <button class="btn btn-primary w-full" :disabled="isCheckingOut" @click="confirmQRPayment">
                     <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
                     <i v-else class="fa-solid fa-circle-check"></i>
                     <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการชำระเงิน' }}</span>
@@ -374,7 +374,7 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmGovPayment">
+                  <button class="btn btn-primary w-full" :disabled="isCheckingOut" @click="confirmGovPayment">
                     <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
                     <i v-else class="fa-solid fa-circle-check"></i>
                     <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการโครงการรัฐ' }}</span>
@@ -394,7 +394,7 @@
                     {{ formatCurrency(netTotal) }}
                   </div>
                   
-                  <button class="btn-modal btn-modal-primary" :disabled="isCheckingOut" @click="confirmDeliveryPayment">
+                  <button class="btn btn-primary w-full" :disabled="isCheckingOut" @click="confirmDeliveryPayment">
                     <i v-if="isCheckingOut" class="fa-solid fa-spinner fa-spin"></i>
                     <i v-else class="fa-solid fa-circle-check"></i>
                     <span>{{ isCheckingOut ? 'กำลังบันทึกบิล...' : 'ยืนยันผ่านรายการเดลิเวอรี' }}</span>
@@ -590,9 +590,9 @@ const pressNum = (key) => {
 const getPaymentMethodLabel = (method) => {
   const map = {
     'cash': 'เงินสด',
-    'qr': 'QR / โอน',
-    'gov': 'โครงการรัฐ',
-    'delivery': 'เดลิเวอรี'
+    'qr': 'QR',
+    'gov': 'รัฐ',
+    'delivery': 'เดลิ'
   };
   return map[method] || method;
 };
@@ -929,32 +929,6 @@ const confirmDeliveryPayment = () => {
 
 .quick-amounts::-webkit-scrollbar { display: none; }
 
-.quick-amount-btn {
-  padding: var(--space-sm) var(--space-lg);
-  background: rgba(139, 3, 19, 0.05);
-  border: 1px solid rgba(139, 3, 19, 0.15);
-  border-radius: var(--radius-full);
-  color: var(--primary);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-semibold);
-  white-space: nowrap;
-  transition: var(--transition-base);
-  cursor: pointer;
-}
-
-.quick-amount-btn:hover:not(.active) {
-  background: rgba(139, 3, 19, 0.10);
-}
-
-.quick-amount-btn.active {
-  background: var(--primary);
-  color: white;
-  border-color: transparent;
-}
-
-.quick-amount-btn:active {
-  transform: scale(0.95);
-}
 
 /* --- Payment Methods --- */
 .payment-methods {
@@ -1025,27 +999,8 @@ const confirmDeliveryPayment = () => {
   margin-bottom: var(--space-sm);
 }
 
-.success-subtitle {
-  font-size: var(--font-base);
-  color: var(--text-secondary);
-}
 
 /* Confetti particles */
-.confetti-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  overflow: hidden;
-}
-
-.confetti-piece {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  animation: confettiFall 1.5s ease forwards;
-}
 
 /* --- Keypad keys --- */
 .keypad-key {
@@ -1073,7 +1028,7 @@ const confirmDeliveryPayment = () => {
     flex-direction: column !important;
     gap: var(--space-sm) !important;
   }
-  .success-actions .btn-modal {
+  .success-actions .btn {
     width: 100% !important;
     flex: none !important;
   }

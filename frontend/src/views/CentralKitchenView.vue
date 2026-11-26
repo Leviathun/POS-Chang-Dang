@@ -8,136 +8,25 @@
       <!-- ────────────────────────────────────────────────────────── -->
       <!-- REORDER MODE: แบบเดียวกับหน้าจัดการเมนู POS (Menu.vue)      -->
       <!-- ────────────────────────────────────────────────────────── -->
-      <div v-if="isReorderMode">
-        <!-- Reorder Top Action Card -->
-        <div class="card mb-lg menu-top-action-card">
-          <div class="menu-total-count">
-            จัดเรียงลำดับสินค้า: <strong>{{ reorderItems.length }}</strong> รายการ
-          </div>
-          <div class="menu-action-buttons">
-            <button class="btn btn-primary btn-bulk-back" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
-            <button class="btn btn-primary btn-bulk-header-save" :disabled="isSavingReorder" @click="handleSaveReorder">
-              <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingReorder ? 'กำลังบันทึก...' : 'บันทึก' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Desktop Reorder Table (Visible on desktop only) -->
-        <div class="card p-0 overflow-hidden desktop-menu-table-container">
-          <div style="overflow-x: auto;">
-            <table class="table w-full" style="border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th class="text-center" style="padding: var(--space-md); width: 10%;">ลาก</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 15%;">รูป</th>
-                  <th class="text-left" style="padding: var(--space-md); width: 45%;">สินค้าในครัวกลาง</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 30%; white-space: nowrap;">ราคา</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="(item, index) in reorderItems" 
-                  :key="item.id" 
-                  style="border-bottom: 1px solid var(--border-color);"
-                  class="table-row-hover desktop-reorder-row"
-                  :class="{ 'dragging': dragIndex === index }"
-                  :data-index="index"
-                  draggable="true"
-                  @dragstart="handleDragStart(index, $event)"
-                  @dragover="handleDragOver"
-                  @dragenter="handleDragEnter(index)"
-                  @dragend="handleDragEnd"
-                >
-                  <!-- Drag Handle -->
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <div 
-                      class="drag-handle" 
-                      style="cursor: grab;"
-                      @touchstart="handleTouchStart(index, $event)"
-                      @touchmove.prevent="handleTouchMove"
-                      @touchend="handleTouchEnd"
-                    >
-                      <i class="fa-solid fa-bars"></i>
-                    </div>
-                  </td>
-                  <!-- Image Preview -->
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
-                      <img v-if="item.image_url" :src="item.image_url" :alt="item.name" style="width: 100%; height: 100%; object-fit: cover;" />
-                      <i v-else class="fa-solid fa-box-open text-base text-muted"></i>
-                    </div>
-                  </td>
-                  <!-- Name & Category -->
-                  <td style="padding: var(--space-md); vertical-align: middle;">
-                    <div class="font-bold text-base">{{ item.name }}</div>
-                    <div class="text-sm text-muted">
-                      {{ getCategoryLabel(item.category) }}
-                    </div>
-                  </td>
-                  <!-- Price -->
-                  <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;">
-                    ฿{{ formatNumber(item.cost_price) }} / {{ item.unit }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Mobile Reorder Cards (Visible on mobile only) -->
-        <div class="mobile-menu-list-container">
-          <div class="mobile-menu-list">
-            <div 
-              v-for="(item, index) in reorderItems" 
-              :key="item.id" 
-              class="mobile-menu-card mobile-reorder-card"
-              :class="{ 'dragging': dragIndex === index }"
-              :data-index="index"
-            >
-              <div class="mobile-menu-card-body" style="align-items: center; display: flex; flex-direction: row; width: 100%; padding: var(--space-sm) var(--space-md);">
-                <!-- Drag Handle -->
-                <div 
-                  class="drag-handle" 
-                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: 1.2rem; color: var(--text-tertiary);"
-                  @touchstart="handleTouchStart(index, $event)"
-                  @touchmove.prevent="handleTouchMove"
-                  @touchend="handleTouchEnd"
-                >
-                  <i class="fa-solid fa-bars"></i>
-                </div>
-
-                <!-- Product Image -->
-                <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
-                  <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="mobile-menu-card-img" />
-                  <div v-else class="mobile-menu-card-placeholder">
-                    <i class="fa-solid fa-box-open" style="font-size: 1.2rem; color: var(--text-tertiary);"></i>
-                  </div>
-                </div>
-                
-                <!-- Middle: Name & Category -->
-                <div class="mobile-menu-card-details" style="flex: 1; min-width: 0;">
-                  <div class="mobile-menu-card-name truncate">{{ item.name }}</div>
-                  <div class="mobile-menu-card-category">{{ getCategoryLabel(item.category) }}</div>
-                </div>
-                
-                <!-- Price -->
-                <div class="mobile-menu-card-meta" style="text-align: right; justify-content: center; width: auto; margin-left: auto; flex-shrink: 0;">
-                  <div class="mobile-menu-card-price">฿{{ formatNumber(item.cost_price) }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ReorderItemsPanel
+        v-if="isReorderMode"
+        v-model:items="reorderItems"
+        :is-saving="isSavingReorder"
+        title-prefix="จัดลำดับเมนู"
+        column-header="สินค้าในครัวกลาง"
+        :get-category-label="(item) => getCategoryLabel(item.category)"
+        :get-desktop-price-text="(item) => `฿${formatNumber(item.cost_price)} / ${item.unit}`"
+        :get-mobile-price-text="(item) => `฿${formatNumber(item.cost_price)}`"
+        @close="closeReorderMode"
+        @save="handleSaveReorder"
+      />
 
       <!-- ────────────────────────────────────────────────────────── -->
       <!-- NORMAL CATALOG VIEW (เมื่อไม่ได้อยู่ในโหมดจัดเรียง)           -->
       <!-- ────────────────────────────────────────────────────────── -->
       <div v-else>
       <!-- Action & Filter Bar (Requirement 2 & 3) -->
-      <div class="card mb-lg p-md toolbar-card">
+      <div class="card mb-lg p-md">
         <!-- Top Row: Full Width Search Input (100%) -->
         <div class="search-input-box mb-md" style="position: relative; width: 100%;">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -151,11 +40,11 @@
         </div>
 
         <!-- Middle Row: Category Filter Pills -->
-        <div class="category-tabs flex gap-xs align-center flex-wrap" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
+        <div class="flex gap-xs align-center flex-wrap">
           <button 
             v-for="cat in categories" 
             :key="cat.id" 
-            class="category-tab"
+            class="filter-pill"
             :class="{ 'active': selectedCategory === cat.id }"
             @click="selectedCategory = cat.id"
           >
@@ -168,13 +57,13 @@
 
         <!-- Bottom Row: Separate Action Buttons Row -->
         <div class="catalog-toolbar-actions">
-          <button class="btn btn-secondary toolbar-btn" @click="openCategoryModal" title="จัดการหมวดหมู่สินค้าในครัวกลาง">
+          <button class="btn btn-secondary" @click="openCategoryModal" title="จัดการหมวดหมู่สินค้าในครัวกลาง">
             <i class="fa-solid fa-folder-open"></i> <span>จัดการหมวด</span>
           </button>
-          <button class="btn btn-secondary toolbar-btn" @click="openReorderMode" title="จัดเรียงลำดับการแสดงแคตตาล็อก">
+          <button class="btn btn-secondary" @click="openReorderMode" title="จัดเรียงลำดับการแสดงแคตตาล็อก">
             <i class="fa-solid fa-sort"></i> <span>เรียงลำดับ</span>
           </button>
-          <button class="btn btn-primary btn-add-item toolbar-btn" @click="openCreateItemModal">
+          <button class="btn btn-primary" @click="openCreateItemModal">
             <i class="fa-solid fa-plus"></i> <span>สร้างใหม่</span>
           </button>
         </div>
@@ -268,7 +157,7 @@
           <div class="item-meta-box">
             <div class="item-meta-row flex flex-between align-center text-xs py-1">
               <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
-              <span class="font-bold text-primary item-cost-val" style="font-size: 1rem;">
+              <span class="font-bold text-primary item-cost-val" style="font-size: var(--font-base);">
                 ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
               </span>
             </div>
@@ -285,7 +174,7 @@
                   'text-warning': item.quantity > 0 && item.quantity <= item.min_stock_alert,
                   'text-success': item.quantity > item.min_stock_alert
                 }"
-                style="font-size: 1rem;"
+                style="font-size: var(--font-base);"
               >
                 {{ formatNumber(item.quantity) }} {{ item.unit }}
               </span>
@@ -296,7 +185,7 @@
                 <i class="fa-solid fa-arrows-rotate text-primary"></i>
                 <span>แปลงหน่วย:</span>
               </span>
-              <span class="font-bold text-primary" style="font-size: 0.85rem;">
+              <span class="font-bold text-primary item-pack-val" style="font-size: var(--font-sm); white-space: nowrap;">
                 1 {{ item.unit }} = {{ item.pack_size }} ชิ้น
               </span>
             </div>
@@ -305,24 +194,24 @@
           <!-- 5. ปุ่มแอ็กชัน (อ้างอิงความกว้างเต็มเท่ารูปภาพ ซ้าย-ขวาเต็ม ไม่โดนบีบ) -->
           <div class="card-footer-actions">
             <!-- ปุ่มเติมสต็อกด่วน เต็มความกว้างซ้าย-ขวา -->
-            <button class="btn-action btn-action-primary w-full btn-restock-main" @click="openQuickRestockModal(item)">
+            <button class="btn-action btn-action-primary w-full" @click="openQuickRestockModal(item)">
               <i class="fa-solid fa-plus-circle"></i> เติมสต็อกด่วน
             </button>
             
             <!-- ปุ่มปรับปรุงสต็อก ยาวสีแดง คล้ายเติมสต็อกด่วน เอาไว้ใต้ เติมสต็อกด่วน -->
-            <button class="btn-action btn-action-adjust w-full btn-adjust-main" @click="openAdjustStockModal(item)">
+            <button class="btn-action btn-action-primary w-full" @click="openAdjustStockModal(item)">
               <i class="fa-solid fa-sliders"></i> ปรับปรุงสต็อก
             </button>
             
             <!-- ปุ่มแก้ไข, ของเสีย, และลบสินค้า ขยายซ้าย-ขวาเต็ม -->
             <div class="card-sub-actions flex gap-xs w-full">
-              <button class="btn-action btn-action-edit flex-1 btn-card-sub" @click="openEditItemModal(item)" title="แก้ไขข้อมูลสินค้า">
+              <button class="btn-action btn-action-edit flex-1" @click="openEditItemModal(item)" title="แก้ไขข้อมูลสินค้า">
                 <i class="fa-solid fa-pen"></i> แก้ไข
               </button>
-              <button class="btn-action btn-action-waste flex-1 btn-card-sub" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
+              <button class="btn-action btn-action-delete flex-1" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
                 <i class="fa-solid fa-dumpster"></i> ของเสีย
               </button>
-              <button class="btn-action btn-card-sub text-danger" style="flex: 0 0 36px; padding: 0;" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">
+              <button class="btn-action btn-action-delete" style="flex: 0 0 36px; padding: 0;" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -338,498 +227,68 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'dispatch'" class="dispatch-section">
       <!-- Top Action Toolbar Card -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card dispatch-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div>
-          <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
-            <i class="fa-solid fa-truck-arrow-right text-primary"></i>
-            <span>ระบบจ่ายของให้สาขา (Push Model)</span>
-          </h3>
-          <p class="text-secondary text-xs">
-            ครัวกลางจัดส่งของให้สาขาโดยตรง เมื่อกดยืนยันจะตัดสต็อกครัวกลาง บันทึกเป็นรายจ่ายสาขา และเติมสต็อก POS ให้อัตโนมัติ
-          </p>
+      <div class="card mb-lg page-header-card dispatch-toolbar-card">
+        <div class="page-header-left">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-truck-arrow-right"></i>
+          </div>
+          <div class="page-header-text">
+            <h2 class="page-header-title">ระบบจ่ายของให้สาขา</h2>
+          </div>
         </div>
 
         <!-- Target Branch Selector (Prominent in Toolbar) -->
-        <div class="dispatch-target-branch-bar flex align-center gap-sm">
-          <label class="font-bold text-sm text-secondary flex align-center gap-xs" style="white-space: nowrap;">
-            <i class="fa-solid fa-store text-primary"></i>
-            <span>สาขาปลายทาง</span>
-          </label>
-          <div class="custom-select-wrapper dispatch-branch-select-wrapper" @click.stop>
-            <div 
-              class="custom-select-trigger dispatch-branch-select" 
-              :class="{ 'active': isDispatchBranchDropdownOpen }" 
-              @click="isDispatchBranchDropdownOpen = !isDispatchBranchDropdownOpen"
-            >
-              <span class="custom-select-text font-bold text-sm text-primary flex align-center gap-xs">
-                <i class="fa-solid fa-store text-primary mr-1"></i>
-                <span>{{ selectedDispatchBranchName || 'เลือกสาขา' }}</span>
-              </span>
-            </div>
-            <div v-if="isDispatchBranchDropdownOpen" class="custom-select-dropdown">
-              <div 
-                v-for="b in retailBranches" 
-                :key="b.id" 
-                class="custom-select-option"
-                :class="{ 'selected': Number(dispatchBranchId) === Number(b.id) }"
-                @click="dispatchBranchId = b.id; isDispatchBranchDropdownOpen = false;"
-              >
-                <div class="flex align-center gap-xs font-bold text-sm">
-                  <i class="fa-solid fa-store mr-1 text-primary"></i>
-                  <span>{{ b.name }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DatePeriodFilter
+          branch-only
+          v-model:branch-id="dispatchBranchId"
+          :branches="retailBranches"
+          :show-all-branches="false"
+          branch-label="สาขาปลายทาง:"
+        />
       </div>
 
       <!-- Main Layout: Left Catalog (70%) + Right Cart (30%) -->
-      <div class="catalog-layout">
-        <!-- Left: Items Catalog -->
-        <div class="catalog-main">
-          <!-- Search & Category Filters -->
-          <div class="card p-md mb-md toolbar-card filter-bar">
-            <!-- Full Width Search -->
-            <div class="search-input-box mb-md" style="position: relative; width: 100%;">
-              <i class="fa-solid fa-magnifying-glass search-icon"></i>
-              <input 
-                type="text" 
-                v-model="dispatchSearchQuery" 
-                placeholder="ค้นหาชื่อสินค้า, วัตถุดิบ, ซอส, บรรจุภัณฑ์..." 
-                class="form-input search-input"
-                style="padding-left: 42px; width: 100%; border-radius: var(--radius-md); font-size: var(--font-base);"
-              />
-              <button 
-                v-if="dispatchSearchQuery" 
-                class="search-clear-btn" 
-                @click="dispatchSearchQuery = ''"
-                title="ล้างคำค้นหา"
-              >
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            <!-- Category Pills -->
-            <div class="category-tabs flex gap-xs align-center" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
-              <button 
-                v-for="cat in categories" 
-                :key="cat.id" 
-                class="category-tab"
-                :class="{ active: dispatchCategory === cat.id }"
-                @click="dispatchCategory = cat.id"
-              >
-                <span>{{ cat.label }}</span>
-                <span v-if="getDispatchCategoryCount(cat.id) > 0" class="category-count">
-                  ({{ getDispatchCategoryCount(cat.id) }})
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Loading state -->
-          <div v-if="isLoadingItems" class="grid-cards">
-            <div v-for="i in 6" :key="i" class="card item-card p-md" style="pointer-events: none;">
-              <div class="skeleton mb-md" style="height: 135px; width: 100%; border-radius: var(--radius-md);"></div>
-              <div class="skeleton mb-xs" style="width: 85%; height: 18px;"></div>
-              <div class="skeleton mb-sm" style="width: 50%; height: 14px;"></div>
-              <div class="skeleton" style="width: 100%; height: 42px; border-radius: var(--radius-md);"></div>
-            </div>
-          </div>
-
-          <!-- Empty state -->
-          <div v-else-if="filteredDispatchItems.length === 0" class="empty-state-box">
-            <div class="empty-state-icon">
-              <i class="fa-solid fa-box-open"></i>
-            </div>
-            <div class="empty-state-title">ไม่พบรายการสินค้า</div>
-            <div class="empty-state-desc">ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่น</div>
-          </div>
-
-          <!-- Items Grid -->
-          <div v-else class="grid-cards">
-            <div 
-              v-for="item in filteredDispatchItems" 
-              :key="item.id" 
-              class="card p-md item-card"
-              :class="{ 
-                'low-stock': item.quantity <= (item.min_stock_alert || 5),
-                'item-out-of-stock': item.quantity <= 0,
-                'in-cart': getDispatchCartQty(item.id) > 0
-              }"
-              @click="addDispatchItem(item)"
-            >
-              <!-- Quantity Badge if in cart (Desktop & Mobile) -->
-              <span v-if="getDispatchCartQty(item.id) > 0" class="qty-badge">
-                {{ getDispatchCartQty(item.id) }}
-              </span>
-
-              <!-- Top badges -->
-              <div class="card-top-badges flex flex-between align-center">
-                <span class="badge badge-neutral card-badge-category">
-                  {{ getCategoryLabel(item.category) }}
-                </span>
-                <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="หมดสต็อก">
-                  <i class="fa-solid fa-xmark"></i>
-                </span>
-                <span v-else-if="item.quantity <= (item.min_stock_alert || 5)" class="badge badge-warning card-badge-status" title="ใกล้หมด">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                </span>
-                <span v-else class="badge badge-success card-badge-status" title="พร้อมจ่าย">
-                  <i class="fa-solid fa-check"></i>
-                </span>
-              </div>
-
-              <!-- Item Image -->
-              <div class="item-img-container">
-                <img 
-                  v-if="item.image_url" 
-                  :src="item.image_url" 
-                  :alt="item.name" 
-                  class="item-img"
-                  loading="lazy"
-                />
-                <div v-else class="item-img-placeholder">
-                  <i class="fa-solid fa-box-open"></i>
-                </div>
-              </div>
-
-              <!-- Item Name -->
-              <h4 class="item-name font-bold" :title="item.name">
-                <div class="item-name-main">{{ getItemNameParts(item.name).main }}</div>
-                <div class="item-name-sub" v-if="getItemNameParts(item.name).sub">
-                  {{ getItemNameParts(item.name).sub }}
-                </div>
-              </h4>
-
-              <!-- Meta -->
-              <div class="item-meta-box">
-                <div class="item-meta-row flex flex-between align-center text-xs py-1">
-                  <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
-                  <span class="font-bold text-primary item-cost-val" style="font-size: 1rem;">
-                    ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
-                  </span>
-                </div>
-                
-                <div class="item-meta-row flex flex-between align-center text-xs py-1">
-                  <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
-                    <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
-                    <span>ในครัวกลาง:</span>
-                  </span>
-                  <span 
-                    class="font-bold item-stock-val" 
-                    :class="{
-                      'text-danger': item.quantity <= 0,
-                      'text-warning': item.quantity > 0 && item.quantity <= (item.min_stock_alert || 5),
-                      'text-success': item.quantity > (item.min_stock_alert || 5)
-                    }"
-                    style="font-size: 1rem;"
-                  >
-                    <span class="stock-prefix">เหลือ </span>{{ formatNumber(item.quantity) }} {{ item.unit }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Action Button (Direct Quantity Stepper & Input) -->
-              <div class="card-footer-actions">
-                <div v-if="getDispatchCartQty(item.id) > 0" class="flex align-center gap-xs w-full" @click.stop>
-                  <button class="btn-qty" @click="decreaseDispatchQty(getDispatchCartItem(item.id))" title="ลดจำนวน">-</button>
-                  <input 
-                    type="number" 
-                    inputmode="numeric" 
-                    min="1" 
-                    :max="item.quantity" 
-                    :value="getDispatchCartQty(item.id)" 
-                    @change="setDispatchCartQty(item, $event.target.value)"
-                    @focus="$event.target.select()" 
-                    class="form-input text-center font-bold qty-card-input" 
-                    style="flex: 1; height: 36px; padding: 2px; font-size: 0.95rem; border-radius: var(--radius-sm);" 
-                    title="พิมพ์จำนวนที่ต้องการจ่ายได้ทันที"
-                  />
-                  <button class="btn-qty" :disabled="getDispatchCartQty(item.id) >= item.quantity" @click="increaseDispatchQty(getDispatchCartItem(item.id))" title="เพิ่มจำนวน">+</button>
-                </div>
-                <button 
-                  v-else
-                  class="btn-action btn-action-primary w-full btn-restock-main" 
-                  :disabled="item.quantity <= 0"
-                  @click.stop="addDispatchItem(item)"
-                >
-                  <i class="fa-solid fa-plus-circle"></i>
-                  <span>{{ item.quantity > 0 ? 'เพิ่มลงรายการจ่าย' : 'ของหมดสต็อก' }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Dispatch Cart Panel -->
-        <div class="card p-md cart-sidebar flex flex-col justify-between">
-          <div>
-            <!-- Header -->
-            <div class="flex flex-between align-center mb-md pb-sm cart-header">
-              <h4 class="font-bold text-base flex align-center gap-xs">
-                <i class="fa-solid fa-truck-arrow-right text-primary"></i>
-                <span>รายการของที่จะจ่าย</span>
-                <span v-if="dispatchCart.length > 0" class="badge badge-primary font-bold">{{ dispatchCart.length }}</span>
-              </h4>
-              <button 
-                v-if="dispatchCart.length > 0" 
-                class="text-xs text-danger font-bold cursor-pointer clear-cart-btn flex align-center gap-xs"
-                @click="clearDispatchCart"
-              >
-                <i class="fa-solid fa-trash-can"></i>
-                <span>ล้างทั้งหมด</span>
-              </button>
-            </div>
-
-            <!-- Target Branch Badge Card -->
-            <div class="dispatch-branch-info-card flex align-center gap-md" style="background: rgba(139, 3, 19, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-md);">
-              <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: 1.15rem;"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-xs text-secondary font-medium" style="margin-bottom: 2px;">สาขาที่จะตัดยอดเข้า:</div>
-                <div class="font-bold text-sm text-primary truncate" style="font-size: 0.95rem;">
-                  {{ selectedDispatchBranchName || 'ยังไม่ได้เลือกสาขา' }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Empty Cart -->
-            <div v-if="dispatchCart.length === 0" class="empty-state-box empty-state-compact">
-              <div class="empty-state-icon empty-state-icon-sm">
-                <i class="fa-solid fa-basket-shopping"></i>
-              </div>
-              <div class="empty-state-title text-sm">ยังไม่มีสินค้าในรายการจ่าย</div>
-              <div class="empty-state-desc text-xs">คลิกการ์ดสินค้าทางซ้ายเพื่อเพิ่มรายการที่จะส่งให้สาขา</div>
-            </div>
-
-            <!-- Cart Items List -->
-            <div v-else class="cart-items-list flex flex-col gap-sm" style="max-height: 380px; overflow-y: auto;">
-              <div 
-                v-for="c in dispatchCart" 
-                :key="c.item_id" 
-                class="cart-row p-sm flex flex-col justify-between"
-              >
-                <!-- Row 1: Name + Subtotal -->
-                <div class="flex flex-between align-start gap-xs mb-xs">
-                  <div class="flex-1 min-w-0 pr-xs">
-                    <div class="cart-item-name font-bold text-sm text-primary">
-                      {{ getItemNameParts(c.item_name).main }}
-                    </div>
-                    <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
-                      {{ getItemNameParts(c.item_name).sub }}
-                    </div>
-                    <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
-                      <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
-                    </div>
-                  </div>
-                  <div class="text-right flex-shrink-0 pl-xs">
-                    <span class="font-bold text-sm text-primary">฿{{ formatNumber(c.quantity * c.cost_price) }}</span>
-                  </div>
-                </div>
-
-                <!-- Row 2: Price + Stepper + Delete -->
-                <div class="flex flex-between align-center pt-xs cart-item-bottom">
-                  <span class="text-xs text-secondary">
-                    ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
-                  </span>
-
-                  <div class="flex align-center gap-xs flex-shrink-0">
-                    <button class="btn-qty" @click="decreaseDispatchQty(c)">-</button>
-                    <input 
-                      type="number" 
-                      inputmode="numeric" 
-                      v-model.number="c.quantity" 
-                      min="1" 
-                      :max="c.max_quantity" 
-                      class="form-input text-center text-sm font-bold" 
-                      style="width: 56px; height: 32px; padding: 2px;"
-                      @change="validateDispatchQty(c)"
-                      @focus="$event.target.select()"
-                    />
-                    <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)">+</button>
-                    <button class="btn btn-ghost btn-xs text-danger ml-xs" @click="removeDispatchItem(c.item_id)">✕</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer: Notes + Total + Submit -->
-          <div class="cart-footer pt-md mt-md">
-            <div class="form-group mb-md">
-              <label class="form-label text-xs font-bold text-secondary mb-xs block">
-                <i class="fa-solid fa-pen-to-square mr-1"></i> บันทึกช่วยจำ / รอบส่ง (ถ้ามี):
-              </label>
-              <input 
-                type="text" 
-                v-model="dispatchNotes" 
-                placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน" 
-                class="form-input text-sm w-full"
-              />
-            </div>
-
-            <!-- Total Cost -->
-            <div class="cart-total-row flex flex-between align-baseline mb-md pt-sm">
-              <span class="text-sm font-bold text-secondary">มูลค่าต้นทุนรวม:</span>
-              <span class="text-2xl font-bold text-primary">฿{{ formatNumber(totalDispatchCost) }}</span>
-            </div>
-
-            <!-- Submit Button (48px) -->
-            <button 
-              class="btn btn-primary btn-submit-requisition w-full"
-              :disabled="dispatchCart.length === 0 || !dispatchBranchId || isSubmittingDispatch"
-              @click="submitPushDispatch"
-            >
-              <i v-if="isSubmittingDispatch" class="fa-solid fa-spinner fa-spin mr-2"></i>
-              <i v-else class="fa-solid fa-truck-arrow-right mr-2"></i>
-              <span>{{ isSubmittingDispatch ? 'กำลังบันทึกจ่ายของ...' : 'ยืนยันจ่ายของให้สาขา (ตัดสต็อกทันที)' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mobile-only Bottom Docked Cart Bar (Exact POS Floating Cart Bar) -->
-      <div 
-        v-if="dispatchCart.length > 0 && !isDispatchMobileDrawerOpen" 
-        class="cart-bar mobile-only-cart"
+      <KitchenCatalogCart
+        :items="items"
+        :categories="categories"
+        :is-loading-items="isLoadingItems"
+        :get-category-label="getCategoryLabel"
+        v-model:cart="dispatchCart"
+        v-model:notes="dispatchNotes"
+        :is-submitting="isSubmittingDispatch"
+        :submit-disabled="!dispatchBranchId"
+        :show-remove-item-btn="true"
+        search-placeholder="ค้นหาชื่อสินค้า, วัตถุดิบ, ซอส, บรรจุภัณฑ์..."
+        stock-label="ในครัวกลาง:"
+        add-button-text="เพิ่มลงรายการจ่าย"
+        cart-title="รายการของที่จะจ่าย"
+        :mobile-cart-title="`รายการของที่จะจ่าย (${selectedDispatchBranchName || 'ยังไม่เลือกสาขา'})`"
+        cart-icon="fa-solid fa-truck-arrow-right"
+        empty-cart-title="ยังไม่มีสินค้าในรายการจ่าย"
+        empty-cart-desc="คลิกการ์ดสินค้าทางซ้ายเพื่อเพิ่มรายการที่จะส่งให้สาขา"
+        notes-label="บันทึกช่วยจำ / รอบส่ง (ถ้ามี):"
+        notes-placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน"
+        submit-icon="fa-solid fa-truck-arrow-right"
+        submit-label="ยืนยันจ่ายของให้สาขา (ตัดสต็อกทันที)"
+        submitting-label="กำลังบันทึกจ่ายของ..."
+        mobile-submit-label="ยืนยันจ่ายของ"
+        mobile-submitting-label="กำลังจ่าย..."
+        @submit="submitPushDispatch"
       >
-        <div class="cart-bar-inner">
-          <div class="cart-info" style="cursor: pointer;" @click="isDispatchMobileDrawerOpen = true">
-            <span class="cart-count">{{ totalDispatchQty }} รายการ</span>
-            <span class="cart-total">฿{{ formatNumber(totalDispatchCost) }}</span>
-          </div>
-          <button 
-            class="cart-pay-btn flex align-center justify-center gap-xs" 
-            @click="isDispatchMobileDrawerOpen = true"
-          >
-            <i class="fa-solid fa-cart-shopping"></i>
-            <span>ดูรายการจ่าย</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Mobile-only Slide-up Cart Drawer Overlay & Panel (Bottom Sheet) -->
-      <div 
-        v-if="dispatchCart.length > 0 && isDispatchMobileDrawerOpen" 
-        class="cart-drawer-overlay mobile-only-cart"
-        @click="isDispatchMobileDrawerOpen = false"
-      ></div>
-
-      <div 
-        v-if="dispatchCart.length > 0" 
-        class="cart-detail-panel mobile-only-cart"
-        :class="{ 'hidden': !isDispatchMobileDrawerOpen }"
-      >
-        <!-- Drawer Header -->
-        <div class="cart-detail-header">
-          <span class="font-bold text-base flex align-center gap-xs">
-            <i class="fa-solid fa-truck-arrow-right text-primary"></i>
-            <span>รายการของที่จะจ่าย</span>
-            <span class="badge badge-primary font-bold">{{ totalDispatchQty }}</span>
-          </span>
-          <div class="flex align-center gap-sm">
-            <button class="btn btn-ghost btn-sm text-danger" @click="clearDispatchCart">ล้างทั้งหมด</button>
-            <button class="modal-close" @click="isDispatchMobileDrawerOpen = false">✕</button>
-          </div>
-        </div>
-
-        <!-- Drawer Scrollable Content -->
-        <div class="cart-drawer-scroll-body flex flex-col gap-md">
-          <!-- Target Branch Badge Card -->
-          <div class="dispatch-branch-info-card flex align-center gap-md" style="background: var(--bg-secondary); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 0;">
-            <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-              <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: 1.1rem;"></i>
+        <template #cart-banner>
+          <div class="dispatch-branch-info-card flex align-center gap-md" style="background: rgba(139, 3, 19, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-md);">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: var(--font-md);"></i>
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-xs text-secondary font-medium" style="margin-bottom: 2px;">สาขาที่จะตัดยอดเข้า:</div>
-              <div class="font-bold text-sm text-primary truncate" style="font-size: 0.95rem;">
+              <div class="font-bold text-sm text-primary truncate" style="font-size: var(--font-sm);">
                 {{ selectedDispatchBranchName || 'ยังไม่ได้เลือกสาขา' }}
               </div>
             </div>
           </div>
-
-          <!-- Cart Items List: Spacious 2-Tier Cards with Steppers -->
-          <div class="cart-items-list flex flex-col gap-sm">
-            <div 
-              v-for="c in dispatchCart" 
-              :key="c.item_id" 
-              class="cart-row p-sm flex flex-col justify-between"
-            >
-              <!-- Tier 1: Item Name + Subtotal -->
-              <div class="flex flex-between align-start gap-xs mb-xs">
-                <div class="flex-1 min-w-0 pr-xs">
-                  <div class="cart-item-name font-bold text-sm text-primary">
-                    {{ getItemNameParts(c.item_name).main }}
-                  </div>
-                  <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
-                    {{ getItemNameParts(c.item_name).sub }}
-                  </div>
-                  <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
-                    <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
-                  </div>
-                </div>
-                <div class="text-right flex-shrink-0 pl-xs">
-                  <span class="font-bold text-sm text-primary">฿{{ formatNumber(c.quantity * c.cost_price) }}</span>
-                </div>
-              </div>
-
-              <!-- Tier 2: Unit price + Stepper -->
-              <div class="flex flex-between align-center cart-item-bottom">
-                <span class="text-xs text-secondary">
-                  ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
-                </span>
-                <div class="flex align-center gap-xs flex-shrink-0">
-                  <button class="btn-qty" @click="decreaseDispatchQty(c)" title="ลดจำนวน">-</button>
-                  <input 
-                    type="number" 
-                    inputmode="numeric" 
-                    v-model.number="c.quantity" 
-                    min="1" 
-                    :max="c.max_quantity" 
-                    class="form-input text-center text-sm font-bold" 
-                    style="width: 56px; height: 32px; padding: 2px;"
-                    @change="validateDispatchQty(c)"
-                    @focus="$event.target.select()"
-                  />
-                  <button class="btn-qty" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)" title="เพิ่มจำนวน">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Notes Field -->
-          <div class="form-group">
-            <label class="form-label text-xs font-bold text-secondary mb-xs block">
-              <i class="fa-solid fa-pen-to-square mr-1"></i> บันทึกช่วยจำ / รอบส่ง (ถ้ามี):
-            </label>
-            <input 
-              type="text" 
-              v-model="dispatchNotes" 
-              placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน" 
-              class="form-input text-sm w-full"
-            />
-          </div>
-        </div>
-
-        <!-- Drawer Fixed Footer -->
-        <div class="cart-drawer-footer">
-          <div class="cart-total-row flex flex-between align-baseline mb-sm">
-            <span class="text-sm font-bold text-secondary">มูลค่าต้นทุนรวม:</span>
-            <span class="text-2xl font-bold text-primary">฿{{ formatNumber(totalDispatchCost) }}</span>
-          </div>
-          <button 
-            class="btn btn-primary w-full btn-submit-requisition flex align-center justify-center gap-xs" 
-            :disabled="isSubmittingDispatch || dispatchCart.length === 0 || !dispatchBranchId"
-            @click="submitPushDispatch"
-          >
-            <i v-if="isSubmittingDispatch" class="fa-solid fa-spinner fa-spin mr-2"></i>
-            <i v-else class="fa-solid fa-truck-arrow-right mr-2"></i>
-            <span>{{ isSubmittingDispatch ? 'กำลังบันทึกจ่ายของ...' : 'ยืนยันจ่ายของให้สาขา (ตัดสต็อกทันที)' }}</span>
-          </button>
-        </div>
-      </div>
+        </template>
+      </KitchenCatalogCart>
     </div>
 
     <!-- ────────────────────────────────────────────────────────── -->
@@ -844,53 +303,17 @@
         v-model:selected-year="selectedYear"
         v-model:start-time="customStartTime"
         v-model:end-time="customEndTime"
+        v-model:branch-id="orderBranchFilter"
+        :branches="retailBranches"
         @change="refreshActivePeriodTab"
-      >
-        <!-- Right: Branch Filter Dropdown -->
-        <div class="order-branch-filter" style="margin-left: auto;">
-          <label class="order-branch-label">
-            <i class="fa-solid fa-store text-primary"></i>
-            <span>สาขา:</span>
-          </label>
-          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
-            <div 
-              class="custom-select-trigger order-branch-select" 
-              :class="{ 'active': isOrderBranchDropdownOpen }" 
-              @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen; isOrderRequesterDropdownOpen = false;"
-              style="height: 38px;"
-            >
-              <span class="custom-select-text font-bold">
-                {{ selectedOrderBranchName }}
-              </span>
-            </div>
-            <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
-              <div 
-                class="custom-select-option"
-                :class="{ 'selected': orderBranchFilter === 'all' }"
-                @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
-              >
-                ทุกสาขา
-              </div>
-              <div 
-                v-for="b in retailBranches" 
-                :key="b.id" 
-                class="custom-select-option"
-                :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
-                @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
-              >
-                {{ b.name }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </DatePeriodFilter>
+      />
 
       <!-- Orders Status & Requester Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card orders-toolbar">
+      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md orders-toolbar">
         <!-- Status Filter Tabs -->
-        <div class="order-status-tabs flex gap-xs align-center">
+        <div class="order-status-tabs flex gap-xs align-center flex-wrap">
           <button 
-            class="order-tab-btn" 
+            class="filter-pill" 
             :class="{ active: orderFilterStatus === 'all' }"
             @click="orderFilterStatus = 'all'"
           >
@@ -898,28 +321,44 @@
             <span class="order-tab-count">{{ periodMatchedOrders.length }}</span>
           </button>
           <button 
-            class="order-tab-btn" 
+            class="filter-pill" 
             :class="{ active: orderFilterStatus === 'pending' }"
             @click="orderFilterStatus = 'pending'"
           >
-            <i class="fa-solid fa-hourglass-start mr-1"></i> รอจัดส่ง 
+            <i class="fa-solid fa-hourglass-start mr-1"></i> ยังไม่อนุมัติ 
             <span class="order-tab-count">{{ pendingOrdersCount }}</span>
           </button>
           <button 
-            class="order-tab-btn" 
-            :class="{ active: orderFilterStatus === 'dispatched' }"
-            @click="orderFilterStatus = 'dispatched'"
-          >
-            <i class="fa-solid fa-truck-fast mr-1"></i> กำลังส่ง 
-            <span class="order-tab-count">{{ dispatchedOrdersCount }}</span>
-          </button>
-          <button 
-            class="order-tab-btn" 
+            class="filter-pill" 
             :class="{ active: orderFilterStatus === 'received' }"
             @click="orderFilterStatus = 'received'"
           >
-            <i class="fa-solid fa-circle-check mr-1"></i> สาขารับแล้ว
+            <i class="fa-solid fa-circle-check mr-1"></i> อนุมัติแล้ว
             <span class="order-tab-count">{{ receivedOrdersCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: orderFilterStatus === 'pull' }"
+            @click="orderFilterStatus = 'pull'"
+          >
+            <i class="fa-solid fa-hand-holding-hand mr-1"></i> สาขาขอเบิก
+            <span class="order-tab-count">{{ pullOrdersCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: orderFilterStatus === 'push' }"
+            @click="orderFilterStatus = 'push'"
+          >
+            <i class="fa-solid fa-truck-arrow-right mr-1"></i> ครัวกลางจ่ายให้
+            <span class="order-tab-count">{{ pushOrdersCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: orderFilterStatus === 'cancelled' }"
+            @click="orderFilterStatus = 'cancelled'"
+          >
+            <i class="fa-solid fa-ban mr-1"></i> ยกเลิก & คืนแล้ว
+            <span class="order-tab-count">{{ cancelledOrdersCount }}</span>
           </button>
         </div>
 
@@ -933,7 +372,7 @@
             <div 
               class="custom-select-trigger order-branch-select" 
               :class="{ 'active': isOrderRequesterDropdownOpen }" 
-              @click="isOrderRequesterDropdownOpen = !isOrderRequesterDropdownOpen; isOrderBranchDropdownOpen = false;"
+              @click="isOrderRequesterDropdownOpen = !isOrderRequesterDropdownOpen"
             >
               <span class="custom-select-text font-bold">
                 {{ orderRequesterFilter === 'all' ? 'ทุกคน' : orderRequesterFilter }}
@@ -1032,8 +471,7 @@
               </span>
               <span class="badge font-bold" :class="getStatusBadgeClass(order.status)">
                 <i v-if="order.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
-                <i v-else-if="order.status === 'dispatched'" class="fa-solid fa-truck-fast"></i>
-                <i v-else-if="order.status === 'received'" class="fa-solid fa-circle-check"></i>
+                <i v-else-if="order.status === 'dispatched' || order.status === 'received'" class="fa-solid fa-circle-check"></i>
                 <i v-else-if="order.status === 'cancelled'" class="fa-solid fa-ban"></i>
                 <span>{{ getStatusLabel(order.status) }}</span>
               </span>
@@ -1071,162 +509,70 @@
           </div>
 
           <!-- Items Clean Table Container -->
-          <div class="order-items-container mb-md">
-            <div class="order-items-title flex flex-between align-center mb-xs">
-              <span class="text-xs font-bold text-secondary">
-                <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการของที่ขอเบิก ({{ order.items.length }} รายการ)
-              </span>
-            </div>
-            
-            <!-- Desktop Table (>= 641px) -->
-            <div class="order-items-table-wrapper desktop-only-orders-table">
-              <table class="order-items-table">
-                <thead>
-                  <tr>
-                    <th class="col-item text-left">ชื่อสินค้า</th>
-                    <th class="col-price text-right">ราคาเบิก/หน่วย</th>
-                    <th class="col-qty text-center">จำนวน</th>
-                    <th class="col-total text-right">รวมมูลค่า</th>
-                    <th v-if="order.status === 'received'" class="col-actions text-center" style="width: 140px;">การจัดการ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="it in order.items" :key="it.id">
-                    <td class="col-item">
-                      <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
-                      <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
-                    </td>
-                    <td class="col-price text-right text-sm text-secondary">
-                      ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
-                    </td>
-                    <td class="col-qty text-center">
-                      <span class="order-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
-                      <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold ml-1">({{ it.quantity * it.pack_size }} ชิ้น)</span>
-                      <div v-if="it.original_quantity && it.quantity < it.original_quantity" class="text-2xs text-warning mt-1" title="ปรับลดจากยอดเดิม">
-                        (เดิม {{ it.original_quantity }})
-                      </div>
-                    </td>
-                    <td class="col-total text-right font-bold text-sm text-primary">
-                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                    </td>
-                    <td v-if="order.status === 'received'" class="col-actions text-center">
-                      <button 
-                        v-if="it.quantity > 0"
-                        class="btn btn-ghost btn-xs text-warning flex align-center justify-center gap-xs mx-auto" 
-                        title="ปรับยอดสินค้า / แจ้งของชำรุด"
-                        @click="openAdjustItemModal(order, it)"
-                      >
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        <span>ปรับยอด/ของชำรุด</span>
-                      </button>
-                      <span v-else class="badge badge-neutral text-2xs">ยกเลิกแล้ว</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Mobile Itemized List (< 640px) -->
-            <div class="order-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
-              <div 
-                v-for="it in order.items" 
-                :key="it.id" 
-                class="order-mobile-item-card"
-              >
-                <!-- Row 1: Item Name + Subtotal -->
-                <div class="flex flex-between align-start gap-xs">
-                  <div class="flex-1 min-w-0 pr-xs">
-                    <div class="order-mobile-item-name font-bold text-sm text-primary">
-                      {{ getItemNameParts(it.item_name).main }}
-                    </div>
-                    <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
-                      {{ getItemNameParts(it.item_name).sub }}
-                    </div>
-                  </div>
-                  <div class="text-right flex-shrink-0 pl-xs">
-                    <span class="order-mobile-item-total font-bold text-sm text-primary">
-                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Row 2: Unit Price + Quantity Pill -->
-                <div class="flex flex-between align-center order-mobile-item-bottom">
-                  <span class="text-xs text-secondary">
-                    ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
-                  </span>
-                  <div class="flex align-center gap-xs">
-                    <span class="order-qty-pill font-bold">
-                      {{ it.quantity }} {{ it.unit }}
-                    </span>
-                    <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold">
-                      ({{ it.quantity * it.pack_size }} ชิ้น)
-                    </span>
-                    <span v-if="it.original_quantity && it.quantity < it.original_quantity" class="badge badge-warning text-2xs">
-                      (เดิม {{ it.original_quantity }})
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Row 3: Action for received items -->
-                <div v-if="order.status === 'received' && it.quantity > 0" class="flex justify-end pt-xs mt-xs border-t">
-                  <button 
-                    class="btn btn-ghost btn-xs text-warning flex align-center gap-xs" 
-                    @click="openAdjustItemModal(order, it)"
-                  >
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <span>ปรับยอด/ของชำรุด</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Branch Note if any -->
-            <div v-if="order.notes" class="order-notes-box mt-sm p-sm rounded flex align-center gap-xs">
-              <i class="fa-solid fa-comment-dots text-primary"></i>
-              <span class="text-xs text-secondary"><strong>บันทึกจากสาขา:</strong> {{ order.notes }}</span>
-            </div>
-          </div>
+          <TransferOrderItems
+            :items="order.items"
+            :notes="order.notes"
+            :can-adjust-items="order.status === 'received'"
+            @adjust-item="it => openAdjustItemModal(order, it)"
+          />
 
           <!-- Order Card Footer Action -->
           <div class="order-card-footer flex flex-between align-center flex-wrap gap-md pt-sm">
             <div class="order-footer-notice text-xs">
-              <span v-if="order.status === 'pending'" class="text-warning font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-triangle-exclamation"></i> กรุณาตรวจสอบสต็อกจริงก่อนกดอนุมัติ (ระบบจะหักต้นทุนสาขา & เติมสต็อก POS ทันที)
-              </span>
-              <span v-else-if="order.status === 'dispatched'" class="text-info font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-truck-ramp-box"></i> ส่งของออกจากครัวกลางแล้ว
-              </span>
-              <span v-else-if="order.status === 'received'" class="text-success font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-circle-check"></i> อนุมัติสำเร็จ & บันทึกเป็น Expense สาขาเรียบร้อย (เติมสต็อก POS แล้ว)
-              </span>
-              <span v-else-if="order.status === 'cancelled'" class="text-danger font-bold flex align-center gap-xs">
-                <i class="fa-solid fa-ban"></i> ใบเบิกถูกยกเลิก และคืนสต็อกสินค้ากลับเข้าครัวกลางเรียบร้อยแล้ว
-              </span>
+              <div v-if="order.status === 'pending'" class="text-warning font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span class="notice-main">ตรวจสอบก่อนอนุมัติ</span>
+                </div>
+                <div class="notice-line-2 text-muted font-normal">
+                  (จะหักต้นทุนสาขา & เติมสต็อก POS ทันที)
+                </div>
+              </div>
+              <div v-else-if="order.status === 'dispatched'" class="text-info font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-truck-ramp-box"></i>
+                  <span class="notice-main">ส่งของออกจากครัวกลางแล้ว</span>
+                </div>
+              </div>
+              <div v-else-if="order.status === 'received'" class="text-success font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span class="notice-main">อนุมัติสำเร็จ & บันทึกเป็นรายจ่ายสาขาเรียบร้อย</span>
+                </div>
+                <div class="notice-line-2 text-muted font-normal">
+                  (เติมสต็อก POS แล้ว)
+                </div>
+              </div>
+              <div v-else-if="order.status === 'cancelled'" class="text-danger font-bold notice-group">
+                <div class="notice-line-1 flex align-center gap-xs">
+                  <i class="fa-solid fa-ban"></i>
+                  <span class="notice-main">ใบเบิกถูกยกเลิก และคืนสต็อกเข้าครัวกลาง</span>
+                </div>
+              </div>
             </div>
 
             <div class="order-footer-actions flex align-center gap-sm flex-wrap">
               <button 
                 v-if="order.status === 'pending'" 
-                class="btn btn-primary btn-dispatch-order"
+                class="btn btn-primary"
                 @click="dispatchOrder(order)"
               >
                 <i class="fa-solid fa-circle-check mr-2"></i> อนุมัติ & ตัดจ่ายเข้าสาขาทันที
               </button>
               <button 
                 v-if="order.status === 'pending'" 
-                class="btn btn-ghost btn-sm text-danger"
+                class="btn btn-outline-danger"
                 @click="cancelTransferOrder(order)"
               >
                 <i class="fa-solid fa-xmark mr-1"></i> ยกเลิกคำขอ
               </button>
               <button 
                 v-if="order.status === 'received'" 
-                class="btn btn-ghost btn-xs text-danger"
+                class="btn btn-outline-danger btn-sm"
                 @click="cancelTransferOrder(order)"
                 title="ยกเลิกใบเบิกนี้และดึงสต็อกกลับคืน"
               >
-                <i class="fa-solid fa-ban mr-1"></i> ยกเลิกใบเบิก (Rollback ทั้งหมด)
+                <i class="fa-solid fa-ban mr-1"></i> ยกเลิกใบเบิกและคืนค่าทั้งหมด
               </button>
             </div>
           </div>
@@ -1238,7 +584,7 @@
     <!-- TAB 3: HISTORY (การ์ดประวัติการเติม & การเบิก) -->
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'history'" class="history-section">
-      <!-- Date & Period Filter Card (Same 2-Row Card Layout as POS) -->
+      <!-- Date & Period Filter Card (Same 2-Row Card Layout as Orders) -->
       <DatePeriodFilter
         v-model:period-mode="periodMode"
         v-model:selected-date="selectedDate"
@@ -1246,72 +592,126 @@
         v-model:selected-year="selectedYear"
         v-model:start-time="customStartTime"
         v-model:end-time="customEndTime"
+        v-model:branch-id="historyBranchFilter"
+        :branches="retailBranches"
         @change="refreshActivePeriodTab"
       />
 
-      <!-- History Type & Requester Filter Toolbar -->
-      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md toolbar-card history-toolbar">
-        <div class="history-status-tabs flex gap-xs align-center">
+      <!-- History Type & Extended Filter Toolbar -->
+      <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md history-toolbar">
+        <!-- Type Tabs -->
+        <div class="history-status-tabs flex gap-xs align-center flex-wrap">
           <button 
-            class="history-tab-btn" 
+            class="filter-pill" 
             :class="{ active: historyFilter === 'all' }"
             @click="historyFilter = 'all'"
           >
             <span>ทั้งหมด</span>
-            <span class="history-tab-count">{{ periodMatchedHistory.length }}</span>
+            <span class="history-tab-count">{{ historyTotalCount }}</span>
           </button>
           <button 
-            class="history-tab-btn" 
+            class="filter-pill" 
             :class="{ active: historyFilter === 'restock' }"
             @click="historyFilter = 'restock'"
           >
-            <i class="fa-solid fa-circle-plus"></i>
+            <i class="fa-solid fa-circle-plus mr-1"></i>
             <span>เติมสต็อกเข้าคลัง</span>
-            <span class="history-tab-count">{{ restockHistoryCount }}</span>
+            <span class="history-tab-count">{{ historyRestockCount }}</span>
           </button>
           <button 
-            class="history-tab-btn" 
+            class="filter-pill" 
             :class="{ active: historyFilter === 'transfer' || historyFilter === 'requisition' }"
             @click="historyFilter = 'transfer'"
           >
-            <i class="fa-solid fa-truck-fast"></i>
+            <i class="fa-solid fa-truck-fast mr-1"></i>
             <span>สาขาเบิกของ</span>
-            <span class="history-tab-count">{{ transferHistoryCount }}</span>
+            <span class="history-tab-count">{{ historyTransferCount }}</span>
+          </button>
+          <button 
+            class="filter-pill" 
+            :class="{ active: historyFilter === 'cancelled' }"
+            @click="historyFilter = 'cancelled'"
+          >
+            <i class="fa-solid fa-ban mr-1"></i>
+            <span>ยกเลิก & คืนแล้ว</span>
+            <span class="history-tab-count">{{ historyCancelledCount }}</span>
           </button>
         </div>
 
-        <!-- Right: Requester Filter Dropdown -->
-        <div class="order-branch-filter">
-          <label class="order-branch-label">
-            <i class="fa-solid fa-user text-primary"></i>
-            <span>ผู้ขอเบิก:</span>
-          </label>
-          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 160px;">
-            <div 
-              class="custom-select-trigger order-branch-select" 
-              :class="{ 'active': isHistoryRequesterDropdownOpen }" 
-              @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen"
-            >
-              <span class="custom-select-text font-bold">
-                {{ historyRequesterFilter === 'all' ? 'ทุกคน' : historyRequesterFilter }}
-              </span>
-            </div>
-            <div v-if="isHistoryRequesterDropdownOpen" class="custom-select-dropdown">
+        <!-- Right: Central Kitchen Menu Dropdown + Requester Dropdown -->
+        <div class="flex align-center gap-md flex-wrap">
+          <!-- Dropdown เมนูในครัวกลาง (Item filter) -->
+          <div class="order-branch-filter flex align-center gap-xs">
+            <label class="order-branch-label" style="white-space: nowrap;">
+              <i class="fa-solid fa-utensils text-primary"></i>
+              <span>สินค้า:</span>
+            </label>
+            <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 170px;">
               <div 
-                class="custom-select-option"
-                :class="{ 'selected': historyRequesterFilter === 'all' }"
-                @click="historyRequesterFilter = 'all'; isHistoryRequesterDropdownOpen = false;"
+                class="custom-select-trigger order-branch-select" 
+                :class="{ 'active': isHistoryItemDropdownOpen }" 
+                @click="isHistoryItemDropdownOpen = !isHistoryItemDropdownOpen; isHistoryRequesterDropdownOpen = false;"
+                style="height: 38px;"
               >
-                ทุกคน
+                <span class="custom-select-text font-bold" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  {{ selectedHistoryItemName }}
+                </span>
               </div>
+              <div v-if="isHistoryItemDropdownOpen" class="custom-select-dropdown" style="max-height: 280px; overflow-y: auto;">
+                <div 
+                  class="custom-select-option"
+                  :class="{ 'selected': historyItemFilter === 'all' }"
+                  @click="historyItemFilter = 'all'; isHistoryItemDropdownOpen = false;"
+                >
+                  สินค้าทั้งหมด
+                </div>
+                <div 
+                  v-for="item in sortedKitchenItems" 
+                  :key="item.id" 
+                  class="custom-select-option"
+                  :class="{ 'selected': historyItemFilter === item.name }"
+                  @click="historyItemFilter = item.name; isHistoryItemDropdownOpen = false;"
+                >
+                  {{ item.name }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropdown ผู้ขอเบิก -->
+          <div class="order-branch-filter flex align-center gap-xs">
+            <label class="order-branch-label" style="white-space: nowrap;">
+              <i class="fa-solid fa-user text-primary"></i>
+              <span>ผู้ขอเบิก:</span>
+            </label>
+            <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="min-width: 150px;">
               <div 
-                v-for="reqName in availableHistoryRequesters" 
-                :key="reqName" 
-                class="custom-select-option"
-                :class="{ 'selected': historyRequesterFilter === reqName }"
-                @click="historyRequesterFilter = reqName; isHistoryRequesterDropdownOpen = false;"
+                class="custom-select-trigger order-branch-select" 
+                :class="{ 'active': isHistoryRequesterDropdownOpen }" 
+                @click="isHistoryRequesterDropdownOpen = !isHistoryRequesterDropdownOpen; isHistoryItemDropdownOpen = false;"
+                style="height: 38px;"
               >
-                {{ reqName }}
+                <span class="custom-select-text font-bold">
+                  {{ historyRequesterFilter === 'all' ? 'ทุกคน' : historyRequesterFilter }}
+                </span>
+              </div>
+              <div v-if="isHistoryRequesterDropdownOpen" class="custom-select-dropdown">
+                <div 
+                  class="custom-select-option"
+                  :class="{ 'selected': historyRequesterFilter === 'all' }"
+                  @click="historyRequesterFilter = 'all'; isHistoryRequesterDropdownOpen = false;"
+                >
+                  ทุกคน
+                </div>
+                <div 
+                  v-for="reqName in availableHistoryRequesters" 
+                  :key="reqName" 
+                  class="custom-select-option"
+                  :class="{ 'selected': historyRequesterFilter === reqName }"
+                  @click="historyRequesterFilter = reqName; isHistoryRequesterDropdownOpen = false;"
+                >
+                  {{ reqName }}
+                </div>
               </div>
             </div>
           </div>
@@ -1357,125 +757,176 @@
           class="card p-lg history-feed-card"
           :class="h.type === 'restock' ? 'border-restock-feed' : 'border-transfer-feed'"
         >
-          <!-- RESTOCK & ADJUSTMENT FEED CARD -->
-          <div v-if="h.type === 'restock'" class="history-card-inner flex flex-between align-start flex-wrap gap-md">
-            <div class="flex gap-md align-start flex-1 min-w-0">
-              <div class="feed-icon-circle" :class="h.quantity < 0 ? 'bg-warning-light text-warning' : 'bg-success-light text-success'">
-                <i :class="h.quantity < 0 ? 'fa-solid fa-sliders' : 'fa-solid fa-circle-plus'"></i>
+          <!-- 1. RESTOCK & ADJUSTMENT CARD -->
+          <div v-if="h.type === 'restock'" class="history-card-restock">
+            <!-- Header Row -->
+            <div class="history-card-header flex flex-between align-center flex-wrap gap-md mb-md pb-md">
+              <div class="flex align-center gap-sm flex-wrap">
+                <span class="order-no-title font-bold">
+                  <i :class="h.quantity < 0 ? 'fa-solid fa-sliders text-warning' : 'fa-solid fa-circle-plus text-success'"></i>
+                  <span>{{ h.quantity < 0 ? 'ปรับปรุงสต็อก' : 'เติมสต็อกเข้าคลัง' }}</span>
+                </span>
+                <span class="badge font-bold" :class="h.quantity < 0 ? 'badge-warning' : 'badge-success'">
+                  {{ h.quantity < 0 ? 'ลดสต็อก' : 'เติมเข้า' }}
+                </span>
+                <span class="badge badge-neutral font-bold">
+                  <i class="fa-solid fa-box"></i>
+                  <span>{{ getItemNameParts(h.item_name).main }}</span>
+                </span>
               </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex align-center gap-sm mb-xs flex-wrap">
-                  <span class="badge font-bold" :class="h.quantity < 0 ? 'badge-warning' : 'badge-success'">
-                    <i :class="h.quantity < 0 ? 'fa-solid fa-sliders' : 'fa-solid fa-circle-plus'"></i>
-                    <span>{{ h.quantity < 0 ? 'ปรับปรุงสต็อก' : 'เติมสต็อกเข้าคลัง' }}</span>
-                  </span>
-                  <span class="font-bold text-base text-main">{{ getItemNameParts(h.item_name).main }}</span>
-                  <span v-if="getItemNameParts(h.item_name).sub" class="text-xs text-secondary font-medium">
-                    {{ getItemNameParts(h.item_name).sub }}
-                  </span>
-                </div>
 
-                <div class="history-meta-row text-xs text-secondary flex align-center gap-md flex-wrap mb-xs">
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-clock text-muted"></i>
-                    <span>{{ formatDateTime(h.created_at) }}</span>
-                  </span>
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-user text-muted"></i>
-                    <span>โดย: <strong class="text-main">{{ h.created_by }}</strong></span>
-                  </span>
-                  <span v-if="h.note" class="inline-flex align-center gap-xs">
-                    <i class="fa-solid fa-tag text-muted"></i>
-                    <span>แหล่งซื้อ/หมายเหตุ: <span class="text-main">{{ h.note }}</span></span>
-                  </span>
-                </div>
+              <div class="order-total-header">
+                <span class="order-total-label">{{ h.quantity < 0 ? 'มูลค่าผลต่าง:' : 'ยอดเงินที่ซื้อ:' }}</span>
+                <span class="order-total-amount font-bold" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                  ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+                </span>
               </div>
             </div>
 
-            <!-- Restock Right Details -->
-            <div class="history-amount-box text-right">
-              <div class="history-qty-value font-bold text-lg" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
-                {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit }}
+            <!-- Metadata Row -->
+            <div class="history-meta-row flex flex-between align-center text-xs text-secondary mb-md flex-wrap gap-sm">
+              <div class="flex align-center gap-md flex-wrap">
+                <span><i class="fa-regular fa-user mr-1 text-muted"></i> โดย: <strong class="text-main">{{ h.created_by }}</strong></span>
+                <span><i class="fa-regular fa-clock mr-1 text-muted"></i> วันที่ทำรายการ: <span class="text-main">{{ formatDateTime(h.created_at) }}</span></span>
               </div>
-              <div class="history-sub-cost text-xs text-secondary">
-                <span>{{ h.quantity < 0 ? 'มูลค่าผลต่าง: ' : 'ยอดเงินที่ซื้อ: ' }}</span>
-                <strong class="text-main">฿{{ formatNumber(Math.abs(h.total_amount)) }}</strong> 
-                <span class="text-muted ml-xs font-medium">(ต้นทุน ฿{{ formatNumber(h.unit_cost) }} / {{ h.unit || 'หน่วย' }})</span>
+              <div v-if="h.note" class="history-meta-note">
+                <i class="fa-solid fa-tag mr-1 text-muted"></i> แหล่งซื้อ/หมายเหตุ: <span class="text-main">{{ h.note }}</span>
               </div>
             </div>
-          </div>
 
-          <!-- TRANSFER FEED CARD -->
-          <div v-else class="history-card-inner flex flex-between align-start flex-wrap gap-md">
-            <div class="flex gap-md align-start flex-1 min-w-0">
-              <div class="feed-icon-circle bg-primary-light text-primary">
-                <i class="fa-solid fa-truck-fast"></i>
+            <!-- Items Table (Desktop >= 641px) -->
+            <div class="history-items-container mb-xs">
+              <div class="order-items-title flex flex-between align-center mb-xs">
+                <span class="text-xs font-bold text-secondary">
+                  <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการสินค้าที่เติมเข้าคลัง
+                </span>
               </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex align-center gap-sm mb-xs flex-wrap">
-                  <span class="badge badge-primary font-bold">
-                    <i class="fa-solid fa-truck"></i>
-                    <span>ส่งของให้สาขา</span>
-                  </span>
-                  <span class="font-bold text-base text-main">{{ h.branch_name }}</span>
-                  <span class="order-no-title font-bold text-sm">
-                    <i class="fa-solid fa-receipt text-primary"></i>
-                    <span>#{{ h.transfer_no }}</span>
-                  </span>
-                  <span class="badge font-bold" :class="getStatusBadgeClass(h.status)">
-                    <i v-if="h.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
-                    <i v-else-if="h.status === 'dispatched'" class="fa-solid fa-truck-fast"></i>
-                    <i v-else-if="h.status === 'received'" class="fa-solid fa-circle-check"></i>
-                    <i v-else-if="h.status === 'cancelled'" class="fa-solid fa-ban"></i>
-                    <span>{{ getStatusLabel(h.status) }}</span>
-                  </span>
-                  <span v-if="h.status === 'cancelled'" class="badge badge-success font-bold">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span>คืนแล้ว</span>
-                  </span>
-                </div>
 
-                <div class="history-meta-row text-xs text-secondary flex align-center gap-md flex-wrap mb-sm">
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-clock text-muted"></i>
-                    <span>{{ formatDateTime(h.created_at) }}</span>
-                  </span>
-                  <span class="inline-flex align-center gap-xs">
-                    <i class="fa-regular fa-user text-muted"></i>
-                    <span>ผู้ขอเบิก: <strong class="text-main">{{ h.created_by }}</strong></span>
-                  </span>
-                </div>
+              <div class="history-items-table-wrapper desktop-only-orders-table">
+                <table class="history-items-table">
+                  <thead>
+                    <tr>
+                      <th class="col-item text-left">ชื่อสินค้า</th>
+                      <th class="col-price text-right">ราคาต้นทุน/หน่วย</th>
+                      <th class="col-qty text-center">จำนวน</th>
+                      <th class="col-total text-right">รวมมูลค่า</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="col-item">
+                        <div class="item-name-main font-bold text-sm">{{ getItemNameParts(h.item_name).main }}</div>
+                        <div v-if="getItemNameParts(h.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(h.item_name).sub }}</div>
+                      </td>
+                      <td class="col-price text-right text-sm text-secondary">
+                        ฿{{ formatNumber(h.unit_cost) }} <span class="text-xs text-muted">/ {{ h.unit || 'หน่วย' }}</span>
+                      </td>
+                      <td class="col-qty text-center">
+                        <span class="history-qty-pill font-bold" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                          {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit || 'หน่วย' }}
+                        </span>
+                      </td>
+                      <td class="col-total text-right font-bold text-sm" :class="h.quantity < 0 ? 'text-warning' : 'text-primary'">
+                        ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-                <!-- Items Mini Preview Chips -->
-                <div v-if="h.items && h.items.length" class="history-items-chips">
-                  <div 
-                    v-for="it in h.items" 
-                    :key="it.id" 
-                    class="history-item-chip"
-                  >
-                    <div class="history-item-chip-name" :title="it.item_name">
-                      {{ it.item_name }}
+              <!-- Mobile List (< 640px) -->
+              <div class="history-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
+                <div class="order-mobile-item-card">
+                  <div class="flex flex-between align-start gap-xs">
+                    <div class="flex-1 min-w-0 pr-xs">
+                      <div class="order-mobile-item-name font-bold text-sm text-primary">
+                        {{ getItemNameParts(h.item_name).main }}
+                      </div>
+                      <div v-if="getItemNameParts(h.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
+                        {{ getItemNameParts(h.item_name).sub }}
+                      </div>
                     </div>
-                    <div class="history-item-chip-qty">
-                      <span class="history-item-chip-num">× {{ it.quantity }}</span>
-                      <span class="history-item-chip-unit" :title="it.unit">{{ it.unit }}</span>
+                    <div class="text-right flex-shrink-0 pl-xs">
+                      <span class="order-mobile-item-total font-bold text-sm text-primary">
+                        ฿{{ formatNumber(Math.abs(h.total_amount)) }}
+                      </span>
                     </div>
+                  </div>
+                  <div class="flex flex-between align-center order-mobile-item-bottom">
+                    <span class="text-xs text-secondary">
+                      ฿{{ formatNumber(h.unit_cost) }} / {{ h.unit || 'หน่วย' }}
+                    </span>
+                    <span class="history-qty-pill font-bold" :class="h.quantity < 0 ? 'text-warning' : 'text-success'">
+                      {{ h.quantity > 0 ? '+' : '' }}{{ formatNumber(h.quantity) }} {{ h.unit || 'หน่วย' }}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Transfer Right Details -->
-            <div class="history-amount-box text-right">
-              <div class="history-total-label text-xs text-secondary">มูลค่าของที่ตัดบัญชี:</div>
-              <div 
-                class="history-total-amount font-bold text-lg"
-                :class="h.status === 'cancelled' ? 'text-muted' : 'text-primary'"
-                :style="h.status === 'cancelled' ? 'text-decoration: line-through; opacity: 0.65;' : ''"
-              >
-                ฿{{ formatNumber(h.total_cost) }}
+          <!-- 2. TRANSFER FEED CARD (Structure matching Orders Card) -->
+          <div v-else class="history-card-transfer">
+            <!-- Header Row -->
+            <div class="history-card-header flex flex-between align-center flex-wrap gap-md mb-md pb-md">
+              <div class="flex align-center gap-sm flex-wrap">
+                <span class="order-no-title font-bold">
+                  <i class="fa-solid fa-receipt text-primary"></i>
+                  <span>#{{ h.transfer_no }}</span>
+                </span>
+                <span class="badge badge-primary font-bold">
+                  <i class="fa-solid fa-store"></i>
+                  <span>{{ h.branch_name }}</span>
+                </span>
+                <!-- Dispatch Type Badge -->
+                <span v-if="h.dispatch_type === 'push'" class="badge badge-info font-bold" title="ครัวกลางจ่ายให้โดยตรง">
+                  <i class="fa-solid fa-truck-arrow-right"></i> ครัวกลางจ่ายให้
+                </span>
+                <span v-else class="badge badge-neutral font-bold" title="สาขาขอเบิก">
+                  <i class="fa-solid fa-hand-holding-hand"></i> สาขาขอเบิก
+                </span>
+                <span class="badge font-bold" :class="getStatusBadgeClass(h.status)">
+                  <i v-if="h.status === 'pending'" class="fa-solid fa-hourglass-start"></i>
+                  <i v-else-if="h.status === 'dispatched' || h.status === 'received'" class="fa-solid fa-circle-check"></i>
+                  <i v-else-if="h.status === 'cancelled'" class="fa-solid fa-ban"></i>
+                  <span>{{ getStatusLabel(h.status) }}</span>
+                </span>
+                <span v-if="h.status === 'cancelled'" class="badge badge-success font-bold">
+                  <i class="fa-solid fa-rotate-left"></i>
+                  <span>คืนแล้ว</span>
+                </span>
+              </div>
+
+              <div class="order-total-header">
+                <span class="order-total-label">ยอดต้นทุนตัดเข้าสาขา:</span>
+                <span 
+                  class="order-total-amount font-bold"
+                  :class="h.status === 'cancelled' ? 'text-muted' : 'text-primary'"
+                  :style="h.status === 'cancelled' ? 'text-decoration: line-through; opacity: 0.65;' : ''"
+                >
+                  ฿{{ formatNumber(h.total_cost || h.total_amount) }}
+                </span>
               </div>
             </div>
+
+            <!-- Metadata Info -->
+            <div class="history-meta-row flex flex-between align-center text-xs text-secondary mb-md flex-wrap gap-sm">
+              <div class="flex align-center gap-md flex-wrap">
+                <span>
+                  <i class="fa-regular fa-user mr-1 text-muted"></i> ผู้ขอเบิก: <strong class="text-main">{{ h.created_by || 'ไม่ระบุ' }}</strong>
+                </span>
+                <span>
+                  <i class="fa-regular fa-clock mr-1 text-muted"></i> วันที่ทำรายการ: <span class="text-main">{{ formatDateTime(h.created_at) }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Items Table (Desktop >= 641px) -->
+            <TransferOrderItems
+              v-if="h.items && h.items.length"
+              :items="h.items"
+              title-prefix="รายการของที่เบิก"
+            />
           </div>
         </div>
       </div>
@@ -1486,25 +937,24 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'finance' || activeTab === 'receivables'" class="finance-section">
       <!-- Toolbar Header -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card finance-toolbar" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div>
-          <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
-            <i class="fa-solid fa-vault text-primary"></i>
-            <span>สมุดบัญชี & กระเป๋าเงินกองกลาง</span>
-          </h3>
-          <p class="text-secondary text-xs">
-            บันทึกเงินทุนตั้งต้นของเจ้าของร้าน, บันทึกเงินจ่ายซื้อของสดตุนเข้าคลัง, และติดตามเงินที่สาขาโอนคืนค่าของ
-          </p>
+      <div class="card mb-lg page-header-card finance-toolbar">
+        <div class="page-header-left">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-vault"></i>
+          </div>
+          <div class="page-header-text">
+            <h2 class="page-header-title">สมุดบัญชี & เงินกองกลาง</h2>
+          </div>
         </div>
 
-        <div class="finance-action-buttons flex align-center gap-sm flex-wrap">
-          <button class="btn btn-primary btn-finance-action" @click="openTransactionModal('capital_in')">
+        <div class="finance-action-buttons">
+          <button class="btn btn-primary" @click="openTransactionModal('capital_in')">
             <i class="fa-solid fa-circle-plus"></i>
-            <span>เติมเงินทุนกองกลาง</span>
+            <span>เติมทุนกองกลาง</span>
           </button>
-          <button class="btn btn-secondary btn-finance-action" @click="openTransactionModal('operating_expense_out')">
+          <button class="btn btn-secondary" @click="openTransactionModal('operating_expense_out')">
             <i class="fa-solid fa-circle-minus"></i>
-            <span>จ่ายค่าใช้จ่ายครัวกลาง</span>
+            <span>ใช้จ่ายครัวกลาง</span>
           </button>
         </div>
       </div>
@@ -1536,10 +986,9 @@
       </div>
 
       <!-- Content when Finance Data Loaded -->
-      <div v-else class="flex flex-col gap-lg">
+      <div v-else>
         <!-- 4 Summary KPI Cards -->
-        <!-- 4 Summary KPI Cards -->
-        <div class="financial-summary-grid">
+        <div class="financial-summary-grid mb-md">
           <!-- Card 1: Cash Balance -->
           <div 
             class="summary-card card-accent-primary card-clickable"
@@ -1635,10 +1084,10 @@
         </div>
 
         <!-- Pill Navigation Tabs (Exact style from Management.vue & User reference) -->
-        <div id="finance-subtabs-nav" class="finance-subtabs-container flex gap-xs">
+        <div id="finance-subtabs-nav" class="category-tabs">
           <button 
             type="button"
-            class="btn btn-secondary" 
+            class="category-tab" 
             :class="{ 'active': financeSubTab === 'ledger' }"
             @click="financeSubTab = 'ledger'"
           >
@@ -1647,7 +1096,7 @@
           </button>
           <button 
             type="button"
-            class="btn btn-secondary" 
+            class="category-tab" 
             :class="{ 'active': financeSubTab === 'receivables' }"
             @click="financeSubTab = 'receivables'"
           >
@@ -1658,40 +1107,40 @@
           </button>
         </div>
 
+        <!-- Date & Period Filter Card (Shared across Ledger & Receivables sub-tabs) -->
+        <DatePeriodFilter
+          v-model:period-mode="periodMode"
+          v-model:selected-date="selectedDate"
+          v-model:selected-month="selectedMonth"
+          v-model:selected-year="selectedYear"
+          v-model:start-time="customStartTime"
+          v-model:end-time="customEndTime"
+          v-model:branch-id="selectedReceivablesBranch"
+          :branches="retailBranches"
+          @change="refreshActivePeriodTab"
+        />
+
         <!-- SUB-TAB 1: Transactions Ledger Card -->
         <div v-if="financeSubTab === 'ledger'" class="ledger-tab-view flex flex-col gap-md">
-          <!-- Date & Period Filter Card (Exact same layout as Receivables / Orders / History) -->
-          <DatePeriodFilter
-            v-model:period-mode="periodMode"
-            v-model:selected-date="selectedDate"
-            v-model:selected-month="selectedMonth"
-            v-model:selected-year="selectedYear"
-            v-model:custom-start-date="customStartDate"
-            v-model:custom-end-date="customEndDate"
-            v-model:start-time="customStartTime"
-            v-model:end-time="customEndTime"
-            @change="refreshActivePeriodTab"
-          />
-
           <div class="card p-lg ledger-card">
           <div class="ledger-header flex flex-between align-center flex-wrap gap-md">
             <div class="flex align-center gap-xs">
-              <i class="fa-solid fa-clock-rotate-left text-primary" style="font-size: 1.15rem;"></i>
+              <i class="fa-solid fa-clock-rotate-left text-primary" style="font-size: var(--font-md);"></i>
               <span class="font-bold text-base text-main">ประวัติรายการเดินบัญชีกองกลาง</span>
             </div>
 
             <!-- Filter Pills -->
             <div class="finance-status-tabs flex gap-xs align-center">
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'all' }"
                 @click="financeFilterType = 'all'"
               >
                 <span>ทั้งหมด</span>
-                <span class="finance-tab-count">{{ financeLogs.length }}</span>
+                <span class="finance-tab-count">{{ branchFilteredFinanceLogs.length }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'capital_in' }"
                 @click="financeFilterType = 'capital_in'"
               >
@@ -1700,7 +1149,7 @@
                 <span class="finance-tab-count">{{ capitalInCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'reimbursement_in' }"
                 @click="financeFilterType = 'reimbursement_in'"
               >
@@ -1709,7 +1158,7 @@
                 <span class="finance-tab-count">{{ reimbursementInCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'purchase_out' }"
                 @click="financeFilterType = 'purchase_out'"
               >
@@ -1718,7 +1167,7 @@
                 <span class="finance-tab-count">{{ purchaseOutCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'operating_expense_out' }"
                 @click="financeFilterType = 'operating_expense_out'"
               >
@@ -1727,7 +1176,7 @@
                 <span class="finance-tab-count">{{ operatingExpenseOutCount }}</span>
               </button>
               <button 
-                class="finance-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: financeFilterType === 'waste_loss' }"
                 @click="financeFilterType = 'waste_loss'"
               >
@@ -1857,62 +1306,13 @@
 
         <!-- SUB-TAB 2: Branch Receivables & Consolidated Items -->
         <div v-else-if="financeSubTab === 'receivables'" class="receivables-tab-view flex flex-col gap-md">
-          <!-- Date & Period Filter Card (Exact same layout as Orders / History) -->
-          <DatePeriodFilter
-            v-model:period-mode="periodMode"
-            v-model:selected-date="selectedDate"
-            v-model:selected-month="selectedMonth"
-            v-model:selected-year="selectedYear"
-            v-model:start-time="customStartTime"
-            v-model:end-time="customEndTime"
-            @change="refreshActivePeriodTab"
-          >
-            <!-- Right: Branch Filter Dropdown in DatePeriodFilter slot -->
-            <div class="order-branch-filter" style="margin-left: auto;">
-              <label class="order-branch-label">
-                <i class="fa-solid fa-store text-primary"></i>
-                <span>สาขา:</span>
-              </label>
-              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
-                <div 
-                  class="custom-select-trigger order-branch-select" 
-                  :class="{ 'active': isReceivablesBranchDropdownOpen }" 
-                  @click="isReceivablesBranchDropdownOpen = !isReceivablesBranchDropdownOpen"
-                  style="height: 38px;"
-                >
-                  <span class="custom-select-text font-bold">
-                    {{ selectedReceivablesBranchLabel }}
-                  </span>
-                </div>
-                <div v-if="isReceivablesBranchDropdownOpen" class="custom-select-dropdown">
-                  <div 
-                    class="custom-select-option" 
-                    :class="{ 'selected': selectedReceivablesBranch === 'all' }"
-                    @click="selectedReceivablesBranch = 'all'; isReceivablesBranchDropdownOpen = false;"
-                  >
-                    ทุกสาขา
-                  </div>
-                  <div 
-                    v-for="b in (receivablesBreakdown?.branches || [])" 
-                    :key="b.branch_id" 
-                    class="custom-select-option"
-                    :class="{ 'selected': Number(selectedReceivablesBranch) === Number(b.branch_id) }"
-                    @click="selectedReceivablesBranch = b.branch_id; isReceivablesBranchDropdownOpen = false;"
-                  >
-                    {{ b.branch_name }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DatePeriodFilter>
-
           <!-- Status Filter Toolbar (Exact style from Orders / History for 100% unity) -->
-          <div class="card mb-md p-md flex flex-between align-center flex-wrap gap-md toolbar-card">
+          <div class="card mb-md p-md flex flex-between align-center flex-wrap gap-md">
             <!-- Status Toggle Buttons -->
             <div class="order-status-tabs flex gap-xs align-center">
               <button 
                 type="button"
-                class="order-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: receivablesStatusTab === 'pending' }"
                 @click="setReceivablesStatus('pending')"
               >
@@ -1922,7 +1322,7 @@
               </button>
               <button 
                 type="button"
-                class="order-tab-btn" 
+                class="filter-pill" 
                 :class="{ active: receivablesStatusTab === 'reimbursed' }"
                 @click="setReceivablesStatus('reimbursed')"
               >
@@ -1931,18 +1331,6 @@
                 <span class="history-tab-count">{{ receivablesBreakdown?.total_reimbursed_count || 0 }}</span>
               </button>
             </div>
-
-            <!-- Refresh Button -->
-            <button 
-              type="button" 
-              class="btn btn-secondary btn-sm" 
-              :disabled="isLoadingReceivables"
-              @click="loadReceivablesBreakdown"
-              title="รีเฟรชข้อมูล"
-            >
-              <i class="fa-solid fa-arrows-rotate mr-1" :class="{ 'fa-spin': isLoadingReceivables }"></i>
-              <span>รีเฟรช</span>
-            </button>
           </div>
 
           <!-- Overview Banner Card -->
@@ -2208,49 +1596,30 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'partners'" class="partners-section">
       <!-- Store Selector Header Card -->
-      <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div>
-          <h3 class="font-bold text-base mb-xs flex align-center gap-xs">
-            <i class="fa-solid fa-calculator text-primary"></i>
-            <span>ระบบคำนวณกำไร & ปันผลหุ้นส่วน</span>
-          </h3>
-          <p class="text-secondary text-xs">
-            คำนวณกำไรสุทธิของแต่ละสาขาหลังหักต้นทุนของที่เบิกจากครัวกลาง และแบ่งปันผลอัตโนมัติ
-          </p>
-        </div>
-
-        <div class="flex align-center gap-sm partner-branch-filter-box" style="flex-shrink: 0;">
-          <label class="text-sm font-bold text-secondary" style="white-space: nowrap;">เลือกสาขา:</label>
-          <div class="custom-select-wrapper partner-branch-select-wrapper" @click.stop style="min-width: 200px;">
-            <div 
-              class="custom-select-trigger partner-branch-select-trigger" 
-              :class="{ 'active': isPartnerBranchDropdownOpen }" 
-              @click="isPartnerBranchDropdownOpen = !isPartnerBranchDropdownOpen"
-            >
-              <span class="custom-select-text font-bold text-base">
-                {{ selectedPartnerBranchName }}
-              </span>
-            </div>
-            <div v-if="isPartnerBranchDropdownOpen" class="custom-select-dropdown">
-              <div 
-                v-for="b in retailBranches" 
-                :key="b.id" 
-                class="custom-select-option"
-                :class="{ 'selected': Number(selectedPartnerBranch) === Number(b.id) }"
-                @click="selectedPartnerBranch = b.id; isPartnerBranchDropdownOpen = false;"
-              >
-                {{ b.name }}
-              </div>
-            </div>
+      <div class="card mb-lg page-header-card partner-toolbar-card">
+        <div class="page-header-left">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-calculator"></i>
+          </div>
+          <div class="page-header-text">
+            <h2 class="page-header-title">คำนวณกำไร & ปันผล</h2>
           </div>
         </div>
+
+        <DatePeriodFilter
+          branch-only
+          v-model:branch-id="selectedPartnerBranch"
+          :branches="retailBranches"
+          :show-all-branches="false"
+          branch-label="เลือกสาขา:"
+        />
       </div>
 
       <!-- Pill Tabs (แท็บหลอดยา): หุ้นส่วน vs ประวัติปันผล -->
-      <div class="category-tabs partner-subtabs mb-lg flex gap-xs" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+      <div class="category-tabs">
         <button 
           type="button"
-          class="btn btn-secondary" 
+          class="category-tab" 
           :class="{ 'active': partnerSubTab === 'partners' }"
           @click="partnerSubTab = 'partners'"
         >
@@ -2258,7 +1627,7 @@
         </button>
         <button 
           type="button"
-          class="btn btn-secondary" 
+          class="category-tab" 
           :class="{ 'active': partnerSubTab === 'payout_history' }"
           @click="partnerSubTab = 'payout_history'"
         >
@@ -2382,7 +1751,7 @@
               <span 
                 class="badge font-bold" 
                 :class="settlementData.net_profit >= 0 ? 'badge-success' : 'badge-danger'" 
-                style="font-size: 10px; padding: 2px 7px; border-radius: var(--radius-sm); margin-left: auto;"
+                style="font-size: var(--font-xxs); padding: 2px 7px; border-radius: var(--radius-sm); margin-left: auto;"
               >
                 {{ settlementData.net_profit >= 0 ? 'กำไรสุทธิ' : 'ขาดทุนสุทธิ' }}
               </span>
@@ -2401,7 +1770,7 @@
           <div class="card p-lg flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
             <div>
               <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+                <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i> 
                 <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.35;">
                   เปรียบเทียบ รายรับ vs รายจ่าย
                 </span>
@@ -2515,7 +1884,7 @@
                       </div>
                       <div 
                         class="font-bold my-xs" 
-                        style="font-size: 1.45rem; line-height: 1.2;" 
+                        style="font-size: var(--font-xl); line-height: 1.2;" 
                         :style="{ color: settlementData.net_profit < 0 ? 'var(--danger)' : (p.is_owner ? 'var(--primary)' : '#cc8000') }"
                       >
                         ฿{{ formatNumber(p.payout_amount) }}
@@ -2525,7 +1894,7 @@
                       </div>
                       <button 
                         v-if="settlementData.net_profit > 0" 
-                        class="btn btn-primary btn-payout-partner w-full"
+                        class="btn btn-primary w-full mt-md"
                         @click="openPayoutModal(p)"
                       >
                         <i class="fa-solid fa-paper-plane mr-1"></i> บันทึกจ่ายปันผล
@@ -2649,7 +2018,7 @@
                 <span class="summary-title">จำนวนครั้งที่จ่ายปันผล</span>
               </div>
               <div class="summary-value text-success">
-                {{ settlementData.payouts?.length || 0 }} <span style="font-size: 1rem; font-weight: normal; color: var(--text-secondary);">ครั้ง</span>
+                {{ settlementData.payouts?.length || 0 }} <span style="font-size: var(--font-base); font-weight: normal; color: var(--text-secondary);">ครั้ง</span>
               </div>
               <div class="summary-sub-badges">
                 <span class="sub-badge">บันทึกสำเร็จทั้งหมด</span>
@@ -2674,7 +2043,7 @@
           <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
             <div class="card-title mb-lg flex flex-between align-center" style="border-bottom: 1px solid var(--border-color); padding-bottom: 14px; flex-wrap: wrap; gap: var(--space-sm);">
               <div class="flex align-start gap-xs">
-                <i class="fa-solid fa-file-invoice-dollar text-primary" style="margin-top: 3px; font-size: 1.2rem;"></i>
+                <i class="fa-solid fa-file-invoice-dollar text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i>
                 <div>
                   <div class="font-bold text-base" style="color: var(--text-primary); line-height: 1.35;">
                     ประวัติการจ่ายเงินปันผลจริง
@@ -2855,7 +2224,7 @@
               >
                 <i v-if="isSavingCat" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-floppy-disk"></i>
-                <span>{{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'บันทึกการแก้ไข' : 'เพิ่มหมวดหมู่') }}</span>
+                <span>{{ isSavingCat ? 'กำลังบันทึก...' : (editingCat ? 'บันทึก' : 'เพิ่มหมวดหมู่') }}</span>
               </button>
             </div>
           </div>
@@ -3087,10 +2456,10 @@
                   </span>
                 </span>
               </label>
-              <span v-if="itemForm.linked_menu_item_name" class="badge badge-success text-2xs" style="font-size: 11px; padding: 2px 8px; flex-shrink: 0;">
+              <span v-if="itemForm.linked_menu_item_name" class="badge badge-success text-2xs" style="font-size: var(--font-xxs); padding: 2px 8px; flex-shrink: 0;">
                 <i class="fa-solid fa-check"></i> ผูกแล้ว
               </span>
-              <span v-else class="badge badge-secondary text-2xs" style="font-size: 11px; padding: 2px 8px; flex-shrink: 0;">
+              <span v-else class="badge badge-secondary text-2xs" style="font-size: var(--font-xxs); padding: 2px 8px; flex-shrink: 0;">
                 ไม่ผูก
               </span>
             </div>
@@ -3207,10 +2576,10 @@
           </div>
 
           <!-- Buttons -->
-          <div class="flex justify-end gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
+          <div class="flex gap-md mt-xl">
+            <button class="btn btn-secondary flex-1" :disabled="isSavingItem" @click="showItemModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary" 
+              class="btn btn-primary flex-1" 
               :disabled="isSavingItem || !itemForm.name?.trim()"
               @click="saveItem"
             >
@@ -3297,9 +2666,9 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showRestockModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" @click="submitQuickRestock">
-              <i class="fa-solid fa-check"></i> ยืนยัน
+            <button class="btn btn-secondary flex-1" @click="showRestockModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" @click="submitQuickRestock">
+              <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
           </div>
         </div>
@@ -3422,13 +2791,13 @@
 
           <!-- ปุ่มกดยืนยัน / ยกเลิก -->
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showAdjustModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" @click="showAdjustModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="adjustForm.actual_quantity === null || adjustForm.actual_quantity === undefined || adjustForm.actual_quantity < 0 || diffQuantity === 0"
               @click="submitAdjustStock"
             >
-              <i class="fa-solid fa-check"></i> ยืนยัน
+              <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
           </div>
         </div>
@@ -3520,11 +2889,11 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingTransaction" @click="showTransactionModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSavingTransaction" @click="submitTransaction">
+            <button class="btn btn-secondary flex-1" :disabled="isSavingTransaction" @click="showTransactionModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSavingTransaction" @click="submitTransaction">
               <i v-if="isSavingTransaction" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-check"></i>
-              {{ isSavingTransaction ? 'กำลังบันทึก...' : 'บันทึกรายการ' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingTransaction ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -3606,11 +2975,11 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingWaste" @click="showWasteModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSavingWaste" @click="submitWaste">
+            <button class="btn btn-secondary flex-1" :disabled="isSavingWaste" @click="showWasteModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSavingWaste" @click="submitWaste">
               <i v-if="isSavingWaste" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-trash-can"></i>
-              {{ isSavingWaste ? 'กำลังตัดสต็อก...' : 'ยืนยันตัดของเสีย' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSavingWaste ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -3662,11 +3031,11 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingReimburse" @click="showReimburseModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingReimburse" @click="submitReimburseBranch">
+            <button class="btn btn-secondary flex-1" :disabled="isSubmittingReimburse" @click="showReimburseModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSubmittingReimburse" @click="submitReimburseBranch">
               <i v-if="isSubmittingReimburse" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-check"></i>
-              {{ isSubmittingReimburse ? 'กำลังบันทึก...' : 'ยืนยันโอนเงินคืน' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSubmittingReimburse ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -3734,10 +3103,10 @@
           </div>
 
           <div class="flex gap-md mt-xl">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingPayout" @click="showPayoutModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" :disabled="isSubmittingPayout" @click="submitPayout">
+            <button class="btn btn-secondary flex-1" :disabled="isSubmittingPayout" @click="showPayoutModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" :disabled="isSubmittingPayout" @click="submitPayout">
               <i v-if="isSubmittingPayout" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-check"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSubmittingPayout ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
@@ -3753,66 +3122,93 @@
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
-            <i class="fa-solid fa-pen-to-square text-warning" style="margin-right: 6px;"></i>
+            <i class="fa-solid fa-pen-to-square" style="margin-right: 6px;"></i>
             ปรับยอดสินค้า / แจ้งของชำรุด
           </h3>
-          <button class="modal-close" @click="showAdjustItemModal = false">✕</button>
+          <button class="modal-close" @click="showAdjustItemModal = false" aria-label="ปิด">✕</button>
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md" style="background: var(--bg-secondary);">
-            <div class="font-bold text-base text-main mb-xs">{{ adjustingItem.item_name }}</div>
-            <div class="flex flex-between align-center text-xs text-secondary">
-              <span>ราคาเบิก: <strong>฿{{ formatNumber(adjustingItem.cost_price) }} / {{ adjustingItem.unit }}</strong></span>
-              <span>จำนวนปัจจุบัน: <strong class="text-primary">{{ adjustingItem.quantity }} {{ adjustingItem.unit }}</strong></span>
+          <!-- กล่องข้อมูลสินค้า (Reuse .modal-item-summary-card) -->
+          <div class="modal-item-summary-card mb-md">
+            <div class="modal-item-summary-name">
+              <span class="modal-item-summary-label">สินค้า:</span>
+              <span class="modal-item-summary-title">{{ adjustingItem.item_name }}</span>
+            </div>
+            <div class="modal-item-summary-stock flex-between">
+              <span>ราคาเบิก: <strong class="text-main">฿{{ formatNumber(adjustingItem.cost_price) }} / {{ adjustingItem.unit }}</strong></span>
+              <span>จำนวนปัจจุบัน: <strong class="text-primary">{{ formatNumber(adjustingItem.quantity) }} {{ adjustingItem.unit }}</strong></span>
             </div>
           </div>
 
           <!-- New Quantity Input -->
           <div class="form-group mb-md">
-            <label class="form-label font-bold text-sm">
+            <label for="adjust-new-qty" class="form-label font-bold text-sm">
               ระบุจำนวนใหม่ที่ได้รับจริง ({{ adjustingItem.unit }}) *
             </label>
-            <input 
-              type="number" 
-              class="form-input w-full font-bold text-base" 
-              v-model.number="adjustNewQty" 
-              min="0" 
-              :max="adjustingItem.quantity - 1" 
-              step="1"
-            />
-            <span class="text-xs text-muted block mt-xs">
-              ยอดเดิม: {{ adjustingItem.quantity }} ➔ จะปรับลดออก <strong>{{ adjustingItem.quantity - adjustNewQty }} {{ adjustingItem.unit }}</strong>
+            <div class="flex align-center gap-xs">
+              <input 
+                id="adjust-new-qty"
+                type="number" 
+                inputmode="numeric"
+                class="form-input font-bold text-lg text-primary flex-1 tabular-nums" 
+                v-model.number="adjustNewQty" 
+                min="0" 
+                :max="adjustingItem.quantity - 1" 
+                step="1"
+              />
+              <span class="font-bold text-sm text-secondary">{{ adjustingItem.unit }}</span>
+            </div>
+            <span class="text-xs text-secondary block mt-xs tabular-nums">
+              ยอดเดิม: <strong>{{ formatNumber(adjustingItem.quantity) }} {{ adjustingItem.unit }}</strong> ➔ จะปรับลดออก <strong class="text-danger">{{ formatNumber(Math.max(0, adjustingItem.quantity - adjustNewQty)) }} {{ adjustingItem.unit }}</strong>
             </span>
           </div>
 
-          <!-- Refund Amount Calculation -->
-          <div class="flex flex-between align-center p-sm rounded mb-md border" style="background: var(--bg-surface);">
-            <span class="text-xs font-bold text-secondary">ยอดเงินที่ปรับลดคืนสาขา:</span>
-            <span class="font-bold text-lg text-danger">
-              -฿{{ formatNumber((adjustingItem.quantity - adjustNewQty) * adjustingItem.cost_price) }}
-            </span>
+          <!-- Refund Amount Calculation (Reuse .modal-total-summary-box) -->
+          <div class="modal-total-summary-box modal-total-waste mb-md">
+            <div class="modal-total-label text-danger">
+              <i class="fa-solid fa-rotate-left mr-1 text-danger"></i>
+              <span>ยอดเงินที่ปรับลดคืนสาขา:</span>
+            </div>
+            <div class="modal-total-amount text-danger tabular-nums">
+              -฿{{ formatNumber(Math.max(0, adjustingItem.quantity - adjustNewQty) * adjustingItem.cost_price) }}
+            </div>
           </div>
 
           <!-- Action for Diff Stock -->
           <div class="form-group mb-md">
             <label class="form-label font-bold text-sm">การจัดการของส่วนต่าง *</label>
             <div class="flex flex-col gap-xs mt-xs">
-              <label class="flex align-center gap-xs cursor-pointer p-xs rounded hover:bg-secondary">
-                <input type="radio" value="return_to_stock" v-model="adjustWasteAction" />
-                <span class="text-sm">คืนสต็อกเข้าคลังครัวกลาง (ของยังดี / ส่งคืนกลับมา)</span>
+              <label 
+                class="modal-finance-adjust-card modal-radio-card"
+                :class="{ 'refund-mode': adjustWasteAction === 'return_to_stock' }"
+              >
+                <div class="modal-finance-adjust-label">
+                  <input type="radio" value="return_to_stock" v-model="adjustWasteAction" class="modal-finance-checkbox" />
+                  <span class="text-sm" :class="adjustWasteAction === 'return_to_stock' ? 'font-bold text-success' : 'font-medium text-main'">
+                    คืนสต็อกเข้าคลังครัวกลาง (ของยังดี / ส่งคืนกลับมา)
+                  </span>
+                </div>
               </label>
-              <label class="flex align-center gap-xs cursor-pointer p-xs rounded hover:bg-secondary">
-                <input type="radio" value="log_as_waste" v-model="adjustWasteAction" />
-                <span class="text-sm">บันทึกเป็นของเสียครัวกลาง (แตกหัก / ชำรุด / เสียหาย)</span>
+              <label 
+                class="modal-finance-adjust-card modal-radio-card"
+                :class="{ 'charge-mode': adjustWasteAction === 'log_as_waste' }"
+              >
+                <div class="modal-finance-adjust-label">
+                  <input type="radio" value="log_as_waste" v-model="adjustWasteAction" class="modal-finance-checkbox" />
+                  <span class="text-sm" :class="adjustWasteAction === 'log_as_waste' ? 'font-bold text-danger' : 'font-medium text-main'">
+                    บันทึกเป็นของเสียครัวกลาง (แตกหัก / ชำรุด / เสียหาย)
+                  </span>
+                </div>
               </label>
             </div>
           </div>
 
           <!-- Note/Reason -->
           <div class="form-group mb-md">
-            <label class="form-label text-xs font-bold text-secondary">เหตุผลการปรับลด/ของชำรุด:</label>
+            <label for="adjust-waste-note" class="form-label font-bold text-sm">เหตุผลการปรับลด/ของชำรุด:</label>
             <input 
+              id="adjust-waste-note"
               type="text" 
               class="form-input w-full text-sm" 
               v-model="adjustWasteNote" 
@@ -3821,16 +3217,16 @@
           </div>
 
           <!-- Actions -->
-          <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSubmittingAdjust" @click="showAdjustItemModal = false">ยกเลิก</button>
+          <div class="flex gap-md mt-xl">
+            <button class="btn btn-secondary flex-1" :disabled="isSubmittingAdjust" @click="showAdjustItemModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isSubmittingAdjust || adjustNewQty < 0 || adjustNewQty >= adjustingItem.quantity"
               @click="submitAdjustItem"
             >
-              <i v-if="isSubmittingAdjust" class="fa-solid fa-spinner fa-spin mr-1"></i>
-              <i v-else class="fa-solid fa-check mr-1"></i>
-              {{ isSubmittingAdjust ? 'กำลังบันทึก...' : 'ยืนยันปรับลดยอด' }}
+              <i v-if="isSubmittingAdjust" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSubmittingAdjust ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -3844,8 +3240,11 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DatePeriodFilter from '../components/DatePeriodFilter.vue';
+import ReorderItemsPanel from '../components/ReorderItemsPanel.vue';
+import KitchenCatalogCart from '../components/KitchenCatalogCart.vue';
+import TransferOrderItems from '../components/TransferOrderItems.vue';
 import api from '../api';
-import { ui, compressImage, getToday, isTimeInRange } from '../helpers';
+import { ui, compressImage, getToday, isTimeInRange, formatNumber, formatDateTime, getItemNameParts } from '../helpers';
 
 const route = useRoute();
 const router = useRouter();
@@ -3854,8 +3253,6 @@ const router = useRouter();
 const activeTab = computed(() => {
   return route.params.tab || 'catalog';
 });
-
-// View mode: 'grid' or 'table'
 
 // States
 const items = ref([]);
@@ -3866,53 +3263,17 @@ const retailBranches = ref([]);
 
 // Dedicated Dispatch Tab States (Push Model)
 const dispatchBranchId = ref('');
-const isDispatchBranchDropdownOpen = ref(false);
 const dispatchCart = ref([]);
-const dispatchSearchQuery = ref('');
-const dispatchCategory = ref('all');
 const dispatchNotes = ref('');
 const isSubmittingDispatch = ref(false);
-const isDispatchMobileDrawerOpen = ref(false);
-
-watch(dispatchCart, (newCart) => {
-  if (newCart.length === 0) {
-    isDispatchMobileDrawerOpen.value = false;
-  }
-}, { deep: true });
-
-const closeDispatchBranchDropdown = () => {
-  isDispatchBranchDropdownOpen.value = false;
-};
 
 const selectedDispatchBranchName = computed(() => {
   const b = retailBranches.value.find(x => Number(x.id) === Number(dispatchBranchId.value));
   return b ? b.name : '';
 });
 
-const getDispatchCategoryCount = (catId) => {
-  if (catId === 'all') return items.value.length;
-  return items.value.filter(i => i.category === catId).length;
-};
-
-const filteredDispatchItems = computed(() => {
-  return items.value.filter(item => {
-    const matchCat = dispatchCategory.value === 'all' || item.category === dispatchCategory.value;
-    const matchSearch = !dispatchSearchQuery.value || item.name.toLowerCase().includes(dispatchSearchQuery.value.toLowerCase());
-    return matchCat && matchSearch;
-  });
-});
-
-const getDispatchCartQty = (itemId) => {
-  const found = dispatchCart.value.find(c => c.item_id === itemId);
-  return found ? found.quantity : 0;
-};
-
 const totalDispatchCost = computed(() => {
   return dispatchCart.value.reduce((sum, c) => sum + (Number(c.quantity) * Number(c.cost_price)), 0);
-});
-
-const totalDispatchQty = computed(() => {
-  return dispatchCart.value.reduce((sum, c) => sum + (Number(c.quantity) || 0), 0);
 });
 
 // Partial Item Adjustment States
@@ -3933,11 +3294,40 @@ const selectedCategory = ref('all');
 const orderFilterStatus = ref('all');
 const orderBranchFilter = ref('all');
 const orderRequesterFilter = ref('all');
-const isOrderBranchDropdownOpen = ref(false);
 const isOrderRequesterDropdownOpen = ref(false);
 const historyRequesterFilter = ref('all');
 const isHistoryRequesterDropdownOpen = ref(false);
-const isPartnerBranchDropdownOpen = ref(false);
+const historySearchQuery = ref('');
+const historyBranchFilter = ref('all');
+const historyItemFilter = ref('all');
+const isHistoryItemDropdownOpen = ref(false);
+
+const sortedKitchenItems = computed(() => {
+  const map = new Map();
+  for (const it of items.value) {
+    if (it && it.name && it.name.trim()) {
+      map.set(it.name.trim().toLowerCase(), { id: it.id, name: it.name.trim() });
+    }
+  }
+  for (const h of history.value) {
+    if (h.item_name && h.item_name.trim()) {
+      map.set(h.item_name.trim().toLowerCase(), { id: h.item_name.trim(), name: h.item_name.trim() });
+    }
+    if (h.items && Array.isArray(h.items)) {
+      for (const it of h.items) {
+        if (it && it.item_name && it.item_name.trim()) {
+          map.set(it.item_name.trim().toLowerCase(), { id: it.item_name.trim(), name: it.item_name.trim() });
+        }
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+});
+
+const selectedHistoryItemName = computed(() => {
+  if (historyItemFilter.value === 'all') return 'สินค้าทั้งหมด';
+  return historyItemFilter.value;
+});
 
 const availableOrderRequesters = computed(() => {
   const names = new Set();
@@ -3957,12 +3347,6 @@ const availableHistoryRequesters = computed(() => {
   return Array.from(names).sort((a, b) => a.localeCompare(b, 'th'));
 });
 
-const selectedOrderBranchName = computed(() => {
-  if (orderBranchFilter.value === 'all') return 'ทุกสาขา';
-  const found = retailBranches.value.find(b => Number(b.id) === Number(orderBranchFilter.value));
-  return found ? found.name : 'ทุกสาขา';
-});
-
 const selectedPartnerBranchName = computed(() => {
   if (!selectedPartnerBranch.value) return 'เลือกสาขา';
   const found = retailBranches.value.find(b => Number(b.id) === Number(selectedPartnerBranch.value));
@@ -3970,13 +3354,9 @@ const selectedPartnerBranchName = computed(() => {
 });
 
 const closeOrderBranchDropdown = () => {
-  isOrderBranchDropdownOpen.value = false;
   isOrderRequesterDropdownOpen.value = false;
   isHistoryRequesterDropdownOpen.value = false;
-};
-
-const closePartnerBranchDropdown = () => {
-  isPartnerBranchDropdownOpen.value = false;
+  isHistoryItemDropdownOpen.value = false;
 };
 
 const historyFilter = ref('all');
@@ -4117,7 +3497,6 @@ const handleDeleteCat = async (cat) => {
 // Reorder Mode State & Drag-and-Drop Methods (Like Menu.vue)
 const isReorderMode = ref(false);
 const reorderItems = ref([]);
-const dragIndex = ref(null);
 const isSavingReorder = ref(false);
 
 const openReorderMode = () => {
@@ -4149,82 +3528,6 @@ const handleSaveReorder = async () => {
   } finally {
     ui.hideLoading();
     isSavingReorder.value = false;
-  }
-};
-
-const handleDragStart = (index, event) => {
-  dragIndex.value = index;
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move';
-  }
-};
-
-const handleDragOver = (event) => {
-  event.preventDefault();
-  const clientY = event.clientY;
-  const threshold = 120;
-  const scrollSpeed = 15;
-  if (clientY < threshold) {
-    window.scrollBy(0, -scrollSpeed);
-  } else if (clientY > window.innerHeight - threshold) {
-    window.scrollBy(0, scrollSpeed);
-  }
-};
-
-const handleDragEnter = (index) => {
-  if (dragIndex.value !== null && dragIndex.value !== index) {
-    const item = reorderItems.value[dragIndex.value];
-    reorderItems.value.splice(dragIndex.value, 1);
-    reorderItems.value.splice(index, 0, item);
-    dragIndex.value = index;
-  }
-};
-
-const handleDragEnd = () => {
-  dragIndex.value = null;
-};
-
-const handleTouchStart = (index, event) => {
-  dragIndex.value = index;
-  const element = event.target.closest('.mobile-reorder-card, .desktop-reorder-row');
-  if (element) {
-    element.classList.add('dragging');
-  }
-};
-
-const handleTouchMove = (event) => {
-  if (dragIndex.value === null) return;
-  const touch = event.touches[0];
-  const clientY = touch.clientY;
-
-  const threshold = 120;
-  const scrollSpeed = 15;
-  if (clientY < threshold) {
-    window.scrollBy(0, -scrollSpeed);
-  } else if (clientY > window.innerHeight - threshold) {
-    window.scrollBy(0, scrollSpeed);
-  }
-
-  const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (targetElement) {
-    const element = targetElement.closest('.mobile-reorder-card, .desktop-reorder-row');
-    if (element) {
-      const targetIndex = Number(element.dataset.index);
-      if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
-        const item = reorderItems.value[dragIndex.value];
-        reorderItems.value.splice(dragIndex.value, 1);
-        reorderItems.value.splice(targetIndex, 0, item);
-        dragIndex.value = targetIndex;
-      }
-    }
-  }
-};
-
-const handleTouchEnd = () => {
-  dragIndex.value = null;
-  const draggingEl = document.querySelector('.mobile-reorder-card.dragging, .desktop-reorder-row.dragging');
-  if (draggingEl) {
-    draggingEl.classList.remove('dragging');
   }
 };
 
@@ -4330,16 +3633,21 @@ const financeLogs = ref([]);
 const isLoadingFinance = ref(false);
 const financeFilterType = ref('all');
 
-const filteredFinanceLogs = computed(() => {
-  if (financeFilterType.value === 'all') return financeLogs.value;
-  return financeLogs.value.filter(l => l.type === financeFilterType.value);
+const branchFilteredFinanceLogs = computed(() => {
+  if (selectedReceivablesBranch.value === 'all') return financeLogs.value;
+  return financeLogs.value.filter(l => Number(l.branch_id) === Number(selectedReceivablesBranch.value));
 });
 
-const capitalInCount = computed(() => financeLogs.value.filter(l => l.type === 'capital_in').length);
-const reimbursementInCount = computed(() => financeLogs.value.filter(l => l.type === 'reimbursement_in').length);
-const purchaseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'purchase_out').length);
-const operatingExpenseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'operating_expense_out').length);
-const wasteLossCount = computed(() => financeLogs.value.filter(l => l.type === 'waste_loss').length);
+const filteredFinanceLogs = computed(() => {
+  if (financeFilterType.value === 'all') return branchFilteredFinanceLogs.value;
+  return branchFilteredFinanceLogs.value.filter(l => l.type === financeFilterType.value);
+});
+
+const capitalInCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'capital_in').length);
+const reimbursementInCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'reimbursement_in').length);
+const purchaseOutCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'purchase_out').length);
+const operatingExpenseOutCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'operating_expense_out').length);
+const wasteLossCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'waste_loss').length);
 
 // Finance Sub-Tabs & Receivables
 const financeSubTab = ref('ledger'); // 'ledger' | 'receivables'
@@ -4353,28 +3661,6 @@ const setReceivablesStatus = (status) => {
 };
 
 const selectedReceivablesBranch = ref('all'); // 'all' or branch_id
-const isReceivablesBranchDropdownOpen = ref(false);
-
-const closeReceivablesBranchDropdown = () => {
-  isReceivablesBranchDropdownOpen.value = false;
-};
-
-const selectedReceivablesBranchLabel = computed(() => {
-  const isReimbursed = receivablesStatusTab.value === 'reimbursed';
-  const count = receivablesBreakdown.value?.branches?.length || 0;
-  if (selectedReceivablesBranch.value === 'all') {
-    return isReimbursed 
-      ? `ทุกสาขา (${count} สาขาที่มีประวัติ)` 
-      : `ทุกสาขา (มียอดค้าง ${count} สาขา)`;
-  }
-  const b = receivablesBreakdown.value?.branches?.find(
-    br => Number(br.branch_id) === Number(selectedReceivablesBranch.value)
-  );
-  if (!b) return 'เลือกสาขา';
-  return isReimbursed
-    ? `${b.branch_name} (เคลียร์ ฿${formatNumber(b.total_pending_amount)})`
-    : `${b.branch_name} (ค้าง ฿${formatNumber(b.total_pending_amount)})`;
-});
 
 const filteredReceivablesBranches = computed(() => {
   if (!receivablesBreakdown.value?.branches) return [];
@@ -4497,8 +3783,10 @@ const periodMatchedOrders = computed(() => {
 });
 
 const pendingOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'pending').length);
-const dispatchedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'dispatched').length);
-const receivedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'received').length);
+const receivedOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'received' || o.status === 'dispatched').length);
+const pullOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.dispatch_type !== 'push').length);
+const pushOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.dispatch_type === 'push').length);
+const cancelledOrdersCount = computed(() => periodMatchedOrders.value.filter(o => o.status === 'cancelled').length);
 
 const periodMatchedHistory = computed(() => {
   return history.value.filter(h => {
@@ -4507,8 +3795,49 @@ const periodMatchedHistory = computed(() => {
   });
 });
 
-const restockHistoryCount = computed(() => periodMatchedHistory.value.filter(h => h.type === 'restock').length);
-const transferHistoryCount = computed(() => periodMatchedHistory.value.filter(h => h.type === 'transfer').length);
+const historyRestockCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (h.type !== 'restock') return false;
+    if (historyBranchFilter.value !== 'all') return false;
+    if (historyItemFilter.value !== 'all' && h.item_name !== historyItemFilter.value) return false;
+    return true;
+  }).length;
+});
+
+const historyTransferCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (h.type !== 'transfer' && h.type !== 'requisition') return false;
+    if (historyBranchFilter.value !== 'all' && Number(h.branch_id) !== Number(historyBranchFilter.value)) return false;
+    if (historyItemFilter.value !== 'all') {
+      const matchItem = h.items && h.items.some(it => it.item_name === historyItemFilter.value);
+      if (!matchItem) return false;
+    }
+    return true;
+  }).length;
+});
+
+const historyCancelledCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (h.status !== 'cancelled') return false;
+    if (historyBranchFilter.value !== 'all' && Number(h.branch_id) !== Number(historyBranchFilter.value)) return false;
+    if (historyItemFilter.value !== 'all') {
+      const matchItem = (h.items && h.items.some(it => it.item_name === historyItemFilter.value)) || (h.item_name === historyItemFilter.value);
+      if (!matchItem) return false;
+    }
+    return true;
+  }).length;
+});
+
+const historyTotalCount = computed(() => {
+  return periodMatchedHistory.value.filter(h => {
+    if (historyBranchFilter.value !== 'all' && (h.type === 'transfer' || h.type === 'requisition') && Number(h.branch_id) !== Number(historyBranchFilter.value)) return false;
+    if (historyItemFilter.value !== 'all') {
+      const matchItem = (h.items && h.items.some(it => it.item_name === historyItemFilter.value)) || (h.item_name === historyItemFilter.value);
+      if (!matchItem) return false;
+    }
+    return true;
+  }).length;
+});
 
 const getCategoryCount = (catId) => {
   if (catId === 'all') return items.value.length;
@@ -4525,25 +3854,57 @@ const filteredItems = computed(() => {
 
 const filteredOrders = computed(() => {
   if (orderFilterStatus.value === 'all') return periodMatchedOrders.value;
+  if (orderFilterStatus.value === 'pending') {
+    return periodMatchedOrders.value.filter(o => o.status === 'pending');
+  }
+  if (orderFilterStatus.value === 'received') {
+    return periodMatchedOrders.value.filter(o => o.status === 'received' || o.status === 'dispatched');
+  }
+  if (orderFilterStatus.value === 'pull') {
+    return periodMatchedOrders.value.filter(o => o.dispatch_type !== 'push');
+  }
+  if (orderFilterStatus.value === 'push') {
+    return periodMatchedOrders.value.filter(o => o.dispatch_type === 'push');
+  }
+  if (orderFilterStatus.value === 'cancelled') {
+    return periodMatchedOrders.value.filter(o => o.status === 'cancelled');
+  }
   return periodMatchedOrders.value.filter(o => o.status === orderFilterStatus.value);
 });
 
 const filteredHistory = computed(() => {
-  if (historyFilter.value === 'all') return periodMatchedHistory.value;
-  if (historyFilter.value === 'transfer' || historyFilter.value === 'requisition') {
-    return periodMatchedHistory.value.filter(h => h.type === 'transfer' || h.type === 'requisition');
-  }
-  return periodMatchedHistory.value.filter(h => h.type === historyFilter.value);
-});
+  let list = periodMatchedHistory.value;
 
-// Helpers
-const formatNumber = (num) => Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const formatDateTime = (str) => {
-  if (!str) return '-';
-  const d = new Date(str);
-  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' +
-         d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-};
+  // 1. Filter by Type / Status
+  if (historyFilter.value === 'restock') {
+    list = list.filter(h => h.type === 'restock');
+  } else if (historyFilter.value === 'transfer' || historyFilter.value === 'requisition') {
+    list = list.filter(h => h.type === 'transfer' || h.type === 'requisition');
+  } else if (historyFilter.value === 'cancelled') {
+    list = list.filter(h => h.status === 'cancelled');
+  }
+
+  // 2. Filter by Branch
+  if (historyBranchFilter.value !== 'all') {
+    const bId = Number(historyBranchFilter.value);
+    list = list.filter(h => (h.type === 'transfer' || h.type === 'requisition') && Number(h.branch_id) === bId);
+  }
+
+  // 3. Filter by Kitchen Item Dropdown
+  if (historyItemFilter.value !== 'all') {
+    list = list.filter(h => {
+      if (h.type === 'restock') {
+        return h.item_name === historyItemFilter.value;
+      }
+      if (h.type === 'transfer' || h.type === 'requisition') {
+        return h.items && h.items.some(it => it.item_name === historyItemFilter.value);
+      }
+      return false;
+    });
+  }
+
+  return list;
+});
 
 const getCategoryLabel = (cat) => {
   const found = kitchenCategories.value.find(c => c.code === cat);
@@ -4560,15 +3921,6 @@ const getCategoryLabel = (cat) => {
   return map[cat] || cat;
 };
 
-const getItemNameParts = (name) => {
-  if (!name) return { main: '', sub: '' };
-  const match = name.match(/^(.*?)\s*(\([^(]+\))\s*$/);
-  if (match) {
-    return { main: match[1].trim(), sub: match[2].trim() };
-  }
-  return { main: name, sub: '' };
-};
-
 
 const getStatusBadgeClass = (st) => {
   const map = {
@@ -4582,9 +3934,9 @@ const getStatusBadgeClass = (st) => {
 
 const getStatusLabel = (st) => {
   const map = {
-    'pending': 'รอจัดส่ง',
-    'dispatched': 'กำลังส่ง',
-    'received': 'สาขารับแล้ว',
+    'pending': 'ยังไม่อนุมัติ',
+    'dispatched': 'อนุมัติแล้ว',
+    'received': 'อนุมัติแล้ว',
     'cancelled': 'ยกเลิก'
   };
   return map[st] || st;
@@ -4918,91 +4270,6 @@ const cancelTransferOrder = async (order) => {
 };
 
 // Dedicated Dispatch Methods (Push Model)
-const getDispatchCartItem = (itemId) => {
-  return dispatchCart.value.find(c => c.item_id === itemId);
-};
-
-const setDispatchCartQty = (item, val) => {
-  let num = parseInt(val, 10);
-  if (isNaN(num) || num <= 0) num = 1;
-  const max = Number(item.quantity) || 0;
-  if (max > 0 && num > max) {
-    num = max;
-    ui.showToast(`สามารถจ่ายได้สูงสุด ${formatNumber(max)} ${item.unit} ตามสต็อกในคลัง`, 'warning');
-  }
-  const existing = dispatchCart.value.find(c => c.item_id === item.id);
-  if (existing) {
-    existing.quantity = num;
-  } else {
-    dispatchCart.value.push({
-      item_id: item.id,
-      item_name: item.name,
-      unit: item.unit,
-      cost_price: item.cost_price,
-      max_quantity: item.quantity,
-      pack_size: item.pack_size || 1,
-      linked_menu_item_name: item.linked_menu_item_name || '',
-      quantity: num
-    });
-  }
-};
-
-const addDispatchItem = (item) => {
-  if (item.quantity <= 0) {
-    ui.showToast('สินค้ารายการนี้หมดสต็อกในครัวกลาง', 'warning');
-    return;
-  }
-  const existing = dispatchCart.value.find(c => c.item_id === item.id);
-  if (existing) {
-    if (existing.quantity >= item.quantity) {
-      ui.showToast(`สามารถจ่ายได้สูงสุด ${formatNumber(item.quantity)} ${item.unit} ตามสต็อกในคลัง`, 'warning');
-      return;
-    }
-    existing.quantity += 1;
-  } else {
-    dispatchCart.value.push({
-      item_id: item.id,
-      item_name: item.name,
-      unit: item.unit,
-      cost_price: item.cost_price,
-      max_quantity: item.quantity,
-      pack_size: item.pack_size || 1,
-      linked_menu_item_name: item.linked_menu_item_name || '',
-      quantity: 1
-    });
-  }
-};
-
-const increaseDispatchQty = (c) => {
-  const original = items.value.find(i => i.id === c.item_id);
-  const max = original ? original.quantity : c.max_quantity;
-  if (max && c.quantity >= max) {
-    ui.showToast(`สามารถจ่ายได้สูงสุด ${formatNumber(max)} ${c.unit} ตามสต็อกในคลัง`, 'warning');
-    return;
-  }
-  c.quantity += 1;
-};
-
-const decreaseDispatchQty = (c) => {
-  if (c.quantity > 1) {
-    c.quantity -= 1;
-  } else {
-    dispatchCart.value = dispatchCart.value.filter(x => x.item_id !== c.item_id);
-  }
-};
-
-const validateDispatchQty = (c) => {
-  if (!c.quantity || c.quantity < 1) c.quantity = 1;
-  if (c.quantity > c.max_quantity) {
-    c.quantity = c.max_quantity;
-    ui.showToast(`ปรับเป็นจำนวนสูงสุดที่มีในคลัง (${c.max_quantity} ${c.unit})`, 'warning');
-  }
-};
-
-const removeDispatchItem = (itemId) => {
-  dispatchCart.value = dispatchCart.value.filter(c => c.item_id !== itemId);
-};
-
 const clearDispatchCart = () => {
   dispatchCart.value = [];
   dispatchNotes.value = '';
@@ -5036,7 +4303,6 @@ const submitPushDispatch = async () => {
     const res = await api.centralKitchen.directDispatch(payload);
     ui.showToast(res.message || `จ่ายของให้ ${branchName} สำเร็จเรียบร้อยแล้ว`, 'success');
     clearDispatchCart();
-    isDispatchMobileDrawerOpen.value = false;
     await Promise.all([loadItems(), loadOrders(), loadHistory()]);
     if (typeof loadFinances === 'function') loadFinances();
   } catch (err) {
@@ -5411,7 +4677,10 @@ watch(selectedPartnerBranch, () => {
 watch(activeTab, (tab) => {
   if (tab === 'catalog' || tab === 'dispatch') loadItems();
   else if (tab === 'orders') loadOrders();
-  else if (tab === 'history') loadHistory();
+  else if (tab === 'history') {
+    loadHistory();
+    if (items.value.length === 0) loadItems();
+  }
   else if (tab === 'partners') loadPartnerData();
   else if (tab === 'finance' || tab === 'receivables') {
     if (tab === 'receivables') financeSubTab.value = 'receivables';
@@ -5425,9 +4694,6 @@ onMounted(() => {
   window.addEventListener('click', closePosMenuModalDropdown);
   window.addEventListener('click', closeTransactionTypeDropdown);
   window.addEventListener('click', closeOrderBranchDropdown);
-  window.addEventListener('click', closePartnerBranchDropdown);
-  window.addEventListener('click', closeReceivablesBranchDropdown);
-  window.addEventListener('click', closeDispatchBranchDropdown);
   loadCategories();
   loadBranches();
 });
@@ -5438,15 +4704,12 @@ onUnmounted(() => {
   window.removeEventListener('click', closePosMenuModalDropdown);
   window.removeEventListener('click', closeTransactionTypeDropdown);
   window.removeEventListener('click', closeOrderBranchDropdown);
-  window.removeEventListener('click', closePartnerBranchDropdown);
-  window.removeEventListener('click', closeReceivablesBranchDropdown);
-  window.removeEventListener('click', closeDispatchBranchDropdown);
 });
 </script>
 
 <style scoped>
 /* ────────────────────────────────────────────────────────── */
-/* REORDER MODE & TOOLBAR STYLES (Menu.vue POS Style)         */
+/* TOOLBAR & POS MENU LINKING STYLES                          */
 /* ────────────────────────────────────────────────────────── */
 .catalog-toolbar-actions {
   display: flex;
@@ -5458,130 +4721,10 @@ onUnmounted(() => {
   border-top: 1px solid var(--border-color);
 }
 
-.toolbar-btn {
-  height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 0 16px;
-  font-size: var(--font-base);
-  font-weight: bold;
-  white-space: nowrap;
-  border-radius: var(--radius-md);
-  box-sizing: border-box;
-}
-
-.menu-top-action-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-md) var(--space-lg);
-}
-
-.menu-total-count {
-  font-size: var(--font-lg);
-  font-weight: bold;
-  color: var(--text-secondary);
-  margin-left: 0;
-}
-
-.menu-action-buttons {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.desktop-menu-table-container {
-  display: block;
-}
-
-.mobile-menu-list-container {
-  display: none;
-}
-
-.desktop-reorder-row.dragging,
-.mobile-reorder-card.dragging {
-  opacity: 0.5;
-  background-color: var(--primary-glow, rgba(139, 3, 19, 0.08)) !important;
-  border: 2px dashed var(--primary) !important;
-}
-
-.drag-handle {
-  cursor: grab;
-  padding: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-tertiary);
-  font-size: 1.25rem;
-  user-select: none;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
-
-.mobile-menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding-bottom: var(--space-2xl);
-}
-
-.mobile-menu-card {
-  background: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-.mobile-menu-card-img-container {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.mobile-menu-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.mobile-menu-card-placeholder {
-  font-size: var(--font-lg);
-}
-
-.mobile-menu-card-name {
-  font-size: 0.95rem;
-  font-weight: bold;
-  color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.mobile-menu-card-category {
-  font-size: var(--font-xs);
-  color: var(--text-tertiary);
-  margin-top: 2px;
-}
-
-.mobile-menu-card-price {
-  font-size: var(--font-base);
-  font-weight: bold;
-  color: var(--primary);
-}
-
 /* POS Menu Stock Linking Styles */
 .custom-select-group-header {
   padding: 6px 14px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 700;
   color: var(--text-secondary, #718096);
   background: rgba(0, 0, 0, 0.04);
@@ -5636,11 +4779,6 @@ onUnmounted(() => {
   color: #ffffff !important;
 }
 
-.btn-stock-choice-sub {
-  font-size: 11px;
-  color: var(--text-secondary, #718096);
-  line-height: 1.3;
-}
 
 .btn-stock-choice.active .btn-stock-choice-sub {
   color: rgba(255, 255, 255, 0.9) !important;
@@ -5659,7 +4797,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: 700;
   color: var(--text-primary, #1f2937);
   margin-bottom: 10px;
@@ -5688,11 +4826,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.22);
+  background: rgba(197, 118, 0, 0.08);
+  border: 1px solid rgba(197, 118, 0, 0.22);
   border-radius: 6px;
   font-size: 11.5px;
-  color: #78350f;
+  color: var(--accent-dark, #c57600);
   line-height: 1.4;
 }
 
@@ -5705,17 +4843,11 @@ onUnmounted(() => {
   border: 1px solid rgba(30, 144, 255, 0.2);
   border-radius: 8px;
   color: #1e5bb8;
-  font-size: 12px;
+  font-size: var(--font-xs);
   line-height: 1.4;
   margin-top: 10px;
 }
 
-.stock-sync-empty-note {
-  padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.025);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-md);
-}
 
 /* Responsive visibility helpers */
 @media (max-width: 768px) {
@@ -5727,13 +4859,29 @@ onUnmounted(() => {
     padding: 12px 10px !important;
   }
   .btn-stock-choice-title {
-    font-size: 14px !important;
+    font-size: var(--font-sm) !important;
   }
   .btn-stock-choice-sub {
-    font-size: 10px !important;
+    font-size: var(--font-xxs) !important;
   }
 }
 
+@media (min-width: 641px) and (max-width: 1023px) {
+  .grid-cards { gap: 12px !important; }
+  .item-card { padding: 12px !important; }
+  .item-img-container { height: 170px !important; margin-bottom: 8px !important; }
+  .card-badge-category { font-size: var(--font-xs) !important; padding: 3px 10px !important; }
+  .card-badge-status { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: var(--font-xs) !important; }
+  .item-name, .item-name-main { font-size: var(--font-md) !important; }
+  .item-meta-label { font-size: var(--font-sm) !important; }
+}
+@media (max-width: 640px) {
+  .item-img-container { height: 100px !important; }
+  .item-name, .item-name-main { font-size: var(--font-sm) !important; }
+  .item-meta-label, .item-unit-slash { font-size: var(--font-xxs) !important; }
+  .item-cost-val, .item-stock-val { font-size: var(--font-sm) !important; white-space: nowrap !important; }
+  .item-pack-val { font-size: var(--font-xxs) !important; white-space: nowrap !important; }
+}
 @media (min-width: 769px) {
   .mobile-only {
     display: none !important;
@@ -5747,18 +4895,14 @@ onUnmounted(() => {
 .toolbar-card {
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: #ffffff !important;
+  border-radius: var(--radius-lg);
 }
 
-.category-tabs {
+.filter-bar .category-tabs {
   border-bottom: none !important;
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-.category-tabs::-webkit-scrollbar {
-  display: none !important;
 }
 
 
@@ -5801,7 +4945,7 @@ onUnmounted(() => {
 }
 
 .card-badge-category {
-  font-size: 11.5px !important;
+  font-size: var(--font-xs) !important;
   padding: 3px 10px !important;
   border-radius: var(--radius-full) !important;
   background: var(--bg-secondary) !important;
@@ -5817,7 +4961,7 @@ onUnmounted(() => {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 12px !important;
+  font-size: var(--font-xs) !important;
   padding: 0 !important;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -5852,9 +4996,9 @@ onUnmounted(() => {
 }
 
 .item-name {
-  font-size: 0.92rem;
+  font-size: var(--font-base);
   line-height: 1.35;
-  min-height: 42px;
+  min-height: unset;
   color: var(--text-primary);
   margin-bottom: var(--space-xs);
   width: 100%;
@@ -5867,7 +5011,7 @@ onUnmounted(() => {
 }
 
 .item-name-sub {
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
   white-space: nowrap;
@@ -5891,8 +5035,7 @@ onUnmounted(() => {
   margin-top: auto;
 }
 
-.btn-restock-main,
-.btn-adjust-main {
+.card-footer-actions > .btn-action {
   height: 42px !important;
   width: 100% !important;
   font-size: var(--font-sm) !important;
@@ -5905,20 +5048,6 @@ onUnmounted(() => {
   box-sizing: border-box !important;
 }
 
-.btn-action-adjust {
-  background: var(--primary) !important;
-  color: white !important;
-  border: none !important;
-  font-weight: bold;
-}
-
-.btn-action-adjust:hover {
-  background: var(--primary-dark) !important;
-}
-
-.btn-action-adjust:active {
-  background: #6b020e !important;
-}
 
 /* Modal Stock Adjustment Finance Card */
 .modal-finance-adjust-card {
@@ -5926,6 +5055,23 @@ onUnmounted(() => {
   border-radius: var(--radius-md) !important;
   box-sizing: border-box !important;
   width: 100% !important;
+}
+
+.modal-radio-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.modal-radio-card .modal-finance-adjust-label {
+  align-items: center !important;
+}
+
+.tabular-nums,
+.modal-item-summary-stock,
+.modal-total-amount {
+  font-variant-numeric: tabular-nums;
 }
 
 .modal-finance-adjust-card.refund-mode {
@@ -5967,7 +5113,7 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.btn-card-sub {
+.card-sub-actions .btn-action {
   height: 36px !important;
   flex: 1 !important;
   font-size: var(--font-xs) !important;
@@ -6011,49 +5157,20 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.order-tab-btn {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-semibold);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.order-tab-btn:hover:not(.active) {
-  background: var(--bg-secondary);
-  color: var(--primary);
-  border-color: var(--border-color-focus);
-}
-
-.order-tab-btn.active {
-  background: var(--gradient-primary);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: var(--shadow-sm);
-}
-
 .order-tab-count {
   padding: 2px 8px;
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 700;
   line-height: 1;
 }
 
-.order-tab-btn.active .order-tab-count {
+.filter-pill.active .order-tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
 
-.order-tab-btn:not(.active) .order-tab-count {
+.filter-pill:not(.active) .order-tab-count {
   background: rgba(139, 3, 19, 0.08);
   color: var(--primary);
 }
@@ -6078,7 +5195,7 @@ onUnmounted(() => {
 }
 
 .order-branch-label i {
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
 }
 
 .order-branch-select {
@@ -6094,9 +5211,9 @@ onUnmounted(() => {
 /* Order Cards */
 .order-card {
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: #ffffff !important;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
@@ -6121,7 +5238,7 @@ onUnmounted(() => {
 }
 
 .order-no-title {
-  font-size: 1.15rem;
+  font-size: var(--font-md);
   color: var(--primary);
   display: inline-flex;
   align-items: center;
@@ -6145,7 +5262,7 @@ onUnmounted(() => {
 }
 
 .order-total-amount {
-  font-size: 1.45rem;
+  font-size: var(--font-xl);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
@@ -6177,16 +5294,16 @@ onUnmounted(() => {
 
 .order-items-table th {
   background: var(--bg-secondary) !important;
-  font-size: 12.5px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--text-secondary) !important;
-  padding: 10px 16px !important;
+  padding: 14px 20px !important;
   border-bottom: 1px solid var(--border-color) !important;
   letter-spacing: 0.02em;
 }
 
 .order-items-table td {
-  padding: 12px 16px !important;
+  padding: 16px 20px !important;
   border-bottom: 1px solid var(--border-color-light) !important;
   vertical-align: middle;
 }
@@ -6205,7 +5322,7 @@ onUnmounted(() => {
   border-radius: var(--radius-full);
   background: rgba(139, 3, 19, 0.07);
   color: var(--primary);
-  font-size: 13px;
+  font-size: var(--font-xs);
 }
 
 .order-notes-box {
@@ -6215,27 +5332,8 @@ onUnmounted(() => {
   padding: 8px 14px;
 }
 
-.mobile-only-price {
-  display: none;
-}
 
-.btn-dispatch-order {
-  height: 48px;
-  padding: 0 24px;
-  font-size: var(--font-base);
-  font-weight: var(--font-weight-bold);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-}
 
-.btn-dispatch-order:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
 
 /* ============================================================ */
 /* HISTORY TAB STYLING                                          */
@@ -6253,50 +5351,21 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.history-tab-btn {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-semibold);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.history-tab-btn:hover:not(.active) {
-  background: var(--bg-secondary);
-  color: var(--primary);
-  border-color: var(--border-color-focus);
-}
-
-.history-tab-btn.active {
-  background: var(--gradient-primary);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: var(--shadow-sm);
-}
-
 .history-tab-count {
   margin-left: 2px;
   padding: 2px 8px;
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 700;
   line-height: 1;
 }
 
-.history-tab-btn.active .history-tab-count {
+.filter-pill.active .history-tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
 
-.history-tab-btn:not(.active) .history-tab-count {
+.filter-pill:not(.active) .history-tab-count {
   background: rgba(139, 3, 19, 0.08);
   color: var(--primary);
 }
@@ -6304,9 +5373,9 @@ onUnmounted(() => {
 /* History Feed Cards */
 .history-feed-card {
   border: 1px solid var(--border-color);
-  background: var(--card-bg);
+  background: #ffffff !important;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
@@ -6330,7 +5399,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   flex-shrink: 0;
 }
 
@@ -6357,101 +5426,8 @@ onUnmounted(() => {
   line-height: 1.6;
 }
 
-.history-items-chips {
-  margin-top: var(--space-xs);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
 
-.history-item-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 12px;
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
-  box-sizing: border-box;
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color-light);
-  width: 100%;
-}
 
-.history-item-chip-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.32;
-  color: var(--text-primary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: break-word;
-}
-
-.history-item-chip-qty {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  color: var(--primary);
-  font-weight: var(--font-weight-bold);
-  font-size: 12px;
-  white-space: nowrap;
-  text-align: right;
-  min-width: 80px;
-}
-
-.history-item-chip-num {
-  font-weight: 700;
-  white-space: nowrap;
-  text-align: right;
-  min-width: 34px;
-}
-
-.history-item-chip-unit {
-  min-width: 30px;
-  max-width: 44px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-  text-align: left;
-}
-
-.history-amount-box {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
-.history-total-label {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.history-total-amount {
-  font-size: 1.35rem;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.history-qty-value {
-  font-size: 1.35rem;
-  line-height: 1.1;
-  white-space: nowrap;
-}
 
 /* ────────────────────────────────────────────────────────── */
 /* TAB 3: CENTRAL KITCHEN FINANCE (สมุดบัญชีกองกลาง)         */
@@ -6460,18 +5436,6 @@ onUnmounted(() => {
   border-bottom: none !important;
 }
 
-.btn-finance-action {
-  height: 44px;
-  padding: 0 var(--space-lg);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: var(--font-sm);
-  border-radius: var(--radius-md);
-  white-space: nowrap;
-}
 
 .card-accent-primary {
   border-top: 3.5px solid var(--primary) !important;
@@ -6490,7 +5454,7 @@ onUnmounted(() => {
 }
 
 .summary-caption {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   color: var(--text-secondary);
   line-height: 1.4;
   margin-top: 4px;
@@ -6538,39 +5502,8 @@ onUnmounted(() => {
   padding-bottom: 0 !important;
 }
 
-.finance-tab-btn {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-color);
-  background: #ffffff;
-  color: var(--text-secondary);
-  font-size: var(--font-sm);
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.finance-tab-btn:hover {
-  background: var(--bg-hover, #f8f9fa);
-  color: var(--text-primary);
-  border-color: var(--border-color-dark, #ccc);
-}
-
-.finance-tab-btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.2);
-}
-
 .finance-tab-count {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--radius-full);
@@ -6579,7 +5512,7 @@ onUnmounted(() => {
   line-height: 1.2;
 }
 
-.finance-tab-btn.active .finance-tab-count {
+.filter-pill.active .finance-tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
@@ -6672,12 +5605,12 @@ onUnmounted(() => {
 .empty-state-icon.empty-state-icon-sm {
   width: 48px;
   height: 48px;
-  font-size: 1.35rem;
+  font-size: var(--font-lg);
   margin-bottom: 10px;
 }
 
 .empty-state-title {
-  font-size: 1.1rem;
+  font-size: var(--font-md);
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 6px;
@@ -6733,7 +5666,7 @@ onUnmounted(() => {
 }
 
 .summary-value {
-  font-size: 1.5rem;
+  font-size: var(--font-xl);
   font-weight: var(--font-weight-bold, 700);
   line-height: 1.2;
   margin-bottom: 8px;
@@ -6746,7 +5679,7 @@ onUnmounted(() => {
 }
 
 .sub-badge {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   background: rgba(139, 3, 19, 0.04);
   color: var(--text-secondary);
   padding: 2px 8px;
@@ -6762,7 +5695,7 @@ onUnmounted(() => {
 }
 
 .summary-formula-caption {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   color: var(--text-tertiary);
   font-style: italic;
 }
@@ -6817,17 +5750,6 @@ onUnmounted(() => {
   border-radius: var(--radius-md);
 }
 
-.btn-payout-partner {
-  height: 42px;
-  font-size: var(--font-sm);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: var(--radius-md);
-  margin-top: 14px;
-}
 
 /* ────────────────────────────────────────────────────────── */
 /* MODAL SUMMARY CARDS (Spacious, Breathing Room, Not Cramped) */
@@ -6853,7 +5775,7 @@ onUnmounted(() => {
 }
 
 .modal-item-summary-label {
-  font-size: 13px;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   font-weight: 500;
   flex-shrink: 0;
@@ -6870,7 +5792,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
   border-top: 1px dashed rgba(139, 3, 19, 0.12);
   padding-top: 6px;
@@ -6897,7 +5819,7 @@ onUnmounted(() => {
 }
 
 .modal-total-label {
-  font-size: 13px !important;
+  font-size: var(--font-xs) !important;
   font-weight: 700 !important;
   color: var(--text-secondary) !important;
   display: inline-flex !important;
@@ -6907,7 +5829,7 @@ onUnmounted(() => {
 }
 
 .modal-total-amount {
-  font-size: 1.35rem !important;
+  font-size: var(--font-lg) !important;
   font-weight: 800 !important;
   line-height: 1.1 !important;
   white-space: nowrap !important;
@@ -6935,26 +5857,6 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 
-.btn-payout-header {
-  height: 42px !important;
-  padding: 0 18px !important;
-  font-size: 13.5px !important;
-  font-weight: 700 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px !important;
-  border-radius: var(--radius-full) !important;
-  box-shadow: 0 2px 6px rgba(139, 3, 19, 0.25) !important;
-  white-space: nowrap !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-}
-
-.btn-payout-header:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(139, 3, 19, 0.35) !important;
-}
 
 .order-branch-select-wrapper {
   min-width: 170px;
@@ -6976,57 +5878,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  /* Toolbar: Separate 3-button action row */
-  .catalog-toolbar-actions {
-    display: grid !important;
-    grid-template-columns: 1.25fr 1fr 1fr !important;
-    width: 100% !important;
-    gap: 6px !important;
-  }
-
-  .toolbar-btn {
-    width: 100% !important;
-    min-width: 0 !important;
-    height: 42px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 4px !important;
-    font-size: 0.84rem !important;
-    font-weight: bold !important;
-    padding: 0 6px !important;
-    box-sizing: border-box !important;
-    white-space: nowrap !important;
-    border-radius: var(--radius-md) !important;
-  }
-
-  .btn-add-item {
-    flex: unset !important;
-    width: 100% !important;
-  }
-
-  /* Reorder View on Mobile */
-  .menu-top-action-card {
-    flex-direction: column !important;
-    gap: var(--space-md) !important;
-    align-items: stretch !important;
-    text-align: center !important;
-    padding: var(--space-md) !important;
-  }
-
-  .menu-action-buttons {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: var(--space-sm) !important;
-    width: 100% !important;
-  }
-
-  .menu-action-buttons button {
-    width: 100% !important;
-    justify-content: center !important;
-    height: 44px !important;
-  }
-
   .desktop-menu-table-container {
     display: none !important;
   }
@@ -7103,7 +5954,7 @@ onUnmounted(() => {
   }
 
   .card-badge-category {
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     padding: 2px 6px !important;
     max-width: calc(100% - 26px) !important;
     min-width: 0 !important;
@@ -7121,7 +5972,7 @@ onUnmounted(() => {
     width: 20px !important;
     height: 20px !important;
     min-width: 20px !important;
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     border-radius: 50% !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -7132,7 +5983,7 @@ onUnmounted(() => {
 
   /* 2. Soft Cream Image Box */
   .item-img-container {
-    height: 95px !important;
+    height: 115px !important;
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -7148,9 +5999,9 @@ onUnmounted(() => {
 
   /* 3. 2-Line Name Block */
   .item-name {
-    font-size: 0.82rem !important;
+    font-size: var(--font-base) !important;
     line-height: 1.3 !important;
-    min-height: 36px !important;
+    min-height: unset !important;
     margin-bottom: 2px !important;
     text-align: left !important;
     display: flex !important;
@@ -7164,7 +6015,7 @@ onUnmounted(() => {
   }
 
   .item-name-main {
-    font-size: 0.82rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -7179,7 +6030,7 @@ onUnmounted(() => {
 
   .item-name-sub {
     display: block !important;
-    font-size: 0.7rem !important;
+    font-size: var(--font-xxs) !important;
     color: var(--text-secondary) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -7221,7 +6072,7 @@ onUnmounted(() => {
   .item-meta-label {
     display: inline-flex !important;
     align-items: center !important;
-    font-size: 10.5px !important;
+    font-size: var(--font-xs) !important;
     color: var(--text-secondary) !important;
     font-weight: 500 !important;
     white-space: nowrap !important;
@@ -7230,11 +6081,11 @@ onUnmounted(() => {
 
   .item-unit-slash {
     display: inline !important;
-    font-size: 10px !important;
+    font-size: var(--font-xxs) !important;
   }
 
   .item-cost-val {
-    font-size: 0.88rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     color: var(--text-primary) !important;
     white-space: nowrap !important;
@@ -7242,7 +6093,7 @@ onUnmounted(() => {
   }
 
   .item-stock-val {
-    font-size: 0.88rem !important;
+    font-size: var(--font-base) !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
@@ -7257,10 +6108,9 @@ onUnmounted(() => {
     margin-top: 8px !important;
   }
 
-  .btn-restock-main,
-  .btn-adjust-main {
+  .card-footer-actions > .btn-action {
     height: 36px !important;
-    font-size: 11.5px !important;
+    font-size: var(--font-xs) !important;
     padding: 0 6px !important;
     border-radius: var(--radius-sm) !important;
     display: flex !important;
@@ -7289,14 +6139,9 @@ onUnmounted(() => {
     margin-top: 2px !important;
   }
 
-  .btn-modal {
-    white-space: nowrap !important;
-    padding: 0 16px !important;
-  }
-
-  .btn-card-sub {
+  .card-sub-actions .btn-action {
     height: 32px !important;
-    font-size: 11px !important;
+    font-size: var(--font-xxs) !important;
     padding: 0 4px !important;
     border-radius: var(--radius-sm) !important;
     display: flex !important;
@@ -7312,8 +6157,7 @@ onUnmounted(() => {
     gap: var(--space-md);
   }
 
-  /* Filter Tabs & Order Status Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
-  .category-tabs,
+  /* Order Status Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
   .order-status-tabs {
     flex-wrap: wrap !important;
     overflow-x: visible !important;
@@ -7322,16 +6166,7 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .category-tab,
-  .order-tab-btn {
-    flex-shrink: 0 !important;
-    height: 34px !important;
-    padding: 0 10px !important;
-    font-size: 12px !important;
-  }
-
   .order-branch-filter {
-    width: 100%;
     display: flex;
     align-items: center;
     gap: var(--space-sm);
@@ -7343,13 +6178,12 @@ onUnmounted(() => {
   }
 
   .order-branch-select-wrapper {
-    flex: 1 !important;
-    width: 100% !important;
+    max-width: 220px !important;
   }
 
   .order-branch-select {
     width: 100% !important;
-    height: 42px !important;
+    height: 38px !important;
   }
 
   .order-card-header {
@@ -7374,10 +6208,7 @@ onUnmounted(() => {
     align-items: stretch;
   }
 
-  .btn-dispatch-order {
-    width: 100%;
-    height: 48px;
-  }
+  .order-footer-actions .btn { width: 100%; justify-content: center; }
 
   /* History Tab Responsive */
   .history-toolbar {
@@ -7394,18 +6225,7 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .history-tab-btn {
-    flex-shrink: 0 !important;
-    height: 34px !important;
-    padding: 0 12px !important;
-    font-size: 12px !important;
-  }
-
-  .history-card-inner {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-
+  
   .history-item-chip {
     height: 48px !important;
     min-height: 48px !important;
@@ -7415,13 +6235,13 @@ onUnmounted(() => {
   }
 
   .history-item-chip-name {
-    font-size: 12px !important;
+    font-size: var(--font-xs) !important;
     line-height: 1.3 !important;
   }
 
   .history-item-chip-qty {
     min-width: 76px !important;
-    font-size: 11.5px !important;
+    font-size: var(--font-xs) !important;
     gap: 3px !important;
   }
 
@@ -7448,35 +6268,11 @@ onUnmounted(() => {
   .history-qty-value {
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-    font-size: 1.2rem !important;
+    font-size: var(--font-md) !important;
   }
 
-  .history-sub-cost {
-    text-align: right !important;
-    line-height: 1.35 !important;
-    font-size: 11px !important;
-  }
-
+  
   /* Finance Tab Responsive */
-  .finance-toolbar {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: var(--space-sm) !important;
-  }
-
-  .finance-action-buttons {
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 8px !important;
-  }
-
-  .btn-finance-action {
-    width: 100% !important;
-    height: 44px !important;
-    justify-content: center !important;
-  }
-
   .ledger-header {
     flex-direction: column !important;
     align-items: flex-start !important;
@@ -7491,32 +6287,6 @@ onUnmounted(() => {
     padding-bottom: 0 !important;
     gap: 6px !important;
     width: 100% !important;
-  }
-
-  .finance-tab-btn {
-    flex-shrink: 0 !important;
-    height: 34px !important;
-    padding: 0 10px !important;
-    font-size: 12px !important;
-  }
-
-  /* Partners Tab Responsive */
-  .partner-branch-filter-box {
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--space-sm) !important;
-  }
-
-  .partner-branch-select-wrapper {
-    flex: 1 !important;
-    width: 100% !important;
-  }
-
-  .btn-payout-header {
-    height: 40px !important;
-    padding: 0 14px !important;
-    font-size: 13px !important;
   }
 }
 
@@ -7614,7 +6384,7 @@ onUnmounted(() => {
   gap: 5px;
   color: var(--primary, #8b0313);
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   margin-top: 8px;
   opacity: 0.9;
   transition: opacity 0.15s ease;
@@ -7625,68 +6395,8 @@ onUnmounted(() => {
   text-decoration: underline;
 }
 
-/* Pill Sub-Tab Navigation for Finance (Scrollable Left-Right, No Wrap) */
-#finance-subtabs-nav,
-.finance-subtabs-container {
-  margin-top: var(--space-xs);
-  margin-bottom: var(--space-lg);
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  gap: var(--space-sm) !important;
-  border-bottom: none !important;
-  padding-bottom: 8px !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-#finance-subtabs-nav::-webkit-scrollbar,
-.finance-subtabs-container::-webkit-scrollbar {
-  display: none;
-}
-
-#finance-subtabs-nav .btn,
-.finance-subtabs-container .btn {
-  font-size: var(--font-sm);
-  padding: 10px 22px;
-  border-radius: var(--radius-full) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-#finance-subtabs-nav .btn:hover:not(.active),
-.finance-subtabs-container .btn:hover:not(.active) {
-  background: var(--bg-hover, #f8fafc);
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-#finance-subtabs-nav .btn.active,
-.finance-subtabs-container .btn.active {
-  background: var(--primary, #8b0313) !important;
-  border-color: var(--primary, #8b0313) !important;
-  color: #ffffff !important;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(139, 3, 19, 0.28);
-}
-
 .tab-count-pill {
-  font-size: 0.75rem;
+  font-size: var(--font-xxs);
   padding: 2px 8px;
   border-radius: var(--radius-full);
   background: rgba(0, 0, 0, 0.08);
@@ -7694,8 +6404,7 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-#finance-subtabs-nav .btn.active .tab-count-pill,
-.finance-subtabs-container .btn.active .tab-count-pill {
+.category-tab.active .tab-count-pill {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
@@ -7795,7 +6504,7 @@ onUnmounted(() => {
 .amount-danger-bold {
   color: var(--danger, #ad281e) !important;
   font-weight: 700 !important;
-  font-size: 1.65rem !important;
+  font-size: var(--font-2xl) !important;
   line-height: 1.2 !important;
   letter-spacing: -0.01em;
 }
@@ -7803,7 +6512,7 @@ onUnmounted(() => {
 .amount-danger-bold-table {
   color: var(--danger, #ad281e) !important;
   font-weight: 700 !important;
-  font-size: 1.15rem !important;
+  font-size: var(--font-md) !important;
 }
 
 /* Receivables Tab View Styling */
@@ -7841,7 +6550,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   flex-shrink: 0;
 }
 
@@ -7852,13 +6561,6 @@ onUnmounted(() => {
 
 .mobile-consolidated-list {
   display: none;
-}
-
-/* Partner Subtabs (Capsule Pills) */
-.partner-subtabs {
-  border-bottom: 2px solid var(--border-color) !important;
-  padding-bottom: var(--space-sm) !important;
-  margin-bottom: var(--space-lg) !important;
 }
 
 /* Desktop vs Mobile for Payout History */
@@ -7959,7 +6661,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 8px 12px;
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   width: 100%;
   box-sizing: border-box;
 }
@@ -8013,26 +6715,26 @@ onUnmounted(() => {
     width: 100% !important;
   }
   .summary-title {
-    font-size: 0.78rem !important;
+    font-size: var(--font-xxs) !important;
     line-height: 1.35 !important;
     word-break: keep-all !important;
     white-space: normal !important;
   }
   .summary-card-header .badge {
-    font-size: 0.65rem !important;
+    font-size: var(--font-xxs) !important;
     padding: 2px 6px !important;
     align-self: flex-start !important;
     margin-left: 0 !important;
   }
   .summary-value {
-    font-size: 1.35rem !important;
+    font-size: var(--font-lg) !important;
     margin-bottom: 2px !important;
   }
   .summary-caption {
     display: none !important;
   }
   .card-click-hint {
-    font-size: 0.68rem !important;
+    font-size: var(--font-xxs) !important;
     margin-top: 4px !important;
   }
 
@@ -8078,377 +6780,16 @@ onUnmounted(() => {
 }
 
 /* ────────────────────────────────────────────────────────── */
-/* DEDICATED DISPATCH TAB (PUSH MODEL) STYLES                */
+/* DEDICATED DISPATCH TAB (PUSH MODEL) & CATALOG RESPONSIVE   */
 /* ────────────────────────────────────────────────────────── */
 .dispatch-section {
   width: 100%;
 }
 
-.catalog-layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-}
-
-@media (min-width: 1024px) {
-  .catalog-layout {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .catalog-main {
-    flex: 1;
-    min-width: 0;
-  }
-  .cart-sidebar {
-    width: 380px;
-    flex-shrink: 0;
-    position: sticky;
-    top: calc(var(--header-height, 60px) + 16px);
-  }
-}
-
-.cart-sidebar {
-  background: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.cart-header {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.clear-cart-btn {
-  background: none;
-  border: none;
-  padding: 4px;
-  font-size: 0.8rem;
-  transition: opacity var(--transition-base);
-}
-
-.clear-cart-btn:hover {
-  text-decoration: underline;
-  opacity: 0.8;
-}
-
-.cart-items-list {
-  max-height: 420px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
-}
-
-.cart-row {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: all var(--transition-base);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.cart-row:hover {
-  border-color: var(--primary-light, #c92a2a);
-}
-
-.cart-item-name {
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-.cart-item-sub {
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-.cart-item-bottom {
-  border-top: 1px dashed rgba(139, 3, 19, 0.15);
-  margin-top: 10px;
-  padding-top: 8px;
-}
-
-.btn-qty {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--text-primary);
-  transition: all var(--transition-base);
-  padding: 0;
-  line-height: 1;
-}
-
-.btn-qty:hover {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
-
-.cart-total-row {
-  border-top: 1px dashed var(--border-color);
-}
-
-.btn-submit-requisition {
-  height: 48px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(139, 3, 19, 0.2);
-}
-
-.item-card {
-  position: relative !important;
-}
-
-.item-card.in-cart {
-  /* No dimming / tinting when selected; card remains crisp with normal background */
-  background: var(--card-bg, #ffffff) !important;
-  border-color: var(--border-color) !important;
-}
-
-.dispatch-branch-select-wrapper {
-  min-width: 200px;
-}
-
-.dispatch-branch-select {
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-bold);
-}
-
-.qty-badge {
-  display: flex !important;
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 26px;
-  height: 26px;
-  background: var(--primary, #8b0313);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 10px rgba(139, 3, 19, 0.45);
-  border: 2px solid #ffffff;
-  z-index: 10;
-  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* ============================================================ */
-/* MOBILE DOCKED CART BAR & BOTTOM SHEET DRAWER (POS DESIGN)    */
-/* ============================================================ */
-.cart-bar {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height, 60px) + var(--safe-bottom, 0px));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width, 100%);
-  height: var(--cart-bar-height, 60px);
-  padding: 0 var(--space-lg);
-  background: rgba(139, 3, 19, 0.96);
-  backdrop-filter: var(--glass-blur, blur(10px));
-  -webkit-backdrop-filter: var(--glass-blur, blur(10px));
-  border-top: 2px solid var(--accent, #ffab2b);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  animation: slideUp 0.3s ease;
-  box-sizing: border-box;
-}
-
-.cart-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  width: 100% !important;
-}
-
-.cart-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.cart-count {
-  font-size: var(--font-xs);
-  color: rgba(255, 247, 223, 0.85);
-  line-height: 1.2;
-}
-
-.cart-total {
-  font-size: var(--font-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--accent, #ffab2b);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-
-.cart-pay-btn {
-  padding: 8px 18px;
-  background: var(--accent, #ffab2b);
-  color: var(--primary-dark, #500000);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-md);
-  box-shadow: 0 0 15px rgba(255, 171, 43, 0.35);
-  border: none;
-  cursor: pointer;
-  font-size: var(--font-sm);
-  transition: all var(--transition-base);
-}
-
-.cart-pay-btn:active {
-  transform: scale(0.96);
-  box-shadow: 0 0 25px rgba(255, 171, 43, 0.5);
-}
-
-/* Mobile Slide-up Drawer Overlay */
-.cart-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  z-index: 55;
-  animation: fadeIn 0.2s ease;
-}
-
-/* Mobile Slide-up Cart Drawer Panel */
-.cart-detail-panel {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height, 60px) + var(--safe-bottom, 0px));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width, 100%);
-  max-height: 78vh;
-  background: var(--bg-secondary, #fff8ee);
-  border: 2px solid var(--primary-light, #ad281e) !important;
-  border-radius: var(--radius-2xl, 16px) var(--radius-2xl, 16px) 0 0;
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  z-index: 56;
-  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  overflow: hidden;
-}
-
-.cart-detail-panel.hidden {
-  display: none !important;
-}
-
-.cart-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px !important;
-  border-bottom: 2px dashed rgba(139, 3, 19, 0.15) !important;
-  background: rgba(255, 247, 223, 0.98) !important;
-  z-index: 1;
-  flex-shrink: 0;
-}
-
-.cart-drawer-scroll-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 14px 18px;
-  max-height: calc(78vh - 165px);
-}
-
-.cart-drawer-footer {
-  flex-shrink: 0;
-  background: #ffffff;
-  border-top: 1px solid rgba(139, 3, 19, 0.12);
-  padding: 12px 18px 16px 18px;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.cart-drawer-footer .cart-total-row {
-  margin-bottom: 10px;
-}
-
-/* ============================================================ */
-/* RESPONSIVE BREAKPOINTS: DESKTOP VS MOBILE ONLY               */
-/* ============================================================ */
-@media (min-width: 1024px) {
-  .mobile-only-cart {
-    display: none !important;
-  }
-}
-
-@media (max-width: 1023px) {
-  /* Hide desktop sidebar cart; user uses docked bar + bottom sheet */
-  .cart-sidebar {
-    display: none !important;
-  }
-
-  .catalog-layout {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + var(--safe-bottom, 0px) + var(--cart-bar-height, 60px) + 35px) !important;
-  }
-}
-
 @media (max-width: 768px) {
   /* Toolbar Card on mobile */
   .dispatch-toolbar-card {
-    padding: var(--space-sm) 12px !important;
-  }
-
-  /* Fix Dropdown exceeding frame on mobile */
-  .dispatch-target-branch-bar {
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    margin-top: 8px !important;
-    box-sizing: border-box !important;
-  }
-
-  .dispatch-target-branch-bar label {
-    flex-shrink: 0 !important;
-    font-size: var(--font-xs) !important;
-  }
-
-  .dispatch-branch-select-wrapper {
-    flex: 1 !important;
-    min-width: 0 !important;
-    width: auto !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .dispatch-branch-select {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 38px !important;
-    min-height: 38px !important;
-    font-size: var(--font-xs) !important;
-    padding: 0 32px 0 10px !important;
-    box-sizing: border-box !important;
-  }
-
-  .dispatch-branch-select-wrapper .custom-select-dropdown {
-    width: 100% !important;
-    max-width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-    box-sizing: border-box !important;
+    padding: var(--space-md) !important;
   }
 
   /* 2-column mobile item cards (Matching BranchRequisition) */
@@ -8498,7 +6839,7 @@ onUnmounted(() => {
   }
 
   .card-badge-category {
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     padding: 2px 6px !important;
     max-width: calc(100% - 26px) !important;
     white-space: nowrap !important;
@@ -8509,12 +6850,12 @@ onUnmounted(() => {
   .card-badge-status {
     width: 20px !important;
     height: 20px !important;
-    font-size: 9.5px !important;
+    font-size: var(--font-xxs) !important;
     padding: 0 !important;
   }
 
   .item-img-container {
-    height: 95px !important;
+    height: 115px !important;
     width: 100% !important;
     margin-bottom: 6px !important;
     border-radius: var(--radius-md) !important;
@@ -8522,7 +6863,7 @@ onUnmounted(() => {
   }
 
   .item-name {
-    font-size: 13px !important;
+    font-size: var(--font-base) !important;
     line-height: 1.25 !important;
     margin-bottom: 4px !important;
   }
@@ -8533,11 +6874,11 @@ onUnmounted(() => {
 
   .item-meta-row {
     padding: 1px 0 !important;
-    font-size: 11px !important;
+    font-size: var(--font-xs) !important;
   }
 
   .item-cost-val, .item-stock-val {
-    font-size: 0.9rem !important;
+    font-size: var(--font-base) !important;
   }
 
   .stock-prefix {
@@ -8553,11 +6894,10 @@ onUnmounted(() => {
     margin-top: 6px !important;
   }
 
-  .btn-restock-main,
-  .btn-adjust-main {
+  .card-footer-actions > .btn-action {
     height: 34px !important;
     min-height: 34px !important;
-    font-size: 11px !important;
+    font-size: var(--font-xs) !important;
     font-weight: 700 !important;
     padding: 0 6px !important;
     border-radius: var(--radius-md) !important;
@@ -8574,10 +6914,10 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .btn-card-sub {
+  .card-sub-actions .btn-action {
     height: 30px !important;
     min-height: 30px !important;
-    font-size: 10px !important;
+    font-size: var(--font-xxs) !important;
     font-weight: 600 !important;
     padding: 0 4px !important;
     border-radius: var(--radius-sm) !important;
@@ -8587,127 +6927,13 @@ onUnmounted(() => {
     gap: 3px !important;
   }
 
-  .btn-card-sub.text-danger {
+  .card-sub-actions .btn-action:last-child {
     flex: 0 0 30px !important;
     padding: 0 !important;
   }
-
-  /* Floating quantity badge on card top right */
-  .qty-badge {
-    display: flex !important;
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 24px;
-    height: 24px;
-    background: var(--primary, #8b0313);
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(139, 3, 19, 0.4);
-    border: 2px solid #ffffff;
-    z-index: 10;
-    animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
 }
 
-/* ── Category Modal & POS Link Tooltip ── */
-.ck-cat-form-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.ck-cat-form-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--font-sm);
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.ck-cat-form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-
-.ck-cat-form-actions {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: var(--space-sm);
-  align-items: stretch;
-}
-
-.ck-cat-form-actions .btn {
-  width: 100%;
-  min-width: 0;
-  height: 44px;
-  border-radius: var(--radius-md) !important;
-}
-
-.ck-cat-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 250px;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.ck-cat-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding: 10px 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-}
-
-
-.ck-cat-action-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.ck-cat-action-btn.edit {
-  color: var(--primary);
-}
-
-.ck-cat-action-btn.edit:hover {
-  background: rgba(139, 3, 19, 0.08);
-  border-color: var(--primary);
-}
-
-.ck-cat-action-btn.delete {
-  color: var(--danger);
-}
-
-.ck-cat-action-btn.delete:hover {
-  background: rgba(220, 38, 38, 0.08);
-  border-color: var(--danger);
-}
-
+/* ── POS Link Tooltip ── */
 .ck-tooltip-wrap {
   position: relative;
   display: inline-flex;
@@ -8724,7 +6950,7 @@ onUnmounted(() => {
   border-radius: 999px;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8749,7 +6975,7 @@ onUnmounted(() => {
   border-left: 3px solid var(--primary);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 400;
   line-height: 1.6;
   box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14);
@@ -8796,64 +7022,127 @@ onUnmounted(() => {
   opacity: 1;
   visibility: visible;
 }
-/* --- Push Dispatch & Catalog UI Polish --- */
-.dispatch-toolbar-card h3 {
-  font-size: var(--font-lg);
-}
-
+/* --- Catalog UI Polish --- */
 .filter-bar .category-tabs {
   flex-wrap: wrap !important;
   overflow-x: visible !important;
-}
-
-.item-card.in-cart {
-  border: 2px solid var(--primary) !important;
-  box-shadow: 0 4px 14px rgba(139, 3, 19, 0.12);
 }
 
 .item-img-container {
   background: rgba(0, 0, 0, 0.02);
 }
 
-.btn-qty {
-  width: 40px;
-  height: 40px;
-  touch-action: manipulation;
-}
-
-.qty-badge,
 .category-count,
 .item-cost-val,
-.item-stock-val,
-.cart-total-row,
-.cart-info {
+.item-stock-val {
   font-variant-numeric: tabular-nums;
 }
 
-.dispatch-branch-select {
-  min-height: 44px;
-}
-
 @media (min-width: 769px) {
-  .dispatch-toolbar-card {
+  .dispatch-toolbar-card,
+  .finance-toolbar,
+  .partner-toolbar-card {
     padding: var(--space-xl) !important;
   }
 }
 
-@media (min-width: 1024px) {
-  .cart-sidebar {
-    max-height: calc(100vh - 96px);
-  }
-  .cart-sidebar > div:first-child {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
-  }
-  .cart-items-list {
-    flex: 1;
-    min-height: 120px;
-    max-height: none !important;
+@media (max-width: 768px) {
+  .dispatch-toolbar-card,
+  .finance-toolbar,
+  .partner-toolbar-card {
+    padding: var(--space-md) !important;
   }
 }
+
+/* History Card Structure & Table Styling */
+.history-card-header {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.history-items-table-wrapper {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.history-items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-items-table th {
+  background: var(--bg-secondary) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+  padding: 14px 20px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  letter-spacing: 0.02em;
+}
+
+.history-items-table td {
+  background: #ffffff;
+  padding: 16px 20px !important;
+  border-bottom: 1px solid var(--border-color-light) !important;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-items-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.history-qty-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(139, 3, 19, 0.07);
+  color: var(--primary);
+  font-size: var(--font-xs);
+}
+
+
+.order-footer-notice .notice-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs, 6px);
+  flex-wrap: wrap;
+}
+
+.order-footer-notice .notice-line-1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.order-footer-notice .notice-line-2 {
+  display: inline-block;
+  font-size: 11.5px;
+}
+
+@media (max-width: 640px) {
+  .order-footer-notice .notice-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .order-footer-notice .notice-line-1 {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: normal;
+  }
+  .order-footer-notice .notice-line-2 {
+    display: block;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    font-size: 11px;
+    text-align: left;
+  }
+}
+
+
 </style>

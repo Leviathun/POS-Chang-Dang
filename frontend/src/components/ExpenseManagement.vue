@@ -2,10 +2,10 @@
   <div class="expense-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation (Consistent with StaffManagement.vue) -->
-    <div class="category-tabs tab-category mb-lg flex gap-xs flex-wrap">
+    <div class="category-tabs">
       <button 
         type="button"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'form' }"
         @click="activeSubTab = 'form'"
       >
@@ -13,7 +13,7 @@
       </button>
       <button 
         type="button"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'list' }"
         @click="activeSubTab = 'list'"
       >
@@ -21,7 +21,7 @@
       </button>
       <button 
         type="button"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'analytics' }"
         @click="activeSubTab = 'analytics'"
       >
@@ -114,12 +114,12 @@
           </div>
           <!-- Quick Amount Buttons under input -->
           <div class="quick-amount-buttons-full">
-            <button type="button" class="btn-quick-amount" @click="addAmount(50)">+50</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(100)">+100</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(200)">+200</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(500)">+500</button>
-            <button type="button" class="btn-quick-amount" @click="addAmount(1000)">+1,000</button>
-            <button type="button" class="btn-quick-amount reset-btn" @click="expenseForm.amount = null">ล้างยอด</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(50)">+50</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(100)">+100</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(200)">+200</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(500)">+500</button>
+            <button type="button" class="btn btn-secondary btn-xs tabular-nums" @click="addAmount(1000)">+1,000</button>
+            <button type="button" class="btn btn-outline-danger btn-xs" @click="expenseForm.amount = null">ล้างยอด</button>
           </div>
         </div>
 
@@ -175,7 +175,7 @@
 
         <!-- ── ปุ่มบันทึกรายการ ── -->
         <button 
-          class="btn btn-primary btn-block submit-expense-btn" 
+          class="btn btn-primary w-full" 
           @click="handleAddExpense" 
           :disabled="!expenseForm.amount || expenseForm.amount <= 0 || saving"
         >
@@ -251,7 +251,7 @@
       </div>
 
       <!-- Working Capital Note / Staff Guarantee Fund Indicator -->
-      <div v-if="activeHeldGuaranteesTotal > 0" class="card p-sm flex flex-col gap-xs" style="background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-md);">
+      <div v-if="activeHeldGuaranteesTotal > 0" class="card p-sm flex flex-col gap-xs" style="background: rgba(197, 118, 0, 0.05); border: 1px dashed rgba(197, 118, 0, 0.4); border-radius: var(--radius-md);">
         <div class="flex align-center gap-xs text-xs">
           <i class="fa-solid fa-shield-halved text-warning"></i>
           <span class="text-secondary font-medium">เงินประกันพนักงาน (หมุนเวียน):</span>
@@ -261,7 +261,7 @@
             <strong class="text-primary font-bold text-sm">{{ formatCurrency(activeHeldGuaranteesTotal) }}</strong>
             <span class="text-secondary text-xs">({{ activeHeldGuaranteesCount }} คน)</span>
           </div>
-          <div class="flex align-center gap-xs text-secondary" style="font-size: 11px;">
+          <div class="flex align-center gap-xs text-secondary" style="font-size: var(--font-xxs);">
             <i class="fa-solid fa-circle-info"></i>
             <span>ไม่รวมในยอดขายอาหาร</span>
           </div>
@@ -313,15 +313,6 @@
               placeholder="ค้นหาชื่อรายการ, หมายเหตุ, หรือผู้บันทึก..." 
               style="width: 100%;"
             />
-          </div>
-          <div v-if="filteredLedgerEntries.length > 0" class="flex" style="width: 100%;">
-            <button 
-              class="btn btn-secondary csv-export-btn" 
-              style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px; font-size: var(--font-sm); border-radius: 8px; width: 100%;"
-              @click="exportLedgerCSV"
-            >
-              <i class="fa-solid fa-file-csv text-primary"></i> ส่งออกบัญชี (CSV)
-            </button>
           </div>
         </div>
 
@@ -407,14 +398,14 @@
               <td class="text-left" style="padding: 14px var(--space-md); vertical-align: middle; font-weight: 500; word-break: break-word;">
                 <div :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''">{{ item.name }}</div>
                 <div v-if="item.staffName" class="text-xs text-secondary mt-xxs">
-                  <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
+                  <i class="fa-solid fa-user-pen" style="font-size: var(--font-xxs);"></i> โดย: {{ item.staffName }}
                 </div>
                 <div v-if="item.isCKTransfer" class="ck-expense-note">
                   <i class="fa-solid fa-circle-info"></i>
                   <span>ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)</span>
                 </div>
                 <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mt-xxs font-semibold">
-                  <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
+                  <i class="fa-solid fa-circle-info" style="font-size: var(--font-xxs);"></i> {{ item.cancelReason }}
                 </div>
               </td>
               <td class="text-center" style="padding: 14px var(--space-xs); vertical-align: middle; white-space: nowrap;">
@@ -448,7 +439,7 @@
                 <!-- Case 4: Active Expense -->
                 <button 
                   v-else-if="item.type === 'expense'"
-                  class="btn-action btn-action-primary table-action-btn"
+                  class="btn-action btn-action-delete"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                   :title="item.isCKTransfer ? 'ยกเลิกรายการเบิกของจากครัวกลาง' : 'ยกเลิกและคืนยอด'"
@@ -460,7 +451,7 @@
                 <!-- Case 5: Active Stock Waste/Credit -->
                 <button 
                   v-else-if="item.type === 'waste_loss' || item.type === 'credit_loss'"
-                  class="btn-action btn-action-primary table-action-btn"
+                  class="btn-action btn-action-delete"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                   title="ยกเลิกและคืนสต็อกเข้าคลัง"
@@ -502,15 +493,15 @@
               <span class="category-badge" :class="item.badgeClass">
                 <i :class="item.icon"></i> {{ item.categoryLabel }}
               </span>
-              <span v-if="item.isRefund" class="font-bold text-success text-base" style="font-size: 16px;">+{{ formatCurrency(item.amount) }}</span>
-              <span v-else-if="item.isCancelled" class="font-bold text-tertiary text-sm" style="text-decoration: line-through; font-size: 14px;">{{ formatCurrency(item.amount) }}</span>
-              <span v-else class="font-bold text-danger text-base" style="font-size: 16px;">{{ formatCurrency(item.amount) }}</span>
+              <span v-if="item.isRefund" class="font-bold text-success text-base" style="font-size: var(--font-base);">+{{ formatCurrency(item.amount) }}</span>
+              <span v-else-if="item.isCancelled" class="font-bold text-tertiary text-sm" style="text-decoration: line-through; font-size: var(--font-sm);">{{ formatCurrency(item.amount) }}</span>
+              <span v-else class="font-bold text-danger text-base" style="font-size: var(--font-base);">{{ formatCurrency(item.amount) }}</span>
             </div>
-            <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word; font-size: 14px; line-height: 1.4;">
+            <div class="text-sm font-semibold mb-xs" :style="item.isCancelled ? 'text-decoration: line-through; color: var(--text-secondary);' : ''" style="word-break: break-word; font-size: var(--font-sm); line-height: 1.4;">
               {{ item.name }}
             </div>
             <div v-if="item.staffName" class="text-xs text-secondary mb-xs">
-              <i class="fa-solid fa-user-pen" style="font-size: 10px;"></i> โดย: {{ item.staffName }}
+              <i class="fa-solid fa-user-pen" style="font-size: var(--font-xxs);"></i> โดย: {{ item.staffName }}
             </div>
             <!-- CK Note banner in mobile card body -->
             <div v-if="item.isCKTransfer" class="ck-expense-note mb-xs" style="margin-bottom: 6px;">
@@ -518,10 +509,10 @@
               <span>ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)</span>
             </div>
             <div v-if="item.isCancelled && item.cancelReason" class="text-xs text-danger mb-xs font-semibold" style="margin-top: 4px;">
-              <i class="fa-solid fa-circle-info" style="font-size: 10px;"></i> {{ item.cancelReason }}
+              <i class="fa-solid fa-circle-info" style="font-size: var(--font-xxs);"></i> {{ item.cancelReason }}
             </div>
             <div class="flex flex-between align-center text-xs text-secondary" style="border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: 6px; gap: 8px;">
-              <span style="white-space: nowrap; flex-shrink: 0; font-size: 11px;">{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
+              <span style="white-space: nowrap; flex-shrink: 0; font-size: var(--font-xxs);">{{ formatDate(item.date) }} {{ formatTime(item.created_at) }}</span>
               <div class="flex align-center gap-xs" style="flex-shrink: 0;">
                 <span class="payment-method-badge" :class="item.paymentClass" :title="item.isCKTransfer ? 'ต้นทุนค่าของ (ยังไม่ตัดเงินจริงจากลิ้นชัก)' : ''">
                   <i v-if="item.paymentClass === 'badge-transfer'" class="fa-solid fa-mobile-screen-button mr-1"></i>
@@ -529,20 +520,19 @@
                   <span>{{ item.paymentLabel }}</span>
                 </span>
                 <!-- Reversal Badges / Buttons for Mobile -->
-                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 4px 10px; font-size: 11px;">
+                <span v-if="item.isRefund" class="badge-status-pill badge-refund-done" style="padding: 4px 10px; font-size: var(--font-xxs);">
                   <i class="fa-solid fa-circle-check"></i> คืนเงินแล้ว
                 </span>
-                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'" style="padding: 4px 10px; font-size: 11px;">
+                <span v-else-if="item.isCancelled && item.type === 'expense'" :class="item.category === 'salary' ? 'badge-status-pill badge-salary-cancelled' : 'badge-status-pill badge-cancelled'" style="padding: 4px 10px; font-size: var(--font-xxs);">
                   <i :class="item.category === 'salary' ? 'fa-solid fa-user-clock' : 'fa-solid fa-ban'"></i>
                   {{ item.category === 'salary' ? 'คืนบัญชีพนักงาน' : 'ยกเลิกแล้ว' }}
                 </span>
-                <span v-else-if="item.isCancelled" class="badge-status-pill badge-stock-cancelled" style="padding: 4px 10px; font-size: 11px;">
+                <span v-else-if="item.isCancelled" class="badge-status-pill badge-stock-cancelled" style="padding: 4px 10px; font-size: var(--font-xxs);">
                   <i class="fa-solid fa-rotate-left"></i> คืนสต็อกแล้ว
                 </span>
                 <button 
                   v-else-if="item.type === 'expense' || item.type === 'waste_loss' || item.type === 'credit_loss'"
-                  class="btn-action-reverse" 
-                  style="padding: 4px 12px; font-size: 11.5px; height: 32px;"
+                  class="btn-action btn-action-delete btn-xs"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                 >
@@ -557,25 +547,10 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalLedgerPages > 1" class="pagination-bar flex flex-between align-center">
-        <button 
-          class="pagination-btn" 
-          :disabled="ledgerCurrentPage === 1" 
-          @click="ledgerCurrentPage--"
-        >
-          <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-        </button>
-        <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalLedgerPages >= 10 }">
-          หน้า {{ ledgerCurrentPage }} จาก {{ totalLedgerPages }}
-        </span>
-        <button 
-          class="pagination-btn" 
-          :disabled="ledgerCurrentPage === totalLedgerPages" 
-          @click="ledgerCurrentPage++"
-        >
-          ถัดไป <i class="fa-solid fa-chevron-right"></i>
-        </button>
-      </div>
+      <PaginationBar
+        v-model:current-page="ledgerCurrentPage"
+        :total-pages="totalLedgerPages"
+      />
 
     </div>
 
@@ -588,7 +563,7 @@
         <!-- Chart 1: Category Breakdown (Including Waste & Credit) -->
         <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
           <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <i class="fa-solid fa-chart-pie text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+            <i class="fa-solid fa-chart-pie text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i> 
             <div class="flex flex-col">
               <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.3;">สัดส่วนค่าใช้จ่าย & ของเสีย</span>
               <span class="text-xs text-secondary font-medium" style="margin-top: 2px;">({{ ledgerPeriodLabel }})</span>
@@ -636,7 +611,7 @@
         <!-- Chart 2: Revenue vs Expenses vs Waste Comparison -->
         <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
           <div class="card-title mb-lg flex align-start gap-xs" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: 1.1rem;"></i> 
+            <i class="fa-solid fa-chart-simple text-primary" style="margin-top: 3px; font-size: var(--font-md);"></i> 
             <span class="font-bold text-base" style="color: var(--text-primary); line-height: 1.35;">
               เปรียบเทียบ รายรับ vs รายจ่าย
             </span>
@@ -719,7 +694,7 @@
             <div class="profit-sharing-section card p-md" style="background: rgba(139, 3, 19, 0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
               <div class="flex align-center mb-sm">
                 <span class="font-bold text-xs flex align-center" style="color: var(--text-primary); gap: 8px;">
-                  <i class="fa-solid fa-handshake-angle" style="color: var(--text-primary); font-size: 14px;"></i>
+                  <i class="fa-solid fa-handshake-angle" style="color: var(--text-primary); font-size: var(--font-sm);"></i>
                   <span>การจัดสรรส่วนแบ่งกำไร</span>
                 </span>
               </div>
@@ -728,12 +703,12 @@
                 <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
                   <div class="flex flex-between align-center text-xs text-secondary mb-xs">
                     <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
-                      <i class="fa-solid fa-store text-primary" style="font-size: 14px;"></i> 
+                      <i class="fa-solid fa-store text-primary" style="font-size: var(--font-sm);"></i> 
                       <span>ร้าน / บริหาร</span>
                     </span>
-                    <span class="badge font-bold" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: 11px;">60%</span>
+                    <span class="badge font-bold" style="background: rgba(139, 3, 19, 0.08); color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: var(--font-xxs);">60%</span>
                   </div>
-                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2;" :class="profitShare60 >= 0 ? 'text-primary' : 'text-danger'">
+                  <div class="font-bold my-xs" style="font-size: var(--font-xl); line-height: 1.2;" :class="profitShare60 >= 0 ? 'text-primary' : 'text-danger'">
                     {{ formatCurrency(profitShare60) }}
                   </div>
                   <div class="text-xs text-tertiary mt-2xs font-medium">60% ของกำไรจริง</div>
@@ -743,12 +718,12 @@
                 <div class="card p-md flex flex-col justify-between" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
                   <div class="flex flex-between align-center text-xs text-secondary mb-xs">
                     <span class="font-bold flex align-center" style="gap: 8px; color: var(--text-primary);">
-                      <i class="fa-solid fa-user-tie" style="color: #cc8000; font-size: 14px;"></i> 
+                      <i class="fa-solid fa-user-tie" style="color: #cc8000; font-size: var(--font-sm);"></i> 
                       <span>ผู้ร่วมทุน / หุ้นส่วน</span>
                     </span>
-                    <span class="badge font-bold" style="background: rgba(255, 171, 43, 0.18); color: #b26a00; padding: 2px 8px; border-radius: 6px; font-size: 11px;">40%</span>
+                    <span class="badge font-bold" style="background: rgba(255, 171, 43, 0.18); color: #b26a00; padding: 2px 8px; border-radius: 6px; font-size: var(--font-xxs);">40%</span>
                   </div>
-                  <div class="font-bold my-xs" style="font-size: 1.45rem; line-height: 1.2; color: #cc8000;" :class="profitShare40 < 0 ? 'text-danger' : ''">
+                  <div class="font-bold my-xs" style="font-size: var(--font-xl); line-height: 1.2; color: #cc8000;" :class="profitShare40 < 0 ? 'text-danger' : ''">
                     {{ formatCurrency(profitShare40) }}
                   </div>
                   <div class="text-xs text-tertiary mt-2xs font-medium">ยอดจ่ายให้ผู้ร่วมทุน (40%)</div>
@@ -764,7 +739,7 @@
       <!-- Top 5 Highest Expenses -->
       <div class="card p-lg" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
         <div class="card-title font-bold text-base mb-md flex align-center gap-xs" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-          <i class="fa-solid fa-ranking-star text-primary" style="font-size: 1.1rem;"></i> 
+          <i class="fa-solid fa-ranking-star text-primary" style="font-size: var(--font-md);"></i> 
           <span>5 อันดับรายการจ่ายสูงสุด</span>
         </div>
         <div v-if="topExpenses.length === 0" class="text-secondary text-sm text-center py-xl">
@@ -811,6 +786,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import PaginationBar from './PaginationBar.vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange } from '../helpers';
 
@@ -1361,10 +1337,10 @@ const topExpenses = computed(() => {
 const loadData = async () => {
   ledgerLoading.value = true;
   try {
-    const params = { status: 'completed', branch_id: props.branchId || '' };
+    const params = { status: 'completed', branch_id: props.branchId || '', include_items: 'false' };
     const expenseParams = { branch_id: props.branchId || '' };
     const guaranteeParams = { branch_id: props.branchId || '' };
-    const stockLogParams = { branch_id: props.branchId || '', limit: 500 };
+    const stockLogParams = { branch_id: props.branchId || '', reason: 'waste,staff_benefit', limit: 500 };
 
     if (activePeriodMode.value === 'daily') {
       params.date = activeDate.value;
@@ -1491,27 +1467,6 @@ const handleReverseEntry = async (item) => {
   }
 };
 
-const exportLedgerCSV = () => {
-  if (!filteredLedgerEntries.value || filteredLedgerEntries.value.length === 0) return;
-  let csvContent = '\uFEFFวัน-เวลา,ประเภท,ชื่อรายการ,ช่องทาง,จำนวนเงิน(บาท),ผู้บันทึก\n';
-  filteredLedgerEntries.value.forEach(item => {
-    const time = `"${formatDate(item.date)} ${formatTime(item.created_at)}"`;
-    const cat = `"${item.categoryLabel}"`;
-    const note = `"${(item.name || '').replace(/"/g, '""')}${item.isCancelled ? ' [ยกเลิก]' : ''}"`;
-    const pm = `"${item.paymentLabel}"`;
-    const amt = item.isCancelled ? 0 : (item.isRefund ? -item.amount : (item.amount || 0));
-    const staff = `"${(item.staffName || '').replace(/"/g, '""')}"`;
-    csvContent += `${time},${cat},${note},${pm},${amt},${staff}\n`;
-  });
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute('download', `ledger_expenses_${activeDate.value}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
 const getCategoryLabel = (cat) => {
   const map = {
     'raw_chicken': 'ไก่สด',
@@ -1573,21 +1528,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 1. Sub-tab Navigation (Consistent with StaffManagement) */
-.category-tabs .btn {
-  font-size: var(--font-sm);
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast, 0.15s ease);
-}
-
-.category-tabs .btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  font-weight: var(--font-weight-bold, 700);
-  box-shadow: 0 4px 12px var(--primary-glow, rgba(139, 3, 19, 0.25));
-}
-
 /* 2. Step Section & Form Labels */
 .form-step-section {
   display: flex;
@@ -1656,7 +1596,7 @@ onMounted(() => {
 }
 
 .cat-icon-wrap {
-  font-size: 1.75rem;
+  font-size: var(--font-2xl);
   line-height: 1;
   color: var(--text-secondary);
   transition: color var(--transition-fast, 0.15s ease);
@@ -1732,7 +1672,7 @@ onMounted(() => {
   border: 1.5px solid var(--primary);
   border-radius: var(--radius-md, 12px);
   color: #ffffff;
-  font-size: 1.15rem;
+  font-size: var(--font-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1769,7 +1709,7 @@ onMounted(() => {
   position: absolute;
   left: 14px;
   color: var(--text-tertiary);
-  font-size: 1rem;
+  font-size: var(--font-base);
 }
 
 .custom-input {
@@ -1797,30 +1737,6 @@ onMounted(() => {
   gap: var(--space-sm, 8px);
 }
 
-.btn-quick-amount {
-  background: #ffffff;
-  border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-sm, 8px);
-  padding: var(--space-sm, 8px) var(--space-xs, 4px);
-  font-size: var(--font-xs);
-  font-weight: var(--font-weight-bold, 700);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all var(--transition-fast, 0.15s ease);
-  text-align: center;
-}
-
-.btn-quick-amount:hover {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
-
-.btn-quick-amount.reset-btn {
-  color: var(--danger);
-  border-color: var(--danger-glow);
-  background: rgba(173, 40, 30, 0.04);
-}
 
 /* 6. Quick Notes 6 Grid */
 .quick-notes-grid-6 {
@@ -1869,7 +1785,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   opacity: 0.65;
   background: rgba(0, 0, 0, 0.06);
   transition: all 0.15s ease;
@@ -1909,22 +1825,6 @@ onMounted(() => {
   box-shadow: 0 3px 10px var(--primary-glow, rgba(139, 3, 19, 0.25));
 }
 
-.submit-expense-btn {
-  height: 48px;
-  font-size: var(--font-base);
-  font-weight: var(--font-weight-bold, 700);
-  border-radius: var(--radius-md, 12px);
-  background: var(--primary);
-  border: none;
-  color: #ffffff;
-  box-shadow: 0 4px 12px var(--primary-glow);
-  transition: all var(--transition-fast, 0.15s ease);
-}
-
-.submit-expense-btn:hover:not(:disabled) {
-  background: var(--primary-light);
-  transform: translateY(-1px);
-}
 
 /* 7. Summary Cards */
 .financial-summary-grid {
@@ -1962,7 +1862,7 @@ onMounted(() => {
 }
 
 .summary-value {
-  font-size: 1.25rem;
+  font-size: var(--font-lg);
   font-weight: var(--font-weight-bold, 700);
   line-height: 1.2;
   margin-bottom: 6px;
@@ -1975,7 +1875,7 @@ onMounted(() => {
 }
 
 .sub-badge {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   background: rgba(139, 3, 19, 0.04);
   color: var(--text-secondary);
   padding: 2px 6px;
@@ -1985,7 +1885,7 @@ onMounted(() => {
 }
 
 .summary-formula-caption {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   color: var(--text-tertiary);
   font-style: italic;
 }
@@ -2008,7 +1908,7 @@ onMounted(() => {
 }
 
 .filter-count-badge {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   background: rgba(0,0,0,0.06);
   padding: 1px 6px;
   border-radius: 10px;
@@ -2064,7 +1964,7 @@ onMounted(() => {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: var(--font-weight-bold, 700);
   background: rgba(139, 3, 19, 0.06);
   color: var(--text-primary);
@@ -2073,7 +1973,7 @@ onMounted(() => {
 }
 
 .category-badge i {
-  font-size: 13px;
+  font-size: var(--font-xs);
 }
 
 .top-cat-badge {
@@ -2085,7 +1985,7 @@ onMounted(() => {
 }
 
 .top-cat-badge i {
-  font-size: 11px !important;
+  font-size: var(--font-xxs) !important;
 }
 
 .badge-cat-central-kitchen, .badge-cat-raw_materials { background: rgba(139, 3, 19, 0.12); color: var(--primary, #8b0313); border: 1px solid rgba(139, 3, 19, 0.25); }
@@ -2112,7 +2012,7 @@ onMounted(() => {
   gap: 5px;
   padding: 5px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: var(--font-weight-bold, 700);
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0,0,0,0.03);
@@ -2120,13 +2020,9 @@ onMounted(() => {
 }
 
 .badge-status-pill i {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 
-.table-action-btn {
-  width: 130px !important;
-  min-width: 130px !important;
-}
 
 .badge-refund-done {
   background: rgba(52, 199, 89, 0.14);
@@ -2159,14 +2055,14 @@ onMounted(() => {
   gap: 5px;
   padding: 4px 11px;
   border-radius: 16px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 600;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
 .payment-method-badge i {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 
 .ck-expense-note {
@@ -2179,7 +2075,7 @@ onMounted(() => {
   color: #7f1d1d;
   border: 1px solid rgba(139, 3, 19, 0.16);
   border-radius: 6px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   font-weight: 500;
   line-height: 1.3;
 }
@@ -2191,39 +2087,6 @@ onMounted(() => {
 }
 
 /* Action Reverse Button */
-.btn-action-reverse {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  background: #ffffff;
-  color: var(--primary, #8b0313);
-  border: 1.5px solid rgba(139, 3, 19, 0.35);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 11.5px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(139, 3, 19, 0.08);
-  transition: all var(--transition-fast, 0.15s ease);
-  user-select: none;
-}
-
-.btn-action-reverse:hover:not(:disabled) {
-  background: rgba(139, 3, 19, 0.06);
-  border-color: var(--primary, #8b0313);
-  transform: translateY(-1px);
-}
-
-.btn-action-reverse:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-.btn-action-reverse:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .badge-cash { background: rgba(42, 157, 143, 0.14); color: #1f7a6f; border: 1px solid rgba(42, 157, 143, 0.25); }
 .badge-transfer { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; border: 1px solid rgba(59, 130, 246, 0.25); }
@@ -2345,30 +2208,30 @@ onMounted(() => {
 
 .expense-mobile-card .category-badge {
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   border-radius: 6px;
   gap: 4px;
 }
 
 .expense-mobile-card .category-badge i {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 
 .expense-mobile-card .payment-method-badge {
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   border-radius: 6px;
   gap: 4px;
 }
 
 .expense-mobile-card .payment-method-badge i {
-  font-size: 10px;
+  font-size: var(--font-xxs);
 }
 
 .expense-mobile-card .badge-status-pill {
   min-width: unset;
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: var(--font-xxs);
   border-radius: 6px;
   gap: 4px;
 }
@@ -2391,7 +2254,7 @@ onMounted(() => {
     gap: 6px;
   }
   .cat-icon-wrap {
-    font-size: 1.5rem;
+    font-size: var(--font-xl);
   }
   .cat-name {
     font-size: 12.5px;
@@ -2418,10 +2281,10 @@ onMounted(() => {
     gap: 5px;
   }
   .cat-icon-wrap {
-    font-size: 1.35rem;
+    font-size: var(--font-lg);
   }
   .cat-name {
-    font-size: 12px;
+    font-size: var(--font-xs);
   }
   .quick-notes-grid-6 {
     grid-template-columns: repeat(3, 1fr);
@@ -2451,7 +2314,7 @@ onMounted(() => {
     border-radius: 10px;
   }
   .cat-icon-wrap {
-    font-size: 1.2rem;
+    font-size: var(--font-md);
   }
   .cat-name {
     font-size: 11.5px;
@@ -2471,12 +2334,12 @@ onMounted(() => {
     padding: 10px 8px;
   }
   .top-expense-note {
-    font-size: 12px;
+    font-size: var(--font-xs);
   }
   .rank-indicator {
     width: 24px;
     height: 24px;
-    font-size: 11px;
+    font-size: var(--font-xxs);
   }
 }
 
