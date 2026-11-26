@@ -324,10 +324,34 @@ ul, ol { list-style: none; }
   background: var(--gradient-primary) !important;
   color: #ffffff !important;
   border-color: transparent !important;
-  box-shadow: var(--shadow-glow-primary) !important;
+  box-shadow: none !important;
 }
 
-.btn-secondary.active i {
+.btn-secondary.active-success {
+  background: var(--success, #2a9d8f) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.btn-secondary.active-warning {
+  background: var(--accent-dark, #c57600) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.btn-secondary.active-danger {
+  background: var(--danger, #ad281e) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.btn-secondary.active i,
+.btn-secondary.active-success i,
+.btn-secondary.active-warning i,
+.btn-secondary.active-danger i {
   color: #ffffff !important;
 }
 
@@ -378,18 +402,16 @@ ul, ol { list-style: none; }
 
 .btn-action {
   height: 46px; 
-  padding: 0 var(--space-lg); /* Generous padding for text and emoji */
+  padding: 0 var(--space-lg);
   min-width: 90px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm); /* Spacing between emoji and text */
+  gap: var(--space-sm);
   border-radius: var(--radius-md);
   font-size: var(--font-base); 
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-base);
-  background: #ffffff !important; /* Default white background */
-  border: 1px solid var(--border-color) !important; /* Default soft border */
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   box-shadow: var(--shadow-sm);
@@ -415,26 +437,24 @@ ul, ol { list-style: none; }
   border-color: transparent !important;
 }
 
-/* สีปุ่มในตาราง */
+/* สีปุ่มในตาราง (Retro Warm 80s Diner Theme) */
 .btn-action-edit {
-  background: rgba(255, 171, 43, 0.15) !important;
-  color: var(--accent-dark) !important;
-  border: 1px solid rgba(255, 171, 43, 0.25) !important;
+  background: rgba(197, 118, 0, 0.14) !important;
+  color: var(--accent-dark, #c57600) !important;
+  border: 1px solid rgba(197, 118, 0, 0.28) !important;
 }
 .btn-action-edit:active {
-  background: rgba(255, 171, 43, 0.25) !important;
+  background: rgba(197, 118, 0, 0.24) !important;
 }
 
 .btn-action-delete {
-  background: rgba(239, 68, 68, 0.15) !important;
-  color: var(--danger-light) !important;
-  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  background: rgba(173, 40, 30, 0.12) !important;
+  color: var(--danger, #ad281e) !important;
+  border: 1px solid rgba(173, 40, 30, 0.25) !important;
 }
 .btn-action-delete:active {
-  background: rgba(239, 68, 68, 0.25) !important;
+  background: rgba(173, 40, 30, 0.22) !important;
 }
-
-
 
 .btn-action-primary {
   background: var(--primary) !important;
@@ -1559,7 +1579,15 @@ input[type="date"] {
   max-height: 220px;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   animation: fadeIn 0.15s ease;
+}
+
+.custom-select-dropdown::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .custom-select-dropdown.dropdown-center-desktop {
@@ -1743,11 +1771,11 @@ select.form-input:focus {
 
 /* --- Category Tabs Wrapper start --- */
 .category-tabs {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   border-bottom: none;
-  padding-bottom: var(--space-sm);
+  padding-bottom: 0;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1848,7 +1876,7 @@ select.form-input:focus {
   background: var(--gradient-primary);
   color: white;
   border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: none;
 }
 
 /* --- Data Filter Pills (.filter-pill) start --- */
@@ -1879,25 +1907,25 @@ select.form-input:focus {
   background: var(--gradient-primary);
   color: white;
   border-color: transparent;
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: none;
 }
 .filter-pill.active-danger {
-  background: #dc3545;
+  background: var(--danger, #ad281e);
   color: #ffffff;
   border-color: transparent;
-  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.25);
+  box-shadow: none;
 }
 .filter-pill.active-warning {
-  background: #fd7e14;
+  background: var(--accent-dark, #c57600);
   color: #ffffff;
   border-color: transparent;
-  box-shadow: 0 2px 6px rgba(253, 126, 20, 0.25);
+  box-shadow: none;
 }
 .filter-pill.active-success {
-  background: #28a745;
+  background: var(--success, #2a9d8f);
   color: #ffffff;
   border-color: transparent;
-  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.25);
+  box-shadow: none;
 }
 
 /* --- Category Tab & Filter Pill end --- */
@@ -2529,5 +2557,259 @@ select.form-input:focus {
     height: 32px !important;
     padding: 0 10px !important;
     font-size: 12px !important;
+  }
+}
+
+/* ==========================================================================
+   Universal Page Top Header Card (12 Top Header Cards Unified)
+   ========================================================================== */
+.page-header-card,
+.menu-top-action-card,
+.mobile-stock-header-card,
+.diner-page-header,
+.dispatch-toolbar-card,
+.finance-toolbar,
+.partner-toolbar-card {
+  background: var(--card-bg, #ffffff) !important;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+}
+
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.page-header-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.page-header-title,
+.menu-total-count,
+.stock-page-title,
+.diner-header-title {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.page-header-title strong,
+.menu-total-count strong,
+.diner-header-title strong {
+  color: var(--primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.page-header-subtitle {
+  margin: 4px 0 0 0;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.4;
+}
+
+.header-icon-circle,
+.diner-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(139, 3, 19, 0.08);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-lg);
+  flex-shrink: 0;
+}
+
+/* Universal Header Tooltip (Works in both Type 1 & Type 2) */
+.title-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.title-info-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  font-size: var(--font-sm);
+  line-height: 1;
+  border-radius: var(--radius-full);
+  touch-action: manipulation;
+  transition: color var(--transition-fast);
+}
+
+.title-info-btn:hover,
+.title-info-btn:focus-visible {
+  color: var(--primary);
+  outline: none;
+}
+
+.title-tooltip-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: min(320px, 82vw);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--card-bg, #ffffff);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+  text-align: left;
+  font-weight: normal;
+}
+
+/* Desktop Equal-Width Header Buttons (min-width: 769px) */
+@media (min-width: 769px) {
+  .page-header-actions,
+  .menu-action-buttons,
+  .mobile-header-actions,
+  .diner-header-actions,
+  .finance-action-buttons,
+  .catalog-toolbar-actions {
+    display: inline-grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 1fr !important;
+    gap: var(--space-sm) !important;
+    align-items: center !important;
+  }
+
+  .catalog-toolbar-actions {
+    display: grid !important;
+    justify-content: start !important;
+    width: fit-content !important;
+  }
+}
+
+.page-header-actions > .btn,
+.page-header-actions > a.btn,
+.menu-action-buttons > .btn,
+.menu-action-buttons > a.btn,
+.mobile-header-actions > .btn,
+.mobile-header-actions > a.btn,
+.diner-header-actions > .btn,
+.diner-header-actions > a.btn,
+.finance-action-buttons > .btn,
+.finance-action-buttons > a.btn,
+.catalog-toolbar-actions > .btn,
+.catalog-toolbar-actions > a.btn {
+  width: 100% !important;
+  min-width: 150px !important;
+  height: 44px !important;
+  padding: 0 var(--space-lg) !important;
+  font-size: var(--font-base) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  border-radius: var(--radius-md) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+/* Mobile & Tablet Header Card & 50% Button Grid (max-width: 768px) */
+@media (max-width: 768px) {
+  .page-header-card,
+  .menu-top-action-card,
+  .mobile-stock-header-card,
+  .diner-page-header,
+  .dispatch-toolbar-card,
+  .finance-toolbar,
+  .partner-toolbar-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    text-align: center !important;
+    padding: var(--space-md) !important;
+    gap: var(--space-md) !important;
+  }
+
+  .page-header-left {
+    justify-content: center !important;
+    text-align: left !important;
+    width: 100%;
+  }
+
+  .page-header-title,
+  .menu-total-count,
+  .stock-page-title,
+  .diner-header-title {
+    justify-content: flex-start !important;
+    text-align: left !important;
+  }
+
+  .title-tooltip-popover {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .page-header-actions,
+  .menu-action-buttons,
+  .mobile-header-actions,
+  .diner-header-actions,
+  .finance-action-buttons,
+  .catalog-toolbar-actions {
+    display: grid !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: unset !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: var(--space-sm) !important;
+    width: 100% !important;
+  }
+
+  /* 1 Button -> Centered 50% width */
+  .page-header-actions:has(> :only-child),
+  .menu-action-buttons:has(> :only-child),
+  .mobile-header-actions:has(> :only-child),
+  .diner-header-actions:has(> :only-child),
+  .finance-action-buttons:has(> :only-child),
+  .catalog-toolbar-actions:has(> :only-child) {
+    grid-template-columns: minmax(160px, 50%) !important;
+    justify-content: center !important;
+  }
+
+  .page-header-actions > .btn,
+  .page-header-actions > a.btn,
+  .menu-action-buttons > .btn,
+  .menu-action-buttons > a.btn,
+  .mobile-header-actions > .btn,
+  .mobile-header-actions > a.btn,
+  .diner-header-actions > .btn,
+  .diner-header-actions > a.btn,
+  .finance-action-buttons > .btn,
+  .finance-action-buttons > a.btn,
+  .catalog-toolbar-actions > .btn,
+  .catalog-toolbar-actions > a.btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    padding: 0 10px !important;
+    font-size: var(--font-sm) !important;
   }
 }

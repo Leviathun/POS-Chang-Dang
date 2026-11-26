@@ -123,7 +123,7 @@
             </td>
             <td class="text-center" style="padding: 18px var(--space-md); vertical-align: middle; white-space: nowrap;">
               <div class="flex flex-col align-center justify-center" style="gap: 6px; width: 100%;">
-                <button class="btn-action" style="width: 180px;" @click="openOpeningCashModal(session)">
+                <button class="btn-action btn-action-edit" style="width: 180px;" @click="openOpeningCashModal(session)">
                   <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
                 </button>
                 <button class="btn-action btn-action-primary" style="width: 180px;" @click="openAuditModal(session)">
@@ -204,10 +204,10 @@
 
         <!-- Card Actions: Buttons (Equal Width and Height) -->
         <div class="cash-card-actions">
-          <button class="btn btn-secondary flex-1" @click="openOpeningCashModal(session)">
-            <i class="fa-solid fa-coins text-warning" style="font-size: var(--font-sm);"></i> กรอกยอดเงินทอน
+          <button class="btn-action btn-action-edit flex-1" @click="openOpeningCashModal(session)">
+            <i class="fa-solid fa-coins" style="font-size: var(--font-sm);"></i> กรอกยอดเงินทอน
           </button>
-          <button class="btn btn-primary flex-1" @click="openAuditModal(session)">
+          <button class="btn-action btn-action-primary flex-1" @click="openAuditModal(session)">
             <i class="fa-solid fa-circle-check" style="font-size: var(--font-sm);"></i> ปิดยอดประจำวัน
           </button>
         </div>
@@ -617,12 +617,12 @@ onMounted(() => {
   font-weight: 700;
 }
 .session-status-badge.closed {
-  background: rgba(16, 185, 129, 0.15);
-  color: #059669;
+  background: rgba(42, 157, 143, 0.15);
+  color: var(--success, #2a9d8f);
 }
 .session-status-badge.open {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
+  background: rgba(197, 118, 0, 0.15);
+  color: var(--accent-dark, #c57600);
 }
 .cash-card-grid {
   display: grid;

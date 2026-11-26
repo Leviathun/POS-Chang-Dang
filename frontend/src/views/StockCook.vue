@@ -1,56 +1,18 @@
 <template>
   <div id="stock-cook-page" class="page-enter">
     
-    <!-- Info Header Card (Matches Stock.vue styling & layout) -->
-    <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div class="title-tooltip-wrapper" @click.stop>
-        <div class="stock-page-title">
-          ปรุงอาหาร
-        </div>
-        <button
-          type="button"
-          class="title-info-btn"
-          aria-label="คำอธิบายจุดปรุงอาหาร"
-          :aria-expanded="showHintTooltip"
-          @click="showHintTooltip = !showHintTooltip"
-        >
-          <i class="fa-solid fa-circle-info"></i>
-        </button>
-        <div v-if="showHintTooltip" class="title-tooltip-popover" role="tooltip">
-          <strong>จุดปรุงอาหาร:</strong> บันทึกปรุง ทอด ห่อ หรือปิ้ง ระบบจะตัดสต็อกวัตถุดิบและเพิ่มสินค้าพร้อมขายให้อัตโนมัติ
-        </div>
-      </div>
-      <div class="flex align-center gap-xs flex-wrap mobile-header-actions">
-        <router-link to="/stock" class="btn btn-secondary">
-          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-        </router-link>
-      </div>
-    </div>
-
-    <!-- Search & Filter Controls (Solid White Card) -->
-    <div class="card p-md mb-lg cook-filter-card">
-      <div class="cook-filter-row flex flex-between align-center gap-md flex-wrap">
-        <div class="search-box flex-1">
-          <div class="input-icon-wrapper">
-            <i class="fa-solid fa-magnifying-glass input-icon"></i>
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              class="form-input" 
-              placeholder="ค้นหาชื่อสินค้าที่ต้องปรุง..." 
-              style="padding-left: 36px;"
-            />
-            <button 
-              v-if="searchQuery" 
-              class="search-clear-btn" 
-              @click="searchQuery = ''"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <!-- Toggle: Only with Raw Stock (Stable size, no text or width jumping) -->
+    <!-- Info Header Card & Search Filter Controls -->
+    <StockPageHeader
+      title="ปรุงอาหาร"
+      icon="fa-solid fa-fire-burner"
+      tooltip-title="จุดปรุงอาหาร:"
+      tooltip-text="บันทึกปรุง ทอด ห่อ หรือปิ้ง ระบบจะตัดสต็อกวัตถุดิบและเพิ่มสินค้าพร้อมขายให้อัตโนมัติ"
+      back-to="/stock"
+      searchable
+      v-model:search-query="searchQuery"
+      search-placeholder="ค้นหาชื่อสินค้าที่ต้องปรุง..."
+    >
+      <template #search-extra>
         <button 
           class="btn btn-raw-toggle"
           :class="{ 'btn-primary': onlyWithRawStock, 'btn-secondary': !onlyWithRawStock }"
@@ -60,21 +22,21 @@
           <i :class="onlyWithRawStock ? 'fa-solid fa-check-circle' : 'fa-regular fa-circle'" style="margin-right: 6px;"></i>
           <span>เฉพาะที่มีของสด ({{ itemsWithRawCount }})</span>
         </button>
-      </div>
-
-      <!-- Quick Category Filter Pills -->
-      <div class="flex align-center gap-xs flex-wrap mt-md">
-        <button 
-          v-for="cat in filterCategories" 
-          :key="cat.id" 
-          class="filter-pill"
-          :class="{ 'active': activeCategory === cat.id }"
-          @click="activeCategory = cat.id"
-        >
-          {{ cat.label }}
-        </button>
-      </div>
-    </div>
+      </template>
+      <template #search-bottom>
+        <div class="flex align-center gap-xs flex-wrap mt-md">
+          <button 
+            v-for="cat in filterCategories" 
+            :key="cat.id" 
+            class="filter-pill"
+            :class="{ 'active': activeCategory === cat.id }"
+            @click="activeCategory = cat.id"
+          >
+            {{ cat.label }}
+          </button>
+        </div>
+      </template>
+    </StockPageHeader>
 
     <!-- Content Area: Cookable Items -->
     <div v-if="loading" class="cook-items-grid">
@@ -404,9 +366,17 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, computed, reactive, onMounted } from 'vue';
+import StockPageHeader from '../components/StockPageHeader.vue';
 import api from '../api';
-import { ui } from '../helpers';
+import {
+  ui,
+  formatStockQty,
+  isItemLowStock as checkLowStock,
+  getSteamedCounterpartName,
+  getCookActionLabel,
+  getCookActionIcon
+} from '../helpers';
 import { store } from '../store';
 
 // Loading & saving states
@@ -439,51 +409,8 @@ const filterCategories = [
   { id: 'wrap_rice', label: 'ข้าว / แร็ป', icon: 'fa-solid fa-box' }
 ];
 
-// Helper: Format quantities
-const formatStockQty = (qty, uom) => {
-  if (qty === null || qty === undefined) return '-';
-  const roundedQty = Math.round(Number(qty) * 100) / 100;
-  const formatted = roundedQty.toLocaleString('th-TH', { maximumFractionDigits: 2 });
-  if (uom === 'กรัม') {
-    return `${formatted} ก.`;
-  }
-  return `${formatted} ${uom || 'ชิ้น'}`;
-};
-
 // Low stock helper
-const isItemLowStock = (item, qty) => {
-  if (qty === null || qty === undefined) return false;
-  if (qty <= 0) return false;
-  if (item.low_stock_threshold !== null && item.low_stock_threshold !== undefined) {
-    return qty <= Number(item.low_stock_threshold);
-  }
-  if (item.uom === 'กรัม') {
-    return qty <= 500;
-  }
-  const threshold = store.lowStockThreshold || 5;
-  return qty <= threshold;
-};
-
-// Bun linkage helper (Precise separation between pork and pork salted egg)
-const getSteamedCounterpartName = (name) => {
-  if (!name) return '';
-  if (name.includes('ไข่เค็ม') || name.includes('ไขเค็ม')) {
-    return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
-  }
-  if (name.includes('หมู')) {
-    return 'ซาลาเปาไส้หมูสับ';
-  }
-  if (name.includes('ถั่วดำ')) {
-    return 'ซาลาเปาไส้ถั่วดำ';
-  }
-  if (name.includes('ครีม')) {
-    return 'ซาลาเปาไส้ครีม';
-  }
-  if (name.includes('หมั่นโถ')) {
-    return 'หมั่นโถว';
-  }
-  return '';
-};
+const isItemLowStock = (item, qty) => checkLowStock(item, qty, store.lowStockThreshold || 5);
 
 // Robust steamed counterpart finder from store.stockItems
 const findSteamedCounterpart = (name) => {
@@ -559,35 +486,6 @@ const getItemCardHint = (item) => {
     return `หักจาก${steamed.name} 1:1`;
   }
   return '';
-};
-
-// Cook Action Helpers
-const getCookActionLabel = (name) => {
-  if (!name) return 'ทอด';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป') ||
-                    name.includes('ข้าว');
-  if (isWrapped) return 'ห่อ';
-
-  if (name.includes('ปิ้ง')) return 'ปิ้ง';
-  if (name.includes('ทอด')) return 'ทอด';
-
-  return 'ทอด';
-};
-
-const getCookActionIcon = (name) => {
-  if (!name) return 'fa-solid fa-fire';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป') ||
-                    name.includes('ข้าว');
-  if (isWrapped) return 'fa-solid fa-box';
-
-  if (name.includes('ปิ้ง')) return 'fa-solid fa-fire-flame-simple';
-  if (name.includes('ทอด')) return 'fa-solid fa-fire';
-
-  return 'fa-solid fa-fire';
 };
 
 // Items that require cooking/prep:
@@ -922,18 +820,8 @@ const loadStockData = async (force = false) => {
   }
 };
 
-const showHintTooltip = ref(false);
-const closeHintTooltip = () => {
-  showHintTooltip.value = false;
-};
-
 onMounted(() => {
   loadStockData();
-  window.addEventListener('click', closeHintTooltip);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('click', closeHintTooltip);
 });
 </script>
 
@@ -949,78 +837,6 @@ onUnmounted(() => {
   background: #ffffff !important;
   color: var(--text-primary);
 }
-
-/* Page Title matching Stock.vue exactly */
-.stock-page-title {
-  font-size: var(--font-lg);
-  font-weight: bold;
-  color: var(--text-secondary);
-  text-align: left;
-}
-
-
-.title-tooltip-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.title-info-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  padding: 2px;
-  font-size: var(--font-sm);
-  line-height: 1;
-  margin-top: -2px;
-  border-radius: var(--radius-full);
-  touch-action: manipulation;
-  transition: color var(--transition-fast);
-}
-
-.title-info-btn:hover,
-.title-info-btn:focus-visible {
-  color: var(--primary);
-  outline: none;
-}
-
-.title-tooltip-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 30;
-  width: min(320px, 82vw);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--card-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  font-size: var(--font-xs);
-  line-height: 1.45;
-}
-
-.cook-filter-card {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-}
-
-.input-icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-icon-wrapper .input-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
 
 /* Stable Filter Toggle (No resizing or layout shifts) */
 .btn-raw-toggle {
@@ -1141,11 +957,11 @@ onUnmounted(() => {
 }
 
 .cook-stock-box.raw-box.warning {
-  border-color: #f59e0b;
+  border-color: var(--accent-dark, #c57600);
 }
 
 .cook-stock-box.raw-box.danger {
-  border-color: #ef4444;
+  border-color: var(--danger, #ad281e);
 }
 
 .stock-box-label {
@@ -1245,47 +1061,6 @@ onUnmounted(() => {
 }
 
 /* Mobile & Tablet Responsiveness */
-@media (max-width: 768px) {
-  .mobile-stock-header-card {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    text-align: center !important;
-  }
-
-  .mobile-stock-header-card > div {
-    text-align: center !important;
-  }
-
-  .title-tooltip-wrapper {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .title-tooltip-popover {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .stock-page-title {
-    font-size: var(--font-lg) !important;
-    font-weight: bold !important;
-    text-align: center !important;
-  }
-
-  .mobile-stock-header-card .mobile-header-actions {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    gap: var(--space-xs) !important;
-    width: 100% !important;
-  }
-
-  .mobile-header-actions .btn {
-    flex: 1 !important;
-    justify-content: center !important;
-  }
-}
-
 @media (max-width: 576px) {
   .cook-items-grid {
     grid-template-columns: 1fr;
@@ -1293,21 +1068,10 @@ onUnmounted(() => {
     padding-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 150px) !important;
   }
 
-  .cook-filter-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-xs);
-  }
-
   .btn-raw-toggle {
     width: 100%;
     min-width: unset;
     justify-content: center;
-  }
-}
-@media (min-width: 769px) {
-  .mobile-stock-header-card {
-    padding: var(--space-xl) !important;
   }
 }
 </style>

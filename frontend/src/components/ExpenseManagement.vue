@@ -2,7 +2,7 @@
   <div class="expense-management-wrapper card p-md" style="position:relative; background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation (Consistent with StaffManagement.vue) -->
-    <div class="category-tabs mb-lg flex gap-xs flex-wrap">
+    <div class="category-tabs">
       <button 
         type="button"
         class="category-tab" 
@@ -251,7 +251,7 @@
       </div>
 
       <!-- Working Capital Note / Staff Guarantee Fund Indicator -->
-      <div v-if="activeHeldGuaranteesTotal > 0" class="card p-sm flex flex-col gap-xs" style="background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-md);">
+      <div v-if="activeHeldGuaranteesTotal > 0" class="card p-sm flex flex-col gap-xs" style="background: rgba(197, 118, 0, 0.05); border: 1px dashed rgba(197, 118, 0, 0.4); border-radius: var(--radius-md);">
         <div class="flex align-center gap-xs text-xs">
           <i class="fa-solid fa-shield-halved text-warning"></i>
           <span class="text-secondary font-medium">เงินประกันพนักงาน (หมุนเวียน):</span>
@@ -445,7 +445,7 @@
                 <!-- Case 4: Active Expense -->
                 <button 
                   v-else-if="item.type === 'expense'"
-                  class="btn-action btn-action-primary"
+                  class="btn-action btn-action-delete"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                   :title="item.isCKTransfer ? 'ยกเลิกรายการเบิกของจากครัวกลาง' : 'ยกเลิกและคืนยอด'"
@@ -457,7 +457,7 @@
                 <!-- Case 5: Active Stock Waste/Credit -->
                 <button 
                   v-else-if="item.type === 'waste_loss' || item.type === 'credit_loss'"
-                  class="btn-action btn-action-primary"
+                  class="btn-action btn-action-delete"
                   :disabled="reversingEntryId === item.entryKey"
                   @click="handleReverseEntry(item)"
                   title="ยกเลิกและคืนสต็อกเข้าคลัง"
@@ -553,25 +553,10 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalLedgerPages > 1" class="pagination-bar flex flex-between align-center">
-        <button 
-          class="pagination-btn" 
-          :disabled="ledgerCurrentPage === 1" 
-          @click="ledgerCurrentPage--"
-        >
-          <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-        </button>
-        <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalLedgerPages >= 10 }">
-          หน้า {{ ledgerCurrentPage }} จาก {{ totalLedgerPages }}
-        </span>
-        <button 
-          class="pagination-btn" 
-          :disabled="ledgerCurrentPage === totalLedgerPages" 
-          @click="ledgerCurrentPage++"
-        >
-          ถัดไป <i class="fa-solid fa-chevron-right"></i>
-        </button>
-      </div>
+      <PaginationBar
+        v-model:current-page="ledgerCurrentPage"
+        :total-pages="totalLedgerPages"
+      />
 
     </div>
 
@@ -807,6 +792,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import PaginationBar from './PaginationBar.vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange } from '../helpers';
 

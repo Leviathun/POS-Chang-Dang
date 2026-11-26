@@ -8,131 +8,18 @@
       <!-- ────────────────────────────────────────────────────────── -->
       <!-- REORDER MODE: แบบเดียวกับหน้าจัดการเมนู POS (Menu.vue)      -->
       <!-- ────────────────────────────────────────────────────────── -->
-      <div v-if="isReorderMode">
-        <!-- Reorder Top Action Card -->
-        <div class="card mb-lg menu-top-action-card">
-          <div class="menu-total-count">
-            จัดเรียงลำดับสินค้า: <strong>{{ reorderItems.length }}</strong> รายการ
-          </div>
-          <div class="menu-action-buttons">
-            <button class="btn btn-secondary" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
-            <button class="btn btn-primary" :disabled="isSavingReorder" @click="handleSaveReorder">
-              <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingReorder ? 'กำลังบันทึก...' : 'บันทึก' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Desktop Reorder Table (Visible on desktop only) -->
-        <div class="card p-0 overflow-hidden desktop-menu-table-container">
-          <div style="overflow-x: auto;">
-            <table class="table w-full" style="border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th class="text-center" style="padding: var(--space-md); width: 10%;">ลาก</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 15%;">รูป</th>
-                  <th class="text-left" style="padding: var(--space-md); width: 45%;">สินค้าในครัวกลาง</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 30%; white-space: nowrap;">ราคา</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="(item, index) in reorderItems" 
-                  :key="item.id" 
-                  style="border-bottom: 1px solid var(--border-color);"
-                  class="table-row-hover desktop-reorder-row"
-                  :class="{ 'dragging': dragIndex === index }"
-                  :data-index="index"
-                  draggable="true"
-                  @dragstart="handleDragStart(index, $event)"
-                  @dragover="handleDragOver"
-                  @dragenter="handleDragEnter(index)"
-                  @dragend="handleDragEnd"
-                >
-                  <!-- Drag Handle -->
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <div 
-                      class="drag-handle" 
-                      style="cursor: grab;"
-                      @touchstart="handleTouchStart(index, $event)"
-                      @touchmove.prevent="handleTouchMove"
-                      @touchend="handleTouchEnd"
-                      @touchcancel="handleTouchEnd"
-                    >
-                      <i class="fa-solid fa-bars"></i>
-                    </div>
-                  </td>
-                  <!-- Image Preview -->
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
-                      <img v-if="item.image_url" :src="item.image_url" :alt="item.name" style="width: 100%; height: 100%; object-fit: cover;" />
-                      <i v-else class="fa-solid fa-box-open text-base text-muted"></i>
-                    </div>
-                  </td>
-                  <!-- Name & Category -->
-                  <td style="padding: var(--space-md); vertical-align: middle;">
-                    <div class="font-bold text-base">{{ item.name }}</div>
-                    <div class="text-sm text-muted">
-                      {{ getCategoryLabel(item.category) }}
-                    </div>
-                  </td>
-                  <!-- Price -->
-                  <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;">
-                    ฿{{ formatNumber(item.cost_price) }} / {{ item.unit }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Mobile Reorder Cards (Visible on mobile only) -->
-        <div class="mobile-menu-list-container">
-          <div class="mobile-menu-list">
-            <div 
-              v-for="(item, index) in reorderItems" 
-              :key="item.id" 
-              class="mobile-menu-card mobile-reorder-card"
-              :class="{ 'dragging': dragIndex === index }"
-              :data-index="index"
-            >
-              <div class="mobile-menu-card-body" style="align-items: center; display: flex; flex-direction: row; width: 100%; padding: var(--space-sm) var(--space-md);">
-                <!-- Drag Handle -->
-                <div 
-                  class="drag-handle" 
-                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: var(--font-md); color: var(--text-tertiary);"
-                  @touchstart="handleTouchStart(index, $event)"
-                  @touchmove.prevent="handleTouchMove"
-                  @touchend="handleTouchEnd"
-                  @touchcancel="handleTouchEnd"
-                >
-                  <i class="fa-solid fa-bars"></i>
-                </div>
-
-                <!-- Product Image -->
-                <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
-                  <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="mobile-menu-card-img" />
-                  <div v-else class="mobile-menu-card-placeholder">
-                    <i class="fa-solid fa-box-open" style="font-size: var(--font-md); color: var(--text-tertiary);"></i>
-                  </div>
-                </div>
-                
-                <!-- Middle: Name & Category -->
-                <div class="mobile-menu-card-details" style="flex: 1; min-width: 0;">
-                  <div class="mobile-menu-card-name truncate">{{ item.name }}</div>
-                  <div class="mobile-menu-card-category">{{ getCategoryLabel(item.category) }}</div>
-                </div>
-                
-                <!-- Price -->
-                <div class="mobile-menu-card-meta" style="text-align: right; justify-content: center; width: auto; margin-left: auto; flex-shrink: 0;">
-                  <div class="mobile-menu-card-price">฿{{ formatNumber(item.cost_price) }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ReorderItemsPanel
+        v-if="isReorderMode"
+        v-model:items="reorderItems"
+        :is-saving="isSavingReorder"
+        title-prefix="จัดลำดับเมนู"
+        column-header="สินค้าในครัวกลาง"
+        :get-category-label="(item) => getCategoryLabel(item.category)"
+        :get-desktop-price-text="(item) => `฿${formatNumber(item.cost_price)} / ${item.unit}`"
+        :get-mobile-price-text="(item) => `฿${formatNumber(item.cost_price)}`"
+        @close="closeReorderMode"
+        @save="handleSaveReorder"
+      />
 
       <!-- ────────────────────────────────────────────────────────── -->
       <!-- NORMAL CATALOG VIEW (เมื่อไม่ได้อยู่ในโหมดจัดเรียง)           -->
@@ -153,7 +40,7 @@
         </div>
 
         <!-- Middle Row: Category Filter Pills -->
-        <div class="category-tabs flex gap-xs align-center flex-wrap" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
+        <div class="flex gap-xs align-center flex-wrap">
           <button 
             v-for="cat in categories" 
             :key="cat.id" 
@@ -324,7 +211,7 @@
               <button class="btn-action btn-action-delete flex-1" @click="openWasteModal(item)" title="ตัดของเสีย/หมดอายุ">
                 <i class="fa-solid fa-dumpster"></i> ของเสีย
               </button>
-              <button class="btn-action text-danger" style="flex: 0 0 36px; padding: 0;" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">
+              <button class="btn-action btn-action-delete" style="flex: 0 0 36px; padding: 0;" @click="confirmDeleteItem(item)" title="ลบสินค้าออกจากแคตตาล็อก">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -340,438 +227,68 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'dispatch'" class="dispatch-section">
       <!-- Top Action Toolbar Card -->
-      <div class="card mb-lg p-md flex flex-between align-center dispatch-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div class="flex align-center gap-md">
+      <div class="card mb-lg page-header-card dispatch-toolbar-card">
+        <div class="page-header-left">
           <div class="header-icon-circle">
-            <i class="fa-solid fa-truck-arrow-right text-primary" style="font-size: var(--font-lg);"></i>
+            <i class="fa-solid fa-truck-arrow-right"></i>
           </div>
-          <div>
-            <h2 class="font-bold text-lg text-primary" style="margin: 0;">
-              ระบบจ่ายของให้สาขา
-            </h2>
-            <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
-              ครัวกลางจัดส่งของให้สาขาโดยตรง เมื่อกดยืนยันจะตัดสต็อกครัวกลาง บันทึกเป็นรายจ่ายสาขา และเติมสต็อก POS ให้อัตโนมัติ
-            </p>
+          <div class="page-header-text">
+            <h2 class="page-header-title">ระบบจ่ายของให้สาขา</h2>
           </div>
         </div>
 
         <!-- Target Branch Selector (Prominent in Toolbar) -->
-        <div class="dispatch-target-branch-bar flex align-center gap-sm">
-          <label class="font-bold text-sm text-secondary flex align-center gap-xs" style="white-space: nowrap;">
-            <i class="fa-solid fa-store text-primary"></i>
-            <span>สาขาปลายทาง</span>
-          </label>
-          <div class="custom-select-wrapper dispatch-branch-select-wrapper" @click.stop>
-            <div 
-              class="custom-select-trigger dispatch-branch-select" 
-              :class="{ 'active': isDispatchBranchDropdownOpen }" 
-              @click="isDispatchBranchDropdownOpen = !isDispatchBranchDropdownOpen"
-            >
-              <span class="custom-select-text font-bold text-sm text-primary flex align-center gap-xs">
-                <i class="fa-solid fa-store text-primary mr-1"></i>
-                <span>{{ selectedDispatchBranchName || 'เลือกสาขา' }}</span>
-              </span>
-            </div>
-            <div v-if="isDispatchBranchDropdownOpen" class="custom-select-dropdown">
-              <div 
-                v-for="b in retailBranches" 
-                :key="b.id" 
-                class="custom-select-option"
-                :class="{ 'selected': Number(dispatchBranchId) === Number(b.id) }"
-                @click="dispatchBranchId = b.id; isDispatchBranchDropdownOpen = false;"
-              >
-                <div class="flex align-center gap-xs font-bold text-sm">
-                  <i class="fa-solid fa-store mr-1 text-primary"></i>
-                  <span>{{ b.name }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DatePeriodFilter
+          branch-only
+          v-model:branch-id="dispatchBranchId"
+          :branches="retailBranches"
+          :show-all-branches="false"
+          branch-label="สาขาปลายทาง:"
+        />
       </div>
 
       <!-- Main Layout: Left Catalog (70%) + Right Cart (30%) -->
-      <div class="catalog-layout">
-        <!-- Left: Items Catalog -->
-        <div class="catalog-main">
-          <!-- Search & Category Filters -->
-          <div class="card p-md mb-md filter-bar">
-            <!-- Full Width Search -->
-            <div class="search-input-box mb-md" style="position: relative; width: 100%;">
-              <i class="fa-solid fa-magnifying-glass search-icon"></i>
-              <input 
-                type="text" 
-                v-model="dispatchSearchQuery" 
-                placeholder="ค้นหาชื่อสินค้า, วัตถุดิบ, ซอส, บรรจุภัณฑ์..." 
-                class="form-input search-input"
-                style="padding-left: 42px; width: 100%; border-radius: var(--radius-md); font-size: var(--font-base);"
-              />
-              <button 
-                v-if="dispatchSearchQuery" 
-                class="search-clear-btn" 
-                @click="dispatchSearchQuery = ''"
-                title="ล้างคำค้นหา"
-              >
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            <!-- Category Pills -->
-            <div class="category-tabs flex gap-xs align-center" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
-              <button 
-                v-for="cat in categories" 
-                :key="cat.id" 
-                class="filter-pill"
-                :class="{ active: dispatchCategory === cat.id }"
-                @click="dispatchCategory = cat.id"
-              >
-                <span>{{ cat.label }}</span>
-                <span v-if="getDispatchCategoryCount(cat.id) > 0" class="category-count">
-                  ({{ getDispatchCategoryCount(cat.id) }})
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Loading state -->
-          <div v-if="isLoadingItems" class="grid-cards">
-            <div v-for="i in 6" :key="i" class="card item-card p-md" style="pointer-events: none;">
-              <div class="skeleton mb-md" style="height: 135px; width: 100%; border-radius: var(--radius-md);"></div>
-              <div class="skeleton mb-xs" style="width: 85%; height: 18px;"></div>
-              <div class="skeleton mb-sm" style="width: 50%; height: 14px;"></div>
-              <div class="skeleton" style="width: 100%; height: 42px; border-radius: var(--radius-md);"></div>
-            </div>
-          </div>
-
-          <!-- Empty state -->
-          <div v-else-if="filteredDispatchItems.length === 0" class="empty-state-box">
-            <div class="empty-state-icon">
-              <i class="fa-solid fa-box-open"></i>
-            </div>
-            <div class="empty-state-title">ไม่พบรายการสินค้า</div>
-            <div class="empty-state-desc">ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่น</div>
-          </div>
-
-          <!-- Items Grid -->
-          <div v-else class="grid-cards">
-            <div 
-              v-for="item in filteredDispatchItems" 
-              :key="item.id" 
-              class="card p-md item-card"
-              :class="{ 
-                'low-stock': item.quantity <= (item.min_stock_alert || 5),
-                'item-out-of-stock': item.quantity <= 0,
-                'in-cart': getDispatchCartQty(item.id) > 0
-              }"
-              @click="addDispatchItem(item)"
-            >
-              <!-- Quantity Badge if in cart (Desktop & Mobile) -->
-              <span v-if="getDispatchCartQty(item.id) > 0" class="qty-badge">
-                {{ getDispatchCartQty(item.id) }}
-              </span>
-
-              <!-- Top badges -->
-              <div class="card-top-badges flex flex-between align-center">
-                <span class="badge badge-neutral card-badge-category">
-                  {{ getCategoryLabel(item.category) }}
-                </span>
-                <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="หมดสต็อก">
-                  <i class="fa-solid fa-xmark"></i>
-                </span>
-                <span v-else-if="item.quantity <= (item.min_stock_alert || 5)" class="badge badge-warning card-badge-status" title="ใกล้หมด">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                </span>
-                <span v-else class="badge badge-success card-badge-status" title="พร้อมจ่าย">
-                  <i class="fa-solid fa-check"></i>
-                </span>
-              </div>
-
-              <!-- Item Image -->
-              <div class="item-img-container">
-                <img 
-                  v-if="item.image_url" 
-                  :src="item.image_url" 
-                  :alt="item.name" 
-                  class="item-img"
-                  loading="lazy"
-                />
-                <div v-else class="item-img-placeholder">
-                  <i class="fa-solid fa-box-open"></i>
-                </div>
-              </div>
-
-              <!-- Item Name -->
-              <h4 class="item-name font-bold" :title="item.name">
-                <div class="item-name-main">{{ getItemNameParts(item.name).main }}</div>
-                <div class="item-name-sub" v-if="getItemNameParts(item.name).sub">
-                  {{ getItemNameParts(item.name).sub }}
-                </div>
-              </h4>
-
-              <!-- Meta -->
-              <div class="item-meta-box">
-                <div class="item-meta-row flex flex-between align-center text-xs py-1">
-                  <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
-                  <span class="font-bold text-primary item-cost-val" style="font-size: var(--font-base);">
-                    ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
-                  </span>
-                </div>
-                
-                <div class="item-meta-row flex flex-between align-center text-xs py-1">
-                  <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
-                    <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
-                    <span>ในครัวกลาง:</span>
-                  </span>
-                  <span 
-                    class="font-bold item-stock-val" 
-                    :class="{
-                      'text-danger': item.quantity <= 0,
-                      'text-warning': item.quantity > 0 && item.quantity <= (item.min_stock_alert || 5),
-                      'text-success': item.quantity > (item.min_stock_alert || 5)
-                    }"
-                    style="font-size: var(--font-base);"
-                  >
-                    <span class="stock-prefix">เหลือ </span>{{ formatNumber(item.quantity) }} {{ item.unit }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Action Button (Direct Quantity Stepper & Input) -->
-              <div class="card-footer-actions">
-                <div v-if="getDispatchCartQty(item.id) > 0" class="flex align-center gap-xs w-full" @click.stop>
-                  <button class="qty-btn" @click="decreaseDispatchQty(getDispatchCartItem(item.id))" title="ลดจำนวน">-</button>
-                  <input 
-                    type="number" 
-                    inputmode="numeric" 
-                    min="1" 
-                    :max="item.quantity" 
-                    :value="getDispatchCartQty(item.id)" 
-                    @change="setDispatchCartQty(item, $event.target.value)"
-                    @focus="$event.target.select()" 
-                    class="form-input text-center font-bold qty-card-input" 
-                    style="flex: 1; height: 36px; padding: 2px; font-size: var(--font-sm); border-radius: var(--radius-sm);" 
-                    title="พิมพ์จำนวนที่ต้องการจ่ายได้ทันที"
-                  />
-                  <button class="qty-btn" :disabled="getDispatchCartQty(item.id) >= item.quantity" @click="increaseDispatchQty(getDispatchCartItem(item.id))" title="เพิ่มจำนวน">+</button>
-                </div>
-                <button 
-                  v-else
-                  class="btn-action btn-action-primary w-full" 
-                  :disabled="item.quantity <= 0"
-                  @click.stop="addDispatchItem(item)"
-                >
-                  <i class="fa-solid fa-plus-circle"></i>
-                  <span>{{ item.quantity > 0 ? 'เพิ่มลงรายการจ่าย' : 'ของหมดสต็อก' }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Dispatch Cart Panel -->
-        <div class="card p-md cart-sidebar flex flex-col justify-between">
-          <div>
-            <!-- Header -->
-            <div class="flex flex-between align-center mb-md pb-sm cart-header">
-              <h4 class="font-bold text-base flex align-center gap-xs">
-                <i class="fa-solid fa-truck-arrow-right text-primary"></i>
-                <span>รายการของที่จะจ่าย</span>
-                <span v-if="dispatchCart.length > 0" class="badge badge-primary font-bold">{{ dispatchCart.length }}</span>
-              </h4>
-              <button 
-                v-if="dispatchCart.length > 0" 
-                class="text-xs text-danger font-bold cursor-pointer clear-cart-btn flex align-center gap-xs"
-                @click="clearDispatchCart"
-              >
-                <i class="fa-solid fa-trash-can"></i>
-                <span>ล้างทั้งหมด</span>
-              </button>
-            </div>
-
-            <!-- Target Branch Badge Card -->
-            <div class="dispatch-branch-info-card flex align-center gap-md" style="background: rgba(139, 3, 19, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-md);">
-              <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: var(--font-md);"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-xs text-secondary font-medium" style="margin-bottom: 2px;">สาขาที่จะตัดยอดเข้า:</div>
-                <div class="font-bold text-sm text-primary truncate" style="font-size: var(--font-sm);">
-                  {{ selectedDispatchBranchName || 'ยังไม่ได้เลือกสาขา' }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Empty Cart -->
-            <div v-if="dispatchCart.length === 0" class="empty-state-box empty-state-compact">
-              <div class="empty-state-icon empty-state-icon-sm">
-                <i class="fa-solid fa-basket-shopping"></i>
-              </div>
-              <div class="empty-state-title text-sm">ยังไม่มีสินค้าในรายการจ่าย</div>
-              <div class="empty-state-desc text-xs">คลิกการ์ดสินค้าทางซ้ายเพื่อเพิ่มรายการที่จะส่งให้สาขา</div>
-            </div>
-
-            <!-- Cart Items List -->
-            <div v-else class="cart-items-list flex flex-col gap-sm" style="max-height: 380px; overflow-y: auto;">
-              <div 
-                v-for="c in dispatchCart" 
-                :key="c.item_id" 
-                class="cart-row p-sm flex flex-col justify-between"
-              >
-                <!-- Row 1: Name + Subtotal -->
-                <div class="flex flex-between align-start gap-xs mb-xs">
-                  <div class="flex-1 min-w-0 pr-xs">
-                    <div class="cart-item-name font-bold text-sm text-primary">
-                      {{ getItemNameParts(c.item_name).main }}
-                    </div>
-                    <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
-                      {{ getItemNameParts(c.item_name).sub }}
-                    </div>
-                    <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
-                      <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
-                    </div>
-                  </div>
-                  <div class="text-right flex-shrink-0 pl-xs">
-                    <span class="font-bold text-sm text-primary">฿{{ formatNumber(c.quantity * c.cost_price) }}</span>
-                  </div>
-                </div>
-
-                <!-- Row 2: Price + Stepper + Delete -->
-                <div class="flex flex-between align-center pt-xs cart-item-bottom">
-                  <span class="text-xs text-secondary">
-                    ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
-                  </span>
-
-                  <div class="flex align-center gap-xs flex-shrink-0">
-                    <button class="qty-btn" @click="decreaseDispatchQty(c)">-</button>
-                    <input 
-                      type="number" 
-                      inputmode="numeric" 
-                      v-model.number="c.quantity" 
-                      min="1" 
-                      :max="c.max_quantity" 
-                      class="form-input text-center text-sm font-bold" 
-                      style="width: 56px; height: 32px; padding: 2px;"
-                      @change="validateDispatchQty(c)"
-                      @focus="$event.target.select()"
-                    />
-                    <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)">+</button>
-                    <button class="btn btn-ghost btn-xs text-danger ml-xs" @click="removeDispatchItem(c.item_id)">✕</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer: Notes + Total + Submit -->
-          <div class="cart-footer pt-md mt-md">
-            <div class="form-group mb-md">
-              <label class="form-label text-xs font-bold text-secondary mb-xs block">
-                <i class="fa-solid fa-pen-to-square mr-1"></i> บันทึกช่วยจำ / รอบส่ง (ถ้ามี):
-              </label>
-              <input 
-                type="text" 
-                v-model="dispatchNotes" 
-                placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน" 
-                class="form-input text-sm w-full"
-              />
-            </div>
-
-            <!-- Total Cost -->
-            <div class="cart-total-row flex flex-between align-baseline mb-md pt-sm">
-              <span class="text-sm font-bold text-secondary">มูลค่าต้นทุนรวม:</span>
-              <span class="text-2xl font-bold text-primary">฿{{ formatNumber(totalDispatchCost) }}</span>
-            </div>
-
-            <!-- Submit Button (48px) -->
-            <button 
-              class="btn btn-primary w-full"
-              :disabled="dispatchCart.length === 0 || !dispatchBranchId || isSubmittingDispatch"
-              @click="submitPushDispatch"
-            >
-              <i v-if="isSubmittingDispatch" class="fa-solid fa-spinner fa-spin mr-2"></i>
-              <i v-else class="fa-solid fa-truck-arrow-right mr-2"></i>
-              <span>{{ isSubmittingDispatch ? 'กำลังบันทึกจ่ายของ...' : 'ยืนยันจ่ายของให้สาขา (ตัดสต็อกทันที)' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mobile-only Bottom Docked Cart Bar (Exact POS Floating Cart Bar) -->
-      <div 
-        v-if="dispatchCart.length > 0" 
-        class="cart-bar mobile-only-cart"
+      <KitchenCatalogCart
+        :items="items"
+        :categories="categories"
+        :is-loading-items="isLoadingItems"
+        :get-category-label="getCategoryLabel"
+        v-model:cart="dispatchCart"
+        v-model:notes="dispatchNotes"
+        :is-submitting="isSubmittingDispatch"
+        :submit-disabled="!dispatchBranchId"
+        :show-remove-item-btn="true"
+        search-placeholder="ค้นหาชื่อสินค้า, วัตถุดิบ, ซอส, บรรจุภัณฑ์..."
+        stock-label="ในครัวกลาง:"
+        add-button-text="เพิ่มลงรายการจ่าย"
+        cart-title="รายการของที่จะจ่าย"
+        :mobile-cart-title="`รายการของที่จะจ่าย (${selectedDispatchBranchName || 'ยังไม่เลือกสาขา'})`"
+        cart-icon="fa-solid fa-truck-arrow-right"
+        empty-cart-title="ยังไม่มีสินค้าในรายการจ่าย"
+        empty-cart-desc="คลิกการ์ดสินค้าทางซ้ายเพื่อเพิ่มรายการที่จะส่งให้สาขา"
+        notes-label="บันทึกช่วยจำ / รอบส่ง (ถ้ามี):"
+        notes-placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน"
+        submit-icon="fa-solid fa-truck-arrow-right"
+        submit-label="ยืนยันจ่ายของให้สาขา (ตัดสต็อกทันที)"
+        submitting-label="กำลังบันทึกจ่ายของ..."
+        mobile-submit-label="ยืนยันจ่ายของ"
+        mobile-submitting-label="กำลังจ่าย..."
+        @submit="submitPushDispatch"
       >
-        <div class="cart-bar-inner">
-          <div class="cart-info" @click="isDispatchMobileDrawerOpen = !isDispatchMobileDrawerOpen">
-            <span class="cart-count">
-              {{ totalDispatchQty }} รายการ
-              <i :class="isDispatchMobileDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: var(--font-xxs); margin-left: 2px;"></i>
-            </span>
-            <span class="cart-total">฿{{ formatNumber(totalDispatchCost) }}</span>
-          </div>
-          <button 
-            class="cart-pay-btn" 
-            :disabled="isSubmittingDispatch || dispatchCart.length === 0 || !dispatchBranchId"
-            @click="submitPushDispatch"
-          >
-            <i v-if="isSubmittingDispatch" class="fa-solid fa-spinner fa-spin"></i>
-            <i v-else class="fa-solid fa-truck-arrow-right"></i>
-            <span>{{ isSubmittingDispatch ? 'กำลังจ่าย...' : 'ยืนยันจ่ายของ' }}</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Mobile-only Slide-up Cart Detail Panel (POS Master Design) -->
-      <div 
-        v-if="dispatchCart.length > 0" 
-        class="cart-detail-panel mobile-only-cart"
-        :class="{ 'hidden': !isDispatchMobileDrawerOpen }"
-      >
-        <div class="cart-detail-header">
-          <span class="font-semibold text-md" style="display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-truck-arrow-right"></i> รายการของที่จะจ่าย ({{ selectedDispatchBranchName || 'ยังไม่เลือกสาขา' }})
-          </span>
-          <button class="btn btn-ghost btn-sm text-danger" @click="clearDispatchCart">ล้างทั้งหมด</button>
-        </div>
-
-        <div style="overflow-y: auto; max-height: calc(45vh - 60px); padding-bottom: 16px;">
-          <div 
-            v-for="c in dispatchCart" 
-            :key="c.item_id" 
-            class="cart-item animate-fade-in"
-          >
-            <div class="cart-item-info">
-              <div class="cart-item-name">{{ getItemNameParts(c.item_name).main }}</div>
-              <div class="cart-item-price">
-                <div>฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}</div>
-                <div v-if="c.pack_size > 1" class="text-primary font-semibold" style="margin-top: 2px;">(เติม {{ c.quantity * c.pack_size }} ชิ้น)</div>
+        <template #cart-banner>
+          <div class="dispatch-branch-info-card flex align-center gap-md" style="background: rgba(139, 3, 19, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: var(--space-md);">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--card-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-color-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <i class="fa-solid fa-building-circle-arrow-right text-primary" style="font-size: var(--font-md);"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs text-secondary font-medium" style="margin-bottom: 2px;">สาขาที่จะตัดยอดเข้า:</div>
+              <div class="font-bold text-sm text-primary truncate" style="font-size: var(--font-sm);">
+                {{ selectedDispatchBranchName || 'ยังไม่ได้เลือกสาขา' }}
               </div>
             </div>
-            <div class="cart-item-qty">
-              <button class="qty-btn minus" @click="decreaseDispatchQty(c)">−</button>
-              <span class="qty-value">{{ c.quantity }}</span>
-              <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseDispatchQty(c)">+</button>
-            </div>
-            <div class="cart-item-subtotal">
-              ฿{{ formatNumber(c.quantity * c.cost_price) }}
-            </div>
           </div>
-
-          <!-- Notes Area (Matching POS Mobile Discount Selector Area) -->
-          <div style="padding: 12px 20px;">
-            <div class="font-bold text-sm text-primary flex align-center gap-xs" style="margin-bottom: 6px;">
-              <i class="fa-solid fa-pen-to-square"></i> บันทึกช่วยจำ / รอบส่ง (ถ้ามี)
-            </div>
-            <input 
-              type="text" 
-              v-model="dispatchNotes" 
-              placeholder="เช่น รอบส่งเช้า 08:30 น., ส่งของด่วน..." 
-              class="form-input"
-              style="font-size: var(--font-sm); padding: 6px 12px; height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
-            />
-          </div>
-        </div>
-      </div>
+        </template>
+      </KitchenCatalogCart>
     </div>
 
     <!-- ────────────────────────────────────────────────────────── -->
@@ -786,46 +303,10 @@
         v-model:selected-year="selectedYear"
         v-model:start-time="customStartTime"
         v-model:end-time="customEndTime"
+        v-model:branch-id="orderBranchFilter"
+        :branches="retailBranches"
         @change="refreshActivePeriodTab"
-      >
-        <!-- Right: Branch Filter Dropdown -->
-        <div class="order-branch-filter" style="margin-left: auto;">
-          <label class="order-branch-label">
-            <i class="fa-solid fa-store text-primary"></i>
-            <span>สาขา:</span>
-          </label>
-          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
-            <div 
-              class="custom-select-trigger order-branch-select" 
-              :class="{ 'active': isOrderBranchDropdownOpen }" 
-              @click="isOrderBranchDropdownOpen = !isOrderBranchDropdownOpen; isOrderRequesterDropdownOpen = false;"
-              style="height: 38px;"
-            >
-              <span class="custom-select-text font-bold">
-                {{ selectedOrderBranchName }}
-              </span>
-            </div>
-            <div v-if="isOrderBranchDropdownOpen" class="custom-select-dropdown">
-              <div 
-                class="custom-select-option"
-                :class="{ 'selected': orderBranchFilter === 'all' }"
-                @click="orderBranchFilter = 'all'; isOrderBranchDropdownOpen = false;"
-              >
-                ทุกสาขา
-              </div>
-              <div 
-                v-for="b in retailBranches" 
-                :key="b.id" 
-                class="custom-select-option"
-                :class="{ 'selected': Number(orderBranchFilter) === Number(b.id) }"
-                @click="orderBranchFilter = b.id; isOrderBranchDropdownOpen = false;"
-              >
-                {{ b.name }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </DatePeriodFilter>
+      />
 
       <!-- Orders Status & Requester Filter Toolbar -->
       <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md orders-toolbar">
@@ -891,7 +372,7 @@
             <div 
               class="custom-select-trigger order-branch-select" 
               :class="{ 'active': isOrderRequesterDropdownOpen }" 
-              @click="isOrderRequesterDropdownOpen = !isOrderRequesterDropdownOpen; isOrderBranchDropdownOpen = false;"
+              @click="isOrderRequesterDropdownOpen = !isOrderRequesterDropdownOpen"
             >
               <span class="custom-select-text font-bold">
                 {{ orderRequesterFilter === 'all' ? 'ทุกคน' : orderRequesterFilter }}
@@ -1028,122 +509,12 @@
           </div>
 
           <!-- Items Clean Table Container -->
-          <div class="order-items-container mb-md">
-            <div class="order-items-title flex flex-between align-center mb-xs">
-              <span class="text-xs font-bold text-secondary">
-                <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการของที่ขอเบิก ({{ order.items.length }} รายการ)
-              </span>
-            </div>
-            
-            <!-- Desktop Table (>= 641px) -->
-            <div class="order-items-table-wrapper desktop-only-orders-table">
-              <table class="order-items-table">
-                <thead>
-                  <tr>
-                    <th class="col-item text-left">ชื่อสินค้า</th>
-                    <th class="col-price text-right">ราคาเบิก/หน่วย</th>
-                    <th class="col-qty text-center">จำนวน</th>
-                    <th class="col-total text-right">รวมมูลค่า</th>
-                    <th v-if="order.status === 'received'" class="col-actions text-center" style="width: 140px;">การจัดการ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="it in order.items" :key="it.id">
-                    <td class="col-item">
-                      <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
-                      <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
-                    </td>
-                    <td class="col-price text-right text-sm text-secondary">
-                      ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
-                    </td>
-                    <td class="col-qty text-center">
-                      <span class="order-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
-                      <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold ml-1">({{ it.quantity * it.pack_size }} ชิ้น)</span>
-                      <div v-if="it.original_quantity && it.quantity < it.original_quantity" class="text-2xs text-warning mt-1" title="ปรับลดจากยอดเดิม">
-                        (เดิม {{ it.original_quantity }})
-                      </div>
-                    </td>
-                    <td class="col-total text-right font-bold text-sm text-primary">
-                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                    </td>
-                    <td v-if="order.status === 'received'" class="col-actions text-center">
-                      <button 
-                        v-if="it.quantity > 0"
-                        class="btn-action btn-action-edit btn-xs mx-auto" 
-                        title="ปรับยอดสินค้า / แจ้งของชำรุด"
-                        @click="openAdjustItemModal(order, it)"
-                      >
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        <span>ปรับยอด/ของชำรุด</span>
-                      </button>
-                      <span v-else class="badge badge-neutral text-2xs">ยกเลิกแล้ว</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Mobile Itemized List (< 640px) -->
-            <div class="order-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
-              <div 
-                v-for="it in order.items" 
-                :key="it.id" 
-                class="order-mobile-item-card"
-              >
-                <!-- Row 1: Item Name + Subtotal -->
-                <div class="flex flex-between align-start gap-xs">
-                  <div class="flex-1 min-w-0 pr-xs">
-                    <div class="order-mobile-item-name font-bold text-sm text-primary">
-                      {{ getItemNameParts(it.item_name).main }}
-                    </div>
-                    <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
-                      {{ getItemNameParts(it.item_name).sub }}
-                    </div>
-                  </div>
-                  <div class="text-right flex-shrink-0 pl-xs">
-                    <span class="order-mobile-item-total font-bold text-sm text-primary">
-                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Row 2: Unit Price + Quantity Pill -->
-                <div class="flex flex-between align-center order-mobile-item-bottom">
-                  <span class="text-xs text-secondary">
-                    ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
-                  </span>
-                  <div class="flex align-center gap-xs">
-                    <span class="order-qty-pill font-bold">
-                      {{ it.quantity }} {{ it.unit }}
-                    </span>
-                    <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold">
-                      ({{ it.quantity * it.pack_size }} ชิ้น)
-                    </span>
-                    <span v-if="it.original_quantity && it.quantity < it.original_quantity" class="badge badge-warning text-2xs">
-                      (เดิม {{ it.original_quantity }})
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Row 3: Action for received items -->
-                <div v-if="order.status === 'received' && it.quantity > 0" class="flex justify-end pt-xs mt-xs border-t">
-                  <button 
-                    class="btn-action btn-action-edit btn-xs" 
-                    @click="openAdjustItemModal(order, it)"
-                  >
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <span>ปรับยอด/ของชำรุด</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Branch Note if any -->
-            <div v-if="order.notes" class="order-notes-box mt-sm p-sm rounded flex align-center gap-xs">
-              <i class="fa-solid fa-comment-dots text-primary"></i>
-              <span class="text-xs text-secondary"><strong>บันทึกจากสาขา:</strong> {{ order.notes }}</span>
-            </div>
-          </div>
+          <TransferOrderItems
+            :items="order.items"
+            :notes="order.notes"
+            :can-adjust-items="order.status === 'received'"
+            @adjust-item="it => openAdjustItemModal(order, it)"
+          />
 
           <!-- Order Card Footer Action -->
           <div class="order-card-footer flex flex-between align-center flex-wrap gap-md pt-sm">
@@ -1221,46 +592,10 @@
         v-model:selected-year="selectedYear"
         v-model:start-time="customStartTime"
         v-model:end-time="customEndTime"
+        v-model:branch-id="historyBranchFilter"
+        :branches="retailBranches"
         @change="refreshActivePeriodTab"
-      >
-        <!-- Right: Branch Filter Dropdown (Matches Orders Tab) -->
-        <div class="order-branch-filter" style="margin-left: auto;">
-          <label class="order-branch-label">
-            <i class="fa-solid fa-store text-primary"></i>
-            <span>สาขา:</span>
-          </label>
-          <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
-            <div 
-              class="custom-select-trigger order-branch-select" 
-              :class="{ 'active': isHistoryBranchDropdownOpen }" 
-              @click="isHistoryBranchDropdownOpen = !isHistoryBranchDropdownOpen; isHistoryRequesterDropdownOpen = false; isHistoryItemDropdownOpen = false;"
-              style="height: 38px;"
-            >
-              <span class="custom-select-text font-bold">
-                {{ selectedHistoryBranchName }}
-              </span>
-            </div>
-            <div v-if="isHistoryBranchDropdownOpen" class="custom-select-dropdown">
-              <div 
-                class="custom-select-option"
-                :class="{ 'selected': historyBranchFilter === 'all' }"
-                @click="historyBranchFilter = 'all'; isHistoryBranchDropdownOpen = false;"
-              >
-                ทุกสาขา
-              </div>
-              <div 
-                v-for="b in retailBranches" 
-                :key="b.id" 
-                class="custom-select-option"
-                :class="{ 'selected': Number(historyBranchFilter) === Number(b.id) }"
-                @click="historyBranchFilter = b.id; isHistoryBranchDropdownOpen = false;"
-              >
-                {{ b.name }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </DatePeriodFilter>
+      />
 
       <!-- History Type & Extended Filter Toolbar -->
       <div class="card mb-lg p-md flex flex-between align-center flex-wrap gap-md history-toolbar">
@@ -1587,76 +922,11 @@
             </div>
 
             <!-- Items Table (Desktop >= 641px) -->
-            <div v-if="h.items && h.items.length" class="history-items-container mb-xs">
-              <div class="order-items-title flex flex-between align-center mb-xs">
-                <span class="text-xs font-bold text-secondary">
-                  <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการของที่เบิก ({{ h.items.length }} รายการ)
-                </span>
-              </div>
-
-              <div class="history-items-table-wrapper desktop-only-orders-table">
-                <table class="history-items-table">
-                  <thead>
-                    <tr>
-                      <th class="col-item text-left">ชื่อสินค้า</th>
-                      <th class="col-price text-right">ราคาเบิก/หน่วย</th>
-                      <th class="col-qty text-center">จำนวน</th>
-                      <th class="col-total text-right">รวมมูลค่า</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="it in h.items" :key="it.id">
-                      <td class="col-item">
-                        <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
-                        <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
-                      </td>
-                      <td class="col-price text-right text-sm text-secondary">
-                        ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
-                      </td>
-                      <td class="col-qty text-center">
-                        <span class="history-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
-                      </td>
-                      <td class="col-total text-right font-bold text-sm text-primary">
-                        ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Mobile List (< 640px) -->
-              <div class="history-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
-                <div 
-                  v-for="it in h.items" 
-                  :key="it.id" 
-                  class="order-mobile-item-card"
-                >
-                  <div class="flex flex-between align-start gap-xs">
-                    <div class="flex-1 min-w-0 pr-xs">
-                      <div class="order-mobile-item-name font-bold text-sm text-primary">
-                        {{ getItemNameParts(it.item_name).main }}
-                      </div>
-                      <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
-                        {{ getItemNameParts(it.item_name).sub }}
-                      </div>
-                    </div>
-                    <div class="text-right flex-shrink-0 pl-xs">
-                      <span class="order-mobile-item-total font-bold text-sm text-primary">
-                        ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="flex flex-between align-center order-mobile-item-bottom">
-                    <span class="text-xs text-secondary">
-                      ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
-                    </span>
-                    <span class="history-qty-pill font-bold">
-                      {{ it.quantity }} {{ it.unit }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TransferOrderItems
+              v-if="h.items && h.items.length"
+              :items="h.items"
+              title-prefix="รายการของที่เบิก"
+            />
           </div>
         </div>
       </div>
@@ -1667,29 +937,24 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'finance' || activeTab === 'receivables'" class="finance-section">
       <!-- Toolbar Header -->
-      <div class="card mb-lg p-md flex flex-between align-center finance-toolbar" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div class="flex align-center gap-md">
+      <div class="card mb-lg page-header-card finance-toolbar">
+        <div class="page-header-left">
           <div class="header-icon-circle">
-            <i class="fa-solid fa-vault text-primary" style="font-size: var(--font-lg);"></i>
+            <i class="fa-solid fa-vault"></i>
           </div>
-          <div>
-            <h2 class="font-bold text-lg text-primary" style="margin: 0;">
-              สมุดบัญชี & กระเป๋าเงินกองกลาง
-            </h2>
-            <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
-              บันทึกเงินทุนตั้งต้นของเจ้าของร้าน, บันทึกเงินจ่ายซื้อของสดตุนเข้าคลัง, และติดตามเงินที่สาขาโอนคืนค่าของ
-            </p>
+          <div class="page-header-text">
+            <h2 class="page-header-title">สมุดบัญชี & เงินกองกลาง</h2>
           </div>
         </div>
 
-        <div class="finance-action-buttons flex align-center gap-sm flex-wrap">
+        <div class="finance-action-buttons">
           <button class="btn btn-primary" @click="openTransactionModal('capital_in')">
             <i class="fa-solid fa-circle-plus"></i>
-            <span>เติมเงินทุนกองกลาง</span>
+            <span>เติมทุนกองกลาง</span>
           </button>
           <button class="btn btn-secondary" @click="openTransactionModal('operating_expense_out')">
             <i class="fa-solid fa-circle-minus"></i>
-            <span>จ่ายค่าใช้จ่ายครัวกลาง</span>
+            <span>ใช้จ่ายครัวกลาง</span>
           </button>
         </div>
       </div>
@@ -1721,10 +986,9 @@
       </div>
 
       <!-- Content when Finance Data Loaded -->
-      <div v-else class="flex flex-col gap-lg">
+      <div v-else>
         <!-- 4 Summary KPI Cards -->
-        <!-- 4 Summary KPI Cards -->
-        <div class="financial-summary-grid">
+        <div class="financial-summary-grid mb-md">
           <!-- Card 1: Cash Balance -->
           <div 
             class="summary-card card-accent-primary card-clickable"
@@ -1820,7 +1084,7 @@
         </div>
 
         <!-- Pill Navigation Tabs (Exact style from Management.vue & User reference) -->
-        <div id="finance-subtabs-nav" class="category-tabs mb-lg flex gap-xs">
+        <div id="finance-subtabs-nav" class="category-tabs">
           <button 
             type="button"
             class="category-tab" 
@@ -1843,21 +1107,23 @@
           </button>
         </div>
 
+        <!-- Date & Period Filter Card (Shared across Ledger & Receivables sub-tabs) -->
+        <DatePeriodFilter
+          v-model:period-mode="periodMode"
+          v-model:selected-date="selectedDate"
+          v-model:selected-month="selectedMonth"
+          v-model:selected-year="selectedYear"
+          v-model:custom-start-date="customStartDate"
+          v-model:custom-end-date="customEndDate"
+          v-model:start-time="customStartTime"
+          v-model:end-time="customEndTime"
+          v-model:branch-id="selectedReceivablesBranch"
+          :branches="retailBranches"
+          @change="refreshActivePeriodTab"
+        />
+
         <!-- SUB-TAB 1: Transactions Ledger Card -->
         <div v-if="financeSubTab === 'ledger'" class="ledger-tab-view flex flex-col gap-md">
-          <!-- Date & Period Filter Card (Exact same layout as Receivables / Orders / History) -->
-          <DatePeriodFilter
-            v-model:period-mode="periodMode"
-            v-model:selected-date="selectedDate"
-            v-model:selected-month="selectedMonth"
-            v-model:selected-year="selectedYear"
-            v-model:custom-start-date="customStartDate"
-            v-model:custom-end-date="customEndDate"
-            v-model:start-time="customStartTime"
-            v-model:end-time="customEndTime"
-            @change="refreshActivePeriodTab"
-          />
-
           <div class="card p-lg ledger-card">
           <div class="ledger-header flex flex-between align-center flex-wrap gap-md">
             <div class="flex align-center gap-xs">
@@ -1873,7 +1139,7 @@
                 @click="financeFilterType = 'all'"
               >
                 <span>ทั้งหมด</span>
-                <span class="finance-tab-count">{{ financeLogs.length }}</span>
+                <span class="finance-tab-count">{{ branchFilteredFinanceLogs.length }}</span>
               </button>
               <button 
                 class="filter-pill" 
@@ -2042,55 +1308,6 @@
 
         <!-- SUB-TAB 2: Branch Receivables & Consolidated Items -->
         <div v-else-if="financeSubTab === 'receivables'" class="receivables-tab-view flex flex-col gap-md">
-          <!-- Date & Period Filter Card (Exact same layout as Orders / History) -->
-          <DatePeriodFilter
-            v-model:period-mode="periodMode"
-            v-model:selected-date="selectedDate"
-            v-model:selected-month="selectedMonth"
-            v-model:selected-year="selectedYear"
-            v-model:start-time="customStartTime"
-            v-model:end-time="customEndTime"
-            @change="refreshActivePeriodTab"
-          >
-            <!-- Right: Branch Filter Dropdown in DatePeriodFilter slot -->
-            <div class="order-branch-filter" style="margin-left: auto;">
-              <label class="order-branch-label">
-                <i class="fa-solid fa-store text-primary"></i>
-                <span>สาขา:</span>
-              </label>
-              <div class="custom-select-wrapper order-branch-select-wrapper" @click.stop style="width: auto; min-width: 170px;">
-                <div 
-                  class="custom-select-trigger order-branch-select" 
-                  :class="{ 'active': isReceivablesBranchDropdownOpen }" 
-                  @click="isReceivablesBranchDropdownOpen = !isReceivablesBranchDropdownOpen"
-                  style="height: 38px;"
-                >
-                  <span class="custom-select-text font-bold">
-                    {{ selectedReceivablesBranchLabel }}
-                  </span>
-                </div>
-                <div v-if="isReceivablesBranchDropdownOpen" class="custom-select-dropdown">
-                  <div 
-                    class="custom-select-option" 
-                    :class="{ 'selected': selectedReceivablesBranch === 'all' }"
-                    @click="selectedReceivablesBranch = 'all'; isReceivablesBranchDropdownOpen = false;"
-                  >
-                    ทุกสาขา
-                  </div>
-                  <div 
-                    v-for="b in (receivablesBreakdown?.branches || [])" 
-                    :key="b.branch_id" 
-                    class="custom-select-option"
-                    :class="{ 'selected': Number(selectedReceivablesBranch) === Number(b.branch_id) }"
-                    @click="selectedReceivablesBranch = b.branch_id; isReceivablesBranchDropdownOpen = false;"
-                  >
-                    {{ b.branch_name }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DatePeriodFilter>
-
           <!-- Status Filter Toolbar (Exact style from Orders / History for 100% unity) -->
           <div class="card mb-md p-md flex flex-between align-center flex-wrap gap-md">
             <!-- Status Toggle Buttons -->
@@ -2381,50 +1598,27 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'partners'" class="partners-section">
       <!-- Store Selector Header Card -->
-      <div class="card mb-lg p-md flex flex-between align-center partner-toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-        <div class="flex align-center gap-md">
+      <div class="card mb-lg page-header-card partner-toolbar-card">
+        <div class="page-header-left">
           <div class="header-icon-circle">
-            <i class="fa-solid fa-calculator text-primary" style="font-size: var(--font-lg);"></i>
+            <i class="fa-solid fa-calculator"></i>
           </div>
-          <div>
-            <h2 class="font-bold text-lg text-primary" style="margin: 0;">
-              ระบบคำนวณกำไร & ปันผลหุ้นส่วน
-            </h2>
-            <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
-              คำนวณกำไรสุทธิของแต่ละสาขาหลังหักต้นทุนของที่เบิกจากครัวกลาง และแบ่งปันผลอัตโนมัติ
-            </p>
+          <div class="page-header-text">
+            <h2 class="page-header-title">คำนวณกำไร & ปันผล</h2>
           </div>
         </div>
 
-        <div class="flex align-center gap-sm partner-branch-filter-box" style="flex-shrink: 0;">
-          <label class="text-sm font-bold text-secondary" style="white-space: nowrap;">เลือกสาขา:</label>
-          <div class="custom-select-wrapper partner-branch-select-wrapper" @click.stop style="min-width: 200px;">
-            <div 
-              class="custom-select-trigger partner-branch-select-trigger" 
-              :class="{ 'active': isPartnerBranchDropdownOpen }" 
-              @click="isPartnerBranchDropdownOpen = !isPartnerBranchDropdownOpen"
-            >
-              <span class="custom-select-text font-bold text-base">
-                {{ selectedPartnerBranchName }}
-              </span>
-            </div>
-            <div v-if="isPartnerBranchDropdownOpen" class="custom-select-dropdown">
-              <div 
-                v-for="b in retailBranches" 
-                :key="b.id" 
-                class="custom-select-option"
-                :class="{ 'selected': Number(selectedPartnerBranch) === Number(b.id) }"
-                @click="selectedPartnerBranch = b.id; isPartnerBranchDropdownOpen = false;"
-              >
-                {{ b.name }}
-              </div>
-            </div>
-          </div>
-        </div>
+        <DatePeriodFilter
+          branch-only
+          v-model:branch-id="selectedPartnerBranch"
+          :branches="retailBranches"
+          :show-all-branches="false"
+          branch-label="เลือกสาขา:"
+        />
       </div>
 
       <!-- Pill Tabs (แท็บหลอดยา): หุ้นส่วน vs ประวัติปันผล -->
-      <div class="category-tabs mb-lg flex gap-xs">
+      <div class="category-tabs">
         <button 
           type="button"
           class="category-tab" 
@@ -3930,66 +3124,93 @@
       <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:85dvh;">
         <div class="modal-header">
           <h3>
-            <i class="fa-solid fa-pen-to-square text-warning" style="margin-right: 6px;"></i>
+            <i class="fa-solid fa-pen-to-square" style="margin-right: 6px;"></i>
             ปรับยอดสินค้า / แจ้งของชำรุด
           </h3>
-          <button class="modal-close" @click="showAdjustItemModal = false">✕</button>
+          <button class="modal-close" @click="showAdjustItemModal = false" aria-label="ปิด">✕</button>
         </div>
 
         <div class="modal-body">
-          <div class="p-sm rounded mb-md" style="background: var(--bg-secondary);">
-            <div class="font-bold text-base text-main mb-xs">{{ adjustingItem.item_name }}</div>
-            <div class="flex flex-between align-center text-xs text-secondary">
-              <span>ราคาเบิก: <strong>฿{{ formatNumber(adjustingItem.cost_price) }} / {{ adjustingItem.unit }}</strong></span>
-              <span>จำนวนปัจจุบัน: <strong class="text-primary">{{ adjustingItem.quantity }} {{ adjustingItem.unit }}</strong></span>
+          <!-- กล่องข้อมูลสินค้า (Reuse .modal-item-summary-card) -->
+          <div class="modal-item-summary-card mb-md">
+            <div class="modal-item-summary-name">
+              <span class="modal-item-summary-label">สินค้า:</span>
+              <span class="modal-item-summary-title">{{ adjustingItem.item_name }}</span>
+            </div>
+            <div class="modal-item-summary-stock flex-between">
+              <span>ราคาเบิก: <strong class="text-main">฿{{ formatNumber(adjustingItem.cost_price) }} / {{ adjustingItem.unit }}</strong></span>
+              <span>จำนวนปัจจุบัน: <strong class="text-primary">{{ formatNumber(adjustingItem.quantity) }} {{ adjustingItem.unit }}</strong></span>
             </div>
           </div>
 
           <!-- New Quantity Input -->
           <div class="form-group mb-md">
-            <label class="form-label font-bold text-sm">
+            <label for="adjust-new-qty" class="form-label font-bold text-sm">
               ระบุจำนวนใหม่ที่ได้รับจริง ({{ adjustingItem.unit }}) *
             </label>
-            <input 
-              type="number" 
-              class="form-input w-full font-bold text-base" 
-              v-model.number="adjustNewQty" 
-              min="0" 
-              :max="adjustingItem.quantity - 1" 
-              step="1"
-            />
-            <span class="text-xs text-muted block mt-xs">
-              ยอดเดิม: {{ adjustingItem.quantity }} ➔ จะปรับลดออก <strong>{{ adjustingItem.quantity - adjustNewQty }} {{ adjustingItem.unit }}</strong>
+            <div class="flex align-center gap-xs">
+              <input 
+                id="adjust-new-qty"
+                type="number" 
+                inputmode="numeric"
+                class="form-input font-bold text-lg text-primary flex-1 tabular-nums" 
+                v-model.number="adjustNewQty" 
+                min="0" 
+                :max="adjustingItem.quantity - 1" 
+                step="1"
+              />
+              <span class="font-bold text-sm text-secondary">{{ adjustingItem.unit }}</span>
+            </div>
+            <span class="text-xs text-secondary block mt-xs tabular-nums">
+              ยอดเดิม: <strong>{{ formatNumber(adjustingItem.quantity) }} {{ adjustingItem.unit }}</strong> ➔ จะปรับลดออก <strong class="text-danger">{{ formatNumber(Math.max(0, adjustingItem.quantity - adjustNewQty)) }} {{ adjustingItem.unit }}</strong>
             </span>
           </div>
 
-          <!-- Refund Amount Calculation -->
-          <div class="flex flex-between align-center p-sm rounded mb-md border" style="background: var(--bg-surface);">
-            <span class="text-xs font-bold text-secondary">ยอดเงินที่ปรับลดคืนสาขา:</span>
-            <span class="font-bold text-lg text-danger">
-              -฿{{ formatNumber((adjustingItem.quantity - adjustNewQty) * adjustingItem.cost_price) }}
-            </span>
+          <!-- Refund Amount Calculation (Reuse .modal-total-summary-box) -->
+          <div class="modal-total-summary-box modal-total-waste mb-md">
+            <div class="modal-total-label text-danger">
+              <i class="fa-solid fa-rotate-left mr-1 text-danger"></i>
+              <span>ยอดเงินที่ปรับลดคืนสาขา:</span>
+            </div>
+            <div class="modal-total-amount text-danger tabular-nums">
+              -฿{{ formatNumber(Math.max(0, adjustingItem.quantity - adjustNewQty) * adjustingItem.cost_price) }}
+            </div>
           </div>
 
           <!-- Action for Diff Stock -->
           <div class="form-group mb-md">
             <label class="form-label font-bold text-sm">การจัดการของส่วนต่าง *</label>
             <div class="flex flex-col gap-xs mt-xs">
-              <label class="flex align-center gap-xs cursor-pointer p-xs rounded hover:bg-secondary">
-                <input type="radio" value="return_to_stock" v-model="adjustWasteAction" />
-                <span class="text-sm">คืนสต็อกเข้าคลังครัวกลาง (ของยังดี / ส่งคืนกลับมา)</span>
+              <label 
+                class="modal-finance-adjust-card modal-radio-card"
+                :class="{ 'refund-mode': adjustWasteAction === 'return_to_stock' }"
+              >
+                <div class="modal-finance-adjust-label">
+                  <input type="radio" value="return_to_stock" v-model="adjustWasteAction" class="modal-finance-checkbox" />
+                  <span class="text-sm" :class="adjustWasteAction === 'return_to_stock' ? 'font-bold text-success' : 'font-medium text-main'">
+                    คืนสต็อกเข้าคลังครัวกลาง (ของยังดี / ส่งคืนกลับมา)
+                  </span>
+                </div>
               </label>
-              <label class="flex align-center gap-xs cursor-pointer p-xs rounded hover:bg-secondary">
-                <input type="radio" value="log_as_waste" v-model="adjustWasteAction" />
-                <span class="text-sm">บันทึกเป็นของเสียครัวกลาง (แตกหัก / ชำรุด / เสียหาย)</span>
+              <label 
+                class="modal-finance-adjust-card modal-radio-card"
+                :class="{ 'charge-mode': adjustWasteAction === 'log_as_waste' }"
+              >
+                <div class="modal-finance-adjust-label">
+                  <input type="radio" value="log_as_waste" v-model="adjustWasteAction" class="modal-finance-checkbox" />
+                  <span class="text-sm" :class="adjustWasteAction === 'log_as_waste' ? 'font-bold text-danger' : 'font-medium text-main'">
+                    บันทึกเป็นของเสียครัวกลาง (แตกหัก / ชำรุด / เสียหาย)
+                  </span>
+                </div>
               </label>
             </div>
           </div>
 
           <!-- Note/Reason -->
           <div class="form-group mb-md">
-            <label class="form-label text-xs font-bold text-secondary">เหตุผลการปรับลด/ของชำรุด:</label>
+            <label for="adjust-waste-note" class="form-label font-bold text-sm">เหตุผลการปรับลด/ของชำรุด:</label>
             <input 
+              id="adjust-waste-note"
               type="text" 
               class="form-input w-full text-sm" 
               v-model="adjustWasteNote" 
@@ -3998,15 +3219,15 @@
           </div>
 
           <!-- Actions -->
-          <div class="flex gap-md mt-lg">
+          <div class="flex gap-md mt-xl">
             <button class="btn btn-secondary flex-1" :disabled="isSubmittingAdjust" @click="showAdjustItemModal = false">ยกเลิก</button>
             <button 
               class="btn btn-primary flex-1" 
               :disabled="isSubmittingAdjust || adjustNewQty < 0 || adjustNewQty >= adjustingItem.quantity"
               @click="submitAdjustItem"
             >
-              <i v-if="isSubmittingAdjust" class="fa-solid fa-spinner fa-spin mr-1"></i>
-              <i v-else class="fa-solid fa-floppy-disk mr-1"></i>
+              <i v-if="isSubmittingAdjust" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSubmittingAdjust ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
@@ -4021,8 +3242,11 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DatePeriodFilter from '../components/DatePeriodFilter.vue';
+import ReorderItemsPanel from '../components/ReorderItemsPanel.vue';
+import KitchenCatalogCart from '../components/KitchenCatalogCart.vue';
+import TransferOrderItems from '../components/TransferOrderItems.vue';
 import api from '../api';
-import { ui, compressImage, getToday, isTimeInRange } from '../helpers';
+import { ui, compressImage, getToday, isTimeInRange, formatNumber, formatDateTime, getItemNameParts } from '../helpers';
 
 const route = useRoute();
 const router = useRouter();
@@ -4031,8 +3255,6 @@ const router = useRouter();
 const activeTab = computed(() => {
   return route.params.tab || 'catalog';
 });
-
-// View mode: 'grid' or 'table'
 
 // States
 const items = ref([]);
@@ -4043,53 +3265,17 @@ const retailBranches = ref([]);
 
 // Dedicated Dispatch Tab States (Push Model)
 const dispatchBranchId = ref('');
-const isDispatchBranchDropdownOpen = ref(false);
 const dispatchCart = ref([]);
-const dispatchSearchQuery = ref('');
-const dispatchCategory = ref('all');
 const dispatchNotes = ref('');
 const isSubmittingDispatch = ref(false);
-const isDispatchMobileDrawerOpen = ref(false);
-
-watch(dispatchCart, (newCart) => {
-  if (newCart.length === 0) {
-    isDispatchMobileDrawerOpen.value = false;
-  }
-}, { deep: true });
-
-const closeDispatchBranchDropdown = () => {
-  isDispatchBranchDropdownOpen.value = false;
-};
 
 const selectedDispatchBranchName = computed(() => {
   const b = retailBranches.value.find(x => Number(x.id) === Number(dispatchBranchId.value));
   return b ? b.name : '';
 });
 
-const getDispatchCategoryCount = (catId) => {
-  if (catId === 'all') return items.value.length;
-  return items.value.filter(i => i.category === catId).length;
-};
-
-const filteredDispatchItems = computed(() => {
-  return items.value.filter(item => {
-    const matchCat = dispatchCategory.value === 'all' || item.category === dispatchCategory.value;
-    const matchSearch = !dispatchSearchQuery.value || item.name.toLowerCase().includes(dispatchSearchQuery.value.toLowerCase());
-    return matchCat && matchSearch;
-  });
-});
-
-const getDispatchCartQty = (itemId) => {
-  const found = dispatchCart.value.find(c => c.item_id === itemId);
-  return found ? found.quantity : 0;
-};
-
 const totalDispatchCost = computed(() => {
   return dispatchCart.value.reduce((sum, c) => sum + (Number(c.quantity) * Number(c.cost_price)), 0);
-});
-
-const totalDispatchQty = computed(() => {
-  return dispatchCart.value.reduce((sum, c) => sum + (Number(c.quantity) || 0), 0);
 });
 
 // Partial Item Adjustment States
@@ -4110,13 +3296,11 @@ const selectedCategory = ref('all');
 const orderFilterStatus = ref('all');
 const orderBranchFilter = ref('all');
 const orderRequesterFilter = ref('all');
-const isOrderBranchDropdownOpen = ref(false);
 const isOrderRequesterDropdownOpen = ref(false);
 const historyRequesterFilter = ref('all');
 const isHistoryRequesterDropdownOpen = ref(false);
 const historySearchQuery = ref('');
 const historyBranchFilter = ref('all');
-const isHistoryBranchDropdownOpen = ref(false);
 const historyItemFilter = ref('all');
 const isHistoryItemDropdownOpen = ref(false);
 
@@ -4147,13 +3331,6 @@ const selectedHistoryItemName = computed(() => {
   return historyItemFilter.value;
 });
 
-const selectedHistoryBranchName = computed(() => {
-  if (historyBranchFilter.value === 'all') return 'ทุกสาขา';
-  const found = retailBranches.value.find(b => Number(b.id) === Number(historyBranchFilter.value));
-  return found ? found.name : 'ทุกสาขา';
-});
-const isPartnerBranchDropdownOpen = ref(false);
-
 const availableOrderRequesters = computed(() => {
   const names = new Set();
   for (const o of orders.value) {
@@ -4172,12 +3349,6 @@ const availableHistoryRequesters = computed(() => {
   return Array.from(names).sort((a, b) => a.localeCompare(b, 'th'));
 });
 
-const selectedOrderBranchName = computed(() => {
-  if (orderBranchFilter.value === 'all') return 'ทุกสาขา';
-  const found = retailBranches.value.find(b => Number(b.id) === Number(orderBranchFilter.value));
-  return found ? found.name : 'ทุกสาขา';
-});
-
 const selectedPartnerBranchName = computed(() => {
   if (!selectedPartnerBranch.value) return 'เลือกสาขา';
   const found = retailBranches.value.find(b => Number(b.id) === Number(selectedPartnerBranch.value));
@@ -4185,15 +3356,9 @@ const selectedPartnerBranchName = computed(() => {
 });
 
 const closeOrderBranchDropdown = () => {
-  isOrderBranchDropdownOpen.value = false;
   isOrderRequesterDropdownOpen.value = false;
   isHistoryRequesterDropdownOpen.value = false;
-  isHistoryBranchDropdownOpen.value = false;
   isHistoryItemDropdownOpen.value = false;
-};
-
-const closePartnerBranchDropdown = () => {
-  isPartnerBranchDropdownOpen.value = false;
 };
 
 const historyFilter = ref('all');
@@ -4334,7 +3499,6 @@ const handleDeleteCat = async (cat) => {
 // Reorder Mode State & Drag-and-Drop Methods (Like Menu.vue)
 const isReorderMode = ref(false);
 const reorderItems = ref([]);
-const dragIndex = ref(null);
 const isSavingReorder = ref(false);
 
 const openReorderMode = () => {
@@ -4366,122 +3530,6 @@ const handleSaveReorder = async () => {
   } finally {
     ui.hideLoading();
     isSavingReorder.value = false;
-  }
-};
-
-const handleDragStart = (index, event) => {
-  dragIndex.value = index;
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move';
-  }
-};
-
-const handleDragOver = (event) => {
-  event.preventDefault();
-  const clientY = event.clientY;
-  const threshold = 120;
-  const scrollSpeed = 15;
-  if (clientY < threshold) {
-    window.scrollBy(0, -scrollSpeed);
-  } else if (clientY > window.innerHeight - threshold) {
-    window.scrollBy(0, scrollSpeed);
-  }
-};
-
-const handleDragEnter = (index) => {
-  if (dragIndex.value !== null && dragIndex.value !== index) {
-    const item = reorderItems.value[dragIndex.value];
-    reorderItems.value.splice(dragIndex.value, 1);
-    reorderItems.value.splice(index, 0, item);
-    dragIndex.value = index;
-  }
-};
-
-const handleDragEnd = () => {
-  dragIndex.value = null;
-};
-
-let touchScrollRaf = null;
-let lastTouchX = 0;
-let lastTouchY = 0;
-let lastScrollTs = 0;
-let lastAutoSwapTs = 0;
-
-const swapItemAtPoint = (x, y) => {
-  if (dragIndex.value === null) return;
-  const targetElement = document.elementFromPoint(x, y);
-  const element = targetElement?.closest('.mobile-reorder-card, .desktop-reorder-row');
-  if (!element) return;
-  const targetIndex = Number(element.dataset.index);
-  if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
-    const item = reorderItems.value[dragIndex.value];
-    reorderItems.value.splice(dragIndex.value, 1);
-    reorderItems.value.splice(targetIndex, 0, item);
-    dragIndex.value = targetIndex;
-  }
-};
-
-const runTouchAutoScroll = (now) => {
-  if (dragIndex.value === null) {
-    touchScrollRaf = null;
-    return;
-  }
-  const dt = lastScrollTs ? Math.min(now - lastScrollTs, 50) : 16.67;
-  lastScrollTs = now;
-  const frameScale = dt / 16.67;
-
-  const threshold = 170;
-  const maxSpeed = 48;
-  let dy = 0;
-  if (lastTouchY < threshold) {
-    const ratio = Math.min(1, (threshold - lastTouchY) / threshold);
-    dy = -Math.ceil((6 + ratio * maxSpeed) * frameScale);
-  } else if (lastTouchY > window.innerHeight - threshold) {
-    const ratio = Math.min(1, (lastTouchY - (window.innerHeight - threshold)) / threshold);
-    dy = Math.ceil((6 + ratio * maxSpeed) * frameScale);
-  }
-  if (dy !== 0) {
-    // ponytail: 2-arg scrollBy with scrollBehavior='auto' avoids iOS/Android smooth-scroll lag
-    window.scrollBy(0, dy);
-    if (now - lastAutoSwapTs >= 60) {
-      lastAutoSwapTs = now;
-      swapItemAtPoint(lastTouchX, lastTouchY);
-    }
-  }
-  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
-};
-
-const handleTouchStart = (index, event) => {
-  dragIndex.value = index;
-  document.documentElement.style.scrollBehavior = 'auto';
-  document.documentElement.style.overflowAnchor = 'none';
-  const touch = event.touches[0];
-  if (touch) {
-    lastTouchX = touch.clientX;
-    lastTouchY = touch.clientY;
-  }
-  lastScrollTs = 0;
-  lastAutoSwapTs = 0;
-  if (touchScrollRaf) cancelAnimationFrame(touchScrollRaf);
-  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
-};
-
-const handleTouchMove = (event) => {
-  if (dragIndex.value === null) return;
-  const touch = event.touches[0];
-  if (!touch) return;
-  lastTouchX = touch.clientX;
-  lastTouchY = touch.clientY;
-  swapItemAtPoint(lastTouchX, lastTouchY);
-};
-
-const handleTouchEnd = () => {
-  dragIndex.value = null;
-  document.documentElement.style.scrollBehavior = '';
-  document.documentElement.style.overflowAnchor = '';
-  if (touchScrollRaf) {
-    cancelAnimationFrame(touchScrollRaf);
-    touchScrollRaf = null;
   }
 };
 
@@ -4587,16 +3635,21 @@ const financeLogs = ref([]);
 const isLoadingFinance = ref(false);
 const financeFilterType = ref('all');
 
-const filteredFinanceLogs = computed(() => {
-  if (financeFilterType.value === 'all') return financeLogs.value;
-  return financeLogs.value.filter(l => l.type === financeFilterType.value);
+const branchFilteredFinanceLogs = computed(() => {
+  if (selectedReceivablesBranch.value === 'all') return financeLogs.value;
+  return financeLogs.value.filter(l => Number(l.branch_id) === Number(selectedReceivablesBranch.value));
 });
 
-const capitalInCount = computed(() => financeLogs.value.filter(l => l.type === 'capital_in').length);
-const reimbursementInCount = computed(() => financeLogs.value.filter(l => l.type === 'reimbursement_in').length);
-const purchaseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'purchase_out').length);
-const operatingExpenseOutCount = computed(() => financeLogs.value.filter(l => l.type === 'operating_expense_out').length);
-const wasteLossCount = computed(() => financeLogs.value.filter(l => l.type === 'waste_loss').length);
+const filteredFinanceLogs = computed(() => {
+  if (financeFilterType.value === 'all') return branchFilteredFinanceLogs.value;
+  return branchFilteredFinanceLogs.value.filter(l => l.type === financeFilterType.value);
+});
+
+const capitalInCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'capital_in').length);
+const reimbursementInCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'reimbursement_in').length);
+const purchaseOutCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'purchase_out').length);
+const operatingExpenseOutCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'operating_expense_out').length);
+const wasteLossCount = computed(() => branchFilteredFinanceLogs.value.filter(l => l.type === 'waste_loss').length);
 
 // Finance Sub-Tabs & Receivables
 const financeSubTab = ref('ledger'); // 'ledger' | 'receivables'
@@ -4610,28 +3663,6 @@ const setReceivablesStatus = (status) => {
 };
 
 const selectedReceivablesBranch = ref('all'); // 'all' or branch_id
-const isReceivablesBranchDropdownOpen = ref(false);
-
-const closeReceivablesBranchDropdown = () => {
-  isReceivablesBranchDropdownOpen.value = false;
-};
-
-const selectedReceivablesBranchLabel = computed(() => {
-  const isReimbursed = receivablesStatusTab.value === 'reimbursed';
-  const count = receivablesBreakdown.value?.branches?.length || 0;
-  if (selectedReceivablesBranch.value === 'all') {
-    return isReimbursed 
-      ? `ทุกสาขา (${count} สาขาที่มีประวัติ)` 
-      : `ทุกสาขา (มียอดค้าง ${count} สาขา)`;
-  }
-  const b = receivablesBreakdown.value?.branches?.find(
-    br => Number(br.branch_id) === Number(selectedReceivablesBranch.value)
-  );
-  if (!b) return 'เลือกสาขา';
-  return isReimbursed
-    ? `${b.branch_name} (เคลียร์ ฿${formatNumber(b.total_pending_amount)})`
-    : `${b.branch_name} (ค้าง ฿${formatNumber(b.total_pending_amount)})`;
-});
 
 const filteredReceivablesBranches = computed(() => {
   if (!receivablesBreakdown.value?.branches) return [];
@@ -4877,15 +3908,6 @@ const filteredHistory = computed(() => {
   return list;
 });
 
-// Helpers
-const formatNumber = (num) => Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const formatDateTime = (str) => {
-  if (!str) return '-';
-  const d = new Date(str);
-  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' +
-         d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-};
-
 const getCategoryLabel = (cat) => {
   const found = kitchenCategories.value.find(c => c.code === cat);
   if (found) return found.name;
@@ -4899,15 +3921,6 @@ const getCategoryLabel = (cat) => {
     'general': 'ทั่วไป'
   };
   return map[cat] || cat;
-};
-
-const getItemNameParts = (name) => {
-  if (!name) return { main: '', sub: '' };
-  const match = name.match(/^(.*?)\s*(\([^(]+\))\s*$/);
-  if (match) {
-    return { main: match[1].trim(), sub: match[2].trim() };
-  }
-  return { main: name, sub: '' };
 };
 
 
@@ -5259,91 +4272,6 @@ const cancelTransferOrder = async (order) => {
 };
 
 // Dedicated Dispatch Methods (Push Model)
-const getDispatchCartItem = (itemId) => {
-  return dispatchCart.value.find(c => c.item_id === itemId);
-};
-
-const setDispatchCartQty = (item, val) => {
-  let num = parseInt(val, 10);
-  if (isNaN(num) || num <= 0) num = 1;
-  const max = Number(item.quantity) || 0;
-  if (max > 0 && num > max) {
-    num = max;
-    ui.showToast(`สามารถจ่ายได้สูงสุด ${formatNumber(max)} ${item.unit} ตามสต็อกในคลัง`, 'warning');
-  }
-  const existing = dispatchCart.value.find(c => c.item_id === item.id);
-  if (existing) {
-    existing.quantity = num;
-  } else {
-    dispatchCart.value.push({
-      item_id: item.id,
-      item_name: item.name,
-      unit: item.unit,
-      cost_price: item.cost_price,
-      max_quantity: item.quantity,
-      pack_size: item.pack_size || 1,
-      linked_menu_item_name: item.linked_menu_item_name || '',
-      quantity: num
-    });
-  }
-};
-
-const addDispatchItem = (item) => {
-  if (item.quantity <= 0) {
-    ui.showToast('สินค้ารายการนี้หมดสต็อกในครัวกลาง', 'warning');
-    return;
-  }
-  const existing = dispatchCart.value.find(c => c.item_id === item.id);
-  if (existing) {
-    if (existing.quantity >= item.quantity) {
-      ui.showToast(`สามารถจ่ายได้สูงสุด ${formatNumber(item.quantity)} ${item.unit} ตามสต็อกในคลัง`, 'warning');
-      return;
-    }
-    existing.quantity += 1;
-  } else {
-    dispatchCart.value.push({
-      item_id: item.id,
-      item_name: item.name,
-      unit: item.unit,
-      cost_price: item.cost_price,
-      max_quantity: item.quantity,
-      pack_size: item.pack_size || 1,
-      linked_menu_item_name: item.linked_menu_item_name || '',
-      quantity: 1
-    });
-  }
-};
-
-const increaseDispatchQty = (c) => {
-  const original = items.value.find(i => i.id === c.item_id);
-  const max = original ? original.quantity : c.max_quantity;
-  if (max && c.quantity >= max) {
-    ui.showToast(`สามารถจ่ายได้สูงสุด ${formatNumber(max)} ${c.unit} ตามสต็อกในคลัง`, 'warning');
-    return;
-  }
-  c.quantity += 1;
-};
-
-const decreaseDispatchQty = (c) => {
-  if (c.quantity > 1) {
-    c.quantity -= 1;
-  } else {
-    dispatchCart.value = dispatchCart.value.filter(x => x.item_id !== c.item_id);
-  }
-};
-
-const validateDispatchQty = (c) => {
-  if (!c.quantity || c.quantity < 1) c.quantity = 1;
-  if (c.quantity > c.max_quantity) {
-    c.quantity = c.max_quantity;
-    ui.showToast(`ปรับเป็นจำนวนสูงสุดที่มีในคลัง (${c.max_quantity} ${c.unit})`, 'warning');
-  }
-};
-
-const removeDispatchItem = (itemId) => {
-  dispatchCart.value = dispatchCart.value.filter(c => c.item_id !== itemId);
-};
-
 const clearDispatchCart = () => {
   dispatchCart.value = [];
   dispatchNotes.value = '';
@@ -5377,7 +4305,6 @@ const submitPushDispatch = async () => {
     const res = await api.centralKitchen.directDispatch(payload);
     ui.showToast(res.message || `จ่ายของให้ ${branchName} สำเร็จเรียบร้อยแล้ว`, 'success');
     clearDispatchCart();
-    isDispatchMobileDrawerOpen.value = false;
     await Promise.all([loadItems(), loadOrders(), loadHistory()]);
     if (typeof loadFinances === 'function') loadFinances();
   } catch (err) {
@@ -5769,9 +4696,6 @@ onMounted(() => {
   window.addEventListener('click', closePosMenuModalDropdown);
   window.addEventListener('click', closeTransactionTypeDropdown);
   window.addEventListener('click', closeOrderBranchDropdown);
-  window.addEventListener('click', closePartnerBranchDropdown);
-  window.addEventListener('click', closeReceivablesBranchDropdown);
-  window.addEventListener('click', closeDispatchBranchDropdown);
   loadCategories();
   loadBranches();
 });
@@ -5782,15 +4706,12 @@ onUnmounted(() => {
   window.removeEventListener('click', closePosMenuModalDropdown);
   window.removeEventListener('click', closeTransactionTypeDropdown);
   window.removeEventListener('click', closeOrderBranchDropdown);
-  window.removeEventListener('click', closePartnerBranchDropdown);
-  window.removeEventListener('click', closeReceivablesBranchDropdown);
-  window.removeEventListener('click', closeDispatchBranchDropdown);
 });
 </script>
 
 <style scoped>
 /* ────────────────────────────────────────────────────────── */
-/* REORDER MODE & TOOLBAR STYLES (Menu.vue POS Style)         */
+/* TOOLBAR & POS MENU LINKING STYLES                          */
 /* ────────────────────────────────────────────────────────── */
 .catalog-toolbar-actions {
   display: flex;
@@ -5800,113 +4721,6 @@ onUnmounted(() => {
   margin-top: var(--space-md);
   padding-top: var(--space-md);
   border-top: 1px solid var(--border-color);
-}
-
-
-.menu-top-action-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-md) var(--space-lg);
-}
-
-.menu-total-count {
-  font-size: var(--font-lg);
-  font-weight: bold;
-  color: var(--text-secondary);
-  margin-left: 0;
-}
-
-.menu-action-buttons {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.desktop-menu-table-container {
-  display: block;
-}
-
-.mobile-menu-list-container {
-  display: none;
-}
-
-.desktop-reorder-row.dragging,
-.mobile-reorder-card.dragging {
-  opacity: 0.5;
-  background-color: var(--primary-glow, rgba(139, 3, 19, 0.08)) !important;
-  border: 2px dashed var(--primary) !important;
-}
-
-.drag-handle {
-  cursor: grab;
-  padding: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-tertiary);
-  font-size: var(--font-lg);
-  user-select: none;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
-
-.mobile-menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding-bottom: var(--space-2xl);
-}
-
-.mobile-menu-card {
-  background: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-.mobile-menu-card-img-container {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.mobile-menu-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.mobile-menu-card-placeholder {
-  font-size: var(--font-lg);
-}
-
-.mobile-menu-card-name {
-  font-size: var(--font-sm);
-  font-weight: bold;
-  color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.mobile-menu-card-category {
-  font-size: var(--font-xs);
-  color: var(--text-tertiary);
-  margin-top: 2px;
-}
-
-.mobile-menu-card-price {
-  font-size: var(--font-base);
-  font-weight: bold;
-  color: var(--primary);
 }
 
 /* POS Menu Stock Linking Styles */
@@ -6014,11 +4828,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.22);
+  background: rgba(197, 118, 0, 0.08);
+  border: 1px solid rgba(197, 118, 0, 0.22);
   border-radius: 6px;
   font-size: 11.5px;
-  color: #78350f;
+  color: var(--accent-dark, #c57600);
   line-height: 1.4;
 }
 
@@ -6243,6 +5057,23 @@ onUnmounted(() => {
   border-radius: var(--radius-md) !important;
   box-sizing: border-box !important;
   width: 100% !important;
+}
+
+.modal-radio-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.modal-radio-card .modal-finance-adjust-label {
+  align-items: center !important;
+}
+
+.tabular-nums,
+.modal-item-summary-stock,
+.modal-total-amount {
+  font-variant-numeric: tabular-nums;
 }
 
 .modal-finance-adjust-card.refund-mode {
@@ -7049,36 +5880,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  /* Toolbar: Separate 3-button action row */
-  .catalog-toolbar-actions {
-    display: grid !important;
-    grid-template-columns: 1.25fr 1fr 1fr !important;
-    width: 100% !important;
-    gap: 6px !important;
-  }
-  
-  /* Reorder View on Mobile */
-  .menu-top-action-card {
-    flex-direction: column !important;
-    gap: var(--space-md) !important;
-    align-items: stretch !important;
-    text-align: center !important;
-    padding: var(--space-md) !important;
-  }
-
-  .menu-action-buttons {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: var(--space-sm) !important;
-    width: 100% !important;
-  }
-
-  .menu-action-buttons button {
-    width: 100% !important;
-    justify-content: center !important;
-    height: 44px !important;
-  }
-
   .desktop-menu-table-container {
     display: none !important;
   }
@@ -7358,8 +6159,7 @@ onUnmounted(() => {
     gap: var(--space-md);
   }
 
-  /* Filter Tabs & Order Status Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
-  .category-tabs,
+  /* Order Status Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
   .order-status-tabs {
     flex-wrap: wrap !important;
     overflow-x: visible !important;
@@ -7369,7 +6169,6 @@ onUnmounted(() => {
   }
 
   .order-branch-filter {
-    width: 100%;
     display: flex;
     align-items: center;
     gap: var(--space-sm);
@@ -7381,13 +6180,12 @@ onUnmounted(() => {
   }
 
   .order-branch-select-wrapper {
-    flex: 1 !important;
-    width: 100% !important;
+    max-width: 220px !important;
   }
 
   .order-branch-select {
     width: 100% !important;
-    height: 42px !important;
+    height: 38px !important;
   }
 
   .order-card-header {
@@ -7477,20 +6275,6 @@ onUnmounted(() => {
 
   
   /* Finance Tab Responsive */
-  .finance-toolbar {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: var(--space-sm) !important;
-  }
-
-  .finance-action-buttons {
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 8px !important;
-  }
-
-  
   .ledger-header {
     flex-direction: column !important;
     align-items: flex-start !important;
@@ -7506,19 +6290,7 @@ onUnmounted(() => {
     gap: 6px !important;
     width: 100% !important;
   }
-
-  /* Partners Tab Responsive */
-  .partner-branch-filter-box {
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--space-sm) !important;
-  }
-
-  .partner-branch-select-wrapper {
-    flex: 1 !important;
-    width: 100% !important;
-  }}
+}
 
 @media (max-width: 640px) {
   /* Orders Tab Table vs Mobile Itemized Cards */
@@ -8010,210 +6782,16 @@ onUnmounted(() => {
 }
 
 /* ────────────────────────────────────────────────────────── */
-/* DEDICATED DISPATCH TAB (PUSH MODEL) STYLES                */
+/* DEDICATED DISPATCH TAB (PUSH MODEL) & CATALOG RESPONSIVE   */
 /* ────────────────────────────────────────────────────────── */
 .dispatch-section {
   width: 100%;
-}
-
-.catalog-layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-}
-
-@media (min-width: 1024px) {
-  .catalog-layout {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .catalog-main {
-    flex: 1;
-    min-width: 0;
-  }
-  .cart-sidebar {
-    width: 380px;
-    flex-shrink: 0;
-    position: sticky;
-    top: calc(var(--header-height, 60px) + 16px);
-  }
-}
-
-.cart-sidebar {
-  background: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.cart-header {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.clear-cart-btn {
-  background: none;
-  border: none;
-  padding: 4px;
-  font-size: var(--font-xs);
-  transition: opacity var(--transition-base);
-}
-
-.clear-cart-btn:hover {
-  text-decoration: underline;
-  opacity: 0.8;
-}
-
-.cart-items-list {
-  max-height: 420px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
-}
-
-.cart-row {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: all var(--transition-base);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.cart-row:hover {
-  border-color: var(--primary-light, #c92a2a);
-}
-
-.cart-item-name {
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-.cart-item-sub {
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-.cart-item-bottom {
-  border-top: 1px dashed rgba(139, 3, 19, 0.15);
-  margin-top: 10px;
-  padding-top: 8px;
-}
-
-
-.cart-total-row {
-  border-top: 1px dashed var(--border-color);
-}
-
-
-.item-card {
-  position: relative !important;
-}
-
-.item-card.in-cart {
-  /* No dimming / tinting when selected; card remains crisp with normal background */
-  background: var(--card-bg, #ffffff) !important;
-  border-color: var(--border-color) !important;
-}
-
-.dispatch-branch-select-wrapper {
-  min-width: 200px;
-}
-
-.dispatch-branch-select {
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-bold);
-}
-
-.qty-badge {
-  display: flex !important;
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 26px;
-  height: 26px;
-  background: var(--primary, #8b0313);
-  color: #ffffff;
-  font-size: var(--font-xs);
-  font-weight: 700;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 10px rgba(139, 3, 19, 0.45);
-  border: 2px solid #ffffff;
-  z-index: 10;
-  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* ============================================================ */
-/* RESPONSIVE BREAKPOINTS: DESKTOP VS MOBILE ONLY               */
-/* ============================================================ */
-@media (min-width: 1024px) {
-  .mobile-only-cart {
-    display: none !important;
-  }
-}
-
-@media (max-width: 1023px) {
-  /* Hide desktop sidebar cart; user uses docked bar + bottom sheet */
-  .cart-sidebar {
-    display: none !important;
-  }
-
-  .catalog-layout {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + var(--safe-bottom, 0px) + var(--cart-bar-height, 60px) + 35px) !important;
-  }
 }
 
 @media (max-width: 768px) {
   /* Toolbar Card on mobile */
   .dispatch-toolbar-card {
     padding: var(--space-md) !important;
-  }
-
-  /* Fix Dropdown exceeding frame on mobile */
-  .dispatch-target-branch-bar {
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    margin-top: 8px !important;
-    box-sizing: border-box !important;
-  }
-
-  .dispatch-target-branch-bar label {
-    flex-shrink: 0 !important;
-    font-size: var(--font-xs) !important;
-  }
-
-  .dispatch-branch-select-wrapper {
-    flex: 1 !important;
-    min-width: 0 !important;
-    width: auto !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .dispatch-branch-select {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 38px !important;
-    min-height: 38px !important;
-    font-size: var(--font-xs) !important;
-    padding: 0 32px 0 10px !important;
-    box-sizing: border-box !important;
-  }
-
-  .dispatch-branch-select-wrapper .custom-select-dropdown {
-    width: 100% !important;
-    max-width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-    box-sizing: border-box !important;
   }
 
   /* 2-column mobile item cards (Matching BranchRequisition) */
@@ -8351,30 +6929,9 @@ onUnmounted(() => {
     gap: 3px !important;
   }
 
-  .card-sub-actions .btn-action.text-danger {
+  .card-sub-actions .btn-action:last-child {
     flex: 0 0 30px !important;
     padding: 0 !important;
-  }
-
-  /* Floating quantity badge on card top right */
-  .qty-badge {
-    display: flex !important;
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 24px;
-    height: 24px;
-    background: var(--primary, #8b0313);
-    color: #ffffff;
-    font-size: var(--font-xs);
-    font-weight: 700;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(139, 3, 19, 0.4);
-    border: 2px solid #ffffff;
-    z-index: 10;
-    animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 }
 
@@ -8467,55 +7024,22 @@ onUnmounted(() => {
   opacity: 1;
   visibility: visible;
 }
-/* --- Push Dispatch & Catalog UI Polish --- */
-.dispatch-toolbar-card h3 {
-  font-size: var(--font-base);
-}
-
+/* --- Catalog UI Polish --- */
 .filter-bar .category-tabs {
   flex-wrap: wrap !important;
   overflow-x: visible !important;
-}
-
-.item-card.in-cart {
-  border: 2px solid var(--primary) !important;
-  box-shadow: 0 4px 14px rgba(139, 3, 19, 0.12);
 }
 
 .item-img-container {
   background: rgba(0, 0, 0, 0.02);
 }
 
-
-.qty-badge,
 .category-count,
 .item-cost-val,
-.item-stock-val,
-.cart-total-row,
-.cart-info {
+.item-stock-val {
   font-variant-numeric: tabular-nums;
 }
 
-.dispatch-branch-select {
-  min-height: 44px;
-}
-
-@media (min-width: 641px) and (max-width: 1023px) {
-  .grid-cards { gap: 12px !important; }
-  .item-card { padding: 12px !important; }
-  .item-img-container { height: 170px !important; margin-bottom: 8px !important; }
-  .card-badge-category { font-size: var(--font-xs) !important; padding: 3px 10px !important; }
-  .card-badge-status { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: var(--font-xs) !important; }
-  .item-name, .item-name-main { font-size: var(--font-md) !important; }
-  .item-meta-label { font-size: var(--font-sm) !important; }
-}
-@media (max-width: 640px) {
-  .item-img-container { height: 100px !important; }
-  .item-name, .item-name-main { font-size: var(--font-sm) !important; }
-  .item-meta-label, .item-unit-slash { font-size: var(--font-xxs) !important; }
-  .item-cost-val, .item-stock-val { font-size: var(--font-sm) !important; white-space: nowrap !important; }
-  .item-pack-val { font-size: var(--font-xxs) !important; white-space: nowrap !important; }
-}
 @media (min-width: 769px) {
   .dispatch-toolbar-card,
   .finance-toolbar,
@@ -8529,37 +7053,6 @@ onUnmounted(() => {
   .finance-toolbar,
   .partner-toolbar-card {
     padding: var(--space-md) !important;
-  }
-}
-
-@media (min-width: 1024px) {
-  .cart-sidebar {
-    max-height: calc(100vh - 96px);
-  }
-  .cart-sidebar > div:first-child {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
-  }
-  .cart-items-list {
-    flex: 1;
-    min-height: 120px;
-    max-height: none !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .history-filter-controls-row {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: var(--space-sm) !important;
-  }
-  .history-filter-controls-row .search-input-box,
-  .history-filter-controls-row .order-branch-filter,
-  .history-filter-controls-row .order-branch-select-wrapper {
-    width: 100% !important;
-    min-width: 0 !important;
   }
 }
 

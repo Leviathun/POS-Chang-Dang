@@ -2,7 +2,7 @@
   <div id="reports-page" class="page-enter">
     
     <!-- Tab toggles placed at the very top, styled as category tabs (Matches Menu.vue style) -->
-    <div class="category-tabs mb-lg" style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm); border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-sm); overflow-x: auto;">
+    <div class="category-tabs">
       <button 
         class="category-tab" 
         :class="{ 'active': activeTab === 'sales' }"
@@ -51,41 +51,12 @@
       v-model:selected-year="selectedYear"
       v-model:start-time="customStartTime"
       v-model:end-time="customEndTime"
+      v-model:branch-id="selectedBranchId"
+      :branches="isAdminUser ? branches : []"
+      :all-branches-value="null"
       @change="loadReportData"
-    >
-      <!-- Branch Selector for Admin (aligned right) -->
-      <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center reports-branch-selector">
-        <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
-        <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
-          <div 
-            class="custom-select-trigger reports-filter-control" 
-            :class="{ 'active': isBranchDropdownOpen }" 
-            @click="toggleBranchDropdown"
-            style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center;"
-          >
-            <span class="custom-select-text">{{ selectedBranchName }}</span>
-          </div>
-          <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 8px);">
-            <div 
-              class="custom-select-option" 
-              :class="{ 'selected': selectedBranchId === null }" 
-              @click="selectBranch(null)"
-            >
-              ทุกสาขา
-            </div>
-            <div 
-              v-for="b in branches" 
-              :key="b.id" 
-              class="custom-select-option" 
-              :class="{ 'selected': selectedBranchId === b.id }" 
-              @click="selectBranch(b.id)"
-            >
-              {{ b.name }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </DatePeriodFilter>
+      @branch-change="selectBranch"
+    />
 
     <!-- Skeleton Loading for Sales tab only -->
     <div v-if="loading && activeTab === 'sales'" class="flex flex-col gap-lg">
@@ -125,12 +96,12 @@
             </div>
           </div>
 
-          <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(217, 119, 6, 0.2); background: #ffffff; position: relative; overflow: hidden;">
+          <div class="card p-md text-center sales-kpi-card" style="border: 1.5px solid rgba(197, 118, 0, 0.2); background: #ffffff; position: relative; overflow: hidden;">
             <div class="flex flex-center align-center gap-xs text-xs text-secondary mb-xs font-semibold">
-              <i class="fa-solid fa-calendar-check" style="color: #b45309;"></i>
+              <i class="fa-solid fa-calendar-check" style="color: var(--accent-dark, #c57600);"></i>
               <span>ยอดรวมเดือนนี้</span>
             </div>
-            <div class="font-bold tabular-nums" style="font-size: var(--font-2xl); line-height: 1.2; margin: 4px 0 8px; color: #b45309;">
+            <div class="font-bold tabular-nums" style="font-size: var(--font-2xl); line-height: 1.2; margin: 4px 0 8px; color: var(--accent-dark, #c57600);">
               {{ formatCurrency(summary.month_sales) }}
             </div>
             <div class="inline-flex align-center gap-xs text-xs text-muted font-medium">
@@ -161,7 +132,7 @@
                 {{ displayedDailyReport.all_orders }} <small style="font-size: var(--font-xs); font-weight: normal; color: var(--text-secondary);">บิลทั้งหมด</small>
               </span>
               <div class="stat-sub-meta flex align-center gap-sm text-xs tabular-nums" style="flex-wrap: wrap; margin-top: 4px;">
-                <span style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                <span style="color: var(--success, #2a9d8f); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                   <i class="fa-solid fa-circle-check" style="font-size: var(--font-xxs);"></i> ชำระแล้ว {{ displayedDailyReport.total_orders }} บิล
                 </span>
                 <span class="stat-sub-sep" style="color: var(--border-color-light);">|</span>
@@ -202,11 +173,11 @@
                   </div>
                 </div>
               </div>
-              <span class="stat-clean-val tabular-nums" style="color: #b45309;">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
+              <span class="stat-clean-val tabular-nums" style="color: var(--accent-dark, #c57600);">{{ formatCurrency(displayedDailyReport.average_bill) }}</span>
               <div v-if="displayedDailyReport.historical_avg_bill > 0" class="stat-sub-meta flex align-center text-xs tabular-nums" style="flex-wrap: nowrap; white-space: nowrap; gap: 5px; margin-top: 4px; font-size: var(--font-xxs);">
                 <span style="color: var(--text-secondary);">เกณฑ์เฉลี่ยสาขา {{ formatCurrency(displayedDailyReport.historical_avg_bill) }}</span>
                 <span class="stat-sub-sep" style="color: var(--border-color-light);">|</span>
-                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                <span v-if="displayedDailyReport.average_bill >= displayedDailyReport.historical_avg_bill" style="color: var(--success, #2a9d8f); font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
                   <i class="fa-solid fa-arrow-trend-up" style="font-size: var(--font-xxs);"></i> +{{ formatCurrency(displayedDailyReport.average_bill - displayedDailyReport.historical_avg_bill) }} (สูงกว่าเกณฑ์)
                 </span>
                 <span v-else style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
@@ -260,7 +231,7 @@
             <div class="p-sm card pay-card pay-card-cash">
               <div class="flex flex-between align-center mb-xs">
                 <span class="pay-title inline-flex align-center gap-xs">
-                  <i class="fa-solid fa-money-bill-wave" style="color: #10b981;"></i>
+                  <i class="fa-solid fa-money-bill-wave" style="color: var(--success, #2a9d8f);"></i>
                   <span>เงินสด</span>
                 </span>
                 <span class="pay-pct-badge tabular-nums" v-if="displayedDailyReport.total_sales > 0">
@@ -375,7 +346,7 @@
                     </span>
                     <!-- 3. ประเภทการชำระเงิน -->
                     <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
-                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: #ea580c;' : ''"></i>
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: var(--success, #2a9d8f);' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: var(--accent-dark, #c57600);' : ''"></i>
                       <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
                       <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
                     </span>
@@ -452,25 +423,11 @@
             </div>
 
             <!-- Pagination UI for Daily Orders -->
-            <div v-if="totalDailyOrdersPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
-              <button 
-                class="pagination-btn" 
-                :disabled="dailyOrdersCurrentPage === 1" 
-                @click="changeDailyOrdersPage(dailyOrdersCurrentPage - 1)"
-              >
-                <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-              </button>
-              <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalDailyOrdersPages >= 10 }">
-                หน้า {{ dailyOrdersCurrentPage }} / {{ totalDailyOrdersPages }}
-              </span>
-              <button 
-                class="pagination-btn" 
-                :disabled="dailyOrdersCurrentPage === totalDailyOrdersPages" 
-                @click="changeDailyOrdersPage(dailyOrdersCurrentPage + 1)"
-              >
-                ถัดไป <i class="fa-solid fa-chevron-right"></i>
-              </button>
-            </div>
+            <PaginationBar
+              v-model:current-page="dailyOrdersCurrentPage"
+              :total-pages="totalDailyOrdersPages"
+              :scroll-target="dailyOrdersCardRef"
+            />
           </div>
         </div>
       </div>
@@ -620,7 +577,7 @@
                     </span>
                     <!-- Payment Method -->
                     <span class="text-xs" style="color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
-                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: #10b981;' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: #ea580c;' : ''"></i>
+                      <i :class="order.payment_method === 'cash' ? 'fa-solid fa-money-bill-wave' : order.payment_method === 'qr' ? 'fa-solid fa-qrcode' : order.payment_method === 'gov' ? 'fa-solid fa-landmark' : order.payment_method === 'delivery' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-hourglass-half'" :style="order.payment_method === 'cash' ? 'color: var(--success, #2a9d8f);' : order.payment_method === 'qr' ? 'color: var(--primary);' : order.payment_method === 'gov' ? 'color: #3b82f6;' : order.payment_method === 'delivery' ? 'color: var(--accent-dark, #c57600);' : ''"></i>
                       <span class="hide-mobile">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR Code' : order.payment_method === 'gov' ? 'โครงการรัฐ' : order.payment_method === 'delivery' ? 'เดลิเวอรี' : 'รอชำระ' }}</span>
                       <span class="show-mobile-inline">{{ order.payment_method === 'cash' ? 'เงินสด' : order.payment_method === 'qr' ? 'QR' : order.payment_method === 'gov' ? 'รัฐ' : order.payment_method === 'delivery' ? 'เดลี่' : 'รอชำระ' }}</span>
                     </span>
@@ -694,25 +651,11 @@
             </div>
 
             <!-- Pagination UI for Order History -->
-            <div v-if="totalPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
-              <button 
-                class="pagination-btn" 
-                :disabled="historyCurrentPage === 1" 
-                @click="changeHistoryOrdersPage(historyCurrentPage - 1)"
-              >
-                <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-              </button>
-              <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalPages >= 10 }">
-                หน้า {{ historyCurrentPage }} / {{ totalPages }}
-              </span>
-              <button 
-                class="pagination-btn" 
-                :disabled="historyCurrentPage === totalPages" 
-                @click="changeHistoryOrdersPage(historyCurrentPage + 1)"
-              >
-                ถัดไป <i class="fa-solid fa-chevron-right"></i>
-              </button>
-            </div>
+            <PaginationBar
+              v-model:current-page="historyCurrentPage"
+              :total-pages="totalPages"
+              :scroll-target="historyOrdersCardRef"
+            />
           </div>
         </div>
       </div>
@@ -752,7 +695,7 @@
                 <div class="skeleton mt-xs" style="height: 14px; width: 110px; border-radius: 4px;"></div>
               </template>
               <template v-else>
-                <span class="stat-clean-val tabular-nums" style="color: #b45309; font-size: var(--font-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <span class="stat-clean-val tabular-nums" style="color: var(--accent-dark, #c57600); font-size: var(--font-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   {{ topRevenueItem ? topRevenueItem.item_name : '-' }}
                 </span>
                 <div v-if="topRevenueItem" class="flex align-center gap-xs text-xs tabular-nums" style="margin-top: 4px; color: var(--text-secondary);">
@@ -869,7 +812,7 @@
                     :style="{
                       width: Math.min(100, Math.max(2, Number(getTopItemSalesPct(item.total_sales)))) + '%',
                       height: '100%',
-                      background: index === 0 ? 'linear-gradient(90deg, #d97706, #f59e0b)' : 'var(--primary)',
+                      background: index === 0 ? 'linear-gradient(90deg, var(--accent-dark, #c57600), var(--accent, #ffab2b))' : 'var(--primary)',
                       borderRadius: '999px'
                     }"
                   ></div>
@@ -1009,25 +952,12 @@
           </div>
 
           <!-- Pagination UI for Activity Logs -->
-          <div v-if="!loading && !activityLogsLoading && totalActivityPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
-            <button 
-              class="pagination-btn" 
-              :disabled="activityCurrentPage === 1" 
-              @click="changeActivityPage(activityCurrentPage - 1)"
-            >
-              <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-            </button>
-            <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalActivityPages >= 10 }">
-              หน้า {{ activityCurrentPage }} / {{ totalActivityPages }}
-            </span>
-            <button 
-              class="pagination-btn" 
-              :disabled="activityCurrentPage === totalActivityPages" 
-              @click="changeActivityPage(activityCurrentPage + 1)"
-            >
-              ถัดไป <i class="fa-solid fa-chevron-right"></i>
-            </button>
-          </div>
+          <PaginationBar
+            v-if="!loading && !activityLogsLoading"
+            v-model:current-page="activityCurrentPage"
+            :total-pages="totalActivityPages"
+            :scroll-target="activityCardRef"
+          />
         </div>
       </div>
     </template>
@@ -1052,8 +982,8 @@
             <button 
               v-for="preset in voidPresets" 
               :key="preset.value"
-              class="btn-action w-full"
-              :class="{ 'btn-action-primary': voidReason === preset.value }"
+              class="btn btn-secondary w-full"
+              :class="{ active: voidReason === preset.value }"
               style="text-align: left; justify-content: flex-start;"
               @click="voidReason = preset.value"
             >
@@ -1151,13 +1081,13 @@
         <!-- Restock Summary Card -->
         <div 
           class="card p-md sales-kpi-card" 
-          style="position: relative; overflow: visible; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid #10b981; cursor: pointer;"
-          :style="stockReasonFilter === 'restock_all' || stockReasonFilter === 'restock' || stockReasonFilter === 'restock_ck' ? 'border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);' : ''"
+          style="position: relative; overflow: visible; background: #ffffff; border: 1.5px solid var(--border-color); border-left: 4px solid var(--success, #2a9d8f); cursor: pointer;"
+          :style="stockReasonFilter === 'restock_all' || stockReasonFilter === 'restock' || stockReasonFilter === 'restock_ck' ? 'border-color: var(--success, #2a9d8f); box-shadow: 0 4px 12px rgba(42, 157, 143, 0.14);' : ''"
           @click="stockReasonFilter = stockReasonFilter === 'restock_all' ? 'all' : 'restock_all'"
         >
           <div class="flex flex-between align-center mb-xs">
             <span class="text-sm font-bold flex align-center gap-xs" style="color: var(--text-secondary);">
-              <span class="sales-kpi-icon-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-boxes-packing" style="font-size: var(--font-xxs);"></i></span>
+              <span class="sales-kpi-icon-badge" style="background: rgba(42, 157, 143, 0.12); color: var(--success, #2a9d8f);"><i class="fa-solid fa-boxes-packing" style="font-size: var(--font-xxs);"></i></span>
               การเติมสต็อกรวม
             </span>
             <div class="flex align-center gap-xs">
@@ -1168,17 +1098,17 @@
                   @click="showRestockValueInfo = !showRestockValueInfo"
                   aria-label="ดูที่มาของมูลค่าเติมสต็อก"
                   style="background: none; border: none; outline: none; box-shadow: none; padding: 0; width: 22px; height: 22px; border-radius: 999px; cursor: pointer; color: var(--text-muted); font-size: var(--font-sm); display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s;"
-                  :style="showRestockValueInfo ? { color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' } : {}"
+                  :style="showRestockValueInfo ? { color: 'var(--success, #2a9d8f)', background: 'rgba(42, 157, 143, 0.12)' } : {}"
                 >
                   <i class="fa-solid fa-circle-info"></i>
                 </button>
                 <div
                   v-if="showRestockValueInfo"
                   class="text-xs"
-                  style="position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: min(290px, 82vw); padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14); white-space: normal; text-align: left;"
+                  style="position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: min(290px, 82vw); padding: 10px 12px; background: #fffcf7; border: 1px solid rgba(42, 157, 143, 0.25); border-left: 3px solid var(--success, #2a9d8f); border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.65; box-shadow: 0 8px 24px rgba(61, 27, 17, 0.14); white-space: normal; text-align: left;"
                 >
-                  <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(16, 185, 129, 0.25); border-left: 1px solid rgba(16, 185, 129, 0.25); transform: rotate(45deg);"></div>
-                  <div style="font-weight: 700; color: #059669; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <div style="position: absolute; top: -6px; right: 5px; width: 10px; height: 10px; background: #fffcf7; border-top: 1px solid rgba(42, 157, 143, 0.25); border-left: 1px solid rgba(42, 157, 143, 0.25); transform: rotate(45deg);"></div>
+                  <div style="font-weight: 700; color: var(--success, #2a9d8f); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-calculator" style="font-size: var(--font-xxs);"></i>
                     <span>ที่มาของมูลค่าเติมสต็อก</span>
                   </div>
@@ -1482,25 +1412,11 @@
           </div>
 
           <!-- Pagination UI -->
-          <div v-if="totalStockLogsPages > 1" class="pagination-bar flex flex-center align-center gap-md mt-md">
-            <button 
-              class="pagination-btn" 
-              :disabled="stockLogsCurrentPage === 1" 
-              @click="changeStockLogsPage(stockLogsCurrentPage - 1)"
-            >
-              <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
-            </button>
-            <span class="pagination-info tabular-nums" :class="{ 'is-multi-digit': totalStockLogsPages >= 10 }">
-              หน้า {{ stockLogsCurrentPage }} / {{ totalStockLogsPages }}
-            </span>
-            <button 
-              class="pagination-btn" 
-              :disabled="stockLogsCurrentPage === totalStockLogsPages" 
-              @click="changeStockLogsPage(stockLogsCurrentPage + 1)"
-            >
-              ถัดไป <i class="fa-solid fa-chevron-right"></i>
-            </button>
-          </div>
+          <PaginationBar
+            v-model:current-page="stockLogsCurrentPage"
+            :total-pages="totalStockLogsPages"
+            :scroll-target="stockLogsCardRef"
+          />
         </div>
       </div>
     </div>
@@ -1509,8 +1425,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import DatePeriodFilter from '../components/DatePeriodFilter.vue';
+import PaginationBar from '../components/PaginationBar.vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, formatTime, getToday, isTimeInRange, isAdmin, isManagerOrAdmin, getUser } from '../helpers';
 import { store } from '../store';
@@ -1582,12 +1499,8 @@ const getPaymentLabel = (pm) => {
   return map[pm] || pm;
 };
 
-// --- CASH DRAWER AUDIT STATE ---
-
-const calculatorTotalSum = ref(0);
-
 // ponytail: sequence guards prevent slower earlier dropdown requests from overwriting newer selections
-const reqSeq = { cashDrawer: 0, stockHistory: 0, ledger: 0, summary: 0, expenses: 0, activities: 0, history: 0, report: 0, topItems: 0 };
+const reqSeq = { stockHistory: 0, summary: 0, expenses: 0, activities: 0, history: 0, report: 0, topItems: 0 };
 
 const isUsingDefaultFilters = () => {
   return periodMode.value === 'daily' &&
@@ -1646,71 +1559,6 @@ const applyDataFromStore = () => {
   if (periodMode.value === 'daily' && historyStatusFilter.value === 'all') {
     historyOrders.value = store.reportsHistory || [];
   }
-  
-  // Ledger
-  let ledgerOrders = [];
-  let ledgerExpenses = [];
-
-  if (periodMode.value === 'daily') {
-    ledgerOrders = store.reportsHistory || [];
-    ledgerExpenses = store.reportsExpenses || [];
-  } else if (periodMode.value === 'monthly') {
-    ledgerOrders = store.reportMonthlyOrders || [];
-    ledgerExpenses = store.reportMonthlyExpenses || [];
-  }
-
-  const list = [];
-
-  ledgerOrders.forEach(o => {
-    if (o.status !== 'completed') return;
-    list.push({
-      id: o.id,
-      created_at: o.created_at,
-      timestamp: new Date(o.created_at).getTime(),
-      name: `ขายสินค้า (บิล #${o.order_number})`,
-      income: o.total || 0,
-      expense: 0,
-      type: 'order'
-    });
-  });
-
-  ledgerExpenses.forEach(e => {
-    const expDate = e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : '');
-    const timePart = e.created_at ? e.created_at.substring(11, 19) : '00:00:00';
-    const effectiveDateTime = `${expDate} ${timePart}`;
-    list.push({
-      id: e.id,
-      date: expDate,
-      created_at: e.created_at,
-      timestamp: new Date(effectiveDateTime.replace(' ', 'T')).getTime() || 0,
-      name: e.note || getCategoryLabel(e.category),
-      income: 0,
-      expense: e.amount || 0,
-      type: 'expense'
-    });
-  });
-
-  list.sort((a, b) => {
-    const dateA = a.date || (a.created_at ? a.created_at.substring(0, 10) : '');
-    const dateB = b.date || (b.created_at ? b.created_at.substring(0, 10) : '');
-    if (dateA !== dateB) {
-      return (dateA || '').localeCompare(dateB || '');
-    }
-    return a.timestamp - b.timestamp;
-  });
-
-  let running = 0;
-  const computedList = list.map(item => {
-    running += item.income - item.expense;
-    return {
-      ...item,
-      runningBalance: running,
-      formattedDate: formatDate(item.created_at),
-      formattedTime: formatTime(item.created_at)
-    };
-  });
-
-  ledgerTransactions.value = computedList.reverse();
 };
 
 // States for Period Mode
@@ -1770,8 +1618,6 @@ const totalPages = computed(() => {
 watch(activeTab, (newVal) => {
   if (newVal === 'order_history') {
     loadOrderHistory();
-  } else if (newVal === 'cash_audit') {
-    fetchCashDrawerSummary();
   } else if (newVal === 'stock_history' || newVal === 'activity_logs') {
     loadStockHistoryLogs();
     if (newVal === 'activity_logs') {
@@ -2079,38 +1925,6 @@ const voidPresets = [
   { value: 'custom', label: 'อื่นๆ (ระบุเอง)', icon: 'fa-solid fa-circle-question' },
 ];
 
-// Expense form state
-const totalExpenses = computed(() => {
-  const refundedIds = new Set(
-    expenses.value
-      .filter(e => (e.is_refund === 1 || e.status === 'refund') && e.refund_ref_id)
-      .map(e => Number(e.refund_ref_id))
-  );
-  return expenses.value.reduce((sum, e) => {
-    if (e.is_refund === 1 || e.status === 'refund') return sum - (Number(e.amount) || 0);
-    if (e.status === 'cancelled') {
-      if (refundedIds.has(Number(e.id))) return sum + (Number(e.amount) || 0);
-      return sum;
-    }
-    return sum + (Number(e.amount) || 0);
-  }, 0);
-});
-
-// Ledger States
-const ledgerTransactions = ref([]);
-const ledgerOrders = ref([]);
-const ledgerLoading = ref(false);
-
-const filteredLedgerTransactions = computed(() => {
-  let list = ledgerTransactions.value;
-  const isTimeFilterActive = customStartTime.value !== '00.00' || customEndTime.value !== '23.59';
-  if (periodMode.value === 'daily' && isTimeFilterActive) {
-    list = list.filter(item => isTimeInRange(item.created_at, customStartTime.value, customEndTime.value));
-  }
-  return list;
-});
-
-
 // Pagination States for Daily/Monthly Orders
 const displayedDailyReport = computed(() => {
   const rep = dailyReport.value || { orders: [] };
@@ -2168,41 +1982,9 @@ const getPaymentPct = (sales) => {
   return Math.round(((Number(sales) || 0) / total) * 100);
 };
 
-const scrollToRef = (refEl) => {
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur();
-  }
-  nextTick(() => {
-    const el = refEl?.value;
-    if (!el) return;
-    const isMobile = window.innerWidth < 1024;
-    const card = el.closest('.card') || el;
-    card.style.minHeight = isMobile ? 'calc(100dvh - 130px)' : 'calc(100dvh - 24px)';
-    const offset = isMobile ? 64 : 12;
-    el.style.scrollMarginTop = `${offset}px`;
-    requestAnimationFrame(() => {
-      const rect = el.getBoundingClientRect();
-      const currentScroll = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-      const targetY = Math.max(0, rect.top + currentScroll - offset);
-      window.scrollTo({ top: targetY, behavior: 'smooth' });
-    });
-  });
-};
-
 const dailyOrdersCardRef = ref(null);
 const dailyOrdersCurrentPage = ref(1);
-const changeDailyOrdersPage = (newPage) => {
-  if (newPage < 1 || newPage > totalDailyOrdersPages.value) return;
-  dailyOrdersCurrentPage.value = newPage;
-  scrollToRef(dailyOrdersCardRef);
-};
-
 const historyOrdersCardRef = ref(null);
-const changeHistoryOrdersPage = (newPage) => {
-  if (newPage < 1 || newPage > totalPages.value) return;
-  historyCurrentPage.value = newPage;
-  scrollToRef(historyOrdersCardRef);
-};
 const dailyOrdersPerPage = 15;
 const totalDailyOrdersPages = computed(() => {
   const count = (displayedDailyReport.value.orders || []).length;
@@ -2215,25 +1997,6 @@ const paginatedDailyReportOrders = computed(() => {
   return orders.slice(start, end);
 });
 
-// Pagination States for Ledger Transactions
-const ledgerCardRef = ref(null);
-const ledgerCurrentPage = ref(1);
-const ledgerPerPage = 15;
-const totalLedgerPages = computed(() => {
-  const count = filteredLedgerTransactions.value.length;
-  return Math.ceil(count / ledgerPerPage) || 1;
-});
-const changeLedgerPage = (newPage) => {
-  if (newPage < 1 || newPage > totalLedgerPages.value) return;
-  ledgerCurrentPage.value = newPage;
-  scrollToRef(ledgerCardRef);
-};
-const paginatedLedgerTransactions = computed(() => {
-  const start = (ledgerCurrentPage.value - 1) * ledgerPerPage;
-  const end = start + ledgerPerPage;
-  return filteredLedgerTransactions.value.slice(start, end);
-});
-
 // Pagination States for Activity Logs
 const activityCardRef = ref(null);
 const activityCurrentPage = ref(1);
@@ -2242,11 +2005,6 @@ const totalActivityPages = computed(() => {
   const count = filteredActivityLogs.value.length;
   return Math.ceil(count / activityPerPage) || 1;
 });
-const changeActivityPage = (newPage) => {
-  if (newPage < 1 || newPage > totalActivityPages.value) return;
-  activityCurrentPage.value = newPage;
-  scrollToRef(activityCardRef);
-};
 const paginatedActivityLogs = computed(() => {
   const start = (activityCurrentPage.value - 1) * activityPerPage;
   const end = start + activityPerPage;
@@ -2684,11 +2442,6 @@ const stockLogPages = computed(() => {
   return pages;
 });
 const totalStockLogsPages = computed(() => stockLogPages.value.length || 1);
-const changeStockLogsPage = (newPage) => {
-  if (newPage < 1 || newPage > totalStockLogsPages.value) return;
-  stockLogsCurrentPage.value = newPage;
-  scrollToRef(stockLogsCardRef);
-};
 const paginatedStockLogs = computed(() => {
   return stockLogPages.value[stockLogsCurrentPage.value - 1] || [];
 });
@@ -2881,7 +2634,6 @@ watch(filterAction, () => {
 
 watch([customStartTime, customEndTime], () => {
   historyCurrentPage.value = 1;
-  ledgerCurrentPage.value = 1;
   activityCurrentPage.value = 1;
   stockLogsCurrentPage.value = 1;
 });
@@ -2895,11 +2647,6 @@ watch(activityStaffFilter, () => {
 });
 
 // Custom dropdowns logic for Reports.vue
-
-const selectExpensePaymentMethod = (method) => {
-  expenseForm.value.payment_method = method;
-  isExpensePaymentMethodDropdownOpen.value = false;
-};
 
 const isFilterActionDropdownOpen = ref(false);
 const selectedFilterActionLabel = computed(() => {
@@ -2939,9 +2686,6 @@ const selectHistoryStatus = (status) => {
   loadOrderHistory();
 };
 
-// Custom dropdown for Branch filter
-const isBranchDropdownOpen = ref(false);
-
 const selectedMonthLabel = computed(() => {
   if (!selectedMonth.value) return 'เลือกเดือน';
   const [year, month] = selectedMonth.value.split('-');
@@ -2952,12 +2696,6 @@ const selectedMonthLabel = computed(() => {
 const selectedDateLabel = computed(() => {
   if (!selectedDate.value) return 'เลือกวัน';
   return formatDate(selectedDate.value);
-});
-
-const selectedBranchName = computed(() => {
-  if (selectedBranchId.value === null) return 'ทุกสาขา';
-  const found = branches.value.find(b => b.id === selectedBranchId.value);
-  return found ? found.name : 'ทุกสาขา';
 });
 
 const selectedYearLabel = computed(() => `ปี ${Number(selectedYear.value) + 543}`);
@@ -2992,33 +2730,9 @@ const dailyOrdersEmptyLabel = computed(() => {
   }
 });
 
-const ledgerPeriodLabel = computed(() => {
-  if (periodMode.value === 'daily') {
-    return `วัน ${formatDate(selectedDate.value)}`;
-  } else if (periodMode.value === 'monthly') {
-    if (!selectedMonth.value) return 'เดือน -';
-    const [year, month] = selectedMonth.value.split('-');
-    const d = new Date(Number(year), Number(month) - 1, 1);
-    const formatted = d.toLocaleDateString('th-TH', {
-      year: 'numeric',
-      month: 'long'
-    });
-    return `เดือน ${formatted}`;
-  } else {
-    return `ปี ${Number(selectedYear.value) + 543}`;
-  }
-});
-
-const toggleBranchDropdown = () => {
-  const current = isBranchDropdownOpen.value;
-  closeReportsDropdowns();
-  isBranchDropdownOpen.value = !current;
-};
-
 const selectBranch = (branchId) => {
   selectedBranchId.value = branchId;
   selectedReportsStockItemId.value = 'all';
-  isBranchDropdownOpen.value = false;
   if (branchId !== null) {
     sessionStorage.setItem('selected_branch_id', String(branchId));
   } else {
@@ -3028,139 +2742,14 @@ const selectBranch = (branchId) => {
 };
 
 const closeReportsDropdowns = () => {
-  isExpenseCategoryDropdownOpen.value = false;
-  isExpensePaymentMethodDropdownOpen.value = false;
   isFilterActionDropdownOpen.value = false;
   isHistoryStatusDropdownOpen.value = false;
-  isBranchDropdownOpen.value = false;
   isHistoryStaffDropdownOpen.value = false;
   isHistoryPaymentDropdownOpen.value = false;
   isActivityStaffDropdownOpen.value = false;
   isStockItemDropdownOpen.value = false;
   showAvgBillInfo.value = false;
   showRestockValueInfo.value = false;
-};
-
-const computeLedgerTransactions = () => {
-  const list = [];
-
-  ledgerOrders.value.forEach(o => {
-    if (o.status !== 'completed') return;
-    list.push({
-      id: o.id,
-      created_at: o.created_at,
-      timestamp: new Date(o.created_at).getTime(),
-      name: `ขายสินค้า (บิล #${o.order_number})`,
-      income: o.total || 0,
-      expense: 0,
-      type: 'order'
-    });
-  });
-
-  const refundedIds = new Set(
-    expenses.value
-      .filter(e => (e.is_refund === 1 || e.status === 'refund') && e.refund_ref_id)
-      .map(e => Number(e.refund_ref_id))
-  );
-
-  expenses.value.forEach(e => {
-    if (e.status === 'cancelled' && !refundedIds.has(Number(e.id))) return;
-    const isRefund = Boolean(e.is_refund === 1 || e.status === 'refund');
-    const isCancelled = e.status === 'cancelled';
-    const pmLabel = e.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด';
-    const expDate = e.expense_date || (e.created_at ? e.created_at.substring(0, 10) : '');
-    const timePart = e.created_at ? e.created_at.substring(11, 19) : '00:00:00';
-    const effectiveDateTime = `${expDate} ${timePart}`;
-
-    list.push({
-      id: e.id,
-      date: expDate,
-      created_at: e.created_at,
-      timestamp: new Date(effectiveDateTime.replace(' ', 'T')).getTime() || 0,
-      name: `${e.note || getCategoryLabel(e.category)} (${pmLabel})${isCancelled ? ' [ยกเลิก]' : ''}`,
-      income: isRefund ? (Number(e.amount) || 0) : 0,
-      expense: isRefund ? 0 : (Number(e.amount) || 0),
-      type: isRefund ? 'refund' : 'expense'
-    });
-  });
-
-  list.sort((a, b) => {
-    const dateA = a.date || (a.created_at ? a.created_at.substring(0, 10) : '');
-    const dateB = b.date || (b.created_at ? b.created_at.substring(0, 10) : '');
-    if (dateA !== dateB) {
-      return (dateA || '').localeCompare(dateB || '');
-    }
-    return a.timestamp - b.timestamp;
-  });
-
-  let running = 0;
-  const computedList = list.map(item => {
-    running += item.income - item.expense;
-    return {
-      ...item,
-      runningBalance: running,
-      formattedDate: formatDate(item.date || item.created_at),
-      formattedTime: formatTime(item.created_at)
-    };
-  });
-
-  ledgerTransactions.value = computedList.reverse();
-};
-
-const loadMonthlyLedger = async () => {
-  const seq = ++reqSeq.ledger;
-  if (isUsingDefaultFilters() && store.reportsLoaded && store.reportsBranchId === selectedBranchId.value) {
-    applyDataFromStore();
-    ledgerLoading.value = false;
-    return;
-  }
-  ledgerLoading.value = true;
-  try {
-    const params = { status: 'completed', branch_id: selectedBranchId.value, include_items: 'false' };
-
-    if (periodMode.value === 'daily') {
-      params.date = selectedDate.value;
-    } else if (periodMode.value === 'monthly') {
-      params.month = selectedMonth.value;
-    } else {
-      params.year = selectedYear.value;
-    }
-
-    let periodExpenses = expenses.value;
-    let ordersRes;
-
-    // ถ้ามีข้อมูลรายจ่ายอยู่แล้ว ไม่จำเป็นต้องคิวรีผ่าน API อีกรอบเพื่อประหยัดเน็ตและเวลา
-    if (periodExpenses && periodExpenses.length > 0) {
-      ordersRes = await api.orders.getAll(params);
-    } else {
-      const expenseParams = { branch_id: selectedBranchId.value };
-      if (periodMode.value === 'daily') {
-        expenseParams.date = selectedDate.value;
-      } else if (periodMode.value === 'monthly') {
-        expenseParams.month = selectedMonth.value;
-      } else {
-        expenseParams.year = selectedYear.value;
-      }
-
-      const [ordersResData, expensesRes] = await Promise.all([
-        api.orders.getAll(params),
-        api.expenses.get(expenseParams)
-      ]);
-      ordersRes = ordersResData;
-      if (seq !== reqSeq.ledger) return;
-      expenses.value = expensesRes.success ? (expensesRes.data || []) : [];
-    }
-
-    if (seq !== reqSeq.ledger) return;
-    ledgerOrders.value = ordersRes.success ? (ordersRes.data || []) : [];
-    computeLedgerTransactions();
-  } catch (e) {
-    if (seq !== reqSeq.ledger) return;
-    console.error('❌ Failed to load ledger:', e);
-    ui.showToast('ไม่สามารถดึงข้อมูลบัญชีรายรับ-รายจ่ายได้', 'error');
-  } finally {
-    if (seq === reqSeq.ledger) ledgerLoading.value = false;
-  }
 };
 
 // ── Data Loading ──
@@ -3307,7 +2896,6 @@ const loadReportData = async () => {
   expandedOrderId.value = null;
   expandedItems.value = [];
   dailyOrdersCurrentPage.value = 1;
-  ledgerCurrentPage.value = 1;
   activityCurrentPage.value = 1;
 
   // Check if we can use store cache
@@ -3318,17 +2906,10 @@ const loadReportData = async () => {
       loadTopItems().catch(e => console.warn('Background top items load error:', e));
     }
     
-    if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
-      fetchCashDrawerSummary();
-    }
-    
     // Silent background fetch to update store cache
     store.fetchReports(selectedBranchId.value, false).then(() => {
       if (isUsingDefaultFilters() && store.reportsBranchId === selectedBranchId.value) {
         applyDataFromStore();
-        if (isManagerOrAdmin() && activeTab.value === 'cash_audit') {
-          fetchCashDrawerSummary();
-        }
       }
     }).catch(e => console.error(e));
     
@@ -3413,21 +2994,11 @@ const loadReportData = async () => {
     // สั่งโหลดข้อมูลตารางประวัติอื่นๆ เบื้องหลังแบบขนานโดยไม่ขัดจังหวะผู้ใช้ (Background Async Load)
     if (isAdmin()) {
       loadTopItems().catch(e => console.warn('Background top items load error:', e));
-      // โหลดค่าใช้จ่ายให้เสร็จก่อนรันสมุดรายวัน เพื่อหลีกเลี่ยงการเรียก API รายจ่ายซ้ำซ้อน
-      (async () => {
-        await loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
-        loadMonthlyLedger().catch(e => console.warn('Background ledger load error:', e));
-      })();
     }
     if (isManagerOrAdmin()) {
       loadActivityLogsForPeriod().catch(e => console.warn('Background activities load error:', e));
       loadStockHistoryLogs().catch(e => console.warn('Background stock logs load error:', e));
-      if (!isAdmin()) {
-        loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
-      }
-      if (activeTab.value === 'cash_audit') {
-        fetchCashDrawerSummary().catch(e => console.warn('Background cash drawer load error:', e));
-      }
+      loadExpensesForPeriod().catch(e => console.warn('Background expenses load error:', e));
     }
     loadOrderHistory().catch(e => console.warn('Background order history load error:', e));
   } catch (e) {
@@ -3532,58 +3103,6 @@ const handleVoidOrder = async () => {
   }
 };
 
-const handleAddExpense = async () => {
-  if (!expenseForm.value.amount || expenseForm.value.amount <= 0 || isSubmittingExpense.value) return;
-  isSubmittingExpense.value = true;
-  ui.showLoading();
-  try {
-    const res = await api.expenses.create({
-      amount: expenseForm.value.amount,
-      category: expenseForm.value.category,
-      note: expenseForm.value.note,
-      expense_date: selectedDate.value,
-      payment_method: expenseForm.value.payment_method || 'cash',
-      branch_id: selectedBranchId.value
-    });
-    if (res.success) {
-      ui.showToast('บันทึกค่าใช้จ่ายสำเร็จ', 'success');
-      expenseForm.value = { amount: null, category: 'raw_chicken', note: '', payment_method: 'transfer' };
-      store.clearReportsCache(); // Clear store cache!
-      if (res.data) {
-        expenses.value.unshift(res.data);
-        computeLedgerTransactions();
-      } else {
-        await loadExpensesForPeriod();
-        loadMonthlyLedger();
-      }
-    }
-  } catch (e) {
-    ui.showToast('บันทึกค่าใช้จ่ายไม่สำเร็จ: ' + e.message, 'error');
-  } finally {
-    ui.hideLoading();
-    isSubmittingExpense.value = false;
-  }
-};
-
-const handleDeleteExpense = async (id) => {
-  const ok = await ui.showConfirm('ลบรายจ่าย', 'ต้องการลบรายการค่าใช้จ่ายนี้ใช่หรือไม่?');
-  if (!ok) return;
-  ui.showLoading();
-  try {
-    const res = await api.expenses.delete(id);
-    if (res.success) {
-      ui.showToast('ลบค่าใช้จ่ายสำเร็จ', 'success');
-      store.clearReportsCache(); // Clear store cache!
-      expenses.value = expenses.value.filter(e => e.id !== id);
-      computeLedgerTransactions();
-    }
-  } catch (e) {
-    ui.showToast('ลบค่าใช้จ่ายไม่สำเร็จ: ' + e.message, 'error');
-  } finally {
-    ui.hideLoading();
-  }
-};
-
 // ── Helpers ──
 
 const getCategoryLabel = (cat) => {
@@ -3636,12 +3155,7 @@ const getActionIconClass = (action) => {
 
 const onBranchChange = () => {
   loadReportSummary();
-  loadTopItems();
-  loadMonthlyLedger();
   loadReportData();
-  if (activeTab.value === 'cash_audit') {
-    fetchCashDrawerSummary();
-  }
 };
 
 onMounted(() => {
@@ -3682,47 +3196,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('click', closeReportsDropdowns);
 });
-
-// CSV Export Methods
-const exportToCSV = (headers, rows, filename) => {
-  try {
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => 
-        row.map(val => {
-          const cleanVal = String(val === null || val === undefined ? '' : val).replace(/"/g, '""');
-          return `"${cleanVal}"`;
-        }).join(',')
-      )
-    ].join('\n');
-
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    ui.showToast('ส่งออกไฟล์ CSV สำเร็จ', 'success');
-  } catch (error) {
-    console.error(error);
-    ui.showToast('เกิดข้อผิดพลาดในการส่งออกไฟล์: ' + error.message, 'error');
-  }
-};
-
-const exportExpensesCSV = () => {
-  const headers = ['วันที่-เวลา', 'รายการ', 'รายรับ (บาท)', 'รายจ่าย (บาท)', 'คงเหลือสุทธิ (บาท)'];
-  const rows = filteredLedgerTransactions.value.map(t => [
-    formatDate(t.created_at) + ' ' + formatTime(t.created_at),
-    t.name,
-    t.income > 0 ? t.income : 0,
-    t.expense > 0 ? t.expense : 0,
-    t.runningBalance
-  ]);
-  const periodStr = periodMode.value === 'daily' ? selectedDate.value : periodMode.value === 'monthly' ? selectedMonth.value : selectedYear.value;
-  exportToCSV(headers, rows, `ledger_report_${periodStr}.csv`);
-};
 </script>
 
 <style scoped>
@@ -4399,10 +3872,10 @@ select.reports-filter-control,
   height: 100%;
   transition: width 0.3s ease;
 }
-.ratio-seg.seg-cash { background: #10b981; }
+.ratio-seg.seg-cash { background: var(--success, #2a9d8f); }
 .ratio-seg.seg-qr { background: var(--primary, #8b0313); }
 .ratio-seg.seg-gov { background: #3b82f6; }
-.ratio-seg.seg-delivery { background: #ea580c; }
+.ratio-seg.seg-delivery { background: var(--accent-dark, #c57600); }
 
 /* Payment Methods Grid */
 .payment-methods-grid {
@@ -4427,10 +3900,10 @@ select.reports-filter-control,
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
-.pay-card.pay-card-cash { border-left: 3px solid #10b981 !important; }
+.pay-card.pay-card-cash { border-left: 3px solid var(--success, #2a9d8f) !important; }
 .pay-card.pay-card-qr { border-left: 3px solid var(--primary, #8b0313) !important; }
 .pay-card.pay-card-gov { border-left: 3px solid #3b82f6 !important; }
-.pay-card.pay-card-delivery { border-left: 3px solid #ea580c !important; }
+.pay-card.pay-card-delivery { border-left: 3px solid var(--accent-dark, #c57600) !important; }
 
 .pay-card .pay-title {
   font-size: var(--font-xs);
@@ -4493,10 +3966,10 @@ select.reports-filter-control,
   padding: 2px 8px;
   border-radius: 999px;
 }
-.order-pay-pill.pay-cash { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.order-pay-pill.pay-cash { background: rgba(42, 157, 143, 0.12); color: var(--success, #2a9d8f); }
 .order-pay-pill.pay-qr { background: rgba(139, 3, 19, 0.08); color: var(--primary); }
 .order-pay-pill.pay-gov { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
-.order-pay-pill.pay-delivery { background: rgba(234, 88, 12, 0.1); color: #ea580c; }
+.order-pay-pill.pay-delivery { background: rgba(197, 118, 0, 0.12); color: var(--accent-dark, #c57600); }
 
 .order-status-pill.pill-cancelled {
   background: rgba(239, 68, 68, 0.1);
@@ -4567,7 +4040,7 @@ select.reports-filter-control,
 .stock-log-card.cook-pair-top {
   margin-bottom: 0;
   border-bottom-style: dashed;
-  border-bottom-color: rgba(234, 88, 12, 0.45);
+  border-bottom-color: rgba(197, 118, 0, 0.45);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -4575,7 +4048,7 @@ select.reports-filter-control,
 .stock-log-card.cook-pair-bottom {
   margin-top: -1.5px;
   border-top-style: dashed;
-  border-top-color: rgba(16, 185, 129, 0.45);
+  border-top-color: rgba(42, 157, 143, 0.45);
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
@@ -4594,11 +4067,11 @@ select.reports-filter-control,
   box-shadow: 0 2px 8px rgba(139, 3, 19, 0.14) !important;
 }
 
-.log-badge.stock-reason-restock, .log-badge.stock-reason-restock_ck, .log-badge.stock-reason-cook_ready { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.log-badge.stock-reason-restock, .log-badge.stock-reason-restock_ck, .log-badge.stock-reason-cook_ready { background: rgba(42, 157, 143, 0.12); color: var(--success, #2a9d8f); }
 .log-badge.stock-reason-adjustment { background: rgba(139, 3, 19, 0.08); color: var(--primary); }
-.log-badge.stock-reason-cook_deduct { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
-.log-badge.stock-reason-waste { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
-.log-badge.stock-reason-staff_benefit { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
+.log-badge.stock-reason-cook_deduct { background: rgba(197, 118, 0, 0.12); color: var(--accent-dark, #c57600); }
+.log-badge.stock-reason-waste { background: rgba(173, 40, 30, 0.12); color: var(--danger, #ad281e); }
+.log-badge.stock-reason-staff_benefit { background: rgba(197, 118, 0, 0.12); color: var(--accent-dark, #c57600); }
 .log-badge.stock-reason-sale, .log-badge.stock-reason-cancel_restore { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
 
 .stock-type-pill {
@@ -4610,14 +4083,14 @@ select.reports-filter-control,
   align-items: center;
 }
 .stock-type-pill.raw {
-  background: rgba(234, 88, 12, 0.1);
-  color: #c2410c;
-  border: 1px solid rgba(234, 88, 12, 0.25);
+  background: rgba(197, 118, 0, 0.1);
+  color: var(--accent-dark, #c57600);
+  border: 1px solid rgba(197, 118, 0, 0.25);
 }
 .stock-type-pill.cooked {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: rgba(42, 157, 143, 0.1);
+  color: var(--success, #2a9d8f);
+  border: 1px solid rgba(42, 157, 143, 0.25);
 }
 
 .stock-action-tag {
@@ -4644,12 +4117,12 @@ select.reports-filter-control,
   white-space: nowrap;
 }
 .stock-delta-badge.positive {
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
+  background: rgba(42, 157, 143, 0.12);
+  color: var(--success, #2a9d8f);
 }
 .stock-delta-badge.negative {
-  background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
+  background: rgba(173, 40, 30, 0.12);
+  color: var(--danger, #ad281e);
 }
 
 .stock-balance-flow {

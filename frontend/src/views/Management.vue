@@ -2,16 +2,14 @@
   <div id="management-page" class="page-enter">
     
     <!-- Top Header Card -->
-    <div class="card p-md mb-md flex flex-between align-center flex-wrap gap-md" style="background: #ffffff;">
-      <div class="flex align-center gap-md">
+    <div class="card mb-md page-header-card">
+      <div class="page-header-left">
         <div class="header-icon-circle">
-          <i class="fa-solid fa-briefcase text-primary" style="font-size: 1.3rem;"></i>
+          <i class="fa-solid fa-briefcase"></i>
         </div>
-        <div>
-          <h2 class="font-bold text-lg text-primary" style="margin: 0;">
-            บริหารจัดการร้าน
-          </h2>
-          <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
+        <div class="page-header-text">
+          <h2 class="page-header-title">บริหารจัดการร้าน</h2>
+          <p class="page-header-subtitle">
             ศูนย์รวมงานบริหารและบันทึกข้อมูลรายวัน: พนักงาน & ค่าแรง, รายจ่ายสาขา, รอบกะลิ้นชัก
           </p>
         </div>
@@ -26,36 +24,13 @@
       v-model:selected-year="selectedYear"
       v-model:start-time="customStartTime"
       v-model:end-time="customEndTime"
-    >
-      <!-- Branch Selector for Admin (aligned right) -->
-      <div v-if="isAdminUser && branches.length > 0" class="flex gap-sm align-center management-branch-selector">
-        <div style="font-size: var(--font-sm); white-space:nowrap;" class="font-bold">สาขา:</div>
-        <div class="custom-select-wrapper" style="min-width: 180px;" @click.stop>
-          <div 
-            class="custom-select-trigger reports-filter-control" 
-            :class="{ 'active': isBranchDropdownOpen }" 
-            @click="toggleBranchDropdown"
-            style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center; cursor: pointer;"
-          >
-            <span class="custom-select-text">{{ selectedBranchName }}</span>
-          </div>
-          <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 8px);">
-            <div 
-              v-for="b in branches" 
-              :key="b.id" 
-              class="custom-select-option" 
-              :class="{ 'selected': selectedBranchId === b.id }" 
-              @click="selectBranch(b.id)"
-            >
-              {{ b.name }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </DatePeriodFilter>
+      v-model:branch-id="selectedBranchId"
+      :branches="isAdminUser ? branches : []"
+      :show-all-branches="false"
+    />
 
     <!-- Main Navigation Tabs (Clean names without numbers) -->
-    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+    <div class="category-tabs">
       <button 
         v-if="isAdminUser"
         class="category-tab" 
@@ -145,26 +120,6 @@ const selectedYear = ref(getToday().substring(0, 4));
 const customStartTime = ref('00.00');
 const customEndTime = ref('23.59');
 
-const isBranchDropdownOpen = ref(false);
-
-const selectedBranchName = computed(() => {
-  const b = branches.value.find(item => item.id === selectedBranchId.value);
-  return b ? b.name : 'สาขาหลัก';
-});
-
-const toggleBranchDropdown = () => {
-  isBranchDropdownOpen.value = !isBranchDropdownOpen.value;
-};
-
-const selectBranch = (bId) => {
-  selectedBranchId.value = bId;
-  isBranchDropdownOpen.value = false;
-};
-
-const closeAllDropdowns = () => {
-  isBranchDropdownOpen.value = false;
-};
-
 const fetchBranches = async () => {
   try {
     const res = await api.auth.getBranches();
@@ -190,38 +145,5 @@ onMounted(async () => {
   } else if (!isAdminUser.value && mainTab.value === 'staff') {
     mainTab.value = 'expenses';
   }
-  window.addEventListener('click', closeAllDropdowns);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('click', closeAllDropdowns);
 });
 </script>
-
-<style scoped>
-.header-icon-circle {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(139, 3, 19, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-@media (min-width: 769px) {
-  #management-page > .card:first-child {
-    padding: var(--space-xl) !important;
-  }
-}
-
-.management-branch-selector {
-  margin-left: auto;
-}
-
-@media (max-width: 768px) {
-  .management-branch-selector {
-    margin-left: 0 !important;
-  }
-}
-</style>

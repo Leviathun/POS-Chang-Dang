@@ -1,157 +1,36 @@
 <template>
   <div id="menu-page" class="page-enter">
 
-    <!-- Tab Selector (Hidden from frontend view while preserving code structure) -->
-    <div class="category-tabs mb-lg" v-if="false">
-      <button 
-        class="category-tab" 
-        :class="{ 'active': activeTab === 'menu_items' }"
-        @click="setTab('menu_items')"
-      >
-        <i class="fa-solid fa-drumstick-bite" style="margin-right: 4px;"></i> สินค้าและเมนู
-      </button>
-      <button 
-        class="category-tab" 
-        :class="{ 'active': activeTab === 'modifiers' }"
-        @click="setTab('modifiers')"
-      >
-        <i class="fa-solid fa-bottle-droplet" style="margin-right: 4px;"></i> ซอสและเครื่องปรุง
-      </button>
-    </div>
-
-    <!-- Tab 1: Menu Items Management -->
-    <div v-if="activeTab === 'menu_items'">
-      <div v-if="isReorderMode">
-        <!-- Reorder Top Action Card -->
-        <div class="card mb-lg menu-top-action-card">
-          <div class="menu-total-count">
-            จัดเรียงลำดับเมนูอาหาร: <strong>{{ reorderItems.length }}</strong> รายการ
-          </div>
-          <div class="menu-action-buttons">
-            <button class="btn btn-secondary" :disabled="isSavingReorder" @click="closeReorderMode"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
-            <button class="btn btn-primary" :disabled="isSavingReorder" @click="handleSaveReorder">
-              <i v-if="isSavingReorder" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingReorder ? 'กำลังบันทึก...' : 'บันทึก' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Desktop Reorder Table (Visible on desktop only) -->
-        <div class="card p-0 overflow-hidden desktop-menu-table-container">
-          <div style="overflow-x: auto;">
-            <table class="table w-full" style="border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                  <th class="text-center" style="padding: var(--space-md); width: 10%;">ลาก</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 15%;">รูป</th>
-                  <th class="text-left" style="padding: var(--space-md); width: 45%;">เมนูอาหาร</th>
-                  <th class="text-center" style="padding: var(--space-md); width: 30%; white-space: nowrap;">ราคา</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="(item, index) in reorderItems" 
-                  :key="item.id" 
-                  style="border-bottom: 1px solid var(--border-color);"
-                  class="table-row-hover desktop-reorder-row"
-                  :class="{ 'dragging': dragIndex === index }"
-                  :data-index="index"
-                  draggable="true"
-                  @dragstart="handleDragStart(index, $event)"
-                  @dragover="handleDragOver"
-                  @dragenter="handleDragEnter(index)"
-                  @dragend="handleDragEnd"
-                >
-                  <!-- Drag Handle -->
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <div 
-                      class="drag-handle" 
-                      style="cursor: grab;"
-                      @touchstart.prevent="handleTouchStart(index, $event)"
-                      @touchmove.prevent="handleTouchMove"
-                      @touchend="handleTouchEnd"
-                  @touchcancel="handleTouchEnd"
-                    >
-                      <i class="fa-solid fa-bars"></i>
-                    </div>
-                  </td>
-                  <!-- Image Preview -->
-                  <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                    <div style="width: 48px; height: 36px; margin: 0 auto; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-secondary); border:1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
-                      <img v-if="item.image_url" :src="item.image_url" alt="เมนู" style="width: 100%; height: 100%; object-fit: cover;" />
-                      <i v-else :class="getIconClass(item.category_id)" class="text-base text-muted"></i>
-                    </div>
-                  </td>
-                  <!-- Name & Category -->
-                  <td style="padding: var(--space-md); vertical-align: middle;">
-                    <div class="font-bold text-base">{{ item.name }}</div>
-                    <div class="text-base text-muted">
-                      {{ getCategoryName(item.category_id) }}
-                    </div>
-                  </td>
-                  <!-- Price -->
-                  <td class="text-center" style="padding: var(--space-md); font-weight: bold; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;">
-                    {{ formatItemPrice(item) }} / {{ item.uom || 'ชิ้น' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Mobile Reorder Cards (Visible on mobile only) -->
-        <div class="mobile-menu-list-container">
-          <div class="mobile-menu-list">
-            <div 
-              v-for="(item, index) in reorderItems" 
-              :key="item.id" 
-              class="mobile-menu-card mobile-reorder-card"
-              :class="{ 'dragging': dragIndex === index }"
-              :data-index="index"
-            >
-              <div class="mobile-menu-card-body" style="align-items: center; display: flex; flex-direction: row; width: 100%;">
-                <!-- Drag Handle -->
-                <div 
-                  class="drag-handle" 
-                  style="margin-right: var(--space-md); cursor: grab; padding: var(--space-xs); font-size: var(--font-md); color: var(--text-tertiary);"
-                  @touchstart="handleTouchStart(index, $event)"
-                  @touchmove.prevent="handleTouchMove"
-                  @touchend="handleTouchEnd"
-                  @touchcancel="handleTouchEnd"
-                >
-                  <i class="fa-solid fa-bars"></i>
-                </div>
-
-                <!-- Product Image -->
-                <div class="mobile-menu-card-img-container" style="margin-right: var(--space-md);">
-                  <img v-if="item.image_url" :src="item.image_url" alt="เมนู" class="mobile-menu-card-img" />
-                  <div v-else class="mobile-menu-card-placeholder"><i :class="getIconClass(item.category_id)" style="font-size: var(--font-md); color: var(--text-tertiary);"></i></div>
-                </div>
-                
-                <!-- Middle: Name & Category -->
-                <div class="mobile-menu-card-details" style="flex: 1; min-width: 0;">
-                  <div class="mobile-menu-card-name">{{ item.name }}</div>
-                  <div class="mobile-menu-card-category">{{ getCategoryName(item.category_id) }}</div>
-                </div>
-                
-                <!-- Price -->
-                <div class="mobile-menu-card-meta" style="text-align: right; justify-content: center; width: auto; margin-left: auto;">
-                  <div class="mobile-menu-card-price">{{ formatItemPrice(item) }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Menu Items Management -->
+    <div>
+      <ReorderItemsPanel
+        v-if="isReorderMode"
+        v-model:items="reorderItems"
+        :is-saving="isSavingReorder"
+        title-prefix="จัดลำดับเมนู"
+        column-header="เมนูอาหาร"
+        :get-category-label="(item) => getCategoryName(item.category_id)"
+        :get-icon-class="(item) => getIconClass(item.category_id)"
+        :get-desktop-price-text="(item) => `${formatItemPrice(item)} / ${item.uom || 'ชิ้น'}`"
+        :get-mobile-price-text="(item) => formatItemPrice(item)"
+        @close="closeReorderMode"
+        @save="handleSaveReorder"
+      />
 
       <div v-else>
         <!-- Top Action Card -->
-        <div class="card mb-lg menu-top-action-card">
-          <div class="menu-total-count">
-            เมนูทั้งหมด: <strong>{{ menuItems.length }}</strong> รายการ
+        <div class="card mb-lg page-header-card">
+          <div class="page-header-left">
+            <div class="header-icon-circle">
+              <i class="fa-solid fa-utensils"></i>
+            </div>
+            <div class="page-header-text">
+              <h2 class="page-header-title">
+                เมนูทั้งหมด: <strong class="tabular-nums">{{ menuItems.length }}</strong> รายการ
+              </h2>
+            </div>
           </div>
-          <div class="menu-action-buttons">
+          <div class="page-header-actions">
             <button class="btn btn-primary" @click="openCatModal"><i class="fa-solid fa-folder-open"></i> จัดการหมวดหมู่</button>
             <button class="btn btn-primary" @click="openReorderMode"><i class="fa-solid fa-sort"></i> เปลี่ยนลำดับ</button>
             <button class="btn btn-primary" @click="openAddModal"><i class="fa-solid fa-plus"></i> เพิ่มเมนูอาหาร</button>
@@ -311,134 +190,6 @@
               <div class="mobile-menu-card-actions">
                 <button class="btn-action btn-action-edit" @click="openEditModal(item)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
                 <button class="btn-action btn-action-delete" @click="handleDeleteItem(item.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 2: Free Modifiers Management -->
-    <div v-else-if="activeTab === 'modifiers'">
-      <!-- Top Action Card -->
-      <div class="card mb-lg menu-top-action-card">
-        <div class="menu-total-count">
-          เครื่องปรุงทั้งหมด: <strong>{{ modifierItems.length }}</strong> รายการ
-        </div>
-        <div class="menu-modifiers-info">
-          <span>สิทธิ์แอดมินในการเปิด/ปิดเครื่องปรุง</span>
-        </div>
-      </div>
-
-      <!-- Desktop Modifiers Table -->
-      <div class="card p-0 overflow-hidden desktop-menu-table-container">
-        <div style="overflow-x: auto;">
-          <table class="table w-full" style="border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th class="text-left" style="padding: var(--space-md); width: 45%;">ชื่อเครื่องปรุง/ซอส/ผง</th>
-                <th class="text-center" style="padding: var(--space-md); width: 25%;">ประเภท</th>
-                <th class="text-center" style="padding: var(--space-md); width: 30%;">เปิด/ปิดการใช้งาน</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-if="modifiersLoading">
-                <tr v-for="n in 4" :key="'sk-mod-' + n" style="border-bottom: 1px solid var(--border-color);">
-                  <td style="padding: var(--space-md);">
-                    <div class="skeleton" style="height: 16px; width: 140px; border-radius: 4px;"></div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md);">
-                    <div class="skeleton mx-auto" style="height: 22px; width: 80px; border-radius: 999px;"></div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md);">
-                    <div class="skeleton mx-auto" style="height: 22px; width: 44px; border-radius: 999px;"></div>
-                  </td>
-                </tr>
-              </template>
-              <tr v-else-if="modifierItems.length === 0">
-                <td colspan="3" class="text-center" style="padding: var(--space-3xl); color: var(--text-tertiary);">
-                  ไม่มีรายการเครื่องปรุงในระบบ
-                </td>
-              </tr>
-              <tr 
-                v-else 
-                v-for="item in modifierItems" 
-                :key="item.id" 
-                style="border-bottom: 1px solid var(--border-color);"
-                :class="{ 'table-row-hover': true, 'opacity-50': !item.active }"
-              >
-                <!-- Name -->
-                <td style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="font-bold text-base">{{ item.name }}</div>
-                </td>
-                <!-- Category -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge" :class="getModifierCategoryClass(item.category)">
-                    {{ getModifierCategoryLabel(item.category) }}
-                  </span>
-                </td>
-                <!-- Toggle switch -->
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <label class="toggle-switch mx-auto block" :class="{ 'disabled': !isAdminUser }">
-                    <input 
-                      type="checkbox" 
-                      :checked="item.active !== 0 && item.active !== false"
-                      :disabled="!isAdminUser"
-                      @change="handleToggleModifierActive(item)"
-                    />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Mobile Modifiers List -->
-      <div class="mobile-menu-list-container">
-        <div v-if="modifiersLoading" class="mobile-menu-list">
-          <div v-for="n in 4" :key="'sk-m-mod-' + n" class="mobile-menu-card">
-            <div class="mobile-menu-card-body">
-              <div class="mobile-menu-card-details" style="flex: 1;">
-                <div class="skeleton mb-xs" style="height: 16px; width: 55%; border-radius: 4px;"></div>
-                <div class="skeleton" style="height: 20px; width: 70px; border-radius: 999px;"></div>
-              </div>
-              <div class="skeleton" style="height: 22px; width: 42px; border-radius: 999px;"></div>
-            </div>
-          </div>
-        </div>
-        <div v-else-if="modifierItems.length === 0" class="card text-center py-3xl" style="color: var(--text-tertiary);">
-          ไม่มีรายการเครื่องปรุงในระบบ
-        </div>
-        <div v-else class="mobile-menu-list">
-          <div 
-            v-for="item in modifierItems" 
-            :key="item.id" 
-            class="mobile-menu-card"
-            :class="{ 'inactive-item': item.active === 0 || item.active === false }"
-          >
-            <div class="mobile-menu-card-body">
-              <div class="mobile-menu-card-details">
-                <div class="mobile-menu-card-name">{{ item.name }}</div>
-                <div style="margin-top: 4px;">
-                  <span class="badge" :class="getModifierCategoryClass(item.category)">
-                    {{ getModifierCategoryLabel(item.category) }}
-                  </span>
-                </div>
-              </div>
-              <div class="mobile-menu-card-meta">
-                <div class="mobile-menu-card-status">
-                  <label class="toggle-switch" :class="{ 'disabled': !isAdminUser }">
-                    <input 
-                      type="checkbox" 
-                      :checked="item.active !== 0 && item.active !== false"
-                      :disabled="!isAdminUser"
-                      @change="handleToggleModifierActive(item)"
-                    />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
               </div>
             </div>
           </div>
@@ -773,73 +524,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import ReorderItemsPanel from '../components/ReorderItemsPanel.vue';
 import api from '../api';
 import { ui, formatCurrency, isAdmin, compressImage } from '../helpers';
 
 import { store } from '../store';
 
-const activeTab = ref('menu_items'); // 'menu_items' or 'modifiers'
 const isAdminUser = computed(() => isAdmin());
-
-const modifierItems = ref([]);
-const modifiersLoading = ref(false);
-
-const setTab = (tab) => {
-  activeTab.value = tab;
-  if (tab === 'modifiers') {
-    loadModifiers(true);
-  } else {
-    loadData(true);
-  }
-};
-
-const loadModifiers = async (force = false) => {
-  modifiersLoading.value = true;
-  try {
-    const res = await api.modifiers.getAll();
-    if (res.success) {
-      modifierItems.value = res.data || [];
-    }
-  } catch (error) {
-    console.error('Failed to load modifiers:', error);
-    ui.showToast('ไม่สามารถดึงข้อมูลรายการซอส/เครื่องปรุงได้', 'error');
-  } finally {
-    modifiersLoading.value = false;
-  }
-};
-
-const handleToggleModifierActive = async (item) => {
-  try {
-    const res = await api.modifiers.toggle(item.id);
-    if (res.success) {
-      item.active = item.active === 1 ? 0 : 1;
-      ui.showToast(`เปลี่ยนสถานะของ ${item.name} เรียบร้อย`, 'success');
-    }
-  } catch (error) {
-    console.error(error);
-    ui.showToast('เปลี่ยนสถานะเครื่องปรุงไม่สำเร็จ: ' + error.message, 'error');
-  }
-};
-
-const getModifierCategoryLabel = (category) => {
-  const map = {
-    'sauce_small': 'ซอสซอง',
-    'sauce_large': 'ซอสขวด/ถุงบีบ',
-    'dipping': 'น้ำจิ้ม',
-    'powder': 'ผงโรย'
-  };
-  return map[category] || category;
-};
-
-const getModifierCategoryClass = (category) => {
-  const map = {
-    'sauce_small': 'badge-mod-sauce-small',
-    'sauce_large': 'badge-mod-sauce-large',
-    'dipping': 'badge-mod-dipping',
-    'powder': 'badge-mod-powder'
-  };
-  return map[category] || 'badge-neutral';
-};
 
 // Custom Category Dropdown States/Helpers
 const isCategoryDropdownOpen = ref(false);
@@ -877,7 +568,6 @@ const editItemId = ref(null);
 
 const isReorderMode = ref(false);
 const reorderItems = ref([]);
-const dragIndex = ref(null);
 const isSavingReorder = ref(false);
 
 const openReorderMode = () => {
@@ -911,124 +601,6 @@ const handleSaveReorder = async () => {
   } finally {
     ui.hideLoading();
     isSavingReorder.value = false;
-  }
-};
-
-const handleDragStart = (index, event) => {
-  dragIndex.value = index;
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move';
-  }
-};
-
-const handleDragOver = (event) => {
-  event.preventDefault();
-  // Auto scroll on desktop drag
-  const clientY = event.clientY;
-  const threshold = 120;
-  const scrollSpeed = 15;
-  if (clientY < threshold) {
-    window.scrollBy(0, -scrollSpeed);
-  } else if (clientY > window.innerHeight - threshold) {
-    window.scrollBy(0, scrollSpeed);
-  }
-};
-
-const handleDragEnter = (index) => {
-  if (dragIndex.value !== null && dragIndex.value !== index) {
-    const item = reorderItems.value[dragIndex.value];
-    reorderItems.value.splice(dragIndex.value, 1);
-    reorderItems.value.splice(index, 0, item);
-    dragIndex.value = index;
-  }
-};
-
-const handleDragEnd = () => {
-  dragIndex.value = null;
-};
-
-let touchScrollRaf = null;
-let lastTouchX = 0;
-let lastTouchY = 0;
-let lastScrollTs = 0;
-let lastAutoSwapTs = 0;
-
-const swapItemAtPoint = (x, y) => {
-  if (dragIndex.value === null) return;
-  const targetElement = document.elementFromPoint(x, y);
-  const element = targetElement?.closest('.mobile-reorder-card, .desktop-reorder-row');
-  if (!element) return;
-  const targetIndex = Number(element.dataset.index);
-  if (!isNaN(targetIndex) && dragIndex.value !== targetIndex) {
-    const item = reorderItems.value[dragIndex.value];
-    reorderItems.value.splice(dragIndex.value, 1);
-    reorderItems.value.splice(targetIndex, 0, item);
-    dragIndex.value = targetIndex;
-  }
-};
-
-const runTouchAutoScroll = (now) => {
-  if (dragIndex.value === null) {
-    touchScrollRaf = null;
-    return;
-  }
-  const dt = lastScrollTs ? Math.min(now - lastScrollTs, 50) : 16.67;
-  lastScrollTs = now;
-  const frameScale = dt / 16.67;
-
-  const threshold = 170;
-  const maxSpeed = 48;
-  let dy = 0;
-  if (lastTouchY < threshold) {
-    const ratio = Math.min(1, (threshold - lastTouchY) / threshold);
-    dy = -Math.ceil((6 + ratio * maxSpeed) * frameScale);
-  } else if (lastTouchY > window.innerHeight - threshold) {
-    const ratio = Math.min(1, (lastTouchY - (window.innerHeight - threshold)) / threshold);
-    dy = Math.ceil((6 + ratio * maxSpeed) * frameScale);
-  }
-  if (dy !== 0) {
-    // ponytail: 2-arg scrollBy with scrollBehavior='auto' avoids iOS/Android smooth-scroll lag
-    window.scrollBy(0, dy);
-    if (now - lastAutoSwapTs >= 60) {
-      lastAutoSwapTs = now;
-      swapItemAtPoint(lastTouchX, lastTouchY);
-    }
-  }
-  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
-};
-
-const handleTouchStart = (index, event) => {
-  dragIndex.value = index;
-  // Disable smooth scroll & scroll anchoring while dragging so auto-scroll doesn't stutter on mobile
-  document.documentElement.style.scrollBehavior = 'auto';
-  document.documentElement.style.overflowAnchor = 'none';
-  const touch = event.touches[0];
-  if (touch) {
-    lastTouchX = touch.clientX;
-    lastTouchY = touch.clientY;
-  }
-  lastScrollTs = 0;
-  lastAutoSwapTs = 0;
-  if (touchScrollRaf) cancelAnimationFrame(touchScrollRaf);
-  touchScrollRaf = requestAnimationFrame(runTouchAutoScroll);
-};
-
-const handleTouchMove = (event) => {
-  if (dragIndex.value === null) return;
-  const touch = event.touches[0];
-  if (!touch) return;
-  lastTouchX = touch.clientX;
-  lastTouchY = touch.clientY;
-  swapItemAtPoint(lastTouchX, lastTouchY);
-};
-
-const handleTouchEnd = () => {
-  dragIndex.value = null;
-  document.documentElement.style.scrollBehavior = '';
-  document.documentElement.style.overflowAnchor = '';
-  if (touchScrollRaf) {
-    cancelAnimationFrame(touchScrollRaf);
-    touchScrollRaf = null;
   }
 };
 
@@ -1499,23 +1071,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Custom responsive layout for top actions */
-.menu-top-action-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.menu-total-count {
-  font-size: var(--font-lg);
-  font-weight: bold;
-  color: var(--text-secondary);
-  margin-left: 0;
-}
-.menu-action-buttons {
-  display: flex;
-  gap: var(--space-sm);
-}
-
 /* Hide mobile menu list by default */
 .mobile-menu-list-container {
   display: none;
@@ -1528,33 +1083,6 @@ onUnmounted(() => {
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
-  /* Top Actions layout on mobile */
-  .menu-top-action-card {
-    flex-direction: column;
-    gap: var(--space-md);
-    align-items: stretch;
-    text-align: center;
-    padding: var(--space-md);
-  }
-  
-  .menu-total-count {
-    font-size: var(--font-lg);
-    font-weight: bold;
-    margin-left: 0;
-  }
-  
-  .menu-action-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-sm);
-    width: 100%;
-  }
-  
-  .menu-action-buttons button {
-    width: 100%;
-    justify-content: center;
-  }
-
   /* Table Hide & Mobile List Show */
   .desktop-menu-table-container {
     display: none;

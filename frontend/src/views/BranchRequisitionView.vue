@@ -2,24 +2,22 @@
   <div class="branch-requisition-view page-enter">
     
     <!-- Top Action Toolbar Card -->
-    <div class="card mb-lg p-md flex flex-between align-center toolbar-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div class="flex align-center gap-md">
+    <div class="card mb-lg page-header-card">
+      <div class="page-header-left">
         <div class="header-icon-circle">
-          <i class="fa-solid fa-boxes-packing text-primary" style="font-size: var(--font-lg);"></i>
+          <i class="fa-solid fa-boxes-packing"></i>
         </div>
-        <div>
-          <h2 class="font-bold text-lg text-primary" style="margin: 0;">
-            ระบบขอเบิกของจากครัวกลาง
-          </h2>
-          <p class="text-xs text-secondary mt-xs" style="margin-bottom: 0;">
-            เลือกรายการของที่ต้องการจากคลังส่วนกลาง เมื่อได้รับของแล้วยอดเงินจะถูกบันทึกเป็นต้นทุนของสาขาอัตโนมัติ
+        <div class="page-header-text">
+          <h2 class="page-header-title">ระบบขอเบิกของจากครัวกลาง</h2>
+          <p class="page-header-subtitle">
+            เลือกเบิกสินค้าจากคลังกลาง เมื่อรับของแล้วระบบจะบันทึกต้นทุนและเติมสต็อกสาขาอัตโนมัติ
           </p>
         </div>
       </div>
     </div>
 
     <!-- Main Navigation Tabs (Below Header Card, matching Management.vue) -->
-    <div class="category-tabs mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+    <div class="category-tabs">
       <button 
         class="category-tab" 
         :class="{ active: currentTab === 'shop' }"
@@ -40,398 +38,18 @@
     <!-- ────────────────────────────────────────────────────────── -->
     <!-- TAB 1: SHOP CATALOG (เลือกของใส่ตะกร้าเหมือนหน้าขาย POS) -->
     <!-- ────────────────────────────────────────────────────────── -->
-    <div v-if="currentTab === 'shop'" class="catalog-layout">
-      <!-- Left Column: Items Catalog -->
-      <div class="catalog-main">
-        <!-- Search and Filter Bar: Search 1 Full Row, Filters Below (Requirement 2) -->
-        <div class="card p-md mb-md toolbar-card filter-bar">
-          <!-- Top Row: Full Width Search Input (100%) -->
-          <div class="search-input-box mb-md" style="position: relative; width: 100%;">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              placeholder="ค้นหา เช่น ซอส, ถุง, กระทะ, กล่อง..." 
-              class="form-input search-input"
-              style="padding-left: 42px; width: 100%; border-radius: var(--radius-md); font-size: var(--font-base);"
-            />
-            <button 
-              v-if="searchQuery" 
-              class="search-clear-btn" 
-              @click="searchQuery = ''"
-              title="ล้างคำค้นหา"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-
-          <!-- Bottom Row: Filter Pills -->
-          <div class="category-tabs flex gap-xs align-center" style="border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important;">
-            <button 
-              v-for="cat in categories" 
-              :key="cat.id" 
-              class="filter-pill"
-              :class="{ active: selectedCategory === cat.id }"
-              @click="selectedCategory = cat.id"
-            >
-              <span>{{ cat.label }}</span>
-              <span v-if="getCategoryCount(cat.id) > 0" class="category-count">
-                ({{ getCategoryCount(cat.id) }})
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Items Cards Grid Loading (Warm Brand Shimmer Skeletons) -->
-        <div v-if="isLoadingItems" class="grid-cards">
-          <div v-for="i in 8" :key="i" class="card item-card p-md" style="pointer-events: none;">
-            <!-- Top badges skeleton -->
-            <div class="flex flex-between align-center mb-sm">
-              <div class="skeleton" style="width: 80px; height: 22px; border-radius: var(--radius-full);"></div>
-              <div class="skeleton" style="width: 24px; height: 24px; border-radius: var(--radius-full);"></div>
-            </div>
-            <!-- Image placeholder skeleton -->
-            <div class="skeleton mb-md" style="height: 135px; width: 100%; border-radius: var(--radius-md);"></div>
-            <!-- Title skeleton -->
-            <div class="skeleton mb-xs" style="width: 85%; height: 18px;"></div>
-            <div class="skeleton mb-sm" style="width: 50%; height: 14px;"></div>
-            <!-- Price & stock skeleton -->
-            <div class="flex flex-between align-center mb-md">
-              <div class="skeleton" style="width: 90px; height: 20px;"></div>
-              <div class="skeleton" style="width: 70px; height: 16px;"></div>
-            </div>
-            <!-- Button skeleton -->
-            <div class="skeleton" style="width: 100%; height: 42px; border-radius: var(--radius-md);"></div>
-          </div>
-        </div>
-
-        <!-- Empty State (Unified .empty-state-box) -->
-        <div v-else-if="filteredItems.length === 0" class="empty-state-box">
-          <div class="empty-state-icon">
-            <i class="fa-solid fa-box-open"></i>
-          </div>
-          <div class="empty-state-title">ไม่พบรายการของ</div>
-          <div class="empty-state-desc">ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่น</div>
-        </div>
-
-        <!-- Items Cards Grid: Exact Design from Central Kitchen Catalog -->
-        <div v-else class="grid-cards">
-          <div 
-            v-for="item in filteredItems" 
-            :key="item.id" 
-            class="card p-md item-card"
-            :class="{ 
-              'low-stock': item.quantity <= (item.min_stock_alert || 5),
-              'item-out-of-stock': item.quantity <= 0,
-              'in-cart': getCartQty(item.id) > 0
-            }"
-            @click="addToCart(item)"
-          >
-            <!-- Floating Quantity Badge (Desktop & Mobile) -->
-            <span v-if="getCartQty(item.id) > 0" class="qty-badge">
-              {{ getCartQty(item.id) }}
-            </span>
-
-            <!-- 1. TOP: ประเภท กับ พร้อมจ่าย (ใช้เฉพาะไอคอนประหยัดพื้นที่ ไม่เบียด) -->
-            <div class="card-top-badges flex flex-between align-center">
-              <span class="badge badge-neutral card-badge-category">
-                {{ getCategoryLabel(item.category) }}
-              </span>
-              <span v-if="item.quantity <= 0" class="badge badge-danger card-badge-status" title="ของหมดสต็อก">
-                <i class="fa-solid fa-xmark"></i>
-              </span>
-              <span v-else-if="item.quantity <= (item.min_stock_alert || 5)" class="badge badge-warning card-badge-status" title="ใกล้หมด">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-              </span>
-              <span v-else class="badge badge-success card-badge-status" title="พร้อมจ่าย">
-                <i class="fa-solid fa-check"></i>
-              </span>
-            </div>
-
-            <!-- 2. รูปภาพสินค้า (มี Margin ชัดเจน ไม่ชิดกับองค์ประกอบอื่น พร้อมพื้นหลัง Soft Cream Gradient) -->
-            <div class="item-img-container">
-              <img 
-                v-if="item.image_url" 
-                :src="item.image_url" 
-                :alt="item.name" 
-                class="item-img"
-                loading="lazy"
-              />
-              <div v-else class="item-img-placeholder">
-                <i class="fa-solid fa-box-open"></i>
-              </div>
-            </div>
-
-            <!-- 3. ชื่อสินค้า (2 บรรทัด โดยบรรทัดล่างเป็นวงเล็บ) -->
-            <h4 class="item-name font-bold" :title="item.name">
-              <div class="item-name-main">{{ getItemNameParts(item.name).main }}</div>
-              <div class="item-name-sub" v-if="getItemNameParts(item.name).sub">
-                {{ getItemNameParts(item.name).sub }}
-              </div>
-            </h4>
-            
-            <!-- 4. ข้อมูลต้นทุนและสต็อก (คำว่า ราคาเบิก / คงเหลือ กระชับ) -->
-            <div class="item-meta-box">
-              <div class="item-meta-row flex flex-between align-center text-xs py-1">
-                <span class="item-meta-label text-secondary font-medium">ราคาเบิก:</span>
-                <span class="font-bold text-primary item-cost-val" style="font-size: var(--font-base);">
-                  ฿{{ formatNumber(item.cost_price) }} <span class="text-xs text-secondary font-normal item-unit-slash">/ {{ item.unit }}</span>
-                </span>
-              </div>
-              
-              <div class="item-meta-row flex flex-between align-center text-xs py-1">
-                <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
-                  <i class="fa-solid fa-cubes-stacked text-tertiary"></i>
-                  <span>คงเหลือ:</span>
-                </span>
-                <span 
-                  class="font-bold item-stock-val" 
-                  :class="{
-                    'text-danger': item.quantity <= 0,
-                    'text-warning': item.quantity > 0 && item.quantity <= (item.min_stock_alert || 5),
-                    'text-success': item.quantity > (item.min_stock_alert || 5)
-                  }"
-                  style="font-size: var(--font-base);"
-                >
-                  <span class="stock-prefix">เหลือ </span>{{ formatNumber(item.quantity) }} {{ item.unit }}
-                </span>
-              </div>
-
-              <div v-if="item.pack_size > 1" class="item-meta-row flex flex-between align-center text-xs py-1">
-                <span class="item-meta-label text-secondary font-medium flex align-center gap-xs">
-                  <i class="fa-solid fa-arrows-rotate text-primary"></i>
-                  <span>แปลงหน่วย:</span>
-                </span>
-                <span class="font-bold text-primary item-pack-val" style="font-size: var(--font-sm);">
-                  1 {{ item.unit }} = {{ item.pack_size }} ชิ้น
-                </span>
-              </div>
-            </div>
-
-            <!-- 5. ปุ่มแอ็กชัน (รองรับพิมพ์จำนวนโดยตรง และปุ่มเพิ่ม) -->
-            <div class="card-footer-actions">
-              <div v-if="getCartQty(item.id) > 0" class="flex align-center gap-xs w-full" @click.stop>
-                <button class="qty-btn" @click="decreaseQty(getCartItem(item.id))" title="ลด">-</button>
-                <input 
-                  type="number" 
-                  inputmode="numeric" 
-                  min="1" 
-                  :max="item.quantity" 
-                  :value="getCartQty(item.id)" 
-                  @change="setCartQty(item, $event.target.value)"
-                  @focus="$event.target.select()" 
-                  class="form-input text-center font-bold qty-card-input" 
-                  style="flex: 1; height: 40px; padding: 2px; font-size: var(--font-sm); border-radius: var(--radius-sm);" 
-                  title="พิมพ์จำนวนที่ต้องการเบิกได้ทันที"
-                />
-                <button class="qty-btn" :disabled="getCartQty(item.id) >= item.quantity" @click="increaseQty(getCartItem(item.id))" title="เพิ่ม">+</button>
-              </div>
-              <button 
-                v-else
-                class="btn-action btn-action-primary w-full" 
-                :disabled="item.quantity <= 0"
-                @click.stop="addToCart(item)"
-              >
-                <i class="fa-solid fa-plus-circle"></i>
-                <span>{{ item.quantity > 0 ? 'เพิ่มลงรายการเบิก' : 'ของหมดสต็อก' }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Column: Requisition Cart Panel -->
-      <div ref="cartSidebarRef" class="card p-md cart-sidebar flex flex-col justify-between">
-        <div>
-          <!-- Cart Header -->
-          <div class="flex flex-between align-center mb-md pb-sm cart-header">
-            <h4 class="font-bold text-base flex align-center gap-xs">
-              <i class="fa-solid fa-cart-shopping text-primary"></i>
-              <span>รายการที่ขอเบิก</span>
-              <span v-if="cart.length > 0" class="badge badge-primary font-bold">{{ cart.length }}</span>
-            </h4>
-            <button 
-              v-if="cart.length > 0" 
-              class="text-xs text-danger font-bold cursor-pointer clear-cart-btn flex align-center gap-xs"
-              @click="clearCart"
-            >
-              <i class="fa-solid fa-trash-can"></i>
-              <span>ล้างทั้งหมด</span>
-            </button>
-          </div>
-
-          <!-- Empty Cart State (Unified Compact Empty Box) -->
-          <div v-if="cart.length === 0" class="empty-state-box empty-state-compact">
-            <div class="empty-state-icon empty-state-icon-sm">
-              <i class="fa-solid fa-basket-shopping"></i>
-            </div>
-            <div class="empty-state-title text-sm">ยังไม่มีรายการของในตะกร้า</div>
-            <div class="empty-state-desc text-xs">คลิกที่การ์ดสินค้าทางซ้ายเพื่อเพิ่มจำนวนลงรายการเบิก</div>
-          </div>
-
-          <!-- Cart Items List: Spacious 2-Tier Cards (ไม่ล้น ไม่หลุดกรอบ รองรับชื่อ 2 บรรทัด) -->
-          <div v-else class="cart-items-list flex flex-col gap-sm">
-            <div 
-              v-for="c in cart" 
-              :key="c.item_id" 
-              class="cart-row p-sm flex flex-col justify-between"
-            >
-              <!-- Tier 1: Item Name (2 Lines) + Subtotal on top right -->
-              <div class="flex flex-between align-start gap-xs mb-xs">
-                <div class="flex-1 min-w-0 pr-xs">
-                  <div class="cart-item-name font-bold text-sm text-primary">
-                    {{ getItemNameParts(c.item_name).main }}
-                  </div>
-                  <div v-if="getItemNameParts(c.item_name).sub" class="cart-item-sub text-xs text-secondary mt-1">
-                    {{ getItemNameParts(c.item_name).sub }}
-                  </div>
-                  <div v-if="c.pack_size > 1" class="text-2xs text-primary font-bold mt-1">
-                    <i class="fa-solid fa-arrows-rotate mr-1"></i> เติมสต็อก {{ c.quantity * c.pack_size }} ชิ้น
-                  </div>
-                </div>
-                <!-- Subtotal on top right (bold, prominent) -->
-                <div class="text-right flex-shrink-0 pl-xs">
-                  <span class="font-bold text-sm text-primary">฿{{ formatNumber(c.quantity * c.cost_price) }}</span>
-                </div>
-              </div>
-
-              <!-- Tier 2: Unit price on left + Quantity Stepper on right -->
-              <div class="flex flex-between align-center pt-xs cart-item-bottom">
-                <span class="text-xs text-secondary">
-                  ฿{{ formatNumber(c.cost_price) }} / {{ c.unit }}
-                </span>
-
-                <!-- Qty Stepper with direct typing input -->
-                <div class="flex align-center gap-xs flex-shrink-0">
-                  <button class="qty-btn" @click="decreaseQty(c)" title="ลดจำนวน">-</button>
-                  <input 
-                    type="number" 
-                    inputmode="numeric" 
-                    min="1" 
-                    :max="c.max_quantity" 
-                    v-model.number="c.quantity" 
-                    class="form-input text-center text-sm font-bold qty-input-field" 
-                    style="width: 62px; height: 32px; padding: 2px; border-radius: var(--radius-sm);" 
-                    @focus="$event.target.select()" 
-                    @change="validateCartQty(c)"
-                    title="คลิกเพื่อพิมพ์จำนวนได้โดยตรง"
-                  />
-                  <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)" title="เพิ่มจำนวน">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cart Summary & Submit Footer -->
-        <div class="cart-footer pt-md mt-md">
-          <div class="form-group mb-md">
-            <label class="form-label text-xs font-bold text-secondary mb-xs block">
-              <i class="fa-solid fa-pen-to-square mr-1"></i> บันทึก/เหตุผลในการเบิก (ถ้ามี):
-            </label>
-            <input 
-              type="text" 
-              v-model="cartNote" 
-              placeholder="เช่น ของใกล้หมดสต็อก, เตรียมรับรอบเย็น" 
-              class="form-input text-sm w-full"
-            />
-          </div>
-
-          <!-- Unboxed Total Cost (Rule: No boxed background color behind text/numbers) -->
-          <div class="cart-total-row flex flex-between align-baseline mb-md pt-sm">
-            <span class="text-sm font-bold text-secondary">มูลค่าต้นทุนรวม:</span>
-            <span class="text-2xl font-bold text-primary">฿{{ formatNumber(totalCartCost) }}</span>
-          </div>
-
-          <!-- 48px Submit Button -->
-          <button 
-            class="btn btn-primary w-full"
-            :disabled="cart.length === 0 || isSubmitting"
-            @click="submitRequisition"
-          >
-            <i class="fa-solid fa-paper-plane mr-2"></i>
-            <span>{{ isSubmitting ? 'กำลังส่งคำขอ...' : 'ยื่นคำขอเบิกของจากครัวกลาง' }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mobile-only Docked Cart Bar (เหมือนหน้าขาย POS บนมือถือ) -->
-    <div 
-      v-if="currentTab === 'shop' && cart.length > 0" 
-      class="cart-bar mobile-only-cart"
-    >
-      <div class="cart-bar-inner">
-        <div class="cart-info" @click="isCartDrawerOpen = !isCartDrawerOpen">
-          <span class="cart-count">
-            {{ totalCartQty }} รายการ
-            <i :class="isCartDrawerOpen ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up'" style="font-size: var(--font-xxs); margin-left: 2px;"></i>
-          </span>
-          <span class="cart-total">฿{{ formatNumber(totalCartCost) }}</span>
-        </div>
-        <button 
-          class="cart-pay-btn" 
-          :disabled="cart.length === 0 || isSubmitting"
-          @click="submitRequisition"
-        >
-          <i v-if="isSubmitting" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-paper-plane"></i>
-          <span>{{ isSubmitting ? 'กำลังส่ง...' : 'ยื่นขอเบิก' }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Mobile-only Slide-up Cart Detail Panel (POS Master Design) -->
-    <div 
-      v-if="currentTab === 'shop' && cart.length > 0" 
-      class="cart-detail-panel mobile-only-cart"
-      :class="{ 'hidden': !isCartDrawerOpen }"
-    >
-      <div class="cart-detail-header">
-        <span class="font-semibold text-md" style="display: flex; align-items: center; gap: 6px;">
-          <i class="fa-solid fa-cart-shopping"></i> รายการที่ขอเบิก
-        </span>
-        <button class="btn btn-ghost btn-sm text-danger" @click="clearCart">ล้างทั้งหมด</button>
-      </div>
-
-      <div style="overflow-y: auto; max-height: calc(45vh - 60px); padding-bottom: 16px;">
-        <div 
-          v-for="c in cart" 
-          :key="c.item_id" 
-          class="cart-item animate-fade-in"
-        >
-          <div class="cart-item-info">
-            <div class="cart-item-name">{{ getItemNameParts(c.item_name).main }}</div>
-            <div class="cart-item-price">
-              <div>฿{{ formatNumber(c.cost_price) }} × {{ c.quantity }} {{ c.unit }}</div>
-              <div v-if="c.pack_size > 1" class="text-primary font-semibold" style="margin-top: 2px;">(เติม {{ c.quantity * c.pack_size }} ชิ้น)</div>
-            </div>
-          </div>
-          <div class="cart-item-qty">
-            <button class="qty-btn minus" @click="decreaseQty(c)">−</button>
-            <span class="qty-value">{{ c.quantity }}</span>
-            <button class="qty-btn" :disabled="c.quantity >= c.max_quantity" @click="increaseQty(c)">+</button>
-          </div>
-          <div class="cart-item-subtotal">
-            ฿{{ formatNumber(c.quantity * c.cost_price) }}
-          </div>
-        </div>
-
-        <!-- Notes Area (Matching POS Mobile Discount Selector Area) -->
-        <div style="padding: 12px 20px;">
-          <div class="font-bold text-sm text-primary flex align-center gap-xs" style="margin-bottom: 6px;">
-            <i class="fa-solid fa-pen-to-square"></i> บันทึก/เหตุผลในการเบิก (ถ้ามี)
-          </div>
-          <input 
-            type="text" 
-            v-model="cartNote" 
-            placeholder="เช่น ของใกล้หมดสต็อก, เตรียมรับรอบเย็น..." 
-            class="form-input"
-            style="font-size: var(--font-sm); padding: 6px 12px; height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary);"
-          />
-        </div>
-      </div>
-    </div>
+    <KitchenCatalogCart
+      v-if="currentTab === 'shop'"
+      :items="items"
+      :categories="categories"
+      :is-loading-items="isLoadingItems"
+      :get-category-label="getCategoryLabel"
+      v-model:cart="cart"
+      v-model:notes="cartNote"
+      :is-submitting="isSubmitting"
+      search-placeholder="ค้นหา เช่น ซอส, ถุง, กระทะ, กล่อง..."
+      @submit="submitRequisition"
+    />
 
     <!-- ────────────────────────────────────────────────────────── -->
     <!-- TAB 2: MY ORDERS (ติดตามสถานะ & กดยืนยันรับของ) -->
@@ -601,92 +219,11 @@
           </div>
 
           <!-- Items Clean Table Container -->
-          <div class="order-items-container mb-md">
-            <div class="order-items-title flex flex-between align-center mb-xs">
-              <span class="text-xs font-bold text-secondary">
-                <i class="fa-solid fa-boxes-stacked mr-1 text-primary"></i> รายการของที่ขอเบิก ({{ t.items ? t.items.length : 0 }} รายการ)
-              </span>
-            </div>
-            
-            <!-- Desktop Table (>= 641px) -->
-            <div class="order-items-table-wrapper desktop-only-orders-table">
-              <table class="order-items-table">
-                <thead>
-                  <tr>
-                    <th class="col-item text-left">ชื่อสินค้า</th>
-                    <th class="col-price text-right">ราคาเบิก/หน่วย</th>
-                    <th class="col-qty text-center">จำนวนขอเบิก</th>
-                    <th class="col-total text-right">รวมมูลค่า</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="it in t.items" :key="it.id">
-                    <td class="col-item">
-                      <div class="item-name-main font-bold text-sm">{{ getItemNameParts(it.item_name).main }}</div>
-                      <div v-if="getItemNameParts(it.item_name).sub" class="item-name-sub text-xs text-secondary">{{ getItemNameParts(it.item_name).sub }}</div>
-                    </td>
-                    <td class="col-price text-right text-sm text-secondary">
-                      ฿{{ formatNumber(it.cost_price) }} <span class="text-xs text-muted">/ {{ it.unit }}</span>
-                    </td>
-                    <td class="col-qty text-center">
-                      <span class="order-qty-pill font-bold">{{ it.quantity }} {{ it.unit }}</span>
-                      <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold ml-1">({{ it.quantity * it.pack_size }} ชิ้น)</span>
-                    </td>
-                    <td class="col-total text-right font-bold text-sm text-primary">
-                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Mobile Itemized List (< 640px) -->
-            <div class="order-items-mobile-list mobile-only-orders-list flex flex-col gap-xs">
-              <div 
-                v-for="it in t.items" 
-                :key="it.id" 
-                class="order-mobile-item-card"
-              >
-                <!-- Row 1: Item Name + Subtotal -->
-                <div class="flex flex-between align-start gap-xs">
-                  <div class="flex-1 min-w-0 pr-xs">
-                    <div class="order-mobile-item-name font-bold text-sm text-primary">
-                      {{ getItemNameParts(it.item_name).main }}
-                    </div>
-                    <div v-if="getItemNameParts(it.item_name).sub" class="order-mobile-item-sub text-xs text-secondary mt-1">
-                      {{ getItemNameParts(it.item_name).sub }}
-                    </div>
-                  </div>
-                  <div class="text-right flex-shrink-0 pl-xs">
-                    <span class="order-mobile-item-total font-bold text-sm text-primary">
-                      ฿{{ formatNumber(it.quantity * it.cost_price) }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Row 2: Unit Price + Quantity Pill -->
-                <div class="flex flex-between align-center order-mobile-item-bottom">
-                  <span class="text-xs text-secondary">
-                    ฿{{ formatNumber(it.cost_price) }} / {{ it.unit }}
-                  </span>
-                  <div class="flex align-center gap-xs">
-                    <span class="order-qty-pill font-bold">
-                      {{ it.quantity }} {{ it.unit }}
-                    </span>
-                    <span v-if="it.pack_size > 1" class="text-2xs text-primary font-bold">
-                      ({{ it.quantity * it.pack_size }} ชิ้น)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Branch Note if any -->
-            <div v-if="t.notes" class="order-notes-box mt-sm p-sm rounded flex align-center gap-xs">
-              <i class="fa-solid fa-comment-dots text-primary"></i>
-              <span class="text-xs text-secondary"><strong>บันทึกจากสาขา:</strong> {{ t.notes }}</span>
-            </div>
-          </div>
+          <TransferOrderItems
+            :items="t.items"
+            qty-column-header="จำนวนขอเบิก"
+            :notes="t.notes"
+          />
 
           <!-- Order Card Footer Action -->
           <div class="order-card-footer flex flex-between align-center flex-wrap gap-md pt-sm">
@@ -725,8 +262,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import DatePeriodFilter from '../components/DatePeriodFilter.vue';
+import KitchenCatalogCart from '../components/KitchenCatalogCart.vue';
+import TransferOrderItems from '../components/TransferOrderItems.vue';
 import api from '../api';
-import { ui, getToday, isTimeInRange } from '../helpers';
+import { ui, getToday, isTimeInRange, formatNumber, formatDateTime } from '../helpers';
 
 const currentTab = ref('shop'); // 'shop' | 'my_orders'
 
@@ -747,8 +286,6 @@ const isLoadingItems = ref(true);
 const isLoadingOrders = ref(false);
 const isSubmitting = ref(false);
 
-const searchQuery = ref('');
-const selectedCategory = ref('all');
 const requesterFilter = ref('all');
 const isRequesterDropdownOpen = ref(false);
 
@@ -799,112 +336,17 @@ const categories = [
   { id: 'equipment', label: 'อุปกรณ์', icon: 'fa-solid fa-kitchen-set' }
 ];
 
-const getCategoryCount = (catId) => {
-  if (catId === 'all') return items.value.length;
-  return items.value.filter(i => i.category === catId).length;
-};
-
-const getItemNameParts = (name) => {
-  if (!name) return { main: '', sub: '' };
-  const match = name.match(/^(.*?)\s*(\([^(]+\))\s*$/);
-  if (match) {
-    return { main: match[1].trim(), sub: match[2].trim() };
-  }
-  return { main: name, sub: '' };
-};
-
 const dispatchedCount = computed(() => {
   return myTransfers.value.filter(t => t.status === 'dispatched').length;
-});
-
-const filteredItems = computed(() => {
-  return items.value.filter(item => {
-    const matchCat = selectedCategory.value === 'all' || item.category === selectedCategory.value;
-    const matchSearch = !searchQuery.value || item.name.toLowerCase().includes(searchQuery.value.toLowerCase());
-    return matchCat && matchSearch;
-  });
 });
 
 const totalCartCost = computed(() => {
   return cart.value.reduce((sum, c) => sum + (c.quantity * c.cost_price), 0);
 });
 
-const totalCartQty = computed(() => {
-  return cart.value.reduce((sum, c) => sum + (Number(c.quantity) || 0), 0);
-});
-
-const isCartDrawerOpen = ref(false);
-
-const getCartQty = (itemId) => {
-  const found = cart.value.find(c => c.item_id === itemId);
-  return found ? found.quantity : 0;
-};
-
-const getCartItem = (itemId) => {
-  return cart.value.find(c => c.item_id === itemId);
-};
-
-const setCartQty = (item, val) => {
-  let num = parseInt(val, 10);
-  if (isNaN(num) || num <= 0) num = 1;
-  const max = Number(item.quantity) || 0;
-  if (max > 0 && num > max) {
-    num = max;
-    ui.showToast(`สามารถเบิกได้สูงสุด ${formatNumber(max)} ${item.unit} ตามสต็อกครัวกลาง`, 'warning');
-  }
-  const existing = cart.value.find(c => c.item_id === item.id);
-  if (existing) {
-    existing.quantity = num;
-  } else {
-    cart.value.push({
-      item_id: item.id,
-      item_name: item.name,
-      unit: item.unit,
-      cost_price: item.cost_price,
-      max_quantity: item.quantity,
-      pack_size: item.pack_size || 1,
-      linked_menu_item_name: item.linked_menu_item_name || '',
-      quantity: num
-    });
-  }
-};
-
-const validateCartQty = (c) => {
-  if (!c.quantity || c.quantity < 1) c.quantity = 1;
-  const originalItem = items.value.find(i => i.id === c.item_id);
-  const maxQty = originalItem ? originalItem.quantity : c.max_quantity;
-  if (maxQty && c.quantity > maxQty) {
-    c.quantity = maxQty;
-    ui.showToast(`ปรับเป็นจำนวนสูงสุดที่มีในคลัง (${maxQty} ${c.unit})`, 'warning');
-  }
-};
-
-watch(cart, (newCart) => {
-  const hasItems = newCart.length > 0;
-  window.dispatchEvent(new CustomEvent('cart-state-change', {
-    detail: { hasItems }
-  }));
-  if (!hasItems) {
-    isCartDrawerOpen.value = false;
-  }
-}, { deep: true });
-
 onUnmounted(() => {
   window.removeEventListener('click', closeRequesterDropdown);
-  window.dispatchEvent(new CustomEvent('cart-state-change', {
-    detail: { hasItems: false }
-  }));
 });
-
-const cartSidebarRef = ref(null);
-// Helpers
-const formatNumber = (num) => Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const formatDateTime = (str) => {
-  if (!str) return '-';
-  const d = new Date(str);
-  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' +
-         d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-};
 
 const getCategoryLabel = (cat) => {
   const map = {
@@ -915,7 +357,6 @@ const getCategoryLabel = (cat) => {
   };
   return map[cat] || cat;
 };
-
 
 const getStatusBadgeClass = (st) => {
   const map = {
@@ -935,51 +376,6 @@ const getStatusLabel = (st) => {
     'cancelled': 'ยกเลิกแล้ว'
   };
   return map[st] || st;
-};
-
-// Cart Actions
-const addToCart = (item) => {
-  if (item.quantity <= 0) {
-    ui.showToast('สินค้าชิ้นนี้หมดสต็อกในครัวกลาง', 'warning');
-    return;
-  }
-  const existing = cart.value.find(c => c.item_id === item.id);
-  if (existing) {
-    if (existing.quantity >= item.quantity) {
-      ui.showToast(`สามารถเบิกได้สูงสุด ${formatNumber(item.quantity)} ${item.unit} ตามสต็อกครัวกลาง`, 'warning');
-      return;
-    }
-    existing.quantity += 1;
-  } else {
-    cart.value.push({
-      item_id: item.id,
-      item_name: item.name,
-      unit: item.unit,
-      cost_price: item.cost_price,
-      max_quantity: item.quantity,
-      pack_size: item.pack_size || 1,
-      linked_menu_item_name: item.linked_menu_item_name || '',
-      quantity: 1
-    });
-  }
-};
-
-const increaseQty = (c) => {
-  const originalItem = items.value.find(i => i.id === c.item_id);
-  const maxQty = originalItem ? originalItem.quantity : c.max_quantity;
-  if (maxQty && c.quantity >= maxQty) {
-    ui.showToast(`สามารถเบิกได้สูงสุด ${formatNumber(maxQty)} ${c.unit} ตามสต็อกครัวกลาง`, 'warning');
-    return;
-  }
-  c.quantity += 1;
-};
-
-const decreaseQty = (c) => {
-  if (c.quantity > 1) {
-    c.quantity -= 1;
-  } else {
-    cart.value = cart.value.filter(x => x.item_id !== c.item_id);
-  }
 };
 
 const clearCart = () => {
@@ -1085,14 +481,6 @@ onMounted(() => {
   width: 100%;
 }
 
-.header-icon-circle { width: 44px; height: 44px; border-radius: 50%; background: rgba(139, 3, 19, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.toolbar-card {
-  box-shadow: var(--shadow-sm);
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-}
-
 .relative {
   position: relative !important;
 }
@@ -1115,6 +503,7 @@ onMounted(() => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
   border: 2px solid #ffffff;
   z-index: 2;
+  font-variant-numeric: tabular-nums;
 }
 
 .category-tab.active .badge-count {
@@ -1123,333 +512,7 @@ onMounted(() => {
   border-color: #ffffff !important;
 }
 
-/* Catalog Layout */
-.catalog-layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-}
-
-@media (min-width: 1024px) {
-  .catalog-layout {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .catalog-main {
-    flex: 1;
-    min-width: 0;
-  }
-  .cart-sidebar {
-    width: 380px;
-    flex-shrink: 0;
-    position: sticky;
-    top: calc(var(--header-height, 60px) + 16px);
-  }
-}
-
-/* Filter Bar & Search: Full Width Row 1 */
-.filter-bar {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-}
-
-.search-input-box {
-  position: relative;
-  width: 100%;
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.search-input {
-  height: 44px;
-  padding-left: 42px;
-  padding-right: 36px;
-  width: 100%;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  font-size: var(--font-base);
-  transition: all var(--transition-base);
-}
-
-.search-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(139, 3, 19, 0.1);
-  outline: none;
-}
-
-
-.category-count {
-  font-size: 0.85em;
-  opacity: 0.85;
-  font-weight: 500;
-}
-
-/* Cards Grid */
-.grid-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-md);
-}
-
-/* Item Card - Exact Central Kitchen Catalog Card Design */
-.item-card {
-  position: relative;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
-  cursor: pointer;
-}
-
-.item-card {
-  position: relative !important;
-}
-
-.item-card.in-cart {
-  /* No dimming / tinting when selected; card remains crisp with normal background */
-  background: var(--card-bg, #ffffff) !important;
-  border-color: var(--border-color) !important;
-}
-
-.qty-badge {
-  display: flex !important;
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 26px;
-  height: 26px;
-  background: var(--primary, #8b0313);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 10px rgba(139, 3, 19, 0.45);
-  border: 2px solid #ffffff;
-  z-index: 10;
-  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.item-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-color-focus);
-}
-
-.item-card.item-out-of-stock {
-  opacity: 0.7;
-}
-
-.card-top-badges {
-  margin-bottom: var(--space-sm);
-  width: 100%;
-}
-
-.card-badge-category {
-  font-size: var(--font-xs) !important;
-  padding: 3px 10px !important;
-  border-radius: var(--radius-full) !important;
-  background: var(--bg-secondary) !important;
-  color: var(--text-secondary) !important;
-  border: 1px solid var(--border-color) !important;
-}
-
-.card-badge-status {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  border-radius: var(--radius-full) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 12px !important;
-  padding: 0 !important;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-/* Image with margin and soft cream background */
-.item-img-container {
-  height: 135px;
-  width: 100%;
-  margin-bottom: var(--space-sm);
-  background: linear-gradient(180deg, #fff7df 0%, #fceecc 100%);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.item-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.item-card:hover .item-img {
-  transform: scale(1.05);
-}
-
-.item-img-placeholder {
-  font-size: 2.6rem;
-  opacity: 0.4;
-  color: var(--text-tertiary);
-}
-
-/* 2-Line Name Block */
-.item-name {
-  font-size: var(--font-base);
-  line-height: 1.35;
-  min-height: unset;
-  color: var(--text-primary);
-  margin-bottom: var(--space-xs);
-  width: 100%;
-}
-
-.item-name-main {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 700;
-}
-
-.item-name-sub {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 2px;
-}
-
-/* Item Meta Box */
-.item-meta-box {
-  border-top: 1px dashed var(--border-color);
-  padding-top: var(--space-xs);
-  margin-bottom: var(--space-sm);
-  width: 100%;
-}
-
-/* Card Action Button */
-.card-footer-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  width: 100%;
-  margin-top: auto;
-}
-
-.card-footer-actions > .btn-action {
-  height: 42px !important;
-  width: 100% !important;
-  font-size: var(--font-sm) !important;
-  min-width: unset !important;
-}
-
-/* Cart Sidebar */
-.cart-sidebar {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.cart-header {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.clear-cart-btn {
-  background: none;
-  border: none;
-  padding: 4px;
-  font-size: var(--font-xs);
-  transition: opacity var(--transition-base);
-}
-
-.clear-cart-btn:hover {
-  text-decoration: underline;
-  opacity: 0.8;
-}
-
-/* Cart Items Container */
-.cart-items-list {
-  max-height: 420px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
-}
-
-/* Spacious 2-Tier Cart Rows */
-.cart-row {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: all var(--transition-base);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.cart-row:hover {
-  border-color: var(--primary-light, #c92a2a);
-}
-
-.cart-item-name {
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-.cart-item-sub {
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-.cart-item-bottom {
-  border-top: 1px dashed rgba(139, 3, 19, 0.15);
-  margin-top: 12px;
-  padding-top: 9px;
-}
-
-/* 32px Circle Stepper Buttons */
-
-
-/* Unboxed Cart Total Row */
-.cart-total-row {
-  border-top: 1px dashed var(--border-color);
-}
-
-/* 48px Cart Submit Button */
-
-/* ============================================================ */
-/* MY ORDERS TAB - EXACT ORDERS CARD FROM CENTRAL KITCHEN       */
-/* ============================================================ */
-.my-orders-layout {
-  width: 100%;
-}
-
+.my-orders-layout,
 .orders-list {
   width: 100%;
 }
@@ -1489,6 +552,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .order-total-header {
@@ -1510,13 +574,13 @@ onMounted(() => {
   font-size: var(--font-xl);
   letter-spacing: -0.02em;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .order-meta-row {
   line-height: 1.5;
 }
 
-/* Order Items Table */
 .order-items-table-wrapper {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -1524,359 +588,12 @@ onMounted(() => {
   background: var(--card-bg);
 }
 
-.order-items-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.order-items-table th {
-  background: var(--bg-secondary) !important;
-  font-size: 12.5px !important;
-  font-weight: 600 !important;
-  color: var(--text-secondary) !important;
-  padding: 10px 16px !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  letter-spacing: 0.02em;
-}
-
-.order-items-table td {
-  padding: 12px 16px !important;
-  border-bottom: 1px solid var(--border-color-light) !important;
-  vertical-align: middle;
-}
-
-.order-items-table tbody tr:last-child td {
-  border-bottom: none !important;
-}
-
-.order-items-table tbody tr:hover td {
-  background: rgba(139, 3, 19, 0.02);
-}
-
-.order-qty-pill {
-  display: inline-block;
-  padding: 3px 12px;
-  border-radius: var(--radius-full);
-  background: rgba(139, 3, 19, 0.07);
-  color: var(--primary);
-  font-size: 13px;
-}
-
-.order-notes-box {
-  background: var(--bg-secondary);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 8px 14px;
-}
-
-
 .order-card-footer {
   border-top: 1px dashed var(--border-color);
   padding-top: var(--space-sm);
 }
 
-
-
-/* Orders Tab: Desktop Table vs Mobile Itemized Cards */
-.desktop-only-orders-table {
-  display: block;
-}
-
-.mobile-only-orders-list {
-  display: none !important;
-}
-
-/* Desktop Defaults for Prefix */
-.stock-prefix {
-  display: none;
-}
-
-.item-unit-slash {
-  display: inline;
-}
-
-/* ============================================================ */
-/* RESPONSIVE BREAKPOINTS: DESKTOP VS MOBILE ONLY               */
-/* ============================================================ */
-@media (min-width: 1024px) {
-  .mobile-only-cart {
-    display: none !important;
-  }
-}
-
-@media (max-width: 1023px) {
-  /* Hide the right-side cart card on mobile (use docked cart bar + drawer instead) */
-  .cart-sidebar {
-    display: none !important;
-  }
-
-  /* Add generous scroll padding at the bottom of catalog so user can scroll completely past everything */
-  .catalog-layout {
-    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height, 60px) + 35px) !important;
-  }
-}
-
 @media (max-width: 768px) {
-  .filter-bar {
-    padding: var(--space-sm) !important;
-  }
-
-  /* Filter Tabs: Multi-line Wrap on Mobile (No horizontal scroll) */
-  .filter-bar .category-tabs {
-    flex-wrap: wrap !important;
-    overflow-x: visible !important;
-    padding-bottom: 0 !important;
-    gap: 6px !important;
-    width: 100% !important;
-  }
-
-  /* ========================================================== */
-  /* MOBILE 2-COLUMN CARDS - RESTORED ORIGINAL CATALOG DESIGN   */
-  /* (Exact design from media_1792071395897.png, without button)*/
-  /* ========================================================== */
-  .catalog-layout {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-  }
-
-  .catalog-main {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  .grid-cards {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .item-card {
-    padding: 8px !important;
-    border-radius: var(--radius-lg) !important;
-    min-height: unset !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    position: relative !important;
-    cursor: pointer;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    align-items: stretch !important;
-    text-align: left !important;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
-  }
-
-  .item-card:active {
-    transform: scale(0.97);
-  }
-
-  .item-card.in-cart {
-    background: var(--card-bg, #ffffff) !important;
-    border-color: var(--border-color) !important;
-    box-shadow: var(--shadow-sm) !important;
-  }
-
-  /* 1. Top Badges: Category Left + Status Right */
-  .card-top-badges {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    gap: 4px !important;
-    margin-bottom: 6px !important;
-    box-sizing: border-box !important;
-  }
-
-  .card-badge-category {
-    font-size: var(--font-xxs) !important;
-    padding: 2px 6px !important;
-    max-width: calc(100% - 26px) !important;
-    min-width: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    border-radius: var(--radius-full) !important;
-    background: var(--bg-secondary) !important;
-    color: var(--text-secondary) !important;
-    border: 1px solid var(--border-color) !important;
-    box-sizing: border-box !important;
-  }
-
-  .card-badge-status {
-    width: 20px !important;
-    height: 20px !important;
-    min-width: 20px !important;
-    font-size: var(--font-xxs) !important;
-    border-radius: 50% !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* 2. Soft Cream Image Box */
-  .item-img-container {
-    height: 115px !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    margin-bottom: 6px !important;
-    border-radius: var(--radius-md) !important;
-    background: linear-gradient(180deg, #fff7df 0%, #fceecc 100%) !important;
-    box-sizing: border-box !important;
-  }
-
-  .item-img-placeholder {
-    font-size: 2rem !important;
-  }
-
-  /* 3. 2-Line Name Block */
-  .item-name {
-    font-size: var(--font-base) !important;
-    line-height: 1.3 !important;
-    min-height: unset !important;
-    margin-bottom: 2px !important;
-    text-align: left !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .item-name-main {
-    font-size: var(--font-base) !important;
-    font-weight: 700 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    text-align: left !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    color: var(--text-primary) !important;
-    box-sizing: border-box !important;
-  }
-
-  .item-name-sub {
-    display: block !important;
-    font-size: var(--font-xs) !important;
-    color: var(--text-secondary) !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    text-align: left !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    margin-top: 1px !important;
-    box-sizing: border-box !important;
-  }
-
-  /* 4. Meta Box: Dashed divider + ราคาเบิก / คงเหลือ rows (เส้นประมีระยะห่างสบายตา ไม่ชิด) */
-  .item-meta-box {
-    border-top: 1px dashed var(--border-color) !important;
-    margin-top: 6px !important;
-    padding-top: 6px !important;
-    margin-bottom: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 3px !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .item-meta-row {
-    padding: 1px 0 !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .item-meta-label {
-    display: inline-flex !important;
-    align-items: center !important;
-    font-size: var(--font-xs) !important;
-    color: var(--text-secondary) !important;
-    font-weight: 500 !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-
-  .item-unit-slash {
-    display: inline !important;
-    font-size: var(--font-xs) !important;
-  }
-
-  .item-cost-val {
-    font-size: var(--font-base) !important;
-    font-weight: 700 !important;
-    color: var(--text-primary) !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-
-  .item-stock-val {
-    font-size: var(--font-base) !important;
-    font-weight: 700 !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-
-  .stock-prefix {
-    display: none !important;
-  }
-
-  /* 5. Button Removed on Mobile (whole card is tapped to add) */
-  .card-footer-actions {
-    display: none !important;
-  }
-
-  /* Qty Badge on card */
-  .qty-badge {
-    position: absolute !important;
-    top: -5px !important;
-    right: -5px !important;
-    background: var(--primary) !important;
-    color: #ffffff !important;
-    width: 22px !important;
-    height: 22px !important;
-    border-radius: 50% !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 2px 6px rgba(139, 3, 19, 0.4) !important;
-    border: 2px solid #ffffff !important;
-    z-index: 5 !important;
-  }
-
-  /* Orders Tab Responsive */
   .order-card-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1902,121 +619,6 @@ onMounted(() => {
   .order-footer-actions .btn { width: 100%; justify-content: center; }
 }
 
-@media (min-width: 641px) and (max-width: 1023px) {
-  .grid-cards { gap: 12px !important; }
-  .item-card { padding: 12px !important; }
-  .item-img-container { height: 170px !important; margin-bottom: 8px !important; }
-  .card-badge-category { font-size: var(--font-xs) !important; padding: 3px 10px !important; }
-  .card-badge-status { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: var(--font-xs) !important; }
-  .item-name, .item-name-main { font-size: var(--font-md) !important; }
-  .item-meta-label { font-size: var(--font-sm) !important; }
-}
-@media (max-width: 640px) {
-  .item-img-container { height: 100px !important; }
-  .item-name, .item-name-main { font-size: var(--font-sm) !important; }
-  .item-meta-label, .item-unit-slash { font-size: var(--font-xxs) !important; }
-  .item-cost-val, .item-stock-val { font-size: var(--font-sm) !important; white-space: nowrap !important; }
-  .item-pack-val { font-size: var(--font-xxs) !important; white-space: nowrap !important; }
-  /* Orders Tab Table vs Mobile Itemized Cards */
-  .desktop-only-orders-table {
-    display: none !important;
-  }
-
-  .mobile-only-orders-list {
-    display: flex !important;
-  }
-
-  .order-mobile-item-card {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 10px 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-    box-sizing: border-box;
-    width: 100%;
-  }
-
-  .order-mobile-item-name {
-    line-height: 1.35;
-    word-break: break-word;
-  }
-
-  .order-mobile-item-sub {
-    line-height: 1.3;
-    word-break: break-word;
-    margin-top: 3px !important;
-  }
-
-  /* เส้นประในรายการขอเบิก มีระยะห่างสบายตา ไม่ชิด */
-  .order-mobile-item-bottom {
-    border-top: 1px dashed rgba(139, 3, 19, 0.15) !important;
-    margin-top: 12px !important;
-    padding-top: 9px !important;
-  }
-}
-/* --- Redesign Polish & Web Interface Guidelines --- */
-.category-tab,
-.clear-cart-btn,
-.search-clear-btn,
-.cart-pay-btn {
-  touch-action: manipulation;
-}
-
-.category-tab:focus-visible,
-.qty-card-input:focus-visible,
-.qty-input-field:focus-visible {
-  outline: 2px solid var(--border-color-focus);
-  outline-offset: 2px;
-}
-
-.qty-badge,
-.badge-count,
-.category-count,
-.item-cost-val,
-.item-stock-val,
-.qty-card-input,
-.qty-input-field,
-.cart-total-row,
-.cart-info,
-.order-no-title,
-.order-total-amount,
-.order-qty-pill,
-.order-items-table td,
-.order-mobile-item-total {
-  font-variant-numeric: tabular-nums;
-}
-
-.item-card.in-cart {
-  border: 2px solid var(--primary) !important;
-  box-shadow: 0 4px 14px rgba(139, 3, 19, 0.12);
-}
-
-.item-img-container {
-  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-}
-
-
-.cart-row {
-  background: var(--card-bg);
-}
-
-
-@media (min-width: 1024px) {
-  .cart-sidebar {
-    max-height: calc(100vh - 96px);
-  }
-  .cart-sidebar > div:first-child {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
-  }
-  .cart-items-list {
-    flex: 1;
-    min-height: 120px;
-    max-height: none;
-  }
-}
 @media (min-width: 769px) {
   .branch-requisition-view > .toolbar-card {
     padding: var(--space-xl) !important;

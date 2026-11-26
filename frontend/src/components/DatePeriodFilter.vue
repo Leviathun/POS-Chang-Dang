@@ -1,5 +1,43 @@
 <template>
-  <div class="card mb-lg p-md" style="background: #ffffff;">
+  <!-- Branch-Only Mode (for toolbars without date filter) -->
+  <div v-if="branchOnly && shouldShowBranchSelector" class="flex gap-sm align-center period-branch-selector period-branch-only">
+    <div style="font-size: var(--font-sm); white-space: nowrap;" class="font-bold flex align-center gap-xs">
+      <i class="fa-solid fa-store text-primary"></i>
+      <span>{{ branchLabel }}</span>
+    </div>
+    <div class="custom-select-wrapper period-branch-select-wrapper" @click.stop>
+      <div
+        class="custom-select-trigger reports-filter-control"
+        :class="{ active: isBranchDropdownOpen }"
+        @click="toggleBranchDropdown"
+        style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center; cursor: pointer;"
+      >
+        <span class="custom-select-text font-bold">{{ selectedBranchLabel }}</span>
+      </div>
+      <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 8px);">
+        <div
+          v-if="showAllBranches"
+          class="custom-select-option"
+          :class="{ selected: isAllBranchesSelected }"
+          @click="selectBranch(allBranchesValue)"
+        >
+          {{ allBranchesLabel }}
+        </div>
+        <div
+          v-for="b in normalizedBranches"
+          :key="b.id"
+          class="custom-select-option"
+          :class="{ selected: !isAllBranchesSelected && Number(branchId) === Number(b.id) }"
+          @click="selectBranch(b.id)"
+        >
+          {{ b.name }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Date & Period Filter Card -->
+  <div v-else-if="!branchOnly" class="card mb-lg p-md" style="background: #ffffff;">
     <div class="flex flex-col gap-md">
       <!-- Period Mode Tabs -->
       <div
@@ -169,8 +207,45 @@
           </div>
         </div>
 
-        <!-- Slot for page-specific filters (Branch on the right, Requester, etc.) -->
+        <!-- Slot for page-specific filters -->
         <slot />
+
+        <!-- Unified Branch Selector (aligned right) -->
+        <div v-if="shouldShowBranchSelector" class="flex gap-sm align-center period-branch-selector">
+          <div style="font-size: var(--font-sm); white-space: nowrap;" class="font-bold flex align-center gap-xs">
+            <i class="fa-solid fa-store text-primary"></i>
+            <span>{{ branchLabel }}</span>
+          </div>
+          <div class="custom-select-wrapper period-branch-select-wrapper" @click.stop>
+            <div
+              class="custom-select-trigger reports-filter-control"
+              :class="{ active: isBranchDropdownOpen }"
+              @click="toggleBranchDropdown"
+              style="height: 38px; padding: 6px 36px 6px var(--space-md); display: flex; align-items: center; cursor: pointer;"
+            >
+              <span class="custom-select-text font-bold">{{ selectedBranchLabel }}</span>
+            </div>
+            <div v-if="isBranchDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 8px);">
+              <div
+                v-if="showAllBranches"
+                class="custom-select-option"
+                :class="{ selected: isAllBranchesSelected }"
+                @click="selectBranch(allBranchesValue)"
+              >
+                {{ allBranchesLabel }}
+              </div>
+              <div
+                v-for="b in normalizedBranches"
+                :key="b.id"
+                class="custom-select-option"
+                :class="{ selected: !isAllBranchesSelected && Number(branchId) === Number(b.id) }"
+                @click="selectBranch(b.id)"
+              >
+                {{ b.name }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -187,7 +262,16 @@ const props = defineProps({
   selectedYear: { type: String, default: () => getToday().substring(0, 4) },
   startTime: { type: String, default: '00.00' },
   endTime: { type: String, default: '23.59' },
-  showTimeFilter: { type: Boolean, default: true }
+  showTimeFilter: { type: Boolean, default: true },
+  branches: { type: Array, default: () => [] },
+  branchId: { type: [Number, String], default: undefined },
+  showBranchFilter: { type: Boolean, default: false },
+  showAllBranches: { type: Boolean, default: true },
+  allBranchesValue: { type: [String, Number, Object], default: 'all' },
+  allBranchesLabel: { type: String, default: 'ทุกสาขา' },
+  branchLabel: { type: String, default: 'สาขา:' },
+  placeholder: { type: String, default: 'เลือกสาขา' },
+  branchOnly: { type: Boolean, default: false }
 });
 
 const emit = defineEmits([
@@ -197,12 +281,36 @@ const emit = defineEmits([
   'update:selectedYear',
   'update:startTime',
   'update:endTime',
+  'update:branchId',
+  'branch-change',
   'change'
 ]);
 
 const isDateDropdownOpen = ref(false);
 const isMonthDropdownOpen = ref(false);
 const isYearDropdownOpen = ref(false);
+const isBranchDropdownOpen = ref(false);
+
+const normalizedBranches = computed(() =>
+  (props.branches || []).map(b => ({
+    id: b.id ?? b.branch_id,
+    name: b.name ?? b.branch_name
+  }))
+);
+
+const shouldShowBranchSelector = computed(() =>
+  props.showBranchFilter || normalizedBranches.value.length > 0
+);
+
+const isAllBranchesSelected = computed(() =>
+  props.branchId === null || props.branchId === 'all' || props.branchId === ''
+);
+
+const selectedBranchLabel = computed(() => {
+  if (props.showAllBranches && isAllBranchesSelected.value) return props.allBranchesLabel;
+  const found = normalizedBranches.value.find(b => Number(b.id) === Number(props.branchId));
+  return found ? found.name : (props.showAllBranches ? props.allBranchesLabel : props.placeholder);
+});
 
 const monthPickerYear = ref(new Date().getFullYear());
 const datePickerYear = ref(new Date().getFullYear());
@@ -238,6 +346,19 @@ const closeDropdowns = () => {
   isDateDropdownOpen.value = false;
   isMonthDropdownOpen.value = false;
   isYearDropdownOpen.value = false;
+  isBranchDropdownOpen.value = false;
+};
+
+const toggleBranchDropdown = () => {
+  const cur = isBranchDropdownOpen.value;
+  closeDropdowns();
+  isBranchDropdownOpen.value = !cur;
+};
+
+const selectBranch = (val) => {
+  emit('update:branchId', val);
+  isBranchDropdownOpen.value = false;
+  emit('branch-change', val);
 };
 
 const selectMode = (mode) => {
@@ -360,5 +481,30 @@ onUnmounted(() => window.removeEventListener('click', closeDropdowns));
   background-color: var(--card-bg-active) !important;
   box-shadow: 0 0 0 3px var(--primary-glow) !important;
   outline: none !important;
+}
+
+.period-branch-selector {
+  margin-left: auto;
+}
+
+.period-branch-only {
+  margin-left: 0;
+}
+
+.period-branch-select-wrapper {
+  width: 210px;
+  min-width: 190px;
+  max-width: 220px;
+}
+
+@media (max-width: 768px) {
+  .period-branch-selector {
+    margin-left: 0 !important;
+    width: auto;
+  }
+  .period-branch-only {
+    justify-content: center;
+    width: 100%;
+  }
 }
 </style>

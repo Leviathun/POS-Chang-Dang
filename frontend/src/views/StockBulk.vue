@@ -1,82 +1,20 @@
 <template>
   <div id="stock-bulk-page" class="page-enter">
     
-    <!-- Top Header Card (Matches Stock.vue & StockCook.vue) -->
-    <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div class="title-tooltip-wrapper" @click.stop>
-        <h2 class="stock-page-title">
-          ปรับปรุงยอด
-        </h2>
-        <button 
-          type="button" 
-          class="title-info-btn" 
-          aria-label="คำอธิบายโหมดปรับปรุงยอด"
-          :aria-expanded="showHintTooltip"
-          @click="showHintTooltip = !showHintTooltip"
-        >
-          <i class="fa-solid fa-circle-info"></i>
-        </button>
-        <div v-if="showHintTooltip" class="title-tooltip-popover" role="tooltip">
-          <template v-if="activeStockType === 'menu_items'">
-            <strong>โหมดปรับปรุงยอด:</strong> กรอกจำนวนสต็อกคงเหลือจริงล่าสุด ระบบจะคำนวณส่วนต่างและบันทึกเฉพาะรายการที่มีการเปลี่ยนแปลง
-          </template>
-          <template v-else>
-            <strong>โหมดปรับปรุงยอด (เครื่องปรุง):</strong> กรอกจำนวน <strong>รอบเสิร์ฟ</strong> จริงคงเหลือทั้งหมดล่าสุดในระบบ
-          </template>
-        </div>
-      </div>
-      <div class="flex align-center gap-sm flex-wrap mobile-header-actions">
-        <router-link to="/stock" class="btn btn-secondary">
-          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-        </router-link>
-      </div>
-    </div>
-
-    <!-- Search & Modified Summary Bar -->
-    <div class="card p-md mb-lg bulk-toolbar-card">
-      <div class="flex flex-between align-center gap-md flex-wrap">
-        <div class="input-icon-wrapper flex-1" style="min-width: 220px;">
-          <i class="fa-solid fa-magnifying-glass input-icon"></i>
-          <input 
-            type="text" 
-            v-model="searchQuery" 
-            class="form-input bulk-search-input" 
-            placeholder="ค้นหาชื่อสินค้า..." 
-            aria-label="ค้นหาชื่อสินค้า"
-          />
-          <button 
-            v-if="searchQuery" 
-            type="button"
-            class="search-clear-btn" 
-            aria-label="ล้างคำค้นหา"
-            @click="searchQuery = ''"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Top Header Card & Search Bar -->
+    <StockPageHeader
+      title="ปรับปรุงยอด"
+      icon="fa-solid fa-boxes-stacked"
+      tooltip-title="โหมดปรับปรุงยอด:"
+      tooltip-text="กรอกจำนวนสต็อกคงเหลือจริงล่าสุด ระบบจะคำนวณส่วนต่างและบันทึกเฉพาะรายการที่มีการเปลี่ยนแปลง"
+      back-to="/stock"
+      searchable
+      v-model:search-query="searchQuery"
+      search-placeholder="ค้นหาชื่อสินค้า..."
+    />
 
     <!-- Main Content Area -->
     <div class="card p-lg overflow-hidden bulk-main-card">
-      <!-- Outer Category Tabs: Menu Items vs Modifiers (Hidden while preserving structure) -->
-      <div class="category-tabs mb-lg" v-if="false">
-        <button 
-          class="category-tab" 
-          :class="{ 'active': activeStockType === 'menu_items' }"
-          @click="activeStockType = 'menu_items'"
-        >
-          <i class="fa-solid fa-drumstick-bite"></i> สินค้าและเมนู
-        </button>
-        <button 
-          class="category-tab" 
-          :class="{ 'active': activeStockType === 'modifiers' }"
-          @click="activeStockType = 'modifiers'"
-        >
-          <i class="fa-solid fa-bottle-droplet"></i> ซอสและเครื่องปรุง
-        </button>
-      </div>
-
       <!-- Loading State (Skeleton) -->
       <div v-if="loading" class="bulk-stock-table-container">
         <div class="bulk-stock-rows-container">
@@ -101,7 +39,7 @@
       </div>
 
       <!-- Form Grid/Table for Menu Items -->
-      <div v-else-if="activeStockType === 'menu_items'" class="bulk-stock-table-container">
+      <div v-else class="bulk-stock-table-container">
         <!-- Desktop Grid Header -->
         <div class="bulk-stock-header-row desktop-only">
           <div style="text-align: left; padding-left: var(--space-md);">เมนูอาหาร</div>
@@ -205,78 +143,6 @@
                 </div>
                 <div v-if="item.name.includes('แร็ปไก่') || isLinkedBun(item)" class="linkage-warning-text text-danger font-bold text-center">
                   {{ getLinkageWarningText(item) }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Form Grid/Table for Modifiers -->
-      <div v-else-if="activeStockType === 'modifiers'" class="bulk-stock-table-container">
-        <!-- Desktop Grid Header -->
-        <div class="bulk-stock-header-row desktop-only" style="grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr;">
-          <div style="text-align: left; padding-left: var(--space-md);">ชื่อเครื่องปรุง / ซอส / ผงปรุงรส</div>
-          <div class="text-center">ประเภท</div>
-          <div class="text-center">คงเหลือปัจจุบัน</div>
-          <div style="text-align: center;">จำนวนรอบเสิร์ฟเป้าหมาย *</div>
-        </div>
-
-        <!-- Scrollable content -->
-        <div class="bulk-stock-rows-container">
-          <div 
-            v-for="item in filteredModifiers" 
-            :key="item.modifier_id" 
-            class="bulk-stock-row bulk-modifier-row"
-            :class="{ 'is-modified': getDelta(item.value, item.total_servings) !== 0 }"
-            style="grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr;"
-          >
-            <!-- Col 1: Name & Mobile Badge -->
-            <div class="bulk-item-name-col">
-              <div class="flex flex-between align-center w-full gap-xs">
-                <div class="font-bold text-base text-left item-name-text">{{ item.name }}</div>
-                <span class="badge show-mobile-inline" :class="getModifierCategoryClass(item.category)" style="padding: 3px 8px; margin-left: auto;">
-                  {{ getModifierCategoryLabel(item.category) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Col 2: Category Badge (Desktop Only) -->
-            <div class="hide-mobile-flex align-center justify-center font-semibold">
-              <span class="badge" :class="getModifierCategoryClass(item.category)">
-                {{ getModifierCategoryLabel(item.category) }}
-              </span>
-            </div>
-
-            <!-- Col 3: Current Stock (servings + bags) -->
-            <div class="bulk-item-current-col text-center tabular-nums">
-              <span class="mobile-label">คงเหลือ</span>
-              <span class="font-bold text-base">
-                {{ formatModifierStockShort(item) }}
-              </span>
-            </div>
-
-            <!-- Col 4: Input value -->
-            <div class="bulk-item-input-col">
-              <div class="bulk-input-wrapper">
-                <span class="mobile-label">รอบเสิร์ฟ</span>
-                <div class="input-with-delta">
-                  <input 
-                    type="text" 
-                    inputmode="decimal"
-                    v-model="item.value"
-                    :placeholder="String(Math.round(item.total_servings * 100) / 100)"
-                    :aria-label="`ปรับยอดรอบเสิร์ฟ ${item.name}`"
-                    class="form-input tabular-nums"
-                    :class="{ 'input-changed': getDelta(item.value, item.total_servings) !== 0 }"
-                  />
-                  <span 
-                    v-if="getDelta(item.value, item.total_servings) !== 0"
-                    class="delta-pill tabular-nums"
-                    :class="getDelta(item.value, item.total_servings) > 0 ? 'delta-positive' : 'delta-negative'"
-                  >
-                    {{ formatDelta(getDelta(item.value, item.total_servings)) }}
-                  </span>
                 </div>
               </div>
             </div>
@@ -419,20 +285,27 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import StockPageHeader from '../components/StockPageHeader.vue';
 import api from '../api';
-import { ui, isAdmin } from '../helpers';
+import {
+  ui,
+  formatStockQty,
+  isItemLowStock as checkLowStock,
+  getSteamedCounterpartName,
+  isLinkedBun,
+  getCookActionLabel,
+  getCookActionIcon as getProductMethodIcon
+} from '../helpers';
 import { store } from '../store';
 
 const router = useRouter();
 const stockItems = computed(() => store.stockItems);
 const loading = ref(true);
 const isSaving = ref(false);
-const activeStockType = ref('menu_items'); // 'menu_items' or 'modifiers'
 const searchQuery = ref('');
 const bulkFormItems = ref([]);
-const bulkModifiersFormItems = ref([]);
 const bulkReasonPreset = ref('นับยอดขาด/เกิน');
 const bulkNote = ref('');
 const lowStockThreshold = computed(() => store.lowStockThreshold);
@@ -460,67 +333,11 @@ const filteredMenuItems = computed(() => {
   return bulkFormItems.value.filter(i => i.name.toLowerCase().includes(q));
 });
 
-const filteredModifiers = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return bulkModifiersFormItems.value;
-  return bulkModifiersFormItems.value.filter(i => i.name.toLowerCase().includes(q));
-});
-
 const changedCount = computed(() => {
-  if (activeStockType.value === 'menu_items') {
-    return bulkFormItems.value.filter(isMenuItemModified).length;
-  }
-  return bulkModifiersFormItems.value.filter(m => getDelta(m.value, m.total_servings) !== 0).length;
+  return bulkFormItems.value.filter(isMenuItemModified).length;
 });
 
-const formatStockQty = (qty, uom) => {
-  if (qty === null || qty === undefined) return '';
-  const roundedQty = round2(qty);
-  const formatted = roundedQty.toLocaleString('th-TH', { maximumFractionDigits: 2 });
-  if (uom === 'กรัม') {
-    return `${formatted} ก.`;
-  }
-  return `${formatted} ${uom || 'ชิ้น'}`;
-};
-
-const isItemLowStock = (item, qty) => {
-  if (qty === null || qty === undefined) return false;
-  if (qty <= 0) return false;
-  if (item.low_stock_threshold !== null && item.low_stock_threshold !== undefined) {
-    return qty <= Number(item.low_stock_threshold);
-  }
-  if (item.uom === 'กรัม') {
-    return qty <= 500;
-  }
-  return qty <= lowStockThreshold.value;
-};
-
-const getSteamedCounterpartName = (name) => {
-  if (!name) return '';
-  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
-    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม')) {
-      return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
-    }
-    if (name.includes('หมู')) {
-      return 'ซาลาเปาไส้หมูสับ';
-    }
-    if (name.includes('ถั่วดำ')) {
-      return 'ซาลาเปาไส้ถั่วดำ';
-    }
-    if (name.includes('ครีม')) {
-      return 'ซาลาเปาไส้ครีม';
-    }
-    if (name.includes('หมั่นโถ')) {
-      return 'หมั่นโถว';
-    }
-  }
-  return '';
-};
-
-const isLinkedBun = (item) => {
-  if (!item || !item.name) return false;
-  return !!getSteamedCounterpartName(item.name);
-};
+const isItemLowStock = (item, qty) => checkLowStock(item, qty, lowStockThreshold.value);
 
 const getLinkageWarningText = (item) => {
   if (!item || !item.name) return '';
@@ -543,91 +360,37 @@ const getLinkageWarningText = (item) => {
     : `ℹ️ คืน "${targetName}"${ratioText} อัตโนมัติ`;
 };
 
-const getProductMethodLabel = (name) => {
-  if (!name) return 'ของทอด';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป');
-  if (isWrapped) {
-    return 'ของห่อ';
-  }
-  const isBunOrDumpling = name.includes('เปา') || 
-                          name.includes('หมั่นโถ') || 
-                          name.includes('ขนมจีบ');
-  if (isBunOrDumpling) {
-    if (name.includes('ทอด')) return 'ของทอด';
-    if (name.includes('ปิ้ง')) return 'ของปิ้ง';
-    return 'ของนึ่ง';
-  }
-  return 'ของทอด';
-};
+const getProductMethodLabel = (name) => `ของ${getCookActionLabel(name)}`;
 
-const getProductMethodIcon = (name) => {
-  if (!name) return 'fa-solid fa-fire';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป');
-  if (isWrapped) {
-    return 'fa-solid fa-box';
-  }
-  const isBunOrDumpling = name.includes('เปา') || 
-                          name.includes('หมั่นโถ') || 
-                          name.includes('ขนมจีบ');
-  if (isBunOrDumpling) {
-    if (name.includes('ทอด')) return 'fa-solid fa-fire';
-    if (name.includes('ปิ้ง')) return 'fa-solid fa-fire-flame-simple';
-    return 'fa-solid fa-cloud';
-  }
-  return 'fa-solid fa-fire';
-};
-
-const showHintTooltip = ref(false);
 const showConfirmModal = ref(false);
 
 const modifiedSummaryList = computed(() => {
   const list = [];
-  if (activeStockType.value === 'menu_items') {
-    for (const item of bulkFormItems.value) {
-      const uom = item.uom || 'ชิ้น';
-      if (item.raw_quantity !== null && item.raw_quantity !== undefined) {
-        const rawDelta = getDelta(item.raw, item.raw_quantity);
-        if (rawDelta !== 0) {
-          list.push({
-            key: `raw-${item.menu_item_id}`,
-            name: item.name,
-            label: 'ของสด',
-            from: `${round2(item.raw_quantity)} ${uom}`,
-            to: `${round2(item.raw)} ${uom}`,
-            delta: rawDelta
-          });
-        }
-      }
-      const cookedDelta = getDelta(item.cooked, item.quantity ?? 0);
-      if (cookedDelta !== 0) {
+  for (const item of bulkFormItems.value) {
+    const uom = item.uom || 'ชิ้น';
+    if (item.raw_quantity !== null && item.raw_quantity !== undefined) {
+      const rawDelta = getDelta(item.raw, item.raw_quantity);
+      if (rawDelta !== 0) {
         list.push({
-          key: `cooked-${item.menu_item_id}`,
+          key: `raw-${item.menu_item_id}`,
           name: item.name,
-          label: getProductMethodLabel(item.name),
-          from: `${round2(item.quantity ?? 0)} ${uom}`,
-          to: `${round2(item.cooked)} ${uom}`,
-          delta: cookedDelta
+          label: 'ของสด',
+          from: `${round2(item.raw_quantity)} ${uom}`,
+          to: `${round2(item.raw)} ${uom}`,
+          delta: rawDelta
         });
       }
     }
-  } else {
-    for (const item of bulkModifiersFormItems.value) {
-      const delta = getDelta(item.value, item.total_servings);
-      if (delta !== 0) {
-        const uom = item.category === 'sauce_small' ? 'ซอง' : 'รอบ';
-        list.push({
-          key: `mod-${item.modifier_id}`,
-          name: item.name,
-          label: getModifierCategoryLabel(item.category),
-          from: `${round2(item.total_servings)} ${uom}`,
-          to: `${round2(item.value)} ${uom}`,
-          delta
-        });
-      }
+    const cookedDelta = getDelta(item.cooked, item.quantity ?? 0);
+    if (cookedDelta !== 0) {
+      list.push({
+        key: `cooked-${item.menu_item_id}`,
+        name: item.name,
+        label: getProductMethodLabel(item.name),
+        from: `${round2(item.quantity ?? 0)} ${uom}`,
+        to: `${round2(item.cooked)} ${uom}`,
+        delta: cookedDelta
+      });
     }
   }
   return list;
@@ -637,48 +400,6 @@ const reasonOptions = [
   { value: 'กรอกผิด', label: 'กรอกผิด (แก้ไขยอด)', icon: 'fa-solid fa-pen-to-square' },
   { value: 'อื่นๆ', label: 'อื่นๆ', icon: 'fa-solid fa-circle-question' }
 ];
-const closeReasonDropdown = () => {
-  showHintTooltip.value = false;
-};
-
-// Modifiers Helper Functions
-const getModifierCategoryLabel = (category) => {
-  const map = {
-    'sauce_small': 'ซอส (ซองเล็ก)',
-    'sauce_large': 'ซอส (ถุงใหญ่)',
-    'dipping': 'น้ำจิ้ม',
-    'powder': 'ผงปรุงรส'
-  };
-  return map[category] || category;
-};
-
-const getModifierCategoryClass = (category) => {
-  const map = {
-    'sauce_small': 'badge-mod-sauce-small',
-    'sauce_large': 'badge-mod-sauce-large',
-    'dipping': 'badge-mod-dipping',
-    'powder': 'badge-mod-powder'
-  };
-  return map[category] || 'badge-neutral';
-};
-
-const formatModifierStockShort = (item) => {
-  if (!item) return '';
-  if (item.category === 'sauce_small') {
-    return `${round2(item.total_servings)} ซอง`;
-  }
-  const servingsPerBag = item.servings_per_bag || 50;
-  const bags = Math.floor(item.total_servings / servingsPerBag);
-  const servings = round2(item.total_servings % servingsPerBag);
-  
-  let text = '';
-  if (bags > 0) text += `${bags} ถุง`;
-  if (servings > 0 || bags === 0) {
-    if (text) text += ' ';
-    text += `${servings} รอบ`;
-  }
-  return text;
-};
 
 const initializeForm = () => {
   bulkFormItems.value = stockItems.value.map(item => ({
@@ -690,18 +411,6 @@ const initializeForm = () => {
     cooked: item.quantity !== null && item.quantity !== undefined ? round2(item.quantity) : 0,
     raw: item.raw_quantity !== null && item.raw_quantity !== undefined ? round2(item.raw_quantity) : 0
   }));
-  initializeModifiersForm();
-};
-
-const initializeModifiersForm = () => {
-  bulkModifiersFormItems.value = store.modifiers.map(item => ({
-    modifier_id: item.id,
-    name: item.name,
-    category: item.category,
-    servings_per_bag: item.servings_per_bag || 50,
-    total_servings: item.total_servings || 0,
-    value: item.total_servings !== null && item.total_servings !== undefined ? round2(item.total_servings) : 0
-  }));
 };
 
 const resetAllChanges = () => {
@@ -710,10 +419,7 @@ const resetAllChanges = () => {
 
 const loadStockData = async () => {
   try {
-    await Promise.all([
-      store.fetchStock(true),
-      store.fetchModifiers(true)
-    ]);
+    await store.fetchStock(true);
     initializeForm();
   } catch (e) {
     console.error(e);
@@ -728,104 +434,56 @@ const handleSaveBulkAdjust = async () => {
   isSaving.value = true;
   ui.showLoading();
   try {
-    if (activeStockType.value === 'menu_items') {
-      const itemsToSend = [];
+    const itemsToSend = [];
+    
+    for (const item of bulkFormItems.value) {
+      const cookedVal = item.cooked !== null && item.cooked !== undefined && String(item.cooked).trim() !== '' ? String(item.cooked).trim() : null;
+      const rawVal = item.raw !== null && item.raw !== undefined && String(item.raw).trim() !== '' ? String(item.raw).trim() : null;
       
-      for (const item of bulkFormItems.value) {
-        const cookedVal = item.cooked !== null && item.cooked !== undefined && String(item.cooked).trim() !== '' ? String(item.cooked).trim() : null;
-        const rawVal = item.raw !== null && item.raw !== undefined && String(item.raw).trim() !== '' ? String(item.raw).trim() : null;
-        
-        const parsedCooked = cookedVal !== null ? Number(cookedVal) : null;
-        const parsedRaw = rawVal !== null ? Number(rawVal) : null;
-        
-        const currentCooked = item.quantity !== null && item.quantity !== undefined ? round2(item.quantity) : 0;
-        const currentRaw = item.raw_quantity !== null && item.raw_quantity !== undefined ? round2(item.raw_quantity) : 0;
-        
-        const targetCooked = parsedCooked !== null && !isNaN(parsedCooked) ? round2(parsedCooked) : currentCooked;
-        const targetRaw = parsedRaw !== null && !isNaN(parsedRaw) ? round2(parsedRaw) : currentRaw;
-        
-        if (targetCooked !== currentCooked || (item.raw_quantity !== null && item.raw_quantity !== undefined && targetRaw !== currentRaw)) {
-          itemsToSend.push({
-            menu_item_id: item.menu_item_id,
-            cooked: cookedVal,
-            raw: rawVal
-          });
-        }
+      const parsedCooked = cookedVal !== null ? Number(cookedVal) : null;
+      const parsedRaw = rawVal !== null ? Number(rawVal) : null;
+      
+      const currentCooked = item.quantity !== null && item.quantity !== undefined ? round2(item.quantity) : 0;
+      const currentRaw = item.raw_quantity !== null && item.raw_quantity !== undefined ? round2(item.raw_quantity) : 0;
+      
+      const targetCooked = parsedCooked !== null && !isNaN(parsedCooked) ? round2(parsedCooked) : currentCooked;
+      const targetRaw = parsedRaw !== null && !isNaN(parsedRaw) ? round2(parsedRaw) : currentRaw;
+      
+      if (targetCooked !== currentCooked || (item.raw_quantity !== null && item.raw_quantity !== undefined && targetRaw !== currentRaw)) {
+        itemsToSend.push({
+          menu_item_id: item.menu_item_id,
+          cooked: cookedVal,
+          raw: rawVal
+        });
       }
-      
-      if (itemsToSend.length === 0) {
-        ui.showToast('ไม่มีรายการใดที่มีความเปลี่ยนแปลง', 'info');
-        ui.hideLoading();
-        isSaving.value = false;
-        return;
+    }
+    
+    if (itemsToSend.length === 0) {
+      ui.showToast('ไม่มีรายการใดที่มีความเปลี่ยนแปลง', 'info');
+      ui.hideLoading();
+      isSaving.value = false;
+      return;
+    }
+    
+    const payload = {
+      mode: 'absolute',
+      items: itemsToSend,
+      reason_preset: bulkReasonPreset.value,
+      note: bulkNote.value.trim()
+    };
+    
+    const res = await api.stock.bulkAdjust(payload);
+    if (res && res.success) {
+      showConfirmModal.value = false;
+      if (res.updatedItems && Array.isArray(res.updatedItems)) {
+        res.updatedItems.forEach(item => {
+          store.updateStock(item.id, item.stock, item.raw_stock);
+        });
       }
-      
-      const payload = {
-        mode: 'absolute',
-        items: itemsToSend,
-        reason_preset: bulkReasonPreset.value,
-        note: bulkNote.value.trim()
-      };
-      
-      const res = await api.stock.bulkAdjust(payload);
-      if (res && res.success) {
-        showConfirmModal.value = false;
-        if (res.updatedItems && Array.isArray(res.updatedItems)) {
-          res.updatedItems.forEach(item => {
-            store.updateStock(item.id, item.stock, item.raw_stock);
-          });
-        }
-        store.clearMenuCache();
-        store.clearStockCache();
-        ui.showToast('ปรับปรุงสต็อกสินค้าเรียบร้อยแล้ว', 'success');
-        router.push('/stock');
-      }
-    } else {
-      const itemsToSend = [];
-      
-      for (const item of bulkModifiersFormItems.value) {
-        const inputVal = item.value !== null && item.value !== undefined && String(item.value).trim() !== '' ? String(item.value).trim() : null;
-        const parsedVal = inputVal !== null ? Number(inputVal) : null;
-        const currentVal = round2(item.total_servings);
-        const targetVal = parsedVal !== null && !isNaN(parsedVal) ? round2(parsedVal) : currentVal;
-        
-        if (targetVal !== currentVal) {
-          itemsToSend.push({
-            modifier_id: item.modifier_id,
-            servings: parsedVal
-          });
-        }
-      }
-      
-      if (itemsToSend.length === 0) {
-        ui.showToast('ไม่มีรายการเครื่องปรุงใดที่มีความเปลี่ยนแปลง', 'info');
-        ui.hideLoading();
-        isSaving.value = false;
-        return;
-      }
-      
-      const payload = {
-        mode: 'absolute',
-        items: itemsToSend,
-        reason_preset: bulkReasonPreset.value,
-        note: bulkNote.value.trim()
-      };
-      
-      const res = await api.modifiers.bulkAdjust(payload);
-      if (res && res.success) {
-        showConfirmModal.value = false;
-        if (res.updatedModifiers && Array.isArray(res.updatedModifiers)) {
-          res.updatedModifiers.forEach(m => {
-            const idx = store.modifiers.findIndex(x => x.id === m.id);
-            if (idx !== -1) {
-              store.modifiers[idx].total_servings = m.total_servings;
-            }
-          });
-        }
-        store.clearModifiersCache();
-        ui.showToast('ปรับปรุงสต็อกเครื่องปรุงเรียบร้อยแล้ว', 'success');
-        router.push('/stock');
-      }
+      store.clearMenuCache();
+      store.clearStockCache();
+      ui.showToast('ปรับปรุงสต็อกสินค้าเรียบร้อยแล้ว', 'success');
+      router.push('/stock');
     }
   } catch (e) {
     console.error(e);
@@ -838,93 +496,13 @@ const handleSaveBulkAdjust = async () => {
 
 onMounted(() => {
   loadStockData();
-  window.addEventListener('click', closeReasonDropdown);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('click', closeReasonDropdown);
 });
 </script>
 
 <style scoped>
-.stock-page-title {
-  margin: 0;
-  font-size: var(--font-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
-
-.title-tooltip-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.title-info-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  padding: 2px;
-  font-size: var(--font-sm);
-  line-height: 1;
-  margin-top: -2px;
-  border-radius: var(--radius-full);
-  touch-action: manipulation;
-  transition: color var(--transition-fast);
-}
-
-.title-info-btn:hover,
-.title-info-btn:focus-visible {
-  color: var(--primary);
-  outline: none;
-}
-
-.title-tooltip-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 30;
-  width: min(320px, 82vw);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--card-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  font-size: var(--font-xs);
-  line-height: 1.45;
-}
-
-.input-icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.bulk-search-input {
-  padding-left: 36px;
-  padding-right: 34px;
-  min-height: 44px;
-}
-
-
 
 #stock-bulk-page {
   padding-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 120px);
@@ -1063,12 +641,12 @@ onUnmounted(() => {
 }
 
 .delta-positive {
-  background: rgba(22, 163, 74, 0.14);
+  background: rgba(42, 157, 143, 0.14);
   color: var(--success);
 }
 
 .delta-negative {
-  background: rgba(220, 38, 38, 0.14);
+  background: rgba(173, 40, 30, 0.14);
   color: var(--danger);
 }
 
@@ -1154,33 +732,6 @@ onUnmounted(() => {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-  }
-}
-
-@media (min-width: 769px) {
-  .mobile-stock-header-card {
-    padding: var(--space-xl) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .title-tooltip-wrapper {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .title-tooltip-popover {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .mobile-header-actions {
-    width: 100%;
-  }
-
-  .mobile-header-actions .btn {
-    flex: 1;
-    justify-content: center;
   }
 }
 </style>
