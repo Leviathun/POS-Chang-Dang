@@ -1113,8 +1113,6 @@
           v-model:selected-date="selectedDate"
           v-model:selected-month="selectedMonth"
           v-model:selected-year="selectedYear"
-          v-model:custom-start-date="customStartDate"
-          v-model:custom-end-date="customEndDate"
           v-model:start-time="customStartTime"
           v-model:end-time="customEndTime"
           v-model:branch-id="selectedReceivablesBranch"

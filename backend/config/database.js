@@ -149,6 +149,7 @@ async function initDatabase() {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     address TEXT,
+    is_central_kitchen INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT (datetime('now', 'localtime'))
   )`);
 
@@ -172,6 +173,10 @@ async function initDatabase() {
       pin TEXT NOT NULL,
       role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'staff')),
       active INTEGER DEFAULT 1,
+      wage_type TEXT DEFAULT 'daily',
+      wage_rate REAL DEFAULT 0,
+      skill_level TEXT DEFAULT 'regular',
+      benefits TEXT DEFAULT 'ข้าวเที่ยงฟรี',
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS categories (
@@ -195,6 +200,7 @@ async function initDatabase() {
       multiple_prices TEXT DEFAULT NULL,
       quantity INTEGER DEFAULT NULL,
       raw_quantity INTEGER DEFAULT NULL,
+      low_stock_threshold INTEGER DEFAULT 5,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
@@ -233,6 +239,7 @@ async function initDatabase() {
       note TEXT,
       cancel_reason TEXT,
       modifiers TEXT,
+      session_id INTEGER REFERENCES cash_drawer_sessions(id),
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS order_items (
@@ -256,6 +263,11 @@ async function initDatabase() {
       order_id INTEGER REFERENCES orders(id),
       staff_id INTEGER REFERENCES users(id),
       note TEXT,
+      status TEXT DEFAULT 'completed',
+      cancelled_at DATETIME,
+      cancelled_by INTEGER REFERENCES users(id),
+      cancel_reason TEXT,
+      stock_type TEXT DEFAULT 'cooked',
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS modifier_stock_logs (
@@ -287,7 +299,14 @@ async function initDatabase() {
       note TEXT,
       expense_date DATE DEFAULT (date('now', 'localtime')),
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-      payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer'))
+      session_id INTEGER REFERENCES cash_drawer_sessions(id),
+      payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer')),
+      status TEXT DEFAULT 'completed',
+      cancelled_at DATETIME,
+      cancelled_by INTEGER REFERENCES users(id),
+      is_refund INTEGER DEFAULT 0,
+      refund_ref_id INTEGER REFERENCES expenses(id),
+      cancel_reason TEXT
     )`,
     `CREATE TABLE IF NOT EXISTS activity_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -348,6 +367,8 @@ async function initDatabase() {
       skill_level TEXT,
       leave_reason TEXT,
       had_lunch_benefit INTEGER DEFAULT 1,
+      is_paid INTEGER DEFAULT 0,
+      payroll_id INTEGER,
       note TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       UNIQUE(user_id, work_date)
@@ -367,6 +388,8 @@ async function initDatabase() {
       event_ot_id INTEGER NOT NULL REFERENCES employee_event_ots(id) ON DELETE CASCADE,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       amount REAL NOT NULL,
+      is_paid INTEGER DEFAULT 0,
+      payroll_id INTEGER,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       UNIQUE(event_ot_id, user_id)
     )`,
@@ -379,6 +402,7 @@ async function initDatabase() {
       payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer')),
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'deducted', 'cancelled')),
       payroll_id INTEGER REFERENCES employee_payrolls(id),
+      expense_id INTEGER REFERENCES expenses(id),
       note TEXT,
       created_by INTEGER REFERENCES users(id),
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
@@ -400,6 +424,10 @@ async function initDatabase() {
       expense_id INTEGER REFERENCES expenses(id),
       paid_by INTEGER REFERENCES users(id),
       note TEXT,
+      status TEXT DEFAULT 'completed',
+      cancelled_at DATETIME,
+      cancelled_by INTEGER REFERENCES users(id),
+      cancel_reason TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime'))
     )`,
     `CREATE TABLE IF NOT EXISTS employee_guarantees (
@@ -456,6 +484,9 @@ async function initDatabase() {
       expense_id INTEGER REFERENCES expenses(id),
       notes TEXT,
       dispatched_by_name TEXT,
+      is_reimbursed INTEGER DEFAULT 0,
+      reimbursed_at DATETIME,
+      reimbursed_by_name TEXT,
       created_at DATETIME DEFAULT (datetime('now', 'localtime')),
       dispatched_at DATETIME,
       received_at DATETIME
@@ -532,293 +563,8 @@ async function initDatabase() {
     await db.exec(table);
   }
 
-  // Migration: Add employee compensation fields to users table if not exists
+  // Ensure Central Kitchen branch exists
   try {
-    const userCols = await db.prepare("PRAGMA table_info(users)").all();
-    if (!userCols.some(c => c.name === 'wage_type')) {
-      await db.exec("ALTER TABLE users ADD COLUMN wage_type TEXT DEFAULT 'daily'");
-    }
-    if (!userCols.some(c => c.name === 'wage_rate')) {
-      await db.exec("ALTER TABLE users ADD COLUMN wage_rate REAL DEFAULT 0");
-    }
-    if (!userCols.some(c => c.name === 'skill_level')) {
-      await db.exec("ALTER TABLE users ADD COLUMN skill_level TEXT DEFAULT 'regular'");
-    }
-    if (!userCols.some(c => c.name === 'benefits')) {
-      await db.exec("ALTER TABLE users ADD COLUMN benefits TEXT DEFAULT 'ข้าวเที่ยงฟรี'");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration employee columns on users failed:', e.message);
-  }
-
-  // Migration: Add daily_wage, skill_level, is_paid, payroll_id to employee_attendance table if not exists
-  try {
-    const attCols = await db.prepare("PRAGMA table_info(employee_attendance)").all();
-    if (!attCols.some(c => c.name === 'daily_wage')) {
-      await db.exec("ALTER TABLE employee_attendance ADD COLUMN daily_wage REAL");
-    }
-    if (!attCols.some(c => c.name === 'skill_level')) {
-      await db.exec("ALTER TABLE employee_attendance ADD COLUMN skill_level TEXT");
-    }
-    if (!attCols.some(c => c.name === 'is_paid')) {
-      await db.exec("ALTER TABLE employee_attendance ADD COLUMN is_paid INTEGER DEFAULT 0");
-    }
-    if (!attCols.some(c => c.name === 'payroll_id')) {
-      await db.exec("ALTER TABLE employee_attendance ADD COLUMN payroll_id INTEGER");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration daily_wage/skill_level/is_paid columns on employee_attendance failed:', e.message);
-  }
-
-  // Migration: Add is_paid, payroll_id to employee_event_ot_participants table if not exists
-  try {
-    const otCols = await db.prepare("PRAGMA table_info(employee_event_ot_participants)").all();
-    if (!otCols.some(c => c.name === 'is_paid')) {
-      await db.exec("ALTER TABLE employee_event_ot_participants ADD COLUMN is_paid INTEGER DEFAULT 0");
-    }
-    if (!otCols.some(c => c.name === 'payroll_id')) {
-      await db.exec("ALTER TABLE employee_event_ot_participants ADD COLUMN payroll_id INTEGER");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration is_paid on employee_event_ot_participants failed:', e.message);
-  }
-
-  // Migration: Add expense_id to employee_advances table if not exists
-  try {
-    const advCols = await db.prepare("PRAGMA table_info(employee_advances)").all();
-    if (!advCols.some(c => c.name === 'expense_id')) {
-      await db.exec("ALTER TABLE employee_advances ADD COLUMN expense_id INTEGER REFERENCES expenses(id)");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration expense_id on employee_advances failed:', e.message);
-  }
-
-  // Migration: Add branch_id to categories and menu_items if not exists
-  try {
-    const catCols = await db.prepare("PRAGMA table_info(categories)").all();
-    if (!catCols.some(c => c.name === 'branch_id')) {
-      await db.exec('ALTER TABLE categories ADD COLUMN branch_id INTEGER REFERENCES branches(id)');
-      await db.exec(`UPDATE categories SET branch_id = ${defaultBranchId} WHERE branch_id IS NULL`);
-    }
-  } catch (e) {}
-
-  try {
-    const menuCols = await db.prepare("PRAGMA table_info(menu_items)").all();
-    if (!menuCols.some(c => c.name === 'branch_id')) {
-      await db.exec('ALTER TABLE menu_items ADD COLUMN branch_id INTEGER REFERENCES branches(id)');
-      await db.exec(`UPDATE menu_items SET branch_id = ${defaultBranchId} WHERE branch_id IS NULL`);
-    }
-  } catch (e) {}
-
-  try {
-    const setCols = await db.prepare("PRAGMA table_info(settings)").all();
-    if (!setCols.some(c => c.name === 'branch_id')) {
-      await db.exec('ALTER TABLE settings ADD COLUMN branch_id INTEGER REFERENCES branches(id)');
-      await db.exec(`UPDATE settings SET branch_id = ${defaultBranchId} WHERE branch_id IS NULL`);
-    }
-  } catch (e) {}
-
-  // Migration: Add session_id to orders table if not exists
-  try {
-    await db.exec('ALTER TABLE orders ADD COLUMN session_id INTEGER REFERENCES cash_drawer_sessions(id)');
-    console.log('  🔧 Migration: Added session_id column to orders table.');
-  } catch (e) {
-    if (!e.message.includes('duplicate column name') && !e.message.includes('already exists')) {
-      console.warn('⚠️ Migration session_id to orders failed:', e.message);
-    }
-  }
-
-  // Migration: Add session_id to expenses table if not exists
-  try {
-    await db.exec('ALTER TABLE expenses ADD COLUMN session_id INTEGER REFERENCES cash_drawer_sessions(id)');
-    console.log('  🔧 Migration: Added session_id column to expenses table.');
-  } catch (e) {
-    if (!e.message.includes('duplicate column name') && !e.message.includes('already exists')) {
-      console.warn('⚠️ Migration session_id to expenses failed:', e.message);
-    }
-  }
-
-  // Migration: Add payment_method to expenses table if not exists
-  try {
-    const columnsInfo = await db.prepare("PRAGMA table_info(expenses)").all();
-    const hasPaymentMethod = columnsInfo.some(col => col.name === 'payment_method');
-    if (!hasPaymentMethod) {
-      await db.exec("ALTER TABLE expenses ADD COLUMN payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer'))");
-      console.log('  🔧 Migration: Added payment_method column to expenses table.');
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration payment_method to expenses failed:', e.message);
-  }
-
-  // Migration: Drop CHECK constraint on expenses.category to allow new expense categories
-  try {
-    const schema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='expenses'").get();
-    if (schema && schema.sql && (schema.sql.includes('category TEXT NOT NULL CHECK') || schema.sql.includes('CHECK(category'))) {
-      console.log('  🔧 Migration: Recreating expenses table to drop CHECK constraint...');
-      
-      const columnsInfo = await db.prepare("PRAGMA table_info(expenses)").all();
-      const hasSessionId = columnsInfo.some(col => col.name === 'session_id');
-      const hasPaymentMethod = columnsInfo.some(col => col.name === 'payment_method');
-      
-      await db.exec('BEGIN TRANSACTION;');
-      
-      let selectCols = 'id, branch_id, staff_id, amount, category, note, expense_date, created_at';
-      let insertCols = 'id, branch_id, staff_id, amount, category, note, expense_date, created_at';
-      let newTableSchema = `
-        CREATE TABLE expenses_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          branch_id INTEGER REFERENCES branches(id),
-          staff_id INTEGER REFERENCES users(id),
-          amount REAL NOT NULL,
-          category TEXT NOT NULL,
-          note TEXT,
-          expense_date DATE DEFAULT (date('now', 'localtime')),
-          created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-      `;
-      
-      if (hasSessionId) {
-        newTableSchema += `, session_id INTEGER REFERENCES cash_drawer_sessions(id)`;
-        selectCols += `, session_id`;
-        insertCols += `, session_id`;
-      }
-      if (hasPaymentMethod) {
-        newTableSchema += `, payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'transfer'))`;
-        selectCols += `, payment_method`;
-        insertCols += `, payment_method`;
-      }
-      
-      newTableSchema += `)`;
-      
-      await db.exec(newTableSchema);
-      await db.exec(`INSERT INTO expenses_new (${insertCols}) SELECT ${selectCols} FROM expenses`);
-      
-      await db.exec('DROP TABLE expenses;');
-      await db.exec('ALTER TABLE expenses_new RENAME TO expenses;');
-      await db.exec('COMMIT;');
-      console.log('  🔧 Migration: Successfully removed CHECK constraint from expenses table.');
-    }
-  } catch (e) {
-    try { await db.exec('ROLLBACK;'); } catch(_) {}
-    console.warn('⚠️ Migration drop expenses CHECK constraint failed:', e.message);
-  }
-
-  // Migration: Upgrade users table to support manager role and unique PIN
-  try {
-    const userSchema = await db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
-    if (userSchema && userSchema.sql && !userSchema.sql.includes('manager')) {
-      console.log('  🔧 Migration: Upgrading users table to support manager role...');
-      await db.exec('PRAGMA foreign_keys = OFF;');
-      await db.exec('BEGIN TRANSACTION;');
-      await db.exec(`
-        CREATE TABLE users_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          branch_id INTEGER REFERENCES branches(id),
-          name TEXT NOT NULL,
-          pin TEXT NOT NULL,
-          role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'manager', 'staff')),
-          active INTEGER DEFAULT 1,
-          created_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        );
-      `);
-      await db.exec(`
-        INSERT INTO users_new (id, branch_id, name, pin, role, active, created_at)
-        SELECT id, branch_id, name, pin, role, active, created_at FROM users;
-      `);
-      await db.exec('DROP TABLE users;');
-      await db.exec('ALTER TABLE users_new RENAME TO users;');
-      await db.exec('COMMIT;');
-      await db.exec('PRAGMA foreign_keys = ON;');
-      console.log('  🔧 Migration: Successfully updated users table schema for manager role.');
-    }
-  } catch (e) {
-    try { await db.exec('ROLLBACK;'); } catch (_) {}
-    try { await db.exec('PRAGMA foreign_keys = ON;'); } catch (_) {}
-    console.warn('⚠️ Migration update users table failed:', e.message);
-  }
-
-  // Migration: Add status, cancelled_at, cancelled_by, is_refund, refund_ref_id, cancel_reason to expenses table if not exists
-  try {
-    const expCols = await db.prepare("PRAGMA table_info(expenses)").all();
-    if (!expCols.some(c => c.name === 'status')) {
-      await db.exec("ALTER TABLE expenses ADD COLUMN status TEXT DEFAULT 'completed'");
-    }
-    if (!expCols.some(c => c.name === 'cancelled_at')) {
-      await db.exec("ALTER TABLE expenses ADD COLUMN cancelled_at DATETIME");
-    }
-    if (!expCols.some(c => c.name === 'cancelled_by')) {
-      await db.exec("ALTER TABLE expenses ADD COLUMN cancelled_by INTEGER REFERENCES users(id)");
-    }
-    if (!expCols.some(c => c.name === 'is_refund')) {
-      await db.exec("ALTER TABLE expenses ADD COLUMN is_refund INTEGER DEFAULT 0");
-    }
-    if (!expCols.some(c => c.name === 'refund_ref_id')) {
-      await db.exec("ALTER TABLE expenses ADD COLUMN refund_ref_id INTEGER REFERENCES expenses(id)");
-    }
-    if (!expCols.some(c => c.name === 'cancel_reason')) {
-      await db.exec("ALTER TABLE expenses ADD COLUMN cancel_reason TEXT");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration reversal columns on expenses failed:', e.message);
-  }
-
-  // Migration: Add status, cancelled_at, cancelled_by, cancel_reason to employee_payrolls table if not exists
-  try {
-    const payCols = await db.prepare("PRAGMA table_info(employee_payrolls)").all();
-    if (!payCols.some(c => c.name === 'status')) {
-      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN status TEXT DEFAULT 'completed'");
-    }
-    if (!payCols.some(c => c.name === 'cancelled_at')) {
-      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN cancelled_at DATETIME");
-    }
-    if (!payCols.some(c => c.name === 'cancelled_by')) {
-      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN cancelled_by INTEGER REFERENCES users(id)");
-    }
-    if (!payCols.some(c => c.name === 'cancel_reason')) {
-      await db.exec("ALTER TABLE employee_payrolls ADD COLUMN cancel_reason TEXT");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration reversal columns on employee_payrolls failed:', e.message);
-  }
-
-  // Migration: Add status, cancelled_at, cancelled_by, cancel_reason to stock_logs table if not exists
-  try {
-    const stockCols = await db.prepare("PRAGMA table_info(stock_logs)").all();
-    if (!stockCols.some(c => c.name === 'status')) {
-      await db.exec("ALTER TABLE stock_logs ADD COLUMN status TEXT DEFAULT 'completed'");
-    }
-    if (!stockCols.some(c => c.name === 'cancelled_at')) {
-      await db.exec("ALTER TABLE stock_logs ADD COLUMN cancelled_at DATETIME");
-    }
-    if (!stockCols.some(c => c.name === 'cancelled_by')) {
-      await db.exec("ALTER TABLE stock_logs ADD COLUMN cancelled_by INTEGER REFERENCES users(id)");
-    }
-    if (!stockCols.some(c => c.name === 'cancel_reason')) {
-      await db.exec("ALTER TABLE stock_logs ADD COLUMN cancel_reason TEXT");
-    }
-    if (!stockCols.some(c => c.name === 'stock_type')) {
-      await db.exec("ALTER TABLE stock_logs ADD COLUMN stock_type TEXT DEFAULT 'cooked'");
-      try {
-        await db.exec(`
-          UPDATE stock_logs 
-          SET stock_type = 'raw' 
-          WHERE (note LIKE '%ของสด%' OR note LIKE '%วัตถุดิบ%' OR (note LIKE '%ปรุง%' AND change_qty < 0 AND reason = 'adjustment'))
-        `);
-      } catch (backfillErr) {
-        console.warn('⚠️ Backfill stock_type failed:', backfillErr.message);
-      }
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration reversal columns on stock_logs failed:', e.message);
-  }
-
-  // Migration: Add is_central_kitchen to branches table if not exists
-  try {
-    const branchCols = await db.prepare("PRAGMA table_info(branches)").all();
-    if (!branchCols.some(c => c.name === 'is_central_kitchen')) {
-      await db.exec("ALTER TABLE branches ADD COLUMN is_central_kitchen INTEGER DEFAULT 0");
-    }
-
-    // Ensure Central Kitchen branch exists
     const ckBranch = await db.prepare("SELECT id FROM branches WHERE is_central_kitchen = 1 OR name LIKE '%ครัวกลาง%' LIMIT 1").get();
     if (!ckBranch) {
       await db.prepare('INSERT INTO branches (name, address, is_central_kitchen) VALUES (?, ?, 1)')
@@ -828,58 +574,10 @@ async function initDatabase() {
       await db.prepare('UPDATE branches SET is_central_kitchen = 1 WHERE id = ?').run(ckBranch.id);
     }
   } catch (e) {
-    console.warn('⚠️ Migration is_central_kitchen failed:', e.message);
+    console.warn('⚠️ Seed Central Kitchen branch failed:', e.message);
   }
 
-  // Migration: Add reimbursement columns to central_kitchen_transfers table if not exists
-  try {
-    const transferCols = await db.prepare("PRAGMA table_info(central_kitchen_transfers)").all();
-    if (!transferCols.some(c => c.name === 'is_reimbursed')) {
-      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN is_reimbursed INTEGER DEFAULT 0");
-    }
-    if (!transferCols.some(c => c.name === 'reimbursed_at')) {
-      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN reimbursed_at DATETIME");
-    }
-    if (!transferCols.some(c => c.name === 'reimbursed_by_name')) {
-      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN reimbursed_by_name TEXT");
-    }
-    if (!transferCols.some(c => c.name === 'dispatch_type')) {
-      await db.exec("ALTER TABLE central_kitchen_transfers ADD COLUMN dispatch_type TEXT DEFAULT 'pull'");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration central_kitchen_transfers columns failed:', e.message);
-  }
-
-  // Migration: Add linking columns & pack_size to central_kitchen_items
-  try {
-    const itemCols = await db.prepare("PRAGMA table_info(central_kitchen_items)").all();
-    if (!itemCols.some(c => c.name === 'linked_menu_item_name')) {
-      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN linked_menu_item_name TEXT DEFAULT NULL");
-    }
-    if (!itemCols.some(c => c.name === 'target_stock_type')) {
-      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN target_stock_type TEXT DEFAULT 'raw'");
-    }
-    if (!itemCols.some(c => c.name === 'pack_size')) {
-      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN pack_size REAL DEFAULT 1");
-    }
-    if (!itemCols.some(c => c.name === 'sort_order')) {
-      await db.exec("ALTER TABLE central_kitchen_items ADD COLUMN sort_order INTEGER DEFAULT 0");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration central_kitchen_items columns failed:', e.message);
-  }
-
-  // Migration: Add per-item low_stock_threshold to menu_items
-  try {
-    const menuCols = await db.prepare("PRAGMA table_info(menu_items)").all();
-    if (!menuCols.some(c => c.name === 'low_stock_threshold')) {
-      await db.exec("ALTER TABLE menu_items ADD COLUMN low_stock_threshold INTEGER DEFAULT 5");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration menu_items.low_stock_threshold failed:', e.message);
-  }
-
-  // Migration: Seed default central_kitchen_categories if empty
+  // Seed default central_kitchen_categories if empty
   try {
     const ckCatCount = await db.prepare('SELECT COUNT(*) as count FROM central_kitchen_categories').get();
     if (ckCatCount && ckCatCount.count === 0) {
@@ -898,33 +596,7 @@ async function initDatabase() {
       }
     }
   } catch (e) {
-    console.warn('⚠️ Migration central_kitchen_categories failed:', e.message);
-  }
-
-  // Migration: Add original_quantity and pack_size column to central_kitchen_transfer_items
-  try {
-    const transferItemCols = await db.prepare("PRAGMA table_info(central_kitchen_transfer_items)").all();
-    if (!transferItemCols.some(c => c.name === 'original_quantity')) {
-      await db.exec("ALTER TABLE central_kitchen_transfer_items ADD COLUMN original_quantity REAL");
-    }
-    if (!transferItemCols.some(c => c.name === 'pack_size')) {
-      await db.exec("ALTER TABLE central_kitchen_transfer_items ADD COLUMN pack_size REAL DEFAULT 1");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration central_kitchen_transfer_items columns failed:', e.message);
-  }
-
-  // Migration: Add quantity & raw_quantity columns to menu_items if not exists
-  try {
-    const menuCols = await db.prepare("PRAGMA table_info(menu_items)").all();
-    if (!menuCols.some(c => c.name === 'quantity')) {
-      await db.exec("ALTER TABLE menu_items ADD COLUMN quantity INTEGER DEFAULT NULL");
-    }
-    if (!menuCols.some(c => c.name === 'raw_quantity')) {
-      await db.exec("ALTER TABLE menu_items ADD COLUMN raw_quantity INTEGER DEFAULT NULL");
-    }
-  } catch (e) {
-    console.warn('⚠️ Migration menu_items stock columns failed:', e.message);
+    console.warn('⚠️ Seed central_kitchen_categories failed:', e.message);
   }
 
   // ─── Create Indexes ───────────────────────────────────────

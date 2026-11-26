@@ -288,10 +288,15 @@
               </span>
               <span class="nav-label">คำขอเบิก</span>
             </router-link>
-            <router-link to="/central-kitchen/finance" class="nav-item" active-class="active">
+            <button
+              type="button"
+              class="nav-item border-0 bg-transparent cursor-pointer"
+              :class="{ 'active': route.path === '/central-kitchen/finance' || route.path === '/central-kitchen/partners' }"
+              @click="openManageChoiceSheet"
+            >
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-vault"></i></span>
               <span class="nav-label">การเงิน</span>
-            </router-link>
+            </button>
             <router-link to="/settings" class="nav-item" active-class="active">
               <span class="nav-icon flex justify-center"><i class="fa-solid fa-gear"></i></span>
               <span class="nav-label">ตั้งค่า</span>
@@ -342,7 +347,7 @@
         <div class="mobile-action-sheet-content" @click.stop>
           <div class="modal-header">
             <h3>
-              <i class="fa-solid fa-briefcase"></i>
+              <i :class="isCentralKitchenSessionActive ? 'fa-solid fa-vault' : 'fa-solid fa-briefcase'"></i>
               <span>เลือกระบบที่ต้องการเข้าใช้งาน</span>
             </h3>
             <button type="button" class="modal-close" aria-label="ปิด" @click="closeManageChoiceSheet">
@@ -350,7 +355,39 @@
             </button>
           </div>
           
-          <div class="sheet-options-list">
+          <div v-if="isCentralKitchenSessionActive" class="sheet-options-list">
+            <div 
+              class="sheet-option-card" 
+              :class="{ 'current': route.path === '/central-kitchen/finance' }"
+              @click="navigateToManage('/central-kitchen/finance')"
+            >
+              <div class="option-icon-wrap management-icon">
+                <i class="fa-solid fa-vault"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">การเงินกองกลาง</div>
+                <div class="option-desc">สมุดบัญชีครัวกลาง, รายรับ-รายจ่าย, ยอดค้างชำระสาขา</div>
+              </div>
+              <i class="fa-solid fa-chevron-right option-arrow"></i>
+            </div>
+
+            <div 
+              class="sheet-option-card" 
+              :class="{ 'current': route.path === '/central-kitchen/partners' }"
+              @click="navigateToManage('/central-kitchen/partners')"
+            >
+              <div class="option-icon-wrap reports-icon">
+                <i class="fa-solid fa-handshake"></i>
+              </div>
+              <div class="option-info">
+                <div class="option-title">หุ้นส่วน & ปันผล</div>
+                <div class="option-desc">จัดการสัดส่วนหุ้นส่วน, คำนวณกำไรและแบ่งปันผล</div>
+              </div>
+              <i class="fa-solid fa-chevron-right option-arrow"></i>
+            </div>
+          </div>
+
+          <div v-else class="sheet-options-list">
             <div 
               class="sheet-option-card" 
               :class="{ 'current': route.path.startsWith('/management') }"

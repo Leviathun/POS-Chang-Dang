@@ -291,6 +291,7 @@ import StockPageHeader from '../components/StockPageHeader.vue';
 import api from '../api';
 import {
   ui,
+  isAdmin,
   formatStockQty,
   isItemLowStock as checkLowStock,
   getSteamedCounterpartName,
@@ -417,9 +418,10 @@ const resetAllChanges = () => {
   initializeForm();
 };
 
-const loadStockData = async () => {
+const loadStockData = async (force = false) => {
+  loading.value = !store.stockLoaded || force;
   try {
-    await store.fetchStock(true);
+    await store.fetchStock(force);
     initializeForm();
   } catch (e) {
     console.error(e);

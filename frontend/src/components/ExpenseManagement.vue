@@ -314,12 +314,6 @@
               style="width: 100%;"
             />
           </div>
-          <div v-if="filteredLedgerEntries.length > 0" class="flex" style="width: 100%;">
-            <button 
-              class="btn btn-secondary btn-sm" @click="exportToCSV">
-              <i class="fa-solid fa-file-csv text-primary"></i> ส่งออกบัญชี (CSV)
-            </button>
-          </div>
         </div>
 
         <!-- Filter Sub-summary Banner with Proper Margin/Padding -->
@@ -1471,27 +1465,6 @@ const handleReverseEntry = async (item) => {
       reversingEntryId.value = null;
     }
   }
-};
-
-const exportLedgerCSV = () => {
-  if (!filteredLedgerEntries.value || filteredLedgerEntries.value.length === 0) return;
-  let csvContent = '\uFEFFวัน-เวลา,ประเภท,ชื่อรายการ,ช่องทาง,จำนวนเงิน(บาท),ผู้บันทึก\n';
-  filteredLedgerEntries.value.forEach(item => {
-    const time = `"${formatDate(item.date)} ${formatTime(item.created_at)}"`;
-    const cat = `"${item.categoryLabel}"`;
-    const note = `"${(item.name || '').replace(/"/g, '""')}${item.isCancelled ? ' [ยกเลิก]' : ''}"`;
-    const pm = `"${item.paymentLabel}"`;
-    const amt = item.isCancelled ? 0 : (item.isRefund ? -item.amount : (item.amount || 0));
-    const staff = `"${(item.staffName || '').replace(/"/g, '""')}"`;
-    csvContent += `${time},${cat},${note},${pm},${amt},${staff}\n`;
-  });
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute('download', `ledger_expenses_${activeDate.value}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 };
 
 const getCategoryLabel = (cat) => {

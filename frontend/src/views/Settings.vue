@@ -1101,7 +1101,7 @@
             <div class="text-xs text-secondary">{{ getRoleLabel(currentUser?.role) }}</div>
           </div>
         </div>
-        <button class="btn btn-outline-danger w-full" @click="handleLogout">
+        <button class="btn btn-outline-danger" @click="handleLogout">
           <i class="fa-solid fa-right-from-bracket mr-xs"></i>
           <span>ออกจากระบบ</span>
         </button>
