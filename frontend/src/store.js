@@ -60,7 +60,7 @@ export const store = reactive({
   },
 
   async _fetchForBranch(key, branchKey, force, loadedProp, branchProp, loadFn, applyFn, refreshInBackground = true) {
-    const BG_REFRESH_TTL_MS = 120000;
+    const BG_REFRESH_TTL_MS = 300000;
     if (this[loadedProp] && !force && this[branchProp] === branchKey) {
       const age = Date.now() - (this._lastFetchedAt[key] || 0);
       if (refreshInBackground && age >= BG_REFRESH_TTL_MS) {
@@ -149,6 +149,14 @@ export const store = reactive({
   addCategory(category) {
     if (!category) return;
     this.categories.push(category.data || category);
+    this.categories.sort(sortByOrder);
+  },
+
+  updateCategory(category) {
+    const updated = category?.data || category;
+    if (!updated) return;
+    const idx = this.categories.findIndex(c => c.id === updated.id);
+    if (idx !== -1) this.categories[idx] = { ...this.categories[idx], ...updated };
     this.categories.sort(sortByOrder);
   },
 
@@ -315,7 +323,7 @@ export const store = reactive({
         api.orders.getAll({ date: today, limit: 1000, branch_id: branchId }).catch(() => ({ success: false, data: [] })),
         api.reports.monthly(currentMonth, branchId).catch(() => ({ success: false, data: null })),
         api.expenses.get({ month: currentMonth, branch_id: branchId }).catch(() => ({ success: false, data: [] })),
-        api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId }).catch(() => ({ success: false, data: [] }))
+        api.orders.getAll({ status: 'completed', month: currentMonth, branch_id: branchId, include_items: 'false' }).catch(() => ({ success: false, data: [] }))
       ]),
       ([sum, top, daily, exp, act, hist, monthlyRes, expMonthRes, monthlyOrdersRes]) => {
         this.reportSummary = sum && sum.success ? sum.data : (sum || null);

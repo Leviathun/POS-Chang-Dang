@@ -6,7 +6,7 @@ const BASE_URL = (import.meta.env.VITE_API_URL || window.location.origin).replac
 
 async function request(method, path, body, options = {}) {
   let urlPath = path;
-  if (method === 'GET') {
+  if (method === 'GET' && !urlPath.startsWith('/api/images/') && !urlPath.startsWith('/api/health')) {
     const buster = `_cb=${Date.now()}`;
     urlPath = urlPath.includes('?') ? `${urlPath}&${buster}` : `${urlPath}?${buster}`;
   }
@@ -109,6 +109,9 @@ const menu = {
   },
   async createCategory(data) {
     return request('POST', '/api/menu/categories', data);
+  },
+  async updateCategory(id, data) {
+    return request('PUT', `/api/menu/categories/${id}`, data);
   },
   async deleteCategory(id) {
     return request('DELETE', `/api/menu/categories/${id}`);

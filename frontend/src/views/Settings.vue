@@ -2,9 +2,9 @@
   <div id="settings-page" class="page-enter">
     
     <!-- Tab toggles inside Settings page -->
-    <div class="category-tabs tab-category mb-lg">
+    <div class="category-tabs">
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'shop' }"
         @click="activeTab = 'shop'"
       >
@@ -12,7 +12,7 @@
       </button>
       <button 
         v-if="currentUser?.role === 'admin'"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'users' }"
         @click="activeTab = 'users'"
       >
@@ -20,30 +20,22 @@
       </button>
       <button 
         v-if="currentUser?.role === 'admin'"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'branches' }"
         @click="activeTab = 'branches'"
       >
         <i class="fa-solid fa-code-branch"></i> จัดการสาขา
       </button>
       <button 
-        v-if="false"
-        class="btn btn-secondary" 
-        :class="{ 'active': activeTab === 'presets' }"
-        @click="activeTab = 'presets'"
-      >
-        <i class="fa-solid fa-mortar-pestle"></i> สูตรเครื่องปรุง
-      </button>
-      <button 
         v-if="currentUser?.role === 'admin'"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'backup' }"
         @click="activeTab = 'backup'"
       >
         <i class="fa-solid fa-database"></i> สำรอง & จัดเก็บข้อมูล
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeTab === 'printer' }"
         @click="activeTab = 'printer'"
       >
@@ -130,11 +122,18 @@
     <!-- Tab 2: User management -->
     <div v-if="activeTab === 'users'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card diner-page-header">
-        <div class="diner-header-title">
-          พนักงานหน้าร้าน: <strong class="tabular-nums">{{ filteredUsers.length }}</strong> คน
+      <div class="card page-header-card">
+        <div class="page-header-left">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <div class="page-header-text">
+            <h2 class="page-header-title">
+              พนักงานหน้าร้าน: <strong class="tabular-nums">{{ filteredUsers.length }}</strong> คน
+            </h2>
+          </div>
         </div>
-        <div class="diner-header-actions">
+        <div class="page-header-actions">
           <button class="btn btn-primary" @click="openAddUserModal"><i class="fa-solid fa-plus"></i> เพิ่มพนักงาน</button>
         </div>
       </div>
@@ -434,9 +433,9 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingUser" @click="showUserModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSavingUser" @click="showUserModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="!userForm.name || !userForm.pin || userForm.pin.length !== 4 || isSavingUser"
               @click="handleSaveUser"
             >
@@ -452,11 +451,18 @@
     <!-- Tab 3: Branch management (Admin only) -->
     <div v-if="activeTab === 'branches'" class="flex flex-col gap-lg w-full">
       <!-- Top Action Card -->
-      <div class="card diner-page-header">
-        <div class="diner-header-title">
-          สาขาทั้งหมด: <strong class="tabular-nums">{{ branches.length }}</strong> สาขา
+      <div class="card page-header-card">
+        <div class="page-header-left">
+          <div class="header-icon-circle">
+            <i class="fa-solid fa-code-branch"></i>
+          </div>
+          <div class="page-header-text">
+            <h2 class="page-header-title">
+              สาขาทั้งหมด: <strong class="tabular-nums">{{ branches.length }}</strong> สาขา
+            </h2>
+          </div>
         </div>
-        <div class="diner-header-actions">
+        <div class="page-header-actions">
           <button class="btn btn-primary" @click="openAddBranchModal"><i class="fa-solid fa-plus"></i> เพิ่มสาขา</button>
         </div>
       </div>
@@ -633,9 +639,9 @@
           </div>
 
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
+            <button class="btn btn-secondary flex-1" :disabled="isSavingBranch" @click="showBranchModal = false">ยกเลิก</button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="!branchForm.name || !branchForm.name.trim() || isSavingBranch"
               @click="handleSaveBranch"
             >
@@ -643,140 +649,6 @@
               <i v-else class="fa-solid fa-floppy-disk"></i>
               {{ isSavingBranch ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 4: Presets CRUD -->
-    <div v-if="activeTab === 'presets'" class="flex flex-col gap-lg w-full">
-      <!-- Top Action Card -->
-      <div class="card flex flex-between align-center p-lg staff-header-card flex-wrap" style="background: var(--card-bg); gap: var(--space-md);">
-        <span class="font-bold text-lg"><i class="fa-solid fa-mortar-pestle" style="margin-right: 6px;"></i> สูตรเครื่องปรุงสำเร็จรูป</span>
-        <button class="btn btn-primary" @click="openAddPresetModal"><i class="fa-solid fa-plus"></i> เพิ่มสูตรสำเร็จ</button>
-      </div>
-
-      <!-- Presets List -->
-      <div class="card p-0 overflow-hidden hide-mobile">
-        <div style="overflow-x: auto;">
-          <table class="table w-full" style="border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); background: rgba(139, 3, 19, 0.03);">
-                <th class="text-left" style="padding: var(--space-md);">ชื่อสูตร</th>
-                <th class="text-left" style="padding: var(--space-md);">เครื่องปรุงที่รวมอยู่</th>
-                <th class="text-center" style="padding: var(--space-md);">สถานะ</th>
-                <th class="text-center" style="padding: var(--space-md);">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-if="presetsLoading">
-                <tr v-for="i in 3" :key="'p-skel-' + i" style="border-bottom: 1px solid var(--border-color);">
-                  <td style="padding: var(--space-md);">
-                    <div class="skeleton" style="width: 140px; height: 18px; border-radius: var(--radius-sm);"></div>
-                  </td>
-                  <td style="padding: var(--space-md);">
-                    <div class="flex gap-xs">
-                      <div class="skeleton" style="width: 80px; height: 24px; border-radius: var(--radius-full);"></div>
-                      <div class="skeleton" style="width: 90px; height: 24px; border-radius: var(--radius-full);"></div>
-                    </div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md);">
-                    <div class="skeleton mx-auto" style="width: 76px; height: 24px; border-radius: var(--radius-full);"></div>
-                  </td>
-                  <td class="text-center" style="padding: var(--space-md);">
-                    <div class="flex justify-center gap-sm">
-                      <div class="skeleton" style="width: 80px; height: 38px; border-radius: var(--radius-md);"></div>
-                      <div class="skeleton" style="width: 70px; height: 38px; border-radius: var(--radius-md);"></div>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-              <tr v-else-if="presets.length === 0">
-                <td colspan="4" class="text-center" style="padding: var(--space-xl); color: var(--text-tertiary);">
-                  ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
-                </td>
-              </tr>
-              <tr 
-                v-else 
-                v-for="p in presets" 
-                :key="p.id" 
-                style="border-bottom: 1px solid var(--border-color);"
-                class="table-row-hover"
-              >
-                <td style="padding: var(--space-md); vertical-align: middle; font-weight: bold;">
-                  {{ p.name }}
-                </td>
-                <td style="padding: var(--space-md); vertical-align: middle; color: var(--text-secondary);">
-                  <div class="flex gap-xs" style="flex-wrap: wrap;">
-                    <span v-for="mid in p.modifier_ids" :key="mid" class="modifier-pill">
-                      {{ getModifierName(mid) }}
-                    </span>
-                  </div>
-                </td>
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <span class="badge text-base" :class="p.active ? 'badge-primary' : 'badge-neutral'">
-                    {{ p.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
-                  </span>
-                </td>
-                <td class="text-center" style="padding: var(--space-md); vertical-align: middle;">
-                  <div class="flex justify-center gap-sm">
-                    <button class="btn-action btn-action-edit" title="แก้ไข" @click="openEditPresetModal(p)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
-                    <button class="btn-action btn-action-delete" title="ลบ" @click="handleDeletePreset(p.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Mobile Presets List -->
-      <div class="show-mobile-only" style="display: none;">
-        <div v-if="presetsLoading" class="flex flex-col gap-sm">
-          <div v-for="i in 3" :key="'pm-skel-' + i" class="card p-md flex flex-col gap-sm">
-            <div class="flex flex-between align-center">
-              <div class="skeleton" style="width: 140px; height: 18px; border-radius: var(--radius-sm);"></div>
-              <div class="skeleton" style="width: 70px; height: 22px; border-radius: var(--radius-full);"></div>
-            </div>
-            <div class="skeleton" style="width: 180px; height: 24px; border-radius: var(--radius-full);"></div>
-            <div class="flex gap-sm">
-              <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
-              <div class="skeleton flex-1" style="height: 38px; border-radius: var(--radius-md);"></div>
-            </div>
-          </div>
-        </div>
-        <div v-else-if="presets.length === 0" class="card p-lg text-center text-secondary" style="background: var(--card-bg);">
-          ยังไม่มีข้อมูลสูตรผสมสำเร็จรูป
-        </div>
-        <div v-else class="flex flex-col gap-sm">
-          <div 
-            v-for="p in presets" 
-            :key="p.id" 
-            class="card p-md flex flex-col gap-sm"
-            style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg);"
-          >
-            <div class="flex flex-between align-center">
-              <span class="font-bold text-primary text-base">{{ p.name }}</span>
-              <span class="badge" :class="p.active ? 'badge-primary' : 'badge-neutral'">
-                {{ p.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
-              </span>
-            </div>
-            
-            <div class="text-xs text-secondary">
-              <div class="mb-xs font-semibold" style="color: var(--text-secondary);">เครื่องปรุงที่รวมอยู่:</div>
-              <div class="flex gap-xs" style="flex-wrap: wrap;">
-                <span v-for="mid in p.modifier_ids" :key="mid" class="modifier-pill">
-                  {{ getModifierName(mid) }}
-                </span>
-              </div>
-            </div>
-
-            <div class="divider" style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
-
-            <div class="flex gap-sm justify-end">
-              <button class="btn-action btn-action-edit flex-1" @click="openEditPresetModal(p)"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
-              <button class="btn-action btn-action-delete flex-1" @click="handleDeletePreset(p.id)"><i class="fa-solid fa-trash-can"></i> ลบ</button>
-            </div>
           </div>
         </div>
       </div>
@@ -874,9 +746,9 @@
               </p>
             </div>
             <button 
-              class="btn btn-secondary w-full" 
+              class="btn btn-primary w-full" 
               @click="downloadExcelSummary"
-              style="border-color: var(--success, #2a9d8f); color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
+              style="background: var(--success, #2a9d8f); border-color: var(--success, #2a9d8f); font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
             >
               <i class="fa-solid fa-file-excel"></i> ดาวน์โหลดรายงาน Excel
             </button>
@@ -1146,78 +1018,6 @@
       </div>
     </div>
 
-    <!-- Preset Add/Edit Dialog Modal -->
-    <div v-if="showPresetModal" class="modal-container active flex align-center justify-center">
-      <div class="modal-overlay" @click="showPresetModal = false"></div>
-      <div class="modal-content modal-center w-full max-w-sm" style="position:relative; z-index:2;">
-        <div class="modal-header">
-          <h3>
-            <i :class="isEditPresetMode ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-mortar-pestle'" style="margin-right: 6px;"></i>
-            {{ isEditPresetMode ? 'แก้ไขสูตรเครื่องปรุงสำเร็จ' : 'เพิ่มสูตรเครื่องปรุงสำเร็จ' }}
-          </h3>
-          <button class="modal-close" @click="showPresetModal = false">✕</button>
-        </div>
-        <div class="modal-body" style="max-height: 70vh; overflow-y: auto; text-align: left;">
-          <!-- Name -->
-          <div class="form-group">
-            <label class="form-label">ชื่อสูตร *</label>
-            <input 
-              type="text" 
-              class="form-input" 
-              v-model="presetForm.name" 
-              placeholder="เช่น มะเขือเทศ + ผงชีส..." 
-            />
-          </div>
-
-          <!-- Modifiers Checkboxes -->
-          <div class="form-group">
-            <label class="form-label font-bold mb-xs">เลือกซอส/ผงปรุงรส/น้ำจิ้มที่ร่วมอยู่: *</label>
-            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 8px; border-radius: var(--radius-md); background: var(--bg-primary);">
-              <label 
-                v-for="mod in availableModifiers" 
-                :key="mod.id" 
-                class="flex align-center gap-sm text-sm"
-                style="cursor: pointer; padding: 4px 0;"
-              >
-                <input 
-                  type="checkbox" 
-                  :value="mod.id" 
-                  v-model="presetForm.modifier_ids"
-                  style="width: 18px; height: 18px;"
-                />
-                <span>{{ mod.name }} ({{ getCategoryLabel(mod.category) }})</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Active status -->
-          <div class="form-group flex align-center gap-sm" style="cursor: pointer; margin-top: 12px;">
-            <input 
-              type="checkbox" 
-              id="preset-active-checkbox" 
-              v-model="presetForm.active" 
-              style="width: 18px; height: 18px;" 
-            />
-            <label for="preset-active-checkbox" class="text-sm" style="cursor: pointer;">เปิดใช้งานสูตรสำเร็จนี้</label>
-          </div>
-
-          <!-- Buttons -->
-          <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isSavingPreset" @click="showPresetModal = false">ยกเลิก</button>
-            <button 
-              class="btn-modal btn-modal-primary flex-1" 
-              :disabled="!presetForm.name.trim() || presetForm.modifier_ids.length === 0 || isSavingPreset"
-              @click="handleSavePreset"
-            >
-              <i v-if="isSavingPreset" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-floppy-disk"></i>
-              {{ isSavingPreset ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Purge Cloud Data Confirmation Dialog Modal -->
     <div v-if="showPurgeModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="!isPurging && (showPurgeModal = false)"></div>
@@ -1243,7 +1043,7 @@
           </div>
 
           <!-- Process Explanation & Safeguards -->
-          <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 16px;">
+          <div style="font-size: var(--font-xs); line-height: 1.6; color: var(--text-secondary); margin-bottom: 16px;">
             <div class="flex align-center gap-xs mb-xs" style="color: var(--success, #2a9d8f); font-weight: bold;">
               <i class="fa-solid fa-circle-check"></i>
               <span>ระบบจะดาวน์โหลดไฟล์ CSV สำรองข้อมูลลงเครื่องให้โดยอัตโนมัติก่อนเริ่มลบเสมอ</span>
@@ -1273,11 +1073,11 @@
 
           <!-- Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn-modal btn-modal-secondary flex-1" :disabled="isPurging" @click="showPurgeModal = false">
+            <button class="btn btn-secondary flex-1" :disabled="isPurging" @click="showPurgeModal = false">
               ยกเลิก
             </button>
             <button 
-              class="btn-modal btn-modal-primary flex-1" 
+              class="btn btn-primary flex-1" 
               :disabled="isPurging || (purgeConfirmInput !== 'ยืนยันลบข้อมูล' && purgeConfirmInput !== 'CONFIRM')"
               @click="handleExecutePurgeCloud"
               style="background: var(--danger, #c0392b); border-color: var(--danger, #c0392b);"
@@ -1295,13 +1095,13 @@
     <div class="mobile-logout-section card mt-xl">
       <div class="flex flex-between align-center">
         <div class="flex align-center gap-sm">
-          <i class="fa-solid fa-circle-user text-primary" style="font-size: 1.5rem;"></i>
+          <i class="fa-solid fa-circle-user text-primary" style="font-size: var(--font-xl);"></i>
           <div>
             <div class="font-bold text-base text-primary">{{ currentUser?.name }}</div>
             <div class="text-xs text-secondary">{{ getRoleLabel(currentUser?.role) }}</div>
           </div>
         </div>
-        <button class="btn btn-danger mobile-logout-btn" @click="handleLogout">
+        <button class="btn btn-outline-danger" @click="handleLogout">
           <i class="fa-solid fa-right-from-bracket mr-xs"></i>
           <span>ออกจากระบบ</span>
         </button>
@@ -1865,19 +1665,6 @@ const getBranchName = (branchId) => {
   return b ? b.name : `สาขา #${branchId}`;
 };
 
-// Presets States & Logic
-const presets = computed(() => store.modifierPresets || []);
-const presetsLoading = ref(false);
-const showPresetModal = ref(false);
-const isEditPresetMode = ref(false);
-const editPresetId = ref(null);
-const presetForm = ref({
-  name: '',
-  modifier_ids: [],
-  active: true
-});
-const availableModifiers = computed(() => store.modifiers || []);
-
 // Backup & Export States
 const isBackupPeriodDropdownOpen = ref(false);
 const isBackupBranchDropdownOpen = ref(false);
@@ -1916,116 +1703,6 @@ const selectBackupBranch = (val) => {
   isBackupBranchDropdownOpen.value = false;
 };
 const fileInput = ref(null);
-
-const loadPresetsData = async (force = false) => {
-  presetsLoading.value = !store.modifiersLoaded || force;
-  try {
-    await store.fetchModifiers(force);
-  } catch (e) {
-    console.error(e);
-    ui.showToast('ไม่สามารถโหลดข้อมูลสูตรสำเร็จได้', 'error');
-  } finally {
-    presetsLoading.value = false;
-  }
-};
-
-const loadAvailableModifiers = async () => {
-  try {
-    await store.fetchModifiers();
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-const getModifierName = (id) => {
-  const mod = availableModifiers.value.find(m => m.id === Number(id));
-  return mod ? mod.name : `เครื่องปรุง #${id}`;
-};
-
-const getCategoryLabel = (category) => {
-  const map = {
-    'sauce_small': 'ซอสซองเล็ก',
-    'sauce_large': 'ซอสถุงใหญ่',
-    'dipping': 'น้ำจิ้ม',
-    'powder': 'ผงปรุงรส'
-  };
-  return map[category] || category;
-};
-
-const openAddPresetModal = () => {
-  isEditPresetMode.value = false;
-  editPresetId.value = null;
-  presetForm.value = {
-    name: '',
-    modifier_ids: [],
-    active: true
-  };
-  showPresetModal.value = true;
-};
-
-const openEditPresetModal = (p) => {
-  isEditPresetMode.value = true;
-  editPresetId.value = p.id;
-  presetForm.value = {
-    name: p.name,
-    modifier_ids: [...p.modifier_ids],
-    active: p.active === 1 || p.active === true
-  };
-  showPresetModal.value = true;
-};
-
-const isSavingPreset = ref(false);
-
-const handleSavePreset = async () => {
-  if (isSavingPreset.value) return;
-  isSavingPreset.value = true;
-  ui.showLoading();
-  try {
-    const payload = {
-      name: presetForm.value.name,
-      modifier_ids: presetForm.value.modifier_ids,
-      active: presetForm.value.active ? 1 : 0
-    };
-    
-    let res;
-    if (isEditPresetMode.value) {
-      res = await api.modifiers.updatePreset(editPresetId.value, payload);
-    } else {
-      res = await api.modifiers.createPreset(payload);
-    }
-    
-    if (res.success) {
-      ui.showToast(isEditPresetMode.value ? 'แก้ไขสูตรเครื่องปรุงสำเร็จ' : 'เพิ่มสูตรเครื่องปรุงใหม่สำเร็จ', 'success');
-      showPresetModal.value = false;
-      loadPresetsData(true);
-    }
-  } catch (e) {
-    console.error(e);
-    ui.showToast('บันทึกข้อมูลสูตรผสมล้มเหลว: ' + e.message, 'error');
-  } finally {
-    ui.hideLoading();
-    isSavingPreset.value = false;
-  }
-};
-
-const handleDeletePreset = async (id) => {
-  const confirm = await ui.showConfirm('ลบสูตรสำเร็จ', 'คุณยืนยันต้องการลบสูตรผสมสำเร็จรูปนี้ใช่หรือไม่?');
-  if (confirm) {
-    ui.showLoading();
-    try {
-      const res = await api.modifiers.deletePreset(id);
-      if (res.success) {
-        ui.showToast('ลบสูตรสำเร็จเรียบร้อย', 'success');
-        loadPresetsData(true);
-      }
-    } catch (e) {
-      console.error(e);
-      ui.showToast('ลบสูตรสำเร็จไม่สำเร็จ: ' + e.message, 'error');
-    } finally {
-      ui.hideLoading();
-    }
-  }
-};
 
 // Backup and Archiving Methods
 const downloadJSONBackup = async () => {
@@ -2206,8 +1883,6 @@ onMounted(() => {
   loadShopSettings();
   loadBranches();
   loadUsersData();
-  loadPresetsData();
-  loadAvailableModifiers();
   loadPrinterSettings();
   window.addEventListener('click', closeSettingsDropdowns);
 });
@@ -2293,15 +1968,6 @@ onUnmounted(() => {
   .printer-status-value {
     display: block;
   }
-  .diner-page-header {
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-  .diner-header-actions {
-    width: 100%;
-    justify-content: center;
-  }
   .show-mobile-only.mobile-users-list {
     display: flex !important;
     flex-direction: column;
@@ -2318,7 +1984,7 @@ onUnmounted(() => {
     gap: var(--space-sm) !important;
   }
   .backup-btns-container .btn,
-  .backup-btns-container .btn-modal {
+  .backup-btns-container .btn {
     width: 100% !important;
     flex: none !important;
     height: 48px !important;
@@ -2501,7 +2167,7 @@ input:checked + .slider:before {
   position: absolute;
   top: 8px;
   right: 8px;
-  font-size: 1rem;
+  font-size: var(--font-base);
   color: var(--primary);
   opacity: 0;
   transform: scale(0.5);
@@ -2543,64 +2209,9 @@ input:checked + .slider:before {
     border-radius: var(--radius-lg);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   }
-  .mobile-logout-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    font-size: var(--font-sm);
-    font-weight: var(--font-weight-bold);
-    background: var(--danger, #ad281e);
-    color: #ffffff;
-    border-radius: var(--radius-md);
-    border: none;
-    cursor: pointer;
-    transition: all var(--transition-base);
-  }
-  .mobile-logout-btn:active {
-    transform: scale(0.96);
-  }
 }
 
 /* --- Diner Retro Settings Cards & Tables --- */
-.diner-page-header {
-  background: #ffffff;
-  border: 1.5px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
-}
-.diner-icon-circle {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(139, 3, 19, 0.08);
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-.diner-header-title {
-  font-size: var(--font-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-}
-.diner-header-title strong {
-  color: var(--primary);
-  font-size: 1.35rem;
-}
-.diner-header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-}
-
 .btn-pin-toggle {
   background: rgba(139, 3, 19, 0.08);
   color: var(--primary);
@@ -2613,7 +2224,7 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
 }
 .btn-pin-toggle:hover {
   background: rgba(139, 3, 19, 0.16);
@@ -2647,7 +2258,7 @@ input:checked + .slider:before {
 }
 .diner-module-card.is-active {
   border: 2px solid var(--primary);
-  background: rgba(139, 3, 19, 0.03);
+  background: #ffffff;
 }
 .diner-module-card .btn-primary {
   min-width: 192px;
@@ -2662,7 +2273,7 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: var(--font-md);
   flex-shrink: 0;
 }
 .diner-icon-badge.is-solid {

@@ -2,53 +2,47 @@
   <div class="staff-management-wrapper card p-md" style="background: #ffffff; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
     
     <!-- Sub-tab Navigation for Staff Management -->
-    <div class="category-tabs tab-category mb-lg flex gap-xs" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; flex-wrap: nowrap;">
+    <div class="category-tabs">
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'employees' }"
         @click="activeSubTab = 'employees'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-users"></i> รายชื่อ & ค่าจ้าง
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'calendar' }"
         @click="activeSubTab = 'calendar'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-calendar-days"></i> ปฏิทินรายบุคคล
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'attendance' }"
         @click="activeSubTab = 'attendance'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-calendar-check"></i> บันทึกเวลา & การลา
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'event_ot' }"
         @click="activeSubTab = 'event_ot'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-tags"></i> OT งานพิเศษ
       </button>
       <button 
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'advances' }"
         @click="activeSubTab = 'advances'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-hand-holding-dollar"></i> เบิกเงินล่วงหน้า
       </button>
       <button 
         v-if="isAdminUser"
-        class="btn btn-secondary" 
+        class="category-tab" 
         :class="{ 'active': activeSubTab === 'payroll' }"
         @click="activeSubTab = 'payroll'"
-        style="white-space: nowrap; flex-shrink: 0;"
       >
         <i class="fa-solid fa-file-invoice-dollar"></i> คำนวณ & จ่ายเงินเดือน
       </button>
@@ -161,16 +155,16 @@
         >
           <div class="flex flex-between align-center gap-xs">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ emp.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ emp.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
-                <span class="font-bold text-primary" style="font-size: 12px;">รหัส PIN: {{ emp.pin }}</span>
+                <span class="font-bold text-primary" style="font-size: var(--font-xs);">รหัส PIN: {{ emp.pin }}</span>
               </div>
             </div>
             <div class="flex gap-2xs flex-wrap justify-end" style="gap: 4px;">
-              <span class="capsule-badge" :class="emp.role === 'admin' ? 'badge-primary' : emp.role === 'manager' ? 'badge-warning' : 'badge-neutral'" style="font-size: 11px; padding: 3px 8px;">
+              <span class="capsule-badge" :class="emp.role === 'admin' ? 'badge-primary' : emp.role === 'manager' ? 'badge-warning' : 'badge-neutral'" style="font-size: var(--font-xxs); padding: 3px 8px;">
                 {{ getRoleLabel(emp.role) }}
               </span>
-              <span class="skill-badge" :class="emp.skill_level" style="font-size: 11px; padding: 3px 8px;">
+              <span class="skill-badge" :class="emp.skill_level" style="font-size: var(--font-xxs); padding: 3px 8px;">
                 <i :class="getSkillIcon(emp.skill_level)"></i> {{ getSkillLabel(emp.skill_level) }}
               </span>
             </div>
@@ -178,15 +172,15 @@
           <div class="flex flex-between align-center text-sm staff-mobile-divider">
             <div>
               <span class="text-secondary text-xs">อัตราค่าจ้าง:</span>
-              <span class="font-bold text-base text-primary ml-xs" style="font-size: 15px;">{{ formatCurrency(emp.wage_rate) }}</span>
+              <span class="font-bold text-base text-primary ml-xs" style="font-size: var(--font-sm);">{{ formatCurrency(emp.wage_rate) }}</span>
               <span class="text-xs text-secondary"> / {{ emp.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
             </div>
-            <span class="benefit-tag" style="font-size: 11px; padding: 3px 9px;">
+            <span class="benefit-tag" style="font-size: var(--font-xxs); padding: 3px 9px;">
               <i class="fa-solid fa-bowl-rice text-warning"></i> {{ emp.benefits || 'ข้าวเที่ยงฟรี' }}
             </span>
           </div>
           <div v-if="isAdminUser" style="margin-top: 2px;">
-            <button class="btn btn-secondary w-full" style="height: 40px; font-size: 13px; font-weight: 600; border-radius: var(--radius-md);" @click="openEditCompensationModal(emp)">
+            <button class="btn-action btn-action-edit w-full" style="height: 40px; font-size: var(--font-xs); font-weight: 600;" @click="openEditCompensationModal(emp)">
               <i class="fa-solid fa-sliders mr-xs"></i> ปรับค่าแรงและสวัสดิการ
             </button>
           </div>
@@ -232,63 +226,19 @@
         </div>
 
         <!-- Month Navigation Bar (Spans full width, arrows locked at far ends) -->
-        <div class="flex align-center gap-xs" style="width: 100%;">
-          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustCalendarMonth(-1)" title="เดือนก่อนหน้า">
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-          
-          <!-- Custom Month Picker for Calendar (Fills remaining width between arrows) -->
-          <div class="custom-select-wrapper" style="flex: 1; min-width: 0; width: 100%; position: relative;" @click.stop>
-            <div 
-              class="picker-trigger-btn" 
-              :class="{ 'active': isCalendarMonthDropdownOpen }" 
-              @click="toggleCalendarMonthDropdown"
-              style="width: 100%; height: 38px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: 13px; white-space: nowrap;"
-            >
-              <span class="flex align-center gap-xs" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                <i class="fa-solid fa-calendar-days text-primary flex-shrink-0"></i>
-                <span style="overflow: hidden; text-overflow: ellipsis;">{{ calendarMonthLabel }}</span>
-              </span>
-              <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs flex-shrink-0"></i>
-            </div>
-
-            <!-- Month Dropdown Grid -->
-            <div v-if="isCalendarMonthDropdownOpen" class="custom-select-dropdown monthpicker-popover dropdown-center-desktop" style="top: calc(100% + 4px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
-                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(-1)">
-                  <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <span class="font-bold">ปี พ.ศ. {{ calendarMonthPickerYear + 543 }}</span>
-                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustCalendarMonthPickerYear(1)">
-                  <i class="fa-solid fa-chevron-right"></i>
-                </button>
-              </div>
-              <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-                <button 
-                  v-for="(mName, idx) in thaiMonthsShort" 
-                  :key="idx" 
-                  type="button" 
-                  class="btn btn-secondary btn-sm"
-                  :class="{ 'btn-primary active': isCalendarMonthPickerSelected(idx + 1) }"
-                  @click="selectCalendarMonthPicker(idx + 1)"
-                >
-                  {{ mName }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustCalendarMonth(1)" title="เดือนถัดไป">
-            <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
+        <ThaiDateMonthPicker
+          v-model="calendarMonth"
+          mode="month"
+          show-nav-arrows
+          @change="onCalendarMonthChange"
+        />
 
         <!-- Sub-bar: Hint and Current Month Button -->
         <div class="flex flex-between align-center flex-wrap gap-xs" style="margin-top: 2px;">
-          <div style="font-size: 11px; color: var(--text-tertiary);">
-            <i class="fa-solid fa-circle-info text-primary mr-2xs" style="font-size: 10px;"></i> คลิกที่ช่องวันที่เพื่อดูสรุปรายละเอียดประจำวัน
+          <div style="font-size: var(--font-xxs); color: var(--text-tertiary);">
+            <i class="fa-solid fa-circle-info text-primary mr-2xs" style="font-size: var(--font-xxs);"></i> คลิกที่ช่องวันที่เพื่อดูสรุปรายละเอียดประจำวัน
           </div>
-          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: 11px; white-space: nowrap;" @click="setCalendarCurrentMonth">
+          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: var(--font-xxs); white-space: nowrap;" @click="setCalendarCurrentMonth">
             <i class="fa-solid fa-clock-rotate-left mr-2xs"></i> เดือนปัจจุบัน
           </button>
         </div>
@@ -296,11 +246,11 @@
 
       <!-- Selected Staff Monthly Summary Cards -->
       <div v-if="selectedStaffSummary" class="calendar-summary-grid">
-        <div class="card p-sm text-center" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2);">
+        <div class="card p-sm text-center" style="background: rgba(42, 157, 143, 0.06); border: 1px solid rgba(42, 157, 143, 0.2);">
           <div class="text-xs text-secondary mb-2xs">วันทำงานจริง</div>
           <div class="font-bold text-lg text-success">{{ selectedStaffSummary.daysWorked }} <span class="text-xs font-normal">วัน</span></div>
         </div>
-        <div class="card p-sm text-center" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.2);">
+        <div class="card p-sm text-center" style="background: rgba(197, 118, 0, 0.06); border: 1px solid rgba(197, 118, 0, 0.2);">
           <div class="text-xs text-secondary mb-2xs">ลา / ขาด</div>
           <div class="font-bold text-lg text-warning">{{ selectedStaffSummary.leaveDays }} / {{ selectedStaffSummary.absentDays }} <span class="text-xs font-normal">วัน</span></div>
         </div>
@@ -312,11 +262,11 @@
           <div class="text-xs text-secondary mb-2xs">OT อีเวนต์</div>
           <div class="font-bold text-lg" style="color: #9333ea;">+{{ formatCurrency(selectedStaffSummary.totalOt) }}</div>
         </div>
-        <div class="card p-sm text-center" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.2);">
+        <div class="card p-sm text-center" style="background: rgba(173, 40, 30, 0.06); border: 1px solid rgba(173, 40, 30, 0.2);">
           <div class="text-xs text-secondary mb-2xs">เบิกล่วงหน้า</div>
           <div class="font-bold text-lg text-danger">-{{ formatCurrency(selectedStaffSummary.totalAdvances) }}</div>
         </div>
-        <div class="card p-sm text-center" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.2);">
+        <div class="card p-sm text-center" style="background: rgba(197, 118, 0, 0.06); border: 1px solid rgba(197, 118, 0, 0.2);">
           <div class="text-xs text-secondary mb-2xs">ข้าวเที่ยงฟรี</div>
           <div class="font-bold text-lg text-warning">{{ selectedStaffSummary.lunchCount }} <span class="text-xs font-normal">มื้อ</span></div>
         </div>
@@ -425,61 +375,20 @@
           </div>
 
           <!-- Custom Date Picker for Attendance -->
-          <div class="custom-select-wrapper" style="width: auto; position: relative;" @click.stop>
-            <div 
-              class="picker-trigger-btn" 
-              :class="{ 'active': isAttendanceDateDropdownOpen }" 
-              @click="toggleAttendanceDateDropdown"
-              style="min-width: 170px; height: 38px; padding: 0 var(--space-md); justify-content: space-between; gap: var(--space-xs); font-size: var(--font-sm);"
-            >
-              <span class="flex align-center gap-xs">
-                <i class="fa-solid fa-calendar-day text-primary"></i>
-                <span>{{ attendanceDateLabel }}</span>
-              </span>
-              <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
-            </div>
+          <ThaiDateMonthPicker
+            v-model="attendanceDate"
+            :full-width="false"
+            @change="onAttendanceDateChange"
+          />
 
-            <!-- Date Picker Calendar Popover -->
-            <div v-if="isAttendanceDateDropdownOpen" class="custom-select-dropdown datepicker-popover" style="top: calc(100% + 4px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
-              <!-- Header: Month & Year Selector -->
-              <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
-                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAttendanceDatePickerMonth(-1)">
-                  <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <span class="font-bold" style="font-size: var(--font-sm);">{{ attendanceDatePickerMonthName }} {{ attendanceDatePickerYear + 543 }}</span>
-                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAttendanceDatePickerMonth(1)">
-                  <i class="fa-solid fa-chevron-right"></i>
-                </button>
-              </div>
-              <!-- Weekday Labels -->
-              <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
-                <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
-              </div>
-              <!-- Days Grid -->
-              <div class="calendar-days-grid">
-                <div v-for="empty in attendanceDatePickerStartOffset" :key="'empty-'+empty"></div>
-                <button 
-                  v-for="dNum in attendanceDatePickerDaysCount" 
-                  :key="dNum"
-                  type="button"
-                  class="calendar-day-btn"
-                  :class="{ 'btn-primary selected': isAttendanceDatePickerSelected(dNum) }"
-                  @click="selectAttendanceDatePickerDay(dNum)"
-                >
-                  {{ dNum }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button type="button" class="picker-current-btn" style="height: 38px; padding: 0 10px; font-size: 12px;" @click="setTodayAttendance">
+          <button type="button" class="picker-current-btn" style="height: 38px; padding: 0 10px; font-size: var(--font-xs);" @click="setTodayAttendance">
             วันนี้
           </button>
         </div>
 
         <button 
           class="btn btn-primary" 
-          style="height: 38px; font-size: 13px;"
+          style="height: 38px; font-size: var(--font-xs);"
           :disabled="savingAttendance || attendanceRecords.length === 0"
           @click="handleSaveAttendance"
         >
@@ -535,33 +444,33 @@
                 <td class="text-center p-md">
                   <div class="font-bold text-base text-primary">{{ rec.name }}</div>
                   <div class="text-xs text-secondary mt-2xs">
-                    <span class="skill-badge" :class="rec.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(rec.skill_level) }}</span>
+                    <span class="skill-badge" :class="rec.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(rec.skill_level) }}</span>
                     <span v-if="(rec.default_wage_rate || rec.wage_rate) > 0" class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
-                    <span v-else class="text-warning ml-xs font-semibold" style="font-size: 11px;">• ยังไม่ตั้งฐานค่าแรง</span>
+                    <span v-else class="text-warning ml-xs font-semibold" style="font-size: var(--font-xxs);">• ยังไม่ตั้งฐานค่าแรง</span>
                   </div>
                 </td>
                 <td class="text-center p-md">
                   <div class="flex justify-center gap-xs flex-wrap">
                     <button 
                       type="button"
-                      class="status-btn"
-                      :class="{ 'active-present': rec.status === 'present' }"
+                      class="btn btn-secondary btn-sm"
+                      :class="{ 'active-success': rec.status === 'present' }"
                       @click="rec.status = 'present'; rec.had_lunch_benefit = 1; if (!rec.daily_wage) rec.daily_wage = (rec.default_wage_rate || rec.wage_rate || 0);"
                     >
                       <i class="fa-solid fa-circle-check"></i> มาทำงาน
                     </button>
                     <button 
                       type="button"
-                      class="status-btn"
-                      :class="{ 'active-leave': rec.status === 'leave_unpaid' }"
+                      class="btn btn-secondary btn-sm"
+                      :class="{ 'active-warning': rec.status === 'leave_unpaid' }"
                       @click="rec.status = 'leave_unpaid'; rec.had_lunch_benefit = 0;"
                     >
                       <i class="fa-solid fa-calendar-xmark"></i> ลาหยุด
                     </button>
                     <button 
                       type="button"
-                      class="status-btn"
-                      :class="{ 'active-absent': rec.status === 'absent' }"
+                      class="btn btn-secondary btn-sm"
+                      :class="{ 'active-danger': rec.status === 'absent' }"
                       @click="rec.status = 'absent'; rec.had_lunch_benefit = 0;"
                     >
                       <i class="fa-solid fa-user-xmark"></i> ขาดงาน
@@ -580,7 +489,7 @@
                         height: '38px',
                         fontWeight: 'bold',
                         fontSize: 'var(--font-base)',
-                        borderColor: (rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)) ? '#f59e0b' : ''
+                        borderColor: (rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)) ? 'var(--accent-dark, #c57600)' : ''
                       }" 
                       :disabled="rec.status !== 'present'"
                       min="0" 
@@ -640,13 +549,13 @@
           <!-- Card Header: Name & Lunch -->
           <div class="flex flex-between align-center gap-xs">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ rec.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ rec.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <span class="skill-badge" :class="rec.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(rec.skill_level) }}</span>
                 <span v-if="(rec.default_wage_rate || rec.wage_rate) > 0" class="text-muted ml-xs">• ปกติ {{ formatCurrency(rec.default_wage_rate !== undefined ? rec.default_wage_rate : rec.wage_rate) }}/วัน</span>
               </div>
             </div>
-            <label class="lunch-benefit-wrapper" :class="{ 'disabled': rec.status !== 'present' }" style="margin: 0; padding: 5px 9px; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; background: rgba(245, 158, 11, 0.05);">
+            <label class="lunch-benefit-wrapper" :class="{ 'disabled': rec.status !== 'present' }" style="margin: 0; padding: 5px 9px; border: 1px solid rgba(197, 118, 0, 0.35); border-radius: 8px; background: rgba(197, 118, 0, 0.05);">
               <input 
                 type="checkbox" 
                 v-model="rec.had_lunch_benefit" 
@@ -656,7 +565,7 @@
                 class="lunch-benefit-checkbox"
               />
               <span class="lunch-benefit-content" style="font-size: 11.5px;">
-                <span class="lunch-benefit-icon" style="font-size: 14px;">🍚</span>
+                <span class="lunch-benefit-icon" style="font-size: var(--font-sm);">🍚</span>
                 <span class="lunch-benefit-text">ข้าวเที่ยง</span>
               </span>
             </label>
@@ -666,27 +575,27 @@
           <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 8px;">
             <button 
               type="button"
-              class="status-btn w-full"
-              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
-              :class="{ 'active-present': rec.status === 'present' }"
+              class="btn btn-secondary w-full"
+              style="padding: 9px 2px; font-size: var(--font-xs); height: 38px; border-radius: 8px; justify-content: center;"
+              :class="{ 'active-success': rec.status === 'present' }"
               @click="rec.status = 'present'; rec.had_lunch_benefit = 1; if (!rec.daily_wage) rec.daily_wage = (rec.default_wage_rate || rec.wage_rate || 0);"
             >
               <i class="fa-solid fa-circle-check mr-2xs"></i> มาทำงาน
             </button>
             <button 
               type="button"
-              class="status-btn w-full"
-              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
-              :class="{ 'active-leave': rec.status === 'leave_unpaid' }"
+              class="btn btn-secondary w-full"
+              style="padding: 9px 2px; font-size: var(--font-xs); height: 38px; border-radius: 8px; justify-content: center;"
+              :class="{ 'active-warning': rec.status === 'leave_unpaid' }"
               @click="rec.status = 'leave_unpaid'; rec.had_lunch_benefit = 0;"
             >
               <i class="fa-solid fa-calendar-xmark mr-2xs"></i> ลาหยุด
             </button>
             <button 
               type="button"
-              class="status-btn w-full"
-              style="padding: 9px 2px; font-size: 12px; height: 38px; border-radius: 8px; justify-content: center;"
-              :class="{ 'active-absent': rec.status === 'absent' }"
+              class="btn btn-secondary w-full"
+              style="padding: 9px 2px; font-size: var(--font-xs); height: 38px; border-radius: 8px; justify-content: center;"
+              :class="{ 'active-danger': rec.status === 'absent' }"
               @click="rec.status = 'absent'; rec.had_lunch_benefit = 0;"
             >
               <i class="fa-solid fa-user-xmark mr-2xs"></i> ขาดงาน
@@ -716,7 +625,7 @@
                   height: '38px',
                   fontWeight: 'bold',
                   fontSize: 'var(--font-sm)',
-                  borderColor: (rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)) ? '#f59e0b' : ''
+                  borderColor: (rec.status === 'present' && (!rec.daily_wage || Number(rec.daily_wage) <= 0)) ? 'var(--accent-dark, #c57600)' : ''
                 }" 
                 :disabled="rec.status !== 'present'"
                 min="0" 
@@ -838,12 +747,12 @@
         >
           <div class="flex flex-between align-center">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ ev.event_name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ ev.event_name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <i class="fa-solid fa-calendar-day mr-2xs text-primary"></i> {{ formatDate(ev.event_date) }}
               </div>
             </div>
-            <div class="font-bold text-success text-base" style="font-size: 16px;">
+            <div class="font-bold text-success text-base" style="font-size: var(--font-base);">
               +{{ formatCurrency(ev.amount_per_person) }} <span class="text-xs text-secondary font-normal">/คน</span>
             </div>
           </div>
@@ -855,7 +764,7 @@
                 v-for="p in ev.participants" 
                 :key="'m-p-' + p.user_id" 
                 class="capsule-badge badge-neutral text-xs"
-                style="font-size: 11px; padding: 3px 8px;"
+                style="font-size: var(--font-xxs); padding: 3px 8px;"
               >
                 <i class="fa-solid fa-user mr-xs"></i> {{ p.name }}
               </span>
@@ -863,7 +772,7 @@
           </div>
           <div v-if="isAdminUser" class="flex flex-between align-center staff-mobile-divider" style="margin-top: 0;">
             <span class="text-2xs text-secondary">โดย: {{ ev.creator_name || 'แอดมิน' }}</span>
-            <button class="btn btn-sm btn-action-delete" :disabled="deletingEventOtId === ev.id" @click="handleDeleteEventOt(ev.id)" style="padding: 5px 14px; font-size: 12px; height: 34px;">
+            <button class="btn-action btn-action-delete btn-xs" :disabled="deletingEventOtId === ev.id" @click="handleDeleteEventOt(ev.id)">
               <i v-if="deletingEventOtId === ev.id" class="fa-solid fa-spinner fa-spin"></i>
               <i v-else class="fa-solid fa-trash-can"></i>
               <span>{{ deletingEventOtId === ev.id ? ' กำลังลบ...' : ' ลบ' }}</span>
@@ -932,7 +841,7 @@
                 <td class="text-center p-md">
                   <div class="font-bold text-base text-primary">{{ adv.name }}</div>
                   <div class="text-xs text-secondary mt-2xs">
-                    <span class="skill-badge" :class="adv.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(adv.skill_level) }}</span>
+                    <span class="skill-badge" :class="adv.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(adv.skill_level) }}</span>
                   </div>
                 </td>
                 <td class="text-center p-md font-bold text-danger text-base">
@@ -998,17 +907,17 @@
         >
           <div class="flex flex-between align-center">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ adv.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ adv.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <span class="skill-badge" :class="adv.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(adv.skill_level) }}</span>
                 <span class="ml-xs">{{ formatDate(adv.advance_date) }}</span>
               </div>
             </div>
             <div class="text-right">
-              <div class="font-bold text-danger text-base" :style="adv.status === 'cancelled' ? 'text-decoration: line-through;' : ''" style="font-size: 16px;">
+              <div class="font-bold text-danger text-base" :style="adv.status === 'cancelled' ? 'text-decoration: line-through;' : ''" style="font-size: var(--font-base);">
                 -{{ formatCurrency(adv.amount) }}
               </div>
-              <span class="capsule-badge mt-2xs" :class="adv.payment_method === 'transfer' ? 'badge-primary' : 'badge-warning'" style="font-size: 11px; padding: 2px 8px; margin-top: 4px;">
+              <span class="capsule-badge mt-2xs" :class="adv.payment_method === 'transfer' ? 'badge-primary' : 'badge-warning'" style="font-size: var(--font-xxs); padding: 2px 8px; margin-top: 4px;">
                 <i :class="adv.payment_method === 'transfer' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-money-bill-wave'"></i>
                 {{ adv.payment_method === 'transfer' ? 'เงินโอน' : 'เงินสด' }}
               </span>
@@ -1019,7 +928,7 @@
               class="capsule-badge" 
               :class="adv.status === 'deducted' ? 'badge-success' : (adv.status === 'cancelled' ? 'badge-neutral' : 'badge-warning')"
               :style="adv.status === 'cancelled' ? 'background: rgba(139, 3, 19, 0.08); color: var(--primary); border-color: rgba(139, 3, 19, 0.2);' : ''"
-              style="font-size: 11px; padding: 3px 9px;"
+              style="font-size: var(--font-xxs); padding: 3px 9px;"
             >
               <i :class="adv.status === 'deducted' ? 'fa-solid fa-check' : (adv.status === 'cancelled' ? 'fa-solid fa-rotate-left text-primary' : 'fa-solid fa-clock')"></i>
               {{ adv.status === 'deducted' ? 'หักในเงินเดือนแล้ว' : (adv.status === 'cancelled' ? 'ยกเลิกเบิกสำเร็จ' : 'เบิกสำเร็จ รอหักในบัญชี') }}
@@ -1028,10 +937,9 @@
             <div v-if="isAdminUser">
               <button 
                 v-if="adv.status === 'pending'"
-                class="btn-action btn-action-delete" 
+                class="btn-action btn-action-delete btn-xs" 
                 :disabled="deletingAdvanceId === adv.id"
                 @click="handleDeleteAdvance(adv.id)"
-                style="padding: 5px 14px; font-size: 12px; height: 34px;"
               >
                 <i v-if="deletingAdvanceId === adv.id" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-rotate-left"></i>
@@ -1058,73 +966,29 @@
         </label>
 
         <!-- Month Navigation Bar (100% full width, arrows locked at far ends) -->
-        <div class="flex align-center gap-xs" style="width: 100%;">
-          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustPayrollMonth(-1)" title="เดือนก่อนหน้า">
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-
-          <!-- Custom Month Picker for Payroll (Fills remaining width between arrows) -->
-          <div class="custom-select-wrapper" style="flex: 1; min-width: 0; width: 100%; position: relative;" @click.stop>
-            <div 
-              class="picker-trigger-btn" 
-              :class="{ 'active': isPayrollMonthDropdownOpen }" 
-              @click="togglePayrollMonthDropdown"
-              style="width: 100%; height: 40px; padding: 0 var(--space-md); justify-content: space-between; gap: 6px; font-size: 14px; white-space: nowrap;"
-            >
-              <span class="flex align-center gap-xs" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                <i class="fa-solid fa-calendar-days text-primary flex-shrink-0"></i>
-                <span style="overflow: hidden; text-overflow: ellipsis; font-weight: bold;">{{ payrollMonthLabel }}</span>
-              </span>
-              <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs flex-shrink-0"></i>
-            </div>
-
-            <!-- Month Dropdown Grid -->
-            <div v-if="isPayrollMonthDropdownOpen" class="custom-select-dropdown monthpicker-popover dropdown-center-desktop" style="top: calc(100% + 4px); width: 280px !important; max-width: calc(100vw - 32px) !important; max-height: none !important; overflow: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); z-index: 1000;">
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">
-                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(-1)">
-                  <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <span class="font-bold">ปี พ.ศ. {{ payrollMonthPickerYear + 543 }}</span>
-                <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayrollMonthPickerYear(1)">
-                  <i class="fa-solid fa-chevron-right"></i>
-                </button>
-              </div>
-              <div class="month-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-                <button 
-                  v-for="(mName, idx) in thaiMonthsShort" 
-                  :key="idx" 
-                  type="button" 
-                  class="btn btn-secondary btn-sm"
-                  :class="{ 'btn-primary active': isPayrollMonthPickerSelected(idx + 1) }"
-                  @click="selectPayrollMonthPicker(idx + 1)"
-                >
-                  {{ mName }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button type="button" class="picker-nav-btn flex-shrink-0" @click="adjustPayrollMonth(1)" title="เดือนถัดไป">
-            <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
+        <ThaiDateMonthPicker
+          v-model="payrollMonth"
+          mode="month"
+          show-nav-arrows
+          @change="onPayrollMonthChange"
+        />
 
         <!-- Sub-bar: Short Hint and Current Month Button -->
         <div class="flex flex-between align-center flex-wrap gap-xs" style="margin-top: 2px;">
-          <div style="font-size: 11px; color: var(--text-tertiary);">
-            <i class="fa-solid fa-circle-check text-success mr-2xs" style="font-size: 10px;"></i> ตัดจ่ายเข้าบัญชีรายจ่ายสาขาอัตโนมัติเมื่อยืนยัน
+          <div style="font-size: var(--font-xxs); color: var(--text-tertiary);">
+            <i class="fa-solid fa-circle-check text-success mr-2xs" style="font-size: var(--font-xxs);"></i> ตัดจ่ายเข้าบัญชีรายจ่ายสาขาอัตโนมัติเมื่อยืนยัน
           </div>
-          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: 11px; white-space: nowrap;" @click="setPayrollCurrentMonth">
+          <button type="button" class="picker-current-btn" style="height: 30px; padding: 0 10px; font-size: var(--font-xxs); white-space: nowrap;" @click="setPayrollCurrentMonth">
             <i class="fa-solid fa-clock-rotate-left mr-2xs"></i> เดือนปัจจุบัน
           </button>
         </div>
       </div>
 
       <!-- Guarantee Pool Summary Card (กองทุนเงินประกันพนักงาน / เงินสดหมุนเวียนในร้าน) -->
-      <div class="card p-md" style="background: #ffffff; border: 1px solid var(--border-color); border-left: 4px solid var(--warning, #f59e0b);">
+      <div class="card p-md" style="background: #ffffff; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-dark, #c57600);">
         <!-- Header -->
         <div class="flex align-center gap-sm mb-sm">
-          <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: #d97706; flex-shrink: 0;">
+          <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(197, 118, 0, 0.12); display: flex; align-items: center; justify-content: center; font-size: var(--font-md); color: var(--accent-dark, #c57600); flex-shrink: 0;">
             <i class="fa-solid fa-shield-halved"></i>
           </div>
           <div class="flex-1 min-w-0">
@@ -1132,38 +996,38 @@
               <h4 class="font-bold text-base" style="margin: 0; color: var(--text-primary);">
                 กองทุนเงินประกันพนักงาน
               </h4>
-              <span class="capsule-badge badge-warning" style="padding: 1px 6px; font-size: 10px; font-weight: bold;">
+              <span class="capsule-badge badge-warning" style="padding: 1px 6px; font-size: var(--font-xxs); font-weight: bold;">
                 สภาพคล่องร้าน
               </span>
             </div>
-            <p class="text-xs text-secondary mt-2xs" style="margin: 0; font-size: 11px; color: var(--text-tertiary);">
+            <p class="text-xs text-secondary mt-2xs" style="margin: 0; font-size: var(--font-xxs); color: var(--text-tertiary);">
               เงินสดหมุนเวียน (ไม่นับเป็นยอดขายอาหาร และจะคืนเมื่อลาออก)
             </p>
           </div>
         </div>
 
         <!-- Stat Tiles Grid for Mobile & Desktop -->
-        <div class="grid gap-sm" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-md); padding: 10px 14px;">
+        <div class="grid gap-sm" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); background: rgba(197, 118, 0, 0.04); border: 1px solid rgba(197, 118, 0, 0.15); border-radius: var(--radius-md); padding: 10px 14px;">
           <!-- Tile 1: Total Held -->
           <div>
-            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ยอดถือครองทั้งหมด</div>
-            <div class="font-bold" style="font-size: 1.25rem; color: #b45309; line-height: 1.2;">
+            <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ยอดถือครองทั้งหมด</div>
+            <div class="font-bold" style="font-size: var(--font-lg); color: var(--accent-dark, #c57600); line-height: 1.2;">
               {{ formatCurrency(guaranteePoolSummary.totalHeld) }}
             </div>
           </div>
           
           <!-- Tile 2: Staff Count -->
           <div>
-            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ผู้วางประกัน</div>
-            <div class="font-bold" style="font-size: 1.1rem; color: var(--text-primary); line-height: 1.2;">
-              {{ guaranteePoolSummary.heldStaffCount }} <span style="font-size: 11px; color: var(--text-secondary); font-weight: normal;">คน</span>
+            <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ผู้วางประกัน</div>
+            <div class="font-bold" style="font-size: var(--font-md); color: var(--text-primary); line-height: 1.2;">
+              {{ guaranteePoolSummary.heldStaffCount }} <span style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: normal;">คน</span>
             </div>
           </div>
 
           <!-- Tile 3: Channels -->
           <div>
-            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">ช่องทางถือครอง</div>
-            <div style="font-size: 12px; font-weight: bold; color: var(--text-primary); line-height: 1.2;">
+            <div style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">ช่องทางถือครอง</div>
+            <div style="font-size: var(--font-xs); font-weight: bold; color: var(--text-primary); line-height: 1.2;">
               สด: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.cashHeld) }}</span> | 
               โอน: <span class="text-primary">{{ formatCurrency(guaranteePoolSummary.transferHeld) }}</span>
             </div>
@@ -1171,15 +1035,15 @@
         </div>
 
         <!-- Staff with held guarantee tags -->
-        <div v-if="guaranteePoolSummary.heldStaffCount > 0" class="mt-xs pt-xs flex align-center gap-xs flex-wrap" style="border-top: 1px dashed rgba(245, 158, 11, 0.2);">
-          <span style="font-size: 10px; color: var(--text-secondary); font-weight: 600;">รายชื่อ:</span>
+        <div v-if="guaranteePoolSummary.heldStaffCount > 0" class="mt-xs pt-xs flex align-center gap-xs flex-wrap" style="border-top: 1px dashed rgba(197, 118, 0, 0.2);">
+          <span style="font-size: var(--font-xxs); color: var(--text-secondary); font-weight: 600;">รายชื่อ:</span>
           <span 
             v-for="st in guaranteePoolSummary.heldStaffList" 
             :key="st.name" 
             class="capsule-badge badge-neutral" 
-            style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3); color: #92400e; padding: 2px 8px; font-size: 11px;"
+            style="background: rgba(197, 118, 0, 0.08); border-color: rgba(197, 118, 0, 0.3); color: var(--accent-dark, #c57600); padding: 2px 8px; font-size: var(--font-xxs);"
           >
-            <i class="fa-solid fa-user-shield mr-2xs" style="color: #d97706; font-size: 10px;"></i>
+            <i class="fa-solid fa-user-shield mr-2xs" style="color: var(--accent-dark, #c57600); font-size: var(--font-xxs);"></i>
             <strong>{{ st.name }}</strong> ({{ formatCurrency(st.amount) }} • {{ st.method === 'cash' ? 'เงินสด' : 'เงินโอน' }})
           </span>
         </div>
@@ -1228,7 +1092,7 @@
                 <td class="text-center p-md">
                   <div class="font-bold text-base text-primary">{{ item.name }}</div>
                   <div class="text-xs text-secondary mt-2xs">
-                    <span class="skill-badge" :class="item.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(item.skill_level) }}</span> • {{ formatCurrency(item.wage_rate) }}/วัน
+                    <span class="skill-badge" :class="item.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(item.skill_level) }}</span> • {{ formatCurrency(item.wage_rate) }}/วัน
                   </div>
                 </td>
                 <td class="text-center p-md">
@@ -1244,7 +1108,7 @@
                   <span v-if="item.advance_deducted_amount > 0">-{{ formatCurrency(item.advance_deducted_amount) }}</span>
                   <span v-else class="text-muted">0</span>
                 </td>
-                <td class="text-center p-md font-bold text-lg text-primary" style="font-size: 1.15rem;">
+                <td class="text-center p-md font-bold text-lg text-primary" style="font-size: var(--font-md);">
                   {{ formatCurrency(item.net_payable_round) }}
                 </td>
                 <!-- Guarantee Deposit Column -->
@@ -1322,7 +1186,7 @@
           <!-- Header: Employee info + Net amount -->
           <div class="flex flex-between align-center">
             <div>
-              <div class="font-bold text-primary" style="font-size: 16px; line-height: 1.3;">{{ item.name }}</div>
+              <div class="font-bold text-primary" style="font-size: var(--font-base); line-height: 1.3;">{{ item.name }}</div>
               <div class="text-xs text-secondary" style="margin-top: 4px;">
                 <span class="skill-badge" :class="item.skill_level" style="font-size: 10.5px; padding: 2px 7px;">{{ getSkillLabel(item.skill_level) }}</span>
                 <span class="ml-xs font-semibold">{{ formatCurrency(item.wage_rate) }}/วัน</span>
@@ -1330,7 +1194,7 @@
             </div>
             <div class="text-right">
               <div class="text-2xs text-secondary">ยอดจ่ายสุทธิรอบนี้</div>
-              <div class="font-bold text-lg text-primary" style="font-size: 1.3rem;">
+              <div class="font-bold text-lg text-primary" style="font-size: var(--font-lg);">
                 {{ formatCurrency(item.net_payable_round) }}
               </div>
             </div>
@@ -1361,13 +1225,13 @@
           <!-- Guarantee & History status -->
           <div class="flex flex-between align-center flex-wrap gap-xs staff-mobile-divider">
             <div>
-              <span v-if="item.guarantee && item.guarantee.status === 'held'" class="capsule-badge badge-success text-2xs" style="padding: 3px 8px; font-size: 11px;">
+              <span v-if="item.guarantee && item.guarantee.status === 'held'" class="capsule-badge badge-success text-2xs" style="padding: 3px 8px; font-size: var(--font-xxs);">
                 <i class="fa-solid fa-shield-halved"></i> วางประกันแล้ว
               </span>
-              <span v-else-if="item.guarantee && item.guarantee.status === 'refunded'" class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: 11px;">
+              <span v-else-if="item.guarantee && item.guarantee.status === 'refunded'" class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: var(--font-xxs);">
                 <i class="fa-solid fa-check"></i> คืนประกันแล้ว
               </span>
-              <span v-else class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: 11px; opacity: 0.75;">
+              <span v-else class="capsule-badge badge-neutral text-2xs" style="padding: 3px 8px; font-size: var(--font-xxs); opacity: 0.75;">
                 <i class="fa-solid fa-hourglass-half"></i> รอหักประกัน
               </span>
             </div>
@@ -1404,7 +1268,7 @@
             >
               <i class="fa-solid fa-money-bill-wave mr-xs"></i> สั่งจ่ายค่าจ้าง
             </button>
-            <div v-else class="flex-1 text-center py-xs text-xs text-success font-bold" style="background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px;">
+            <div v-else class="flex-1 text-center py-xs text-xs text-success font-bold" style="background: rgba(42, 157, 143, 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; height: 40px; font-size: var(--font-xs);">
               <i class="fa-solid fa-circle-check mr-2xs"></i> จ่ายครบแล้ว
             </div>
           </div>
@@ -1490,9 +1354,9 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showCompModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showCompModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingComp"
                 @click="handleSaveCompensation"
               >
@@ -1523,49 +1387,7 @@
 
             <div class="form-group">
               <label class="form-label font-bold">วันที่ปฏิบัติงาน *</label>
-              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
-                <div 
-                  class="picker-trigger-btn w-full" 
-                  :class="{ 'active': isEventOtDateDropdownOpen }" 
-                  @click="toggleEventOtDateDropdown"
-                  style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
-                >
-                  <span class="flex align-center gap-sm">
-                    <i class="fa-solid fa-calendar-day text-primary"></i>
-                    <span>{{ eventOtDateLabel }}</span>
-                  </span>
-                  <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
-                </div>
-
-                <!-- Date Picker Calendar Popover -->
-                <div v-if="isEventOtDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
-                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustEventOtDatePickerMonth(-1)">
-                      <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <span class="font-bold" style="font-size: var(--font-sm);">{{ eventOtDatePickerMonthName }} {{ eventOtDatePickerYear + 543 }}</span>
-                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustEventOtDatePickerMonth(1)">
-                      <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                  </div>
-                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
-                    <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
-                  </div>
-                  <div class="calendar-days-grid">
-                    <div v-for="empty in eventOtDatePickerStartOffset" :key="'empty-'+empty"></div>
-                    <button 
-                      v-for="dNum in eventOtDatePickerDaysCount" 
-                      :key="dNum"
-                      type="button"
-                      class="calendar-day-btn"
-                      :class="{ 'btn-primary selected': isEventOtDatePickerSelected(dNum) }"
-                      @click="selectEventOtDatePickerDay(dNum)"
-                    >
-                      {{ dNum }}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ThaiDateMonthPicker v-model="eventOtForm.event_date" full-width-popover />
             </div>
 
             <div class="form-group">
@@ -1586,15 +1408,15 @@
                     <input type="checkbox" :value="emp.id" v-model="eventOtForm.user_ids" style="width: 18px; height: 18px; accent-color: var(--primary);" />
                     <span class="font-semibold text-sm">{{ emp.name }}</span>
                   </div>
-                  <span class="skill-badge" :class="emp.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(emp.skill_level) }}</span>
+                  <span class="skill-badge" :class="emp.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(emp.skill_level) }}</span>
                 </label>
               </div>
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showAddEventOtModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showAddEventOtModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingEventOt || !eventOtForm.event_name || !eventOtForm.amount_per_person || eventOtForm.user_ids.length === 0"
                 @click="handleSaveEventOt"
               >
@@ -1641,7 +1463,7 @@
                       @click="selectAdvanceStaff(emp.id)"
                     >
                       <span>{{ emp.name }}</span>
-                      <span class="skill-badge" :class="emp.skill_level" style="font-size: 10px; padding: 1px 6px;">
+                      <span class="skill-badge" :class="emp.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">
                         {{ getSkillLabel(emp.skill_level) }}
                       </span>
                     </div>
@@ -1663,7 +1485,7 @@
                     {{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }}
                   </span>
                 </div>
-                <div class="text-2xs text-secondary flex flex-between flex-wrap gap-2xs" style="font-size: 11px;">
+                <div class="text-2xs text-secondary flex flex-between flex-wrap gap-2xs" style="font-size: var(--font-xxs);">
                   <div class="flex align-center gap-xs flex-wrap">
                     <span>วันทำงาน: {{ selectedStaffAvailableWage.unpaidDays }} วัน ({{ formatCurrency(selectedStaffAvailableWage.unpaidBase) }})</span>
                     <span v-if="selectedStaffAvailableWage.eventOt > 0" class="text-success font-semibold">
@@ -1694,7 +1516,7 @@
                 style="background: rgba(255, 149, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-sm);"
               >
                 <div class="flex align-start gap-xs text-xs font-semibold text-warning" style="line-height: 1.4;">
-                  <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; margin-top: 2px;"></i>
+                  <i class="fa-solid fa-triangle-exclamation" style="font-size: var(--font-sm); margin-top: 2px;"></i>
                   <div>
                     <strong>คำเตือน:</strong> จำนวนเงินที่ขอเบิก ({{ formatCurrency(advanceForm.amount) }}) <strong>เกินกว่ายอดค่าแรงสะสม</strong> ที่ทำได้ในปัจจุบัน ({{ formatCurrency(selectedStaffAvailableWage.maxAvailable) }})
                     <div class="text-2xs text-secondary font-normal mt-2xs">
@@ -1707,49 +1529,7 @@
               <!-- Date Picker for Advance -->
               <div class="form-group mb-sm">
                 <label class="form-label font-bold text-xs">วันที่เบิกเงิน *</label>
-                <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
-                  <div 
-                    class="picker-trigger-btn w-full" 
-                    :class="{ 'active': isAdvanceDateDropdownOpen }" 
-                    @click="toggleAdvanceDateDropdown"
-                    style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
-                  >
-                    <span class="flex align-center gap-sm">
-                      <i class="fa-solid fa-calendar-day text-primary"></i>
-                      <span>{{ advanceDateLabel }}</span>
-                    </span>
-                    <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
-                  </div>
-
-                  <!-- Date Picker Calendar Popover -->
-                  <div v-if="isAdvanceDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
-                      <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAdvanceDatePickerMonth(-1)">
-                        <i class="fa-solid fa-chevron-left"></i>
-                      </button>
-                      <span class="font-bold" style="font-size: var(--font-sm);">{{ advanceDatePickerMonthName }} {{ advanceDatePickerYear + 543 }}</span>
-                      <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustAdvanceDatePickerMonth(1)">
-                        <i class="fa-solid fa-chevron-right"></i>
-                      </button>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
-                      <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
-                    </div>
-                    <div class="calendar-days-grid">
-                      <div v-for="empty in advanceDatePickerStartOffset" :key="'empty-'+empty"></div>
-                      <button 
-                        v-for="dNum in advanceDatePickerDaysCount" 
-                        :key="dNum"
-                        type="button"
-                        class="calendar-day-btn"
-                        :class="{ 'btn-primary selected': isAdvanceDatePickerSelected(dNum) }"
-                        @click="selectAdvanceDatePickerDay(dNum)"
-                      >
-                        {{ dNum }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ThaiDateMonthPicker v-model="advanceForm.advance_date" full-width-popover />
               </div>
 
               <!-- Payment Method with custom select -->
@@ -1779,9 +1559,9 @@
             </div>
 
             <div class="flex gap-md mt-lg" style="margin-top: auto; padding-top: var(--space-md);">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showAddAdvanceModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showAddAdvanceModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingAdvance || !advanceForm.user_id || !advanceForm.amount || advanceForm.amount <= 0"
                 @click="handleSaveAdvance"
               >
@@ -1813,7 +1593,7 @@
               </div>
               <div class="text-xs text-secondary flex flex-between">
                 <span>อัตราค่าจ้าง: {{ formatCurrency(payingItem?.wage_rate || (payingItem?.unpaid_days_worked ? Math.round(payingItem?.unpaid_base_salary / payingItem?.unpaid_days_worked) : 0)) }}/{{ payingItem?.wage_type === 'monthly' ? 'เดือน' : 'วัน' }}</span>
-                <span class="skill-badge" :class="payingItem?.skill_level" style="font-size: 10px; padding: 1px 6px;">{{ getSkillLabel(payingItem?.skill_level) }}</span>
+                <span class="skill-badge" :class="payingItem?.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">{{ getSkillLabel(payingItem?.skill_level) }}</span>
               </div>
             </div>
 
@@ -1971,7 +1751,7 @@
                   {{ formatCurrency(computedNetPayable) }}
                 </span>
               </div>
-              <div class="text-secondary mt-xs" style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">
+              <div class="text-secondary mt-xs" style="font-size: var(--font-xxs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">
                 * ยอดเงินนี้จะถูกบันทึกเป็นรายจ่ายสาขา (คำนวณอัตโนมัติตามรายการที่เลือก)
               </div>
             </div>
@@ -2002,57 +1782,15 @@
 
             <div class="form-group mb-sm">
               <label class="form-label font-bold text-xs">วันที่จ่ายเงิน *</label>
-              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
-                <div 
-                  class="picker-trigger-btn w-full" 
-                  :class="{ 'active': isPayDateDropdownOpen }" 
-                  @click="togglePayDateDropdown"
-                  style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
-                >
-                  <span class="flex align-center gap-sm">
-                    <i class="fa-solid fa-calendar-day text-primary"></i>
-                    <span>{{ payDateLabel }}</span>
-                  </span>
-                  <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
-                </div>
-
-                <!-- Date Picker Calendar Popover -->
-                <div v-if="isPayDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
-                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayDatePickerMonth(-1)">
-                      <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <span class="font-bold" style="font-size: var(--font-sm);">{{ payDatePickerMonthName }} {{ payDatePickerYear + 543 }}</span>
-                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustPayDatePickerMonth(1)">
-                      <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                  </div>
-                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
-                    <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
-                  </div>
-                  <div class="calendar-days-grid">
-                    <div v-for="empty in payDatePickerStartOffset" :key="'empty-'+empty"></div>
-                    <button 
-                      v-for="dNum in payDatePickerDaysCount" 
-                      :key="dNum"
-                      type="button"
-                      class="calendar-day-btn"
-                      :class="{ 'btn-primary selected': isPayDatePickerSelected(dNum) }"
-                      @click="selectPayDatePickerDay(dNum)"
-                    >
-                      {{ dNum }}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ThaiDateMonthPicker v-model="payForm.payment_date" full-width-popover />
             </div>
 
 
 
             <div class="flex gap-md mt-md">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showPayModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showPayModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="processingPayout || payForm.custom_net_paid === null || payForm.custom_net_paid === undefined || payForm.custom_net_paid < 0"
                 @click="handleConfirmPayout"
               >
@@ -2174,7 +1912,7 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showHistoryModal = false">ปิด</button>
+              <button class="btn btn-secondary flex-1" @click="showHistoryModal = false">ปิด</button>
             </div>
           </div>
         </div>
@@ -2208,49 +1946,7 @@
 
             <div class="form-group mb-sm">
               <label class="form-label font-bold text-xs">วันที่คืนเงินประกัน *</label>
-              <div class="custom-select-wrapper" style="width: 100%; position: relative;" @click.stop>
-                <div 
-                  class="picker-trigger-btn w-full" 
-                  :class="{ 'active': isRefundDateDropdownOpen }" 
-                  @click="toggleRefundDateDropdown"
-                  style="width: 100%; justify-content: space-between; padding: 0 var(--space-md);"
-                >
-                  <span class="flex align-center gap-sm">
-                    <i class="fa-solid fa-calendar-day text-primary"></i>
-                    <span>{{ refundDateLabel }}</span>
-                  </span>
-                  <i class="fa-solid fa-chevron-down text-xs text-secondary ml-xs"></i>
-                </div>
-
-                <!-- Date Picker Calendar Popover -->
-                <div v-if="isRefundDateDropdownOpen" class="custom-select-dropdown" style="top: calc(100% + 4px); width: 100% !important; max-height: none !important; overflow-y: visible !important; padding: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-xs); z-index: 1000;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-color);">
-                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustRefundDatePickerMonth(-1)">
-                      <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <span class="font-bold" style="font-size: var(--font-sm);">{{ refundDatePickerMonthName }} {{ refundDatePickerYear + 543 }}</span>
-                    <button type="button" class="picker-nav-btn" style="height: 32px !important; width: 32px !important; min-width: 32px !important;" @click.stop="adjustRefundDatePickerMonth(1)">
-                      <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                  </div>
-                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: var(--font-xs); font-weight: bold; color: var(--text-secondary); margin-top: 4px;">
-                    <div v-for="day in ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']" :key="day">{{ day }}</div>
-                  </div>
-                  <div class="calendar-days-grid">
-                    <div v-for="empty in refundDatePickerStartOffset" :key="'empty-'+empty"></div>
-                    <button 
-                      v-for="dNum in refundDatePickerDaysCount" 
-                      :key="dNum"
-                      type="button"
-                      class="calendar-day-btn"
-                      :class="{ 'btn-primary selected': isRefundDatePickerSelected(dNum) }"
-                      @click="selectRefundDatePickerDay(dNum)"
-                    >
-                      {{ dNum }}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ThaiDateMonthPicker v-model="refundForm.refund_date" full-width-popover />
             </div>
 
             <div class="form-group mb-sm">
@@ -2284,9 +1980,9 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showRefundModal = false">ยกเลิก</button>
+              <button class="btn btn-secondary flex-1" @click="showRefundModal = false">ยกเลิก</button>
               <button 
-                class="btn-modal btn-modal-primary flex-1" 
+                class="btn btn-primary flex-1" 
                 :disabled="savingRefund"
                 @click="handleConfirmRefundGuarantee"
               >
@@ -2313,7 +2009,7 @@
             <div class="form-group" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--space-md);">
               <div class="flex flex-between align-center mb-xs">
                 <span class="font-bold text-sm text-primary">{{ currentCalendarStaff?.name }}</span>
-                <span class="skill-badge" :class="currentCalendarStaff?.skill_level" style="font-size: 10px; padding: 1px 6px;">
+                <span class="skill-badge" :class="currentCalendarStaff?.skill_level" style="font-size: var(--font-xxs); padding: 1px 6px;">
                   {{ getSkillLabel(currentCalendarStaff?.skill_level) }}
                 </span>
               </div>
@@ -2332,7 +2028,7 @@
                 <span v-else-if="selectedDayDetail?.status === 'leave_unpaid'" class="capsule-badge badge-warning text-xs">
                   <i class="fa-solid fa-calendar-xmark"></i> ลาหยุด (ไม่ได้รับค่าจ้าง)
                 </span>
-                <span v-else-if="selectedDayDetail?.status === 'absent'" class="capsule-badge" style="background: rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.3); font-size: 11px;">
+                <span v-else-if="selectedDayDetail?.status === 'absent'" class="capsule-badge" style="background: rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.3); font-size: var(--font-xxs);">
                   <i class="fa-solid fa-circle-xmark"></i> ขาดงาน (ไม่ได้รับค่าจ้าง)
                 </span>
                 <span v-else class="text-xs text-muted">ไม่มีการบันทึกเวลา</span>
@@ -2380,8 +2076,8 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showDayDetailModal = false">ปิด</button>
-              <button class="btn-modal btn-modal-primary flex-1" @click="jumpToAttendanceEdit(selectedDayDetail?.dateStr)">
+              <button class="btn btn-secondary flex-1" @click="showDayDetailModal = false">ปิด</button>
+              <button class="btn btn-primary flex-1" @click="jumpToAttendanceEdit(selectedDayDetail?.dateStr)">
                 <i class="fa-solid fa-pen-to-square"></i> แก้ไขการลงเวลา
               </button>
             </div>
@@ -2395,6 +2091,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import ThaiDateMonthPicker from './ThaiDateMonthPicker.vue';
 import api from '../api';
 import { ui, formatCurrency, formatDate, getUser } from '../helpers';
 
@@ -2533,8 +2230,6 @@ const showDayDetailModal = ref(false);
 const selectedDayDetail = ref(null);
 
 const isCalendarStaffDropdownOpen = ref(false);
-const isCalendarMonthDropdownOpen = ref(false);
-const calendarMonthPickerYear = ref(new Date().getFullYear());
 
 const toggleCalendarStaffDropdown = () => {
   const cur = isCalendarStaffDropdownOpen.value;
@@ -2551,57 +2246,9 @@ const currentCalendarStaff = computed(() => {
   return employees.value.find(e => e.id === calendarSelectedStaffId.value) || null;
 });
 
-const calendarMonthLabel = computed(() => {
-  if (!calendarMonth.value) return '';
-  const [y, m] = calendarMonth.value.split('-');
-  const monthIdx = parseInt(m, 10) - 1;
-  const beYear = parseInt(y, 10) + 543;
-  return `${thaiMonthsNames[monthIdx] || ''} ${beYear}`;
-});
-
-const toggleCalendarMonthDropdown = () => {
-  const cur = isCalendarMonthDropdownOpen.value;
-  closeAllPickerDropdowns();
-  isCalendarMonthDropdownOpen.value = !cur;
-  if (isCalendarMonthDropdownOpen.value) {
-    if (calendarMonth.value) {
-      calendarMonthPickerYear.value = Number(calendarMonth.value.split('-')[0]);
-    } else {
-      calendarMonthPickerYear.value = new Date().getFullYear();
-    }
-  }
-};
-
-const isCalendarMonthPickerSelected = (m) => {
-  if (!calendarMonth.value) return false;
-  const [y, mm] = calendarMonth.value.split('-');
-  return calendarMonthPickerYear.value === Number(y) && m === Number(mm);
-};
-
-const selectCalendarMonthPicker = (m) => {
-  calendarMonth.value = `${calendarMonthPickerYear.value}-${String(m).padStart(2, '0')}`;
-  payrollMonth.value = calendarMonth.value;
-  isCalendarMonthDropdownOpen.value = false;
-  emit('update:selected-month', calendarMonth.value);
-  emit('update:period-mode', 'monthly');
-  fetchMonthlyAttendance();
-  fetchEventOts();
-  fetchAdvances();
-};
-
-const adjustCalendarMonthPickerYear = (delta) => {
-  calendarMonthPickerYear.value += delta;
-};
-
-const adjustCalendarMonth = (diff) => {
-  if (!calendarMonth.value) return;
-  const [y, m] = calendarMonth.value.split('-').map(Number);
-  const d = new Date(y, m - 1 + diff, 1);
-  const nextY = d.getFullYear();
-  const nextM = String(d.getMonth() + 1).padStart(2, '0');
-  calendarMonth.value = `${nextY}-${nextM}`;
-  payrollMonth.value = calendarMonth.value;
-  emit('update:selected-month', calendarMonth.value);
+const onCalendarMonthChange = (val) => {
+  payrollMonth.value = val;
+  emit('update:selected-month', val);
   emit('update:period-mode', 'monthly');
   fetchMonthlyAttendance();
   fetchEventOts();
@@ -2610,12 +2257,7 @@ const adjustCalendarMonth = (diff) => {
 
 const setCalendarCurrentMonth = () => {
   calendarMonth.value = getCurrentMonthStr();
-  payrollMonth.value = calendarMonth.value;
-  emit('update:selected-month', calendarMonth.value);
-  emit('update:period-mode', 'monthly');
-  fetchMonthlyAttendance();
-  fetchEventOts();
-  fetchAdvances();
+  onCalendarMonthChange(calendarMonth.value);
 };
 
 const fetchMonthlyAttendance = async () => {
@@ -2779,80 +2421,15 @@ const attendanceRecords = ref([]);
 const loadingAttendance = ref(false);
 const savingAttendance = ref(false);
 
-const isAttendanceDateDropdownOpen = ref(false);
-const attendanceDatePickerYear = ref(new Date().getFullYear());
-const attendanceDatePickerMonth = ref(new Date().getMonth() + 1);
-
-const attendanceDateLabel = computed(() => {
-  if (!attendanceDate.value) return 'เลือกวัน';
-  return formatDate(attendanceDate.value);
-});
-
-const attendanceDatePickerMonthName = computed(() => {
-  return thaiMonthsNames[attendanceDatePickerMonth.value - 1] || '';
-});
-
-const attendanceDatePickerDaysCount = computed(() => {
-  return new Date(attendanceDatePickerYear.value, attendanceDatePickerMonth.value, 0).getDate();
-});
-
-const attendanceDatePickerStartOffset = computed(() => {
-  return new Date(attendanceDatePickerYear.value, attendanceDatePickerMonth.value - 1, 1).getDay();
-});
-
-const toggleAttendanceDateDropdown = () => {
-  const cur = isAttendanceDateDropdownOpen.value;
-  closeAllPickerDropdowns();
-  isAttendanceDateDropdownOpen.value = !cur;
-  if (isAttendanceDateDropdownOpen.value) {
-    if (attendanceDate.value) {
-      const [y, m] = attendanceDate.value.split('-');
-      attendanceDatePickerYear.value = Number(y);
-      attendanceDatePickerMonth.value = Number(m);
-    } else {
-      const today = new Date();
-      attendanceDatePickerYear.value = today.getFullYear();
-      attendanceDatePickerMonth.value = today.getMonth() + 1;
-    }
-  }
-};
-
-const isAttendanceDatePickerSelected = (day) => {
-  if (!attendanceDate.value) return false;
-  const [y, m, d] = attendanceDate.value.split('-');
-  return attendanceDatePickerYear.value === Number(y) &&
-         attendanceDatePickerMonth.value === Number(m) &&
-         day === Number(d);
-};
-
-const selectAttendanceDatePickerDay = (day) => {
-  attendanceDate.value = `${attendanceDatePickerYear.value}-${String(attendanceDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  isAttendanceDateDropdownOpen.value = false;
-  emit('update:selected-date', attendanceDate.value);
+const onAttendanceDateChange = (val) => {
+  emit('update:selected-date', val);
   emit('update:period-mode', 'daily');
   fetchDailyAttendance();
-};
-
-const adjustAttendanceDatePickerMonth = (amount) => {
-  let m = attendanceDatePickerMonth.value + amount;
-  let y = attendanceDatePickerYear.value;
-  if (m < 1) {
-    m = 12;
-    y -= 1;
-  } else if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  attendanceDatePickerMonth.value = m;
-  attendanceDatePickerYear.value = y;
 };
 
 const setTodayAttendance = () => {
   attendanceDate.value = getTodayStr();
-  isAttendanceDateDropdownOpen.value = false;
-  emit('update:selected-date', attendanceDate.value);
-  emit('update:period-mode', 'daily');
-  fetchDailyAttendance();
+  onAttendanceDateChange(attendanceDate.value);
 };
 
 const fetchDailyAttendance = async () => {
@@ -2920,71 +2497,6 @@ const eventOtForm = ref({
   amount_per_person: 100,
   user_ids: []
 });
-
-const isEventOtDateDropdownOpen = ref(false);
-const eventOtDatePickerYear = ref(new Date().getFullYear());
-const eventOtDatePickerMonth = ref(new Date().getMonth() + 1);
-
-const eventOtDateLabel = computed(() => {
-  if (!eventOtForm.value.event_date) return 'เลือกวัน';
-  return formatDate(eventOtForm.value.event_date);
-});
-
-const eventOtDatePickerMonthName = computed(() => {
-  return thaiMonthsNames[eventOtDatePickerMonth.value - 1] || '';
-});
-
-const eventOtDatePickerDaysCount = computed(() => {
-  return new Date(eventOtDatePickerYear.value, eventOtDatePickerMonth.value, 0).getDate();
-});
-
-const eventOtDatePickerStartOffset = computed(() => {
-  return new Date(eventOtDatePickerYear.value, eventOtDatePickerMonth.value - 1, 1).getDay();
-});
-
-const toggleEventOtDateDropdown = () => {
-  const cur = isEventOtDateDropdownOpen.value;
-  closeAllPickerDropdowns();
-  isEventOtDateDropdownOpen.value = !cur;
-  if (isEventOtDateDropdownOpen.value) {
-    if (eventOtForm.value.event_date) {
-      const [y, m] = eventOtForm.value.event_date.split('-');
-      eventOtDatePickerYear.value = Number(y);
-      eventOtDatePickerMonth.value = Number(m);
-    } else {
-      const today = new Date();
-      eventOtDatePickerYear.value = today.getFullYear();
-      eventOtDatePickerMonth.value = today.getMonth() + 1;
-    }
-  }
-};
-
-const isEventOtDatePickerSelected = (day) => {
-  if (!eventOtForm.value.event_date) return false;
-  const [y, m, d] = eventOtForm.value.event_date.split('-');
-  return eventOtDatePickerYear.value === Number(y) &&
-         eventOtDatePickerMonth.value === Number(m) &&
-         day === Number(d);
-};
-
-const selectEventOtDatePickerDay = (day) => {
-  eventOtForm.value.event_date = `${eventOtDatePickerYear.value}-${String(eventOtDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  isEventOtDateDropdownOpen.value = false;
-};
-
-const adjustEventOtDatePickerMonth = (amount) => {
-  let m = eventOtDatePickerMonth.value + amount;
-  let y = eventOtDatePickerYear.value;
-  if (m < 1) {
-    m = 12;
-    y -= 1;
-  } else if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  eventOtDatePickerMonth.value = m;
-  eventOtDatePickerYear.value = y;
-};
 
 const getPeriodQueryParams = () => {
   const params = { branch_id: props.branchId || '' };
@@ -3122,71 +2634,6 @@ const selectAdvanceStaff = (id) => {
   isAdvanceStaffDropdownOpen.value = false;
 };
 
-const isAdvanceDateDropdownOpen = ref(false);
-const advanceDatePickerYear = ref(new Date().getFullYear());
-const advanceDatePickerMonth = ref(new Date().getMonth() + 1);
-
-const advanceDateLabel = computed(() => {
-  if (!advanceForm.value.advance_date) return 'เลือกวัน';
-  return formatDate(advanceForm.value.advance_date);
-});
-
-const advanceDatePickerMonthName = computed(() => {
-  return thaiMonthsNames[advanceDatePickerMonth.value - 1] || '';
-});
-
-const advanceDatePickerDaysCount = computed(() => {
-  return new Date(advanceDatePickerYear.value, advanceDatePickerMonth.value, 0).getDate();
-});
-
-const advanceDatePickerStartOffset = computed(() => {
-  return new Date(advanceDatePickerYear.value, advanceDatePickerMonth.value - 1, 1).getDay();
-});
-
-const toggleAdvanceDateDropdown = () => {
-  const cur = isAdvanceDateDropdownOpen.value;
-  closeAllPickerDropdowns();
-  isAdvanceDateDropdownOpen.value = !cur;
-  if (isAdvanceDateDropdownOpen.value) {
-    if (advanceForm.value.advance_date) {
-      const [y, m] = advanceForm.value.advance_date.split('-');
-      advanceDatePickerYear.value = Number(y);
-      advanceDatePickerMonth.value = Number(m);
-    } else {
-      const today = new Date();
-      advanceDatePickerYear.value = today.getFullYear();
-      advanceDatePickerMonth.value = today.getMonth() + 1;
-    }
-  }
-};
-
-const isAdvanceDatePickerSelected = (day) => {
-  if (!advanceForm.value.advance_date) return false;
-  const [y, m, d] = advanceForm.value.advance_date.split('-');
-  return advanceDatePickerYear.value === Number(y) &&
-         advanceDatePickerMonth.value === Number(m) &&
-         day === Number(d);
-};
-
-const selectAdvanceDatePickerDay = (day) => {
-  advanceForm.value.advance_date = `${advanceDatePickerYear.value}-${String(advanceDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  isAdvanceDateDropdownOpen.value = false;
-};
-
-const adjustAdvanceDatePickerMonth = (amount) => {
-  let m = advanceDatePickerMonth.value + amount;
-  let y = advanceDatePickerYear.value;
-  if (m < 1) {
-    m = 12;
-    y -= 1;
-  } else if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  advanceDatePickerMonth.value = m;
-  advanceDatePickerYear.value = y;
-};
-
 const isAdvancePaymentMethodDropdownOpen = ref(false);
 const selectAdvancePaymentMethod = (method) => {
   advanceForm.value.payment_method = method;
@@ -3311,74 +2758,6 @@ const selectPayPaymentMethod = (method) => {
   isPayPaymentMethodDropdownOpen.value = false;
 };
 
-const isPayDateDropdownOpen = ref(false);
-const payDatePickerYear = ref(new Date().getFullYear());
-const payDatePickerMonth = ref(new Date().getMonth() + 1);
-
-const payDateLabel = computed(() => {
-  if (!payForm.value.payment_date) return 'เลือกวัน';
-  return formatDate(payForm.value.payment_date);
-});
-
-const payDatePickerMonthName = computed(() => {
-  return thaiMonthsNames[payDatePickerMonth.value - 1] || '';
-});
-
-const payDatePickerDaysCount = computed(() => {
-  return new Date(payDatePickerYear.value, payDatePickerMonth.value, 0).getDate();
-});
-
-const payDatePickerStartOffset = computed(() => {
-  return new Date(payDatePickerYear.value, payDatePickerMonth.value - 1, 1).getDay();
-});
-
-const togglePayDateDropdown = () => {
-  const cur = isPayDateDropdownOpen.value;
-  closeAllPickerDropdowns();
-  isPayDateDropdownOpen.value = !cur;
-  if (isPayDateDropdownOpen.value) {
-    if (payForm.value.payment_date) {
-      const [y, m] = payForm.value.payment_date.split('-');
-      payDatePickerYear.value = Number(y);
-      payDatePickerMonth.value = Number(m);
-    } else {
-      const today = new Date();
-      payDatePickerYear.value = today.getFullYear();
-      payDatePickerMonth.value = today.getMonth() + 1;
-    }
-  }
-};
-
-const isPayDatePickerSelected = (day) => {
-  if (!payForm.value.payment_date) return false;
-  const [y, m, d] = payForm.value.payment_date.split('-');
-  return payDatePickerYear.value === Number(y) &&
-         payDatePickerMonth.value === Number(m) &&
-         day === Number(d);
-};
-
-const selectPayDatePickerDay = (day) => {
-  payForm.value.payment_date = `${payDatePickerYear.value}-${String(payDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  isPayDateDropdownOpen.value = false;
-};
-
-const adjustPayDatePickerMonth = (amount) => {
-  let m = payDatePickerMonth.value + amount;
-  let y = payDatePickerYear.value;
-  if (m < 1) {
-    m = 12;
-    y -= 1;
-  } else if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  payDatePickerMonth.value = m;
-  payDatePickerYear.value = y;
-};
-
-const isPayrollMonthDropdownOpen = ref(false);
-const payrollMonthPickerYear = ref(new Date().getFullYear());
-
 const payrollMonthLabel = computed(() => {
   if (!payrollMonth.value) return '';
   const [y, m] = payrollMonth.value.split('-');
@@ -3387,57 +2766,16 @@ const payrollMonthLabel = computed(() => {
   return `${thaiMonthsNames[monthIdx] || ''} ${beYear}`;
 });
 
-const togglePayrollMonthDropdown = () => {
-  const cur = isPayrollMonthDropdownOpen.value;
-  closeAllPickerDropdowns();
-  isPayrollMonthDropdownOpen.value = !cur;
-  if (isPayrollMonthDropdownOpen.value) {
-    if (payrollMonth.value) {
-      payrollMonthPickerYear.value = Number(payrollMonth.value.split('-')[0]);
-    } else {
-      payrollMonthPickerYear.value = new Date().getFullYear();
-    }
-  }
-};
-
-const isPayrollMonthPickerSelected = (m) => {
-  if (!payrollMonth.value) return false;
-  const [y, mm] = payrollMonth.value.split('-');
-  return payrollMonthPickerYear.value === Number(y) && m === Number(mm);
-};
-
-const selectPayrollMonthPicker = (m) => {
-  payrollMonth.value = `${payrollMonthPickerYear.value}-${String(m).padStart(2, '0')}`;
-  calendarMonth.value = payrollMonth.value;
-  isPayrollMonthDropdownOpen.value = false;
-  emit('update:selected-month', payrollMonth.value);
-  emit('update:period-mode', 'monthly');
-  fetchPayrollCalculations();
-};
-
-const adjustPayrollMonthPickerYear = (delta) => {
-  payrollMonthPickerYear.value += delta;
-};
-
-const adjustPayrollMonth = (diff) => {
-  if (!payrollMonth.value) return;
-  const [y, m] = payrollMonth.value.split('-').map(Number);
-  const d = new Date(y, m - 1 + diff, 1);
-  const nextY = d.getFullYear();
-  const nextM = String(d.getMonth() + 1).padStart(2, '0');
-  payrollMonth.value = `${nextY}-${nextM}`;
-  calendarMonth.value = payrollMonth.value;
-  emit('update:selected-month', payrollMonth.value);
+const onPayrollMonthChange = (val) => {
+  calendarMonth.value = val;
+  emit('update:selected-month', val);
   emit('update:period-mode', 'monthly');
   fetchPayrollCalculations();
 };
 
 const setPayrollCurrentMonth = () => {
   payrollMonth.value = getCurrentMonthStr();
-  calendarMonth.value = payrollMonth.value;
-  emit('update:selected-month', payrollMonth.value);
-  emit('update:period-mode', 'monthly');
-  fetchPayrollCalculations();
+  onPayrollMonthChange(payrollMonth.value);
 };
 
 const showSlipModal = ref(false);
@@ -3509,77 +2847,8 @@ const selectRefundPaymentMethod = (method) => {
   isRefundPaymentMethodDropdownOpen.value = false;
 };
 
-const isRefundDateDropdownOpen = ref(false);
-const refundDatePickerYear = ref(new Date().getFullYear());
-const refundDatePickerMonth = ref(new Date().getMonth() + 1);
-
-const refundDateLabel = computed(() => {
-  if (!refundForm.value.refund_date) return 'เลือกวัน';
-  return formatDate(refundForm.value.refund_date);
-});
-
-const refundDatePickerMonthName = computed(() => {
-  return thaiMonthsNames[refundDatePickerMonth.value - 1] || '';
-});
-
-const refundDatePickerDaysCount = computed(() => {
-  return new Date(refundDatePickerYear.value, refundDatePickerMonth.value, 0).getDate();
-});
-
-const refundDatePickerStartOffset = computed(() => {
-  return new Date(refundDatePickerYear.value, refundDatePickerMonth.value - 1, 1).getDay();
-});
-
-const toggleRefundDateDropdown = () => {
-  const cur = isRefundDateDropdownOpen.value;
-  closeAllPickerDropdowns();
-  isRefundDateDropdownOpen.value = !cur;
-  if (isRefundDateDropdownOpen.value) {
-    if (refundForm.value.refund_date) {
-      const [y, m] = refundForm.value.refund_date.split('-');
-      refundDatePickerYear.value = Number(y);
-      refundDatePickerMonth.value = Number(m);
-    } else {
-      const today = new Date();
-      refundDatePickerYear.value = today.getFullYear();
-      refundDatePickerMonth.value = today.getMonth() + 1;
-    }
-  }
-};
-
-const isRefundDatePickerSelected = (day) => {
-  if (!refundForm.value.refund_date) return false;
-  const [y, m, d] = refundForm.value.refund_date.split('-');
-  return refundDatePickerYear.value === Number(y) &&
-         refundDatePickerMonth.value === Number(m) &&
-         day === Number(d);
-};
-
-const selectRefundDatePickerDay = (day) => {
-  refundForm.value.refund_date = `${refundDatePickerYear.value}-${String(refundDatePickerMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  isRefundDateDropdownOpen.value = false;
-};
-
-const adjustRefundDatePickerMonth = (amount) => {
-  let m = refundDatePickerMonth.value + amount;
-  let y = refundDatePickerYear.value;
-  if (m < 1) {
-    m = 12;
-    y -= 1;
-  } else if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  refundDatePickerMonth.value = m;
-  refundDatePickerYear.value = y;
-};
-
 const openRefundGuaranteeModal = (guar, item) => {
   const today = getTodayStr();
-  const [y, m] = today.split('-');
-  refundDatePickerYear.value = Number(y);
-  refundDatePickerMonth.value = Number(m);
-  isRefundDateDropdownOpen.value = false;
   isRefundPaymentMethodDropdownOpen.value = false;
   refundForm.value = {
     guarantee: guar,
@@ -3901,16 +3170,9 @@ watch(activeSubTab, (newTab) => {
 
 const closeAllPickerDropdowns = () => {
   isCalendarStaffDropdownOpen.value = false;
-  isCalendarMonthDropdownOpen.value = false;
-  isAttendanceDateDropdownOpen.value = false;
-  isPayrollMonthDropdownOpen.value = false;
-  isEventOtDateDropdownOpen.value = false;
   isAdvanceStaffDropdownOpen.value = false;
-  isAdvanceDateDropdownOpen.value = false;
   isAdvancePaymentMethodDropdownOpen.value = false;
-  isPayDateDropdownOpen.value = false;
   isPayPaymentMethodDropdownOpen.value = false;
-  isRefundDateDropdownOpen.value = false;
   isRefundPaymentMethodDropdownOpen.value = false;
   isCompWageTypeDropdownOpen.value = false;
   isCompSkillLevelDropdownOpen.value = false;
@@ -3927,16 +3189,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.category-tabs .btn {
-  font-size: var(--font-sm);
-  padding: 8px 14px;
-  border-radius: var(--radius-md);
-}
-.category-tabs .btn.active {
-  background: var(--primary);
-  color: white;
-  font-weight: bold;
-}
 .capsule-badge {
   display: inline-flex;
   align-items: center;
@@ -3952,9 +3204,9 @@ onUnmounted(() => {
   border: 1px solid rgba(139, 3, 19, 0.2);
 }
 .capsule-badge.badge-warning {
-  background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(197, 118, 0, 0.12);
+  color: var(--accent-dark, #c57600);
+  border: 1px solid rgba(197, 118, 0, 0.3);
 }
 .capsule-badge.badge-neutral {
   background: rgba(100, 116, 139, 0.12);
@@ -3962,9 +3214,9 @@ onUnmounted(() => {
   border: 1px solid rgba(100, 116, 139, 0.2);
 }
 .capsule-badge.badge-success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(42, 157, 143, 0.12);
+  color: var(--success, #2a9d8f);
+  border: 1px solid rgba(42, 157, 143, 0.3);
 }
 .skill-badge {
   display: inline-flex;
@@ -3976,9 +3228,9 @@ onUnmounted(() => {
   font-weight: 600;
 }
 .skill-badge.trainee {
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(42, 157, 143, 0.12);
+  color: var(--success, #2a9d8f);
+  border: 1px solid rgba(42, 157, 143, 0.3);
 }
 .skill-badge.regular {
   background: rgba(59, 130, 246, 0.12);
@@ -3986,55 +3238,21 @@ onUnmounted(() => {
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 .skill-badge.expert {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
-  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(197, 118, 0, 0.14);
+  color: var(--accent-dark, #c57600);
+  border: 1px solid rgba(197, 118, 0, 0.35);
 }
 .benefit-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(245, 158, 11, 0.1);
-  color: #b45309;
+  background: rgba(197, 118, 0, 0.1);
+  color: var(--accent-dark, #c57600);
   padding: 3px 10px;
   border-radius: 9999px;
   font-size: var(--font-xs);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(197, 118, 0, 0.25);
   font-weight: 500;
-}
-.status-btn {
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  padding: 8px 16px;
-  border-radius: 9999px;
-  font-size: var(--font-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.status-btn:hover {
-  background: rgba(139, 3, 19, 0.05);
-}
-.status-btn.active-present {
-  background: #10b981;
-  color: white;
-  border-color: #10b981;
-  font-weight: bold;
-}
-.status-btn.active-leave {
-  background: #f59e0b;
-  color: white;
-  border-color: #f59e0b;
-  font-weight: bold;
-}
-.status-btn.active-absent {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
-  font-weight: bold;
 }
 .bulk-hint-box {
   background: rgba(139, 3, 19, 0.04);
@@ -4062,7 +3280,7 @@ onUnmounted(() => {
 }
 
 .lunch-benefit-wrapper:hover:not(.disabled) {
-  background: rgba(245, 158, 11, 0.08);
+  background: rgba(197, 118, 0, 0.08);
 }
 
 .lunch-benefit-wrapper.disabled {
@@ -4089,12 +3307,12 @@ onUnmounted(() => {
   gap: 6px;
   font-size: var(--font-sm);
   font-weight: var(--font-weight-bold);
-  color: #b45309;
+  color: var(--accent-dark, #c57600);
   line-height: 1;
 }
 
 .lunch-benefit-icon {
-  font-size: 1.1rem;
+  font-size: var(--font-md);
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -4181,19 +3399,19 @@ onUnmounted(() => {
   color: white;
   padding: 1px 6px;
   border-radius: 9999px;
-  font-size: 10px;
+  font-size: var(--font-xxs);
 }
 .status-indicator {
-  font-size: 11px;
+  font-size: var(--font-xxs);
 }
 .status-indicator.present {
-  color: #10b981;
+  color: var(--success, #2a9d8f);
 }
 .status-indicator.leave {
-  color: #f59e0b;
+  color: var(--accent-dark, #c57600);
 }
 .status-indicator.absent {
-  color: #ef4444;
+  color: var(--danger, #ad281e);
 }
 .day-events-list {
   display: flex;
@@ -4202,7 +3420,7 @@ onUnmounted(() => {
   margin-top: 4px;
 }
 .day-badge {
-  font-size: 10px;
+  font-size: var(--font-xxs);
   padding: 2px 4px;
   border-radius: 4px;
   white-space: nowrap;
@@ -4213,13 +3431,13 @@ onUnmounted(() => {
   justify-content: space-between;
 }
 .day-badge.badge-work {
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
+  background: rgba(42, 157, 143, 0.12);
+  color: var(--success, #2a9d8f);
   font-weight: bold;
 }
 .day-badge.badge-leave {
-  background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
+  background: rgba(197, 118, 0, 0.12);
+  color: var(--accent-dark, #c57600);
 }
 .day-badge.badge-absent {
   background: rgba(239, 68, 68, 0.12);
@@ -4252,7 +3470,7 @@ onUnmounted(() => {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 9999px !important;
-  font-size: 12px !important;
+  font-size: var(--font-xs) !important;
   padding: 0 12px !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
@@ -4267,7 +3485,7 @@ onUnmounted(() => {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 9999px !important;
-  font-size: 12px !important;
+  font-size: var(--font-xs) !important;
   padding: 0 12px !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
@@ -4320,14 +3538,14 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .calendar-weekday-cell {
-    font-size: 10px;
+    font-size: var(--font-xxs);
   }
   .calendar-day-cell {
     min-height: 60px;
     padding: 3px;
   }
   .day-badge {
-    font-size: 9px;
+    font-size: var(--font-xxs);
     padding: 1px 2px;
   }
 }

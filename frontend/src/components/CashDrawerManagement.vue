@@ -123,10 +123,10 @@
             </td>
             <td class="text-center" style="padding: 18px var(--space-md); vertical-align: middle; white-space: nowrap;">
               <div class="flex flex-col align-center justify-center" style="gap: 6px; width: 100%;">
-                <button class="btn-action btn-drawer-action" @click="openOpeningCashModal(session)">
+                <button class="btn-action btn-action-edit" style="width: 180px;" @click="openOpeningCashModal(session)">
                   <i class="fa-solid fa-coins"></i> กรอกยอดเงินทอน
                 </button>
-                <button class="btn-action btn-action-primary btn-drawer-action" @click="openAuditModal(session)">
+                <button class="btn-action btn-action-primary" style="width: 180px;" @click="openAuditModal(session)">
                   <i class="fa-solid fa-circle-check"></i> ปิดยอดประจำวัน
                 </button>
               </div>
@@ -172,7 +172,7 @@
           </div>
           <div class="grid-item">
             <span class="grid-label">เงินสดที่ควรมี</span>
-            <span class="grid-value font-bold text-primary" style="font-size: 1.05rem;">{{ formatCurrency(session.calculated_expected_cash) }}</span>
+            <span class="grid-value font-bold text-primary" style="font-size: var(--font-base);">{{ formatCurrency(session.calculated_expected_cash) }}</span>
           </div>
           <div class="grid-item full-width">
             <span class="grid-label">เงินสดนับจริง</span>
@@ -180,7 +180,7 @@
               <span v-if="session.status === 'closed'" class="font-bold text-base">
                 {{ formatCurrency(session.actual_cash) }}
               </span>
-              <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">ยังไม่ได้ตรวจนับ</span>
+              <span v-else class="text-secondary" style="font-size: var(--font-xs); font-weight: 500;">ยังไม่ได้ตรวจนับ</span>
             </span>
           </div>
           <div class="grid-item full-width">
@@ -197,18 +197,18 @@
                   ขาด -{{ formatCurrency(Math.abs(session.difference)) }}
                 </span>
               </span>
-              <span v-else class="text-secondary" style="font-size: 12px; font-weight: 500;">รอปิดยอดประจำวัน</span>
+              <span v-else class="text-secondary" style="font-size: var(--font-xs); font-weight: 500;">รอปิดยอดประจำวัน</span>
             </span>
           </div>
         </div>
 
         <!-- Card Actions: Buttons (Equal Width and Height) -->
         <div class="cash-card-actions">
-          <button class="btn btn-secondary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" @click="openOpeningCashModal(session)">
-            <i class="fa-solid fa-coins text-warning" style="font-size: 14px;"></i> กรอกยอดเงินทอน
+          <button class="btn-action btn-action-edit flex-1" @click="openOpeningCashModal(session)">
+            <i class="fa-solid fa-coins" style="font-size: var(--font-sm);"></i> กรอกยอดเงินทอน
           </button>
-          <button class="btn btn-primary flex-1" style="height: 42px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(139,3,19,0.2);" @click="openAuditModal(session)">
-            <i class="fa-solid fa-circle-check" style="font-size: 14px;"></i> ปิดยอดประจำวัน
+          <button class="btn-action btn-action-primary flex-1" @click="openAuditModal(session)">
+            <i class="fa-solid fa-circle-check" style="font-size: var(--font-sm);"></i> ปิดยอดประจำวัน
           </button>
         </div>
       </div>
@@ -238,12 +238,12 @@
                 <span class="text-secondary">ยอดจ่ายเงินสดสะสม:</span>
                 <span class="font-bold text-danger">-{{ formatCurrency(activeAuditSession?.cash_expenses) }}</span>
               </div>
-              <div class="text-xs text-secondary" style="font-size: 11px; background: rgba(139, 3, 19, 0.04); padding: 4px 8px; border-radius: 6px;">
+              <div class="text-xs text-secondary" style="font-size: var(--font-xxs); background: rgba(139, 3, 19, 0.04); padding: 4px 8px; border-radius: 6px;">
                 <i class="fa-solid fa-circle-info text-primary" style="margin-right: 4px;"></i> นับเฉพาะเงินสดที่จ่ายออกจากลิ้นชักจริง (ไม่รวมยอดเบิกจากครัวกลาง / เงินโอน)
               </div>
               <div class="flex flex-between align-center font-bold text-base text-primary" style="border-top: 1px solid var(--border-color); padding-top: var(--space-xs); margin-top: 2px;">
                 <span>เงินสดที่ควรมีในลิ้นชัก:</span>
-                <span style="font-size: 1.15rem;">{{ formatCurrency(activeAuditSession?.calculated_expected_cash) }}</span>
+                <span style="font-size: var(--font-md);">{{ formatCurrency(activeAuditSession?.calculated_expected_cash) }}</span>
               </div>
             </div>
 
@@ -314,8 +314,8 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showAuditModal = false">ยกเลิก</button>
-              <button class="btn-modal btn-modal-primary flex-1" @click="submitCashAudit" :disabled="actualCashInput === '' || actualCashInput === null || actualCashInput < 0 || savingAudit">
+              <button class="btn btn-secondary flex-1" @click="showAuditModal = false">ยกเลิก</button>
+              <button class="btn btn-primary flex-1" @click="submitCashAudit" :disabled="actualCashInput === '' || actualCashInput === null || actualCashInput < 0 || savingAudit">
                 <i v-if="savingAudit" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-circle-check"></i>
                 <span>{{ savingAudit ? ' กำลังปิดยอด...' : ' ปิดยอด' }}</span>
@@ -356,8 +356,8 @@
             </div>
 
             <div class="flex gap-md mt-lg">
-              <button class="btn-modal btn-modal-secondary flex-1" @click="showOpeningCashModal = false">ยกเลิก</button>
-              <button class="btn-modal btn-modal-primary flex-1" @click="submitOpeningCash" :disabled="openingCashInput === '' || openingCashInput === null || openingCashInput < 0 || savingOpeningCash">
+              <button class="btn btn-secondary flex-1" @click="showOpeningCashModal = false">ยกเลิก</button>
+              <button class="btn btn-primary flex-1" @click="submitOpeningCash" :disabled="openingCashInput === '' || openingCashInput === null || openingCashInput < 0 || savingOpeningCash">
                 <i v-if="savingOpeningCash" class="fa-solid fa-spinner fa-spin"></i>
                 <i v-else class="fa-solid fa-floppy-disk"></i>
                 <span>{{ savingOpeningCash ? ' กำลังบันทึก...' : ' บันทึกเงินทอน' }}</span>
@@ -580,19 +580,6 @@ onMounted(() => {
   gap: var(--space-sm);
   align-items: flex-start;
 }
-.btn-drawer-action {
-  width: 180px !important;
-  height: 42px !important;
-  min-height: 42px !important;
-  font-size: var(--font-sm) !important;
-  font-weight: 600 !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: var(--space-xs) !important;
-  white-space: nowrap !important;
-}
 .cash-audit-mobile-list {
   display: none;
 }
@@ -620,22 +607,22 @@ onMounted(() => {
 }
 .session-date {
   font-weight: 700;
-  font-size: 16px;
+  font-size: var(--font-base);
   color: var(--primary);
 }
 .session-status-badge {
-  font-size: 11px;
+  font-size: var(--font-xxs);
   padding: 3px 10px;
   border-radius: 20px;
   font-weight: 700;
 }
 .session-status-badge.closed {
-  background: rgba(16, 185, 129, 0.15);
-  color: #059669;
+  background: rgba(42, 157, 143, 0.15);
+  color: var(--success, #2a9d8f);
 }
 .session-status-badge.open {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
+  background: rgba(197, 118, 0, 0.15);
+  color: var(--accent-dark, #c57600);
 }
 .cash-card-grid {
   display: grid;
@@ -661,11 +648,11 @@ onMounted(() => {
 }
 .grid-label {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--font-xs);
 }
 .grid-value {
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--font-sm);
 }
 .cash-card-actions {
   display: flex;
@@ -677,7 +664,7 @@ onMounted(() => {
   flex: 1 1 0;
   width: 50%;
   height: 42px !important;
-  font-size: 13px !important;
+  font-size: var(--font-xs) !important;
   font-weight: 700 !important;
   border-radius: 8px !important;
   display: inline-flex !important;

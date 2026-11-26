@@ -51,12 +51,24 @@ export const ui = {
 };
 
 // ─── Formatting Helpers ───
-export function formatCurrency(amount) {
-  const num = Number(amount) || 0;
-  return '฿' + num.toLocaleString('th-TH', {
+export function formatNumber(num) {
+  return Number(num || 0).toLocaleString('th-TH', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+}
+
+export function formatCurrency(amount) {
+  return '฿' + formatNumber(amount);
+}
+
+export function getItemNameParts(name) {
+  if (!name) return { main: '', sub: '' };
+  const match = String(name).match(/^(.*?)\s*(\([^(]+\))\s*$/);
+  if (match) {
+    return { main: match[1].trim(), sub: match[2].trim() };
+  }
+  return { main: name, sub: '' };
 }
 
 function parseBangkokDate(dateStr) {
@@ -200,6 +212,69 @@ export function roundUp(amount, to) {
   return Math.ceil(amount / to) * to;
 }
 
+// ─── Stock & Cook Helpers ───
+export function formatStockQty(qty, uom) {
+  if (qty === null || qty === undefined) return '';
+  const roundedQty = Math.round(Number(qty) * 100) / 100;
+  const formatted = roundedQty.toLocaleString('th-TH', { maximumFractionDigits: 2 });
+  return uom === 'กรัม' ? `${formatted} ก.` : `${formatted} ${uom || 'ชิ้น'}`;
+}
+
+export function isItemLowStock(item, qty, defaultThreshold = 5) {
+  if (qty === null || qty === undefined || qty <= 0) return false;
+  if (item?.low_stock_threshold !== null && item?.low_stock_threshold !== undefined) {
+    return qty <= Number(item.low_stock_threshold);
+  }
+  if (item?.uom === 'กรัม') return qty <= 500;
+  return qty <= defaultThreshold;
+}
+
+export function getSteamedCounterpartName(name) {
+  if (!name) return '';
+  if (name.startsWith('เปาทอด') || name.startsWith('เปาปิ้ง')) {
+    if (name.includes('หมูไข่เค็ม') || name.includes('หมูสับไขเค็ม') || name.includes('หมูสับ ไข่เค็ม') || name.includes('ไข่เค็ม') || name.includes('ไขเค็ม')) {
+      return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
+    }
+    if (name.includes('หมู')) return 'ซาลาเปาไส้หมูสับ';
+    if (name.includes('ถั่วดำ')) return 'ซาลาเปาไส้ถั่วดำ';
+    if (name.includes('ครีม')) return 'ซาลาเปาไส้ครีม';
+    if (name.includes('หมั่นโถ')) return 'หมั่นโถว';
+  }
+  return '';
+}
+
+export function isLinkedBun(item) {
+  return !!(item && item.name && getSteamedCounterpartName(item.name));
+}
+
+export function getCookActionLabel(name) {
+  if (!name) return 'ทอด';
+  if (name.includes('ข้าวเหนียว') || name.includes('เบอร์เกอร์') || name.includes('แร็ป') || name.includes('ข้าว')) {
+    return 'ห่อ';
+  }
+  if (name.includes('เปา') || name.includes('หมั่นโถ') || name.includes('ขนมจีบ')) {
+    if (name.includes('ทอด')) return 'ทอด';
+    if (name.includes('ปิ้ง')) return 'ปิ้ง';
+    return 'นึ่ง';
+  }
+  if (name.includes('ปิ้ง')) return 'ปิ้ง';
+  return 'ทอด';
+}
+
+export function getCookActionIcon(name) {
+  if (!name) return 'fa-solid fa-fire';
+  if (name.includes('ข้าวเหนียว') || name.includes('เบอร์เกอร์') || name.includes('แร็ป') || name.includes('ข้าว')) {
+    return 'fa-solid fa-box';
+  }
+  if (name.includes('เปา') || name.includes('หมั่นโถ') || name.includes('ขนมจีบ')) {
+    if (name.includes('ทอด')) return 'fa-solid fa-fire';
+    if (name.includes('ปิ้ง')) return 'fa-solid fa-fire-flame-simple';
+    return 'fa-solid fa-cloud';
+  }
+  if (name.includes('ปิ้ง')) return 'fa-solid fa-fire-flame-simple';
+  return 'fa-solid fa-fire';
+}
+
 export function compressImage(base64Str, maxWidth = 300, maxHeight = 300, quality = 0.7) {
   return new Promise((resolve, reject) => {
     if (!base64Str || typeof base64Str !== 'string' || !base64Str.startsWith('data:image/')) {
@@ -239,7 +314,9 @@ export function compressImage(base64Str, maxWidth = 300, maxHeight = 300, qualit
 export default {
   ui,
   uiState,
+  formatNumber,
   formatCurrency,
+  getItemNameParts,
   formatDate,
   formatTime,
   formatDateTime,

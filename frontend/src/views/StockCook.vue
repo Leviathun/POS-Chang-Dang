@@ -1,90 +1,42 @@
 <template>
   <div id="stock-cook-page" class="page-enter">
     
-    <!-- Info Header Card (Matches Stock.vue styling & layout) -->
-    <div class="card mb-lg p-md flex flex-between align-center mobile-stock-header-card" style="gap: var(--space-md); flex-wrap: wrap;">
-      <div class="title-tooltip-wrapper" @click.stop>
-        <div class="stock-page-title">
-          ปรุงอาหาร
-        </div>
-        <button
-          type="button"
-          class="title-info-btn"
-          aria-label="คำอธิบายจุดปรุงอาหาร"
-          :aria-expanded="showHintTooltip"
-          @click="showHintTooltip = !showHintTooltip"
-        >
-          <i class="fa-solid fa-circle-info"></i>
-        </button>
-        <div v-if="showHintTooltip" class="title-tooltip-popover" role="tooltip">
-          <strong>จุดปรุงอาหาร:</strong> บันทึกปรุง ทอด ห่อ หรือปิ้ง ระบบจะตัดสต็อกวัตถุดิบและเพิ่มสินค้าพร้อมขายให้อัตโนมัติ
-        </div>
-      </div>
-      <div class="flex align-center gap-xs flex-wrap mobile-header-actions">
-        <router-link to="/stock" class="btn btn-primary btn-bulk-back">
-          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-        </router-link>
-        <button 
-          v-if="hasPendingCooks"
-          class="btn btn-primary btn-cook-save-all"
-          :disabled="isSaving"
-          @click="openBatchCookModal"
-        >
-          <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-fire-flame-curved"></i>
-          <span class="btn-text">ปรุงทั้งหมด ({{ pendingCookCount }})</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Search & Filter Controls (Solid White Card) -->
-    <div class="card p-md mb-lg cook-filter-card">
-      <div class="cook-filter-row flex flex-between align-center gap-md flex-wrap">
-        <div class="search-box flex-1">
-          <div class="input-icon-wrapper">
-            <i class="fa-solid fa-magnifying-glass input-icon"></i>
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              class="form-input" 
-              placeholder="ค้นหาชื่อสินค้าที่ต้องปรุง..." 
-              style="padding-left: 36px;"
-            />
-            <button 
-              v-if="searchQuery" 
-              class="clear-search-btn" 
-              @click="searchQuery = ''"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <!-- Toggle: Only with Raw Stock (Stable size, no text or width jumping) -->
+    <!-- Info Header Card & Search Filter Controls -->
+    <StockPageHeader
+      title="ปรุงอาหาร"
+      icon="fa-solid fa-fire-burner"
+      tooltip-title="จุดปรุงอาหาร:"
+      tooltip-text="บันทึกปรุง ทอด ห่อ หรือปิ้ง ระบบจะตัดสต็อกวัตถุดิบและเพิ่มสินค้าพร้อมขายให้อัตโนมัติ"
+      back-to="/stock"
+      searchable
+      v-model:search-query="searchQuery"
+      search-placeholder="ค้นหาชื่อสินค้าที่ต้องปรุง..."
+    >
+      <template #search-extra>
         <button 
           class="btn btn-raw-toggle"
-          :class="{ 'btn-primary': onlyWithRawStock, 'btn-secondary-rect': !onlyWithRawStock }"
+          :class="{ 'btn-primary': onlyWithRawStock, 'btn-secondary': !onlyWithRawStock }"
           @click="onlyWithRawStock = !onlyWithRawStock"
           title="สลับการแสดงผลเฉพาะสินค้าที่มีวัตถุดิบพร้อมปรุง"
         >
           <i :class="onlyWithRawStock ? 'fa-solid fa-check-circle' : 'fa-regular fa-circle'" style="margin-right: 6px;"></i>
           <span>เฉพาะที่มีของสด ({{ itemsWithRawCount }})</span>
         </button>
-      </div>
-
-      <!-- Quick Category Filter Pills -->
-      <div class="flex align-center gap-xs flex-wrap cook-filter-pills mt-md">
-        <button 
-          v-for="cat in filterCategories" 
-          :key="cat.id" 
-          class="filter-pill"
-          :class="{ 'active': activeCategory === cat.id }"
-          @click="activeCategory = cat.id"
-        >
-          <i :class="cat.icon" style="margin-right: 4px;"></i> {{ cat.label }}
-        </button>
-      </div>
-    </div>
+      </template>
+      <template #search-bottom>
+        <div class="flex align-center gap-xs flex-wrap mt-md">
+          <button 
+            v-for="cat in filterCategories" 
+            :key="cat.id" 
+            class="filter-pill"
+            :class="{ 'active': activeCategory === cat.id }"
+            @click="activeCategory = cat.id"
+          >
+            {{ cat.label }}
+          </button>
+        </div>
+      </template>
+    </StockPageHeader>
 
     <!-- Content Area: Cookable Items -->
     <div v-if="loading" class="cook-items-grid">
@@ -182,14 +134,14 @@
             <button 
               v-for="preset in [1, 5, 10, 20]" 
               :key="preset"
-              class="btn-preset-qty"
+              class="btn btn-secondary btn-xs tabular-nums"
               :disabled="getAvailableRaw(item) <= 0"
               @click="addPreset(item, preset)"
             >
               +{{ preset }}
             </button>
             <button 
-              class="btn-preset-qty btn-preset-all"
+              class="btn btn-secondary btn-xs tabular-nums"
               :disabled="getAvailableRaw(item) <= 0"
               @click="setAllRaw(item)"
             >
@@ -215,7 +167,7 @@
 
           <!-- Cook button: Separate full-width row for big, easy tapping -->
           <button 
-            class="btn btn-primary btn-cook-submit w-full"
+            class="btn btn-primary w-full"
             :disabled="!canCookItem(item)"
             @click="openSingleCookModal(item)"
           >
@@ -248,7 +200,7 @@
 
         <!-- Bottom row: 100% full width cook button -->
         <button 
-          class="btn btn-primary btn-save-batch-full w-full" 
+          class="btn btn-primary w-full" 
           :disabled="isSaving"
           @click="openBatchCookModal"
         >
@@ -262,7 +214,7 @@
     <!-- Standard Global CSS Modal: Red Header with White Text and White Circular Close Button -->
     <div v-if="showModal" class="modal-container active flex align-center justify-center">
       <div class="modal-overlay" @click="closeModal"></div>
-      <div class="modal-content modal-center w-full max-w-md cook-white-modal" style="position:relative; z-index:2002; background: #ffffff !important; overflow: hidden;">
+      <div class="modal-content modal-center w-full max-w-md" style="position:relative; z-index:2; overflow-y:auto; max-height:88dvh;">
         
         <!-- Standard Red Header matching global CSS -->
         <div class="modal-header">
@@ -270,13 +222,13 @@
             <i :class="modalMode === 'batch' ? 'fa-solid fa-fire-flame-curved' : getCookActionIcon(activeModalItem?.name)"></i>
             <span>{{ modalMode === 'batch' ? 'ยืนยันการปรุงทั้งหมด' : `ยืนยัน${getCookActionLabel(activeModalItem?.name)}สินค้า` }}</span>
           </h3>
-          <button class="modal-close" @click="closeModal">✕</button>
+          <button class="modal-close" @click="closeModal" aria-label="ปิด">✕</button>
         </div>
 
-        <div class="modal-body p-md" style="background: #ffffff !important;">
+        <div class="modal-body">
           <!-- Single Item Mode -->
           <div v-if="modalMode === 'single' && activeModalItem">
-            <div class="card p-md mb-md text-center modal-preview-card" style="background: #ffffff !important; border: 1px solid var(--border-color);">
+            <div class="card p-md mb-md text-center modal-preview-card">
               <div class="font-bold text-lg mb-xs">{{ activeModalItem.name }}</div>
               <div class="text-sm text-secondary">
                 ต้องการ{{ getCookActionLabel(activeModalItem.name) }}จำนวน
@@ -306,13 +258,13 @@
 
             <!-- Linkage Deduction Hint in Confirmation Modal (Requested by user) -->
             <div v-if="getLinkageDeductionNotice(activeModalItem, modalQuantity)" class="mb-md flex align-center gap-sm" style="background: rgba(139, 3, 19, 0.04); border-left: 3px solid var(--primary); border-radius: var(--radius-md); border: 1px solid rgba(139, 3, 19, 0.08); padding: 12px 16px; font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5;">
-              <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: 14px;"></i>
+              <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: var(--font-sm);"></i>
               <span>{{ getLinkageDeductionNotice(activeModalItem, modalQuantity) }}</span>
             </div>
 
             <!-- Note Input -->
-            <div class="form-group mb-md">
-              <label class="form-label font-bold text-sm">บันทึกช่วยจำ (ไม่บังคับ)</label>
+            <div class="form-group">
+              <label class="form-label font-bold">บันทึกช่วยจำ (ไม่บังคับ)</label>
               <input 
                 type="text" 
                 class="form-input" 
@@ -325,7 +277,7 @@
           <!-- Batch Mode: Highly Readable Structured Table -->
           <div v-else-if="modalMode === 'batch'">
             <!-- Summary Banner -->
-            <div class="batch-summary-header flex flex-between align-center mb-md" style="background: rgba(139, 3, 19, 0.04); border-radius: var(--radius-md); border: 1px solid rgba(139, 3, 19, 0.12); padding: 14px 18px;">
+            <div class="batch-summary-header flex flex-between align-center mb-md" style="background: #ffffff; border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 14px 18px;">
               <div>
                 <div class="text-xs text-muted mb-xs">จำนวนรายการที่เลือก</div>
                 <div class="font-bold text-base text-primary">{{ pendingCookCount }} เมนู</div>
@@ -339,10 +291,10 @@
             </div>
 
             <!-- Clean Structured Table -->
-            <div class="batch-table-container mb-md" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; max-height: 240px; overflow-y: auto;">
-              <table class="w-full text-sm" style="border-collapse: collapse;">
+            <div class="batch-table-container mb-lg" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; max-height: 240px; overflow-y: auto; background: #ffffff;">
+              <table class="w-full text-sm tabular-nums" style="border-collapse: collapse;">
                 <thead>
-                  <tr style="background: #f9f9f9; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: var(--font-xs);">
+                  <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: var(--font-xs);">
                     <th style="padding: 10px 12px; text-align: left; width: 45%;">เมนู</th>
                     <th style="padding: 10px 12px; text-align: center; width: 25%;">ประเภท</th>
                     <th style="padding: 10px 12px; text-align: right; width: 30%;">จำนวน</th>
@@ -372,15 +324,15 @@
             </div>
 
             <!-- Batch Linkage Deduction Hints (Requested by user) -->
-            <div v-if="getBatchLinkageNotices.length > 0" class="mb-md flex flex-col gap-xs" style="background: rgba(139, 3, 19, 0.04); border-left: 3px solid var(--primary); border-radius: var(--radius-md); border: 1px solid rgba(139, 3, 19, 0.08); padding: 12px 16px; font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5;">
+            <div v-if="getBatchLinkageNotices.length > 0" class="mb-md flex flex-col gap-xs" style="background: #ffffff; border-left: 3px solid var(--primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 12px 16px; font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5;">
               <div v-for="notice in getBatchLinkageNotices" :key="notice" class="flex align-center gap-sm">
-                <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: 14px;"></i>
+                <i class="fa-solid fa-circle-info text-primary" style="flex-shrink:0; font-size: var(--font-sm);"></i>
                 <span>{{ notice }}</span>
               </div>
             </div>
 
-            <div class="form-group mb-md">
-              <label class="form-label font-bold text-sm">บันทึกช่วยจำสำหรับชุดนี้ (ไม่บังคับ)</label>
+            <div class="form-group">
+              <label class="form-label font-bold">บันทึกช่วยจำสำหรับชุดนี้ (ไม่บังคับ)</label>
               <input 
                 type="text" 
                 class="form-input" 
@@ -392,17 +344,18 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-md mt-lg">
-            <button class="btn btn-secondary flex-1" :disabled="isSaving" @click="closeModal" style="border-radius: var(--radius-md) !important; height: 44px;">
+            <button type="button" class="btn btn-secondary flex-1" :disabled="isSaving" @click="closeModal">
               ยกเลิก
             </button>
             <button 
+              type="button"
               class="btn btn-primary flex-1" 
               :disabled="isSaving"
               @click="confirmCookAction"
-              style="border-radius: var(--radius-md) !important; height: 44px;"
             >
               <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
-              {{ isSaving ? 'กำลังบันทึก...' : 'ยืนยัน' }}
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              {{ isSaving ? 'กำลังบันทึก...' : 'บันทึก' }}
             </button>
           </div>
         </div>
@@ -413,9 +366,17 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, computed, reactive, onMounted } from 'vue';
+import StockPageHeader from '../components/StockPageHeader.vue';
 import api from '../api';
-import { ui } from '../helpers';
+import {
+  ui,
+  formatStockQty,
+  isItemLowStock as checkLowStock,
+  getSteamedCounterpartName,
+  getCookActionLabel,
+  getCookActionIcon
+} from '../helpers';
 import { store } from '../store';
 
 // Loading & saving states
@@ -448,51 +409,8 @@ const filterCategories = [
   { id: 'wrap_rice', label: 'ข้าว / แร็ป', icon: 'fa-solid fa-box' }
 ];
 
-// Helper: Format quantities
-const formatStockQty = (qty, uom) => {
-  if (qty === null || qty === undefined) return '-';
-  const roundedQty = Math.round(Number(qty) * 100) / 100;
-  const formatted = roundedQty.toLocaleString('th-TH', { maximumFractionDigits: 2 });
-  if (uom === 'กรัม') {
-    return `${formatted} ก.`;
-  }
-  return `${formatted} ${uom || 'ชิ้น'}`;
-};
-
 // Low stock helper
-const isItemLowStock = (item, qty) => {
-  if (qty === null || qty === undefined) return false;
-  if (qty <= 0) return false;
-  if (item.low_stock_threshold !== null && item.low_stock_threshold !== undefined) {
-    return qty <= Number(item.low_stock_threshold);
-  }
-  if (item.uom === 'กรัม') {
-    return qty <= 500;
-  }
-  const threshold = store.lowStockThreshold || 5;
-  return qty <= threshold;
-};
-
-// Bun linkage helper (Precise separation between pork and pork salted egg)
-const getSteamedCounterpartName = (name) => {
-  if (!name) return '';
-  if (name.includes('ไข่เค็ม') || name.includes('ไขเค็ม')) {
-    return 'ซาลาเปาไส้หมูสับ ไข่เค็ม';
-  }
-  if (name.includes('หมู')) {
-    return 'ซาลาเปาไส้หมูสับ';
-  }
-  if (name.includes('ถั่วดำ')) {
-    return 'ซาลาเปาไส้ถั่วดำ';
-  }
-  if (name.includes('ครีม')) {
-    return 'ซาลาเปาไส้ครีม';
-  }
-  if (name.includes('หมั่นโถ')) {
-    return 'หมั่นโถว';
-  }
-  return '';
-};
+const isItemLowStock = (item, qty) => checkLowStock(item, qty, store.lowStockThreshold || 5);
 
 // Robust steamed counterpart finder from store.stockItems
 const findSteamedCounterpart = (name) => {
@@ -568,35 +486,6 @@ const getItemCardHint = (item) => {
     return `หักจาก${steamed.name} 1:1`;
   }
   return '';
-};
-
-// Cook Action Helpers
-const getCookActionLabel = (name) => {
-  if (!name) return 'ทอด';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป') ||
-                    name.includes('ข้าว');
-  if (isWrapped) return 'ห่อ';
-
-  if (name.includes('ปิ้ง')) return 'ปิ้ง';
-  if (name.includes('ทอด')) return 'ทอด';
-
-  return 'ทอด';
-};
-
-const getCookActionIcon = (name) => {
-  if (!name) return 'fa-solid fa-fire';
-  const isWrapped = name.includes('ข้าวเหนียว') || 
-                    name.includes('เบอร์เกอร์') || 
-                    name.includes('แร็ป') ||
-                    name.includes('ข้าว');
-  if (isWrapped) return 'fa-solid fa-box';
-
-  if (name.includes('ปิ้ง')) return 'fa-solid fa-fire-flame-simple';
-  if (name.includes('ทอด')) return 'fa-solid fa-fire';
-
-  return 'fa-solid fa-fire';
 };
 
 // Items that require cooking/prep:
@@ -931,18 +820,8 @@ const loadStockData = async (force = false) => {
   }
 };
 
-const showHintTooltip = ref(false);
-const closeHintTooltip = () => {
-  showHintTooltip.value = false;
-};
-
 onMounted(() => {
   loadStockData();
-  window.addEventListener('click', closeHintTooltip);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('click', closeHintTooltip);
 });
 </script>
 
@@ -957,101 +836,6 @@ onUnmounted(() => {
 .modal-preview-card {
   background: #ffffff !important;
   color: var(--text-primary);
-}
-
-/* Page Title matching Stock.vue exactly */
-.stock-page-title {
-  font-size: var(--font-lg);
-  font-weight: bold;
-  color: var(--text-secondary);
-  text-align: left;
-}
-
-/* Header buttons: Standard size matching reference image & StockBulk */
-.btn-bulk-back,
-.btn-cook-save-all {
-  height: 44px !important;
-  padding: 10px 18px !important;
-  font-size: var(--font-base) !important;
-  font-weight: var(--font-weight-semibold) !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-sizing: border-box !important;
-}
-
-.title-tooltip-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.title-info-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  padding: 2px;
-  font-size: var(--font-sm);
-  line-height: 1;
-  margin-top: -2px;
-  border-radius: var(--radius-full);
-  touch-action: manipulation;
-  transition: color var(--transition-fast);
-}
-
-.title-info-btn:hover,
-.title-info-btn:focus-visible {
-  color: var(--primary);
-  outline: none;
-}
-
-.title-tooltip-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 30;
-  width: min(320px, 82vw);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--card-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  font-size: var(--font-xs);
-  line-height: 1.45;
-}
-
-.cook-filter-card {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-}
-
-.input-icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-icon-wrapper .input-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.clear-search-btn {
-  position: absolute;
-  right: 12px;
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  font-size: 14px;
 }
 
 /* Stable Filter Toggle (No resizing or layout shifts) */
@@ -1069,16 +853,7 @@ onUnmounted(() => {
   min-width: 200px;
 }
 
-.btn-secondary-rect {
-  background: #ffffff !important;
-  color: var(--text-secondary) !important;
-  border: 1px solid var(--border-color) !important;
-}
 
-.btn-secondary-rect:hover {
-  border-color: var(--primary) !important;
-  color: var(--primary) !important;
-}
 
 /* Grid of Cook Items */
 .cook-items-grid {
@@ -1182,11 +957,11 @@ onUnmounted(() => {
 }
 
 .cook-stock-box.raw-box.warning {
-  border-color: #f59e0b;
+  border-color: var(--accent-dark, #c57600);
 }
 
 .cook-stock-box.raw-box.danger {
-  border-color: #ef4444;
+  border-color: var(--danger, #ad281e);
 }
 
 .stock-box-label {
@@ -1219,36 +994,6 @@ onUnmounted(() => {
   margin-bottom: 8px;
 }
 
-.btn-preset-qty {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 4px 10px;
-  font-size: var(--font-xs);
-  font-weight: bold;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  color: var(--text-secondary);
-}
-
-.btn-preset-qty:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: rgba(139, 3, 19, 0.05);
-}
-
-.btn-preset-qty:disabled {
-  opacity: 1 !important;
-  background: #f1f2f4 !important;
-  color: var(--text-tertiary) !important;
-  cursor: not-allowed;
-}
-
-.btn-preset-all {
-  border-color: rgba(139, 3, 19, 0.3);
-  color: var(--primary);
-}
 
 .cook-input-row {
   display: flex;
@@ -1281,103 +1026,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* Cook submit button: Large, prominent, and full-width */
-.btn-cook-submit {
-  height: 44px !important;
-  font-size: var(--font-base) !important;
-  font-weight: bold !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(139, 3, 19, 0.15);
-}
-
-.btn-cook-submit:disabled {
-  opacity: 1 !important;
-  background: var(--primary) !important;
-  color: #ffffff !important;
-  border: 1px solid var(--primary) !important;
-  box-shadow: none !important;
-  cursor: not-allowed !important;
-  pointer-events: none !important;
-}
-
-/* Floating Batch Bar: elevated cleanly above mobile bottom nav */
-.cook-floating-batch-bar {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 14px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 32px);
-  max-width: 600px;
-  z-index: 900;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
-  border-radius: var(--radius-lg);
-  border: 1.5px solid var(--primary);
-  padding: var(--space-sm) var(--space-md);
-}
-
-.floating-batch-icon {
-  font-size: 1.3rem;
-  color: var(--primary);
-}
-
-.btn-batch-clear-link {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: var(--font-xs);
-  font-weight: bold;
-  padding: 4px 8px;
-  text-decoration: underline;
-}
-
-.btn-batch-clear-link:hover {
-  opacity: 0.8;
-}
-
-.btn-save-batch-full {
-  height: 44px !important;
-  font-size: var(--font-base) !important;
-  font-weight: bold !important;
-  border-radius: var(--radius-md) !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translate(-50%, 20px);
-}
-
-/* Modal styling: elevated cleanly above mobile bottom nav */
-.modal-container {
-  z-index: 2000 !important;
-}
-
-.modal-overlay {
-  z-index: 2001 !important;
-}
-
-.cook-white-modal {
-  border-radius: var(--radius-2xl);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-color);
-  max-height: 85vh;
-  overflow-y: auto;
-  z-index: 2002 !important;
-}
 
 .modal-stock-preview-grid {
   display: grid;
@@ -1412,109 +1060,18 @@ onUnmounted(() => {
   color: var(--text-tertiary);
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .title-tooltip-wrapper {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .title-tooltip-popover {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .stock-page-title {
-    font-size: var(--font-lg) !important;
-    font-weight: bold !important;
-    text-align: center !important;
-  }
-}
-
+/* Mobile & Tablet Responsiveness */
 @media (max-width: 576px) {
-  .mobile-stock-header-card {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    text-align: center !important;
-  }
-
-  .mobile-stock-header-card > div {
-    text-align: center !important;
-  }
-
-  .mobile-stock-header-card .mobile-header-actions {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: var(--space-xs) !important;
-    width: 100% !important;
-  }
-
-  .btn-bulk-back,
-  .btn-cook-save-all {
-    flex: 1 !important;
-    width: auto !important;
-    height: 44px !important;
-    justify-content: center !important;
-    padding: 10px 12px !important;
-    font-size: var(--font-sm) !important;
-  }
-
   .cook-items-grid {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
     padding-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 150px) !important;
   }
 
-  .cook-filter-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-xs);
-  }
-
   .btn-raw-toggle {
     width: 100%;
     min-width: unset;
     justify-content: center;
-  }
-
-  .cook-filter-pills {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .cook-filter-pills .filter-pill {
-    flex-shrink: 0;
-  }
-
-  /* Floating Bar elevated safely above #bottom-nav */
-  .cook-floating-batch-bar {
-    bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 14px) !important;
-    width: calc(100% - 24px) !important;
-    padding: 10px 14px;
-  }
-
-  /* Modal lifted above mobile bottom menu */
-  .modal-container {
-    padding-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 20px) !important;
-    align-items: flex-end !important;
-  }
-
-  .cook-white-modal {
-    margin-bottom: calc(var(--bottom-nav-height, 64px) + var(--safe-bottom, 0px) + 10px) !important;
-    max-height: calc(100vh - var(--bottom-nav-height, 64px) - var(--safe-bottom, 0px) - 50px) !important;
-    width: calc(100% - 24px) !important;
-  }
-}
-@media (min-width: 769px) {
-  .mobile-stock-header-card {
-    padding: var(--space-xl) !important;
-  }
-  .btn-bulk-back,
-  .btn-cook-save-all {
-    height: auto !important;
-    padding: var(--space-md) var(--space-xl) !important;
   }
 }
 </style>

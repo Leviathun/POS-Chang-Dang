@@ -6,7 +6,7 @@
       <!-- Category Tabs -->
       <div class="category-tabs" id="pos-category-tabs">
         <button 
-          class="btn btn-secondary" 
+          class="category-tab" 
           :class="{ 'active': activeCategory === 'all' }"
           @click="activeCategory = 'all'"
         >
@@ -15,7 +15,7 @@
         <button 
           v-for="cat in categories" 
           :key="cat.id" 
-          class="btn btn-secondary"
+          class="category-tab"
           :class="{ 'active': activeCategory === String(cat.id) }"
           @click="activeCategory = String(cat.id)"
         >
@@ -135,64 +135,6 @@
 
         <!-- Checkout summary -->
         <div class="desktop-cart-summary" v-if="cart.size > 0">
-          <!-- Free Modifiers Toggle & Pills inside Desktop summary -->
-          <div class="free-modifiers-section mb-md p-sm card free-modifiers-box" v-if="false">
-            <div class="flex flex-between align-center">
-              <span class="font-semibold text-sm text-primary flex align-center gap-xs">
-                <i class="fa-solid fa-bottle-droplet mr-xs" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
-              </span>
-              <label class="switch-toggle">
-                <input type="checkbox" v-model="useModifiers" @change="onModifiersToggleChange" />
-                <span class="slider-toggle"></span>
-              </label>
-            </div>
-
-            <!-- Expanded Options Panel -->
-            <div v-if="useModifiers" class="modifiers-options-panel mt-sm animate-fade-in modifiers-options-container">
-              <!-- Presets -->
-              <div v-if="activePresets.length > 0" class="presets-row mb-sm">
-                <div class="text-muted mb-xs" style="font-size: var(--font-xs); font-weight: bold;">สูตรสำเร็จ (Presets):</div>
-                <div class="flex gap-xs flex-wrap">
-                  <button 
-                    v-for="preset in activePresets" 
-                    :key="preset.id" 
-                    class="btn btn-sm btn-secondary preset-btn"
-                    @click="applyPreset(preset)"
-                    type="button"
-                  >
-                    <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Modifiers Categories -->
-              <div class="modifiers-categories flex flex-col gap-xs">
-                <template v-for="cat in modifierCategories" :key="cat.key">
-                  <div v-if="getModifiersByCategory(cat.key).length > 0" class="modifier-cat-group">
-                    <div class="text-secondary mb-xs font-semibold" style="font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.5px;">
-                      {{ cat.label }}:
-                    </div>
-                    <div class="flex gap-xs flex-wrap" style="margin-bottom: 6px;">
-                      <button
-                        v-for="mod in getModifiersByCategory(cat.key)"
-                        :key="mod.id"
-                        class="pill-btn"
-                        :class="{ 'active': isModifierSelected(mod), 'out-of-stock': mod.total_servings <= 0 }"
-                        @click="toggleModifierSelection(mod)"
-                        type="button"
-                      >
-                        {{ mod.name }} 
-                        <span class="stock-badge">
-                          ({{ formatModifierStockShort(mod) }})
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </div>
-
           <div class="summary-row">
             <span class="text-secondary">ยอดรวม</span>
             <span class="font-medium">{{ formatCurrency(cartTotal) }}</span>
@@ -250,7 +192,7 @@
             <span>ยอดสุทธิ</span>
             <span class="text-accent text-lg">{{ formatCurrency(netCartTotal) }}</span>
           </div>
-          <button class="btn-modal btn-modal-primary mt-lg" @click="handleCheckout">
+          <button class="btn btn-primary w-full mt-lg" @click="handleCheckout">
             <i class="fa-solid fa-wallet"></i> ชำระเงิน
           </button>
         </div>
@@ -340,65 +282,6 @@
             >
               🎁 โปรเปา 3 ลูก (-10฿)
             </button></div>
-        </div>
-
-        <!-- Mobile Free Modifiers Toggle & Pills -->
-        <div class="free-modifiers-section mobile-modifiers-box" :class="{ 'expanded': useModifiers }" v-if="false">
-          <div class="flex flex-between align-center" style="margin-bottom: 8px;">
-            <span class="font-bold" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
-              <i class="fa-solid fa-bottle-droplet" style="color: var(--primary);"></i> รับซอส/ผง/น้ำจิ้ม
-            </span>
-            <label class="switch-toggle">
-              <input type="checkbox" v-model="useModifiers" @change="onModifiersToggleChange" />
-              <span class="slider-toggle"></span>
-            </label>
-          </div>
-
-          <!-- Expanded Options Panel -->
-          <div v-if="useModifiers" class="modifiers-options-panel mt-md animate-fade-in" style="text-align: left; display: flex; flex-direction: column; gap: 12px; padding-left: 4px;">
-            <!-- Presets -->
-            <div v-if="activePresets.length > 0" class="presets-row">
-              <div class="text-secondary font-bold" style="font-size: var(--font-sm); margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">สูตรสำเร็จ (Presets):</div>
-              <div class="flex gap-xs" style="flex-wrap: wrap; padding-left: 4px;">
-                <button 
-                  v-for="preset in activePresets" 
-                  :key="preset.id" 
-                  class="btn btn-sm btn-secondary preset-btn"
-                  @click="applyPreset(preset)"
-                  type="button"
-                >
-                  <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 2px;"></i> {{ preset.name }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Modifiers Categories -->
-            <div class="modifiers-categories" style="display: flex; flex-direction: column; gap: 12px;">
-              <template v-for="cat in modifierCategories" :key="cat.key">
-                <div v-if="getModifiersByCategory(cat.key).length > 0" class="modifier-cat-group">
-                  <div class="text-secondary font-bold" style="font-size: var(--font-sm); margin-bottom: 6px; color: var(--text-secondary); margin-left: 4px;">
-                    {{ cat.label }}:
-                  </div>
-                  <div class="flex gap-xs" style="flex-wrap: wrap; padding-left: 4px;">
-                    <button
-                      v-for="mod in getModifiersByCategory(cat.key)"
-                      :key="mod.id"
-                      class="pill-btn"
-                      :class="{ 'active': isModifierSelected(mod), 'out-of-stock': mod.total_servings <= 0 }"
-                      @click="toggleModifierSelection(mod)"
-                      type="button"
-                      style="padding: 6px 12px; font-size: var(--font-sm); border-radius: var(--radius-full);"
-                    >
-                      {{ mod.name }} 
-                      <span class="stock-badge" style="font-size: var(--font-xs); opacity: 0.8;">
-                        ({{ formatModifierStockShort(mod) }})
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -504,8 +387,8 @@
 
           <!-- Confirmation Buttons -->
           <div class="flex gap-md">
-            <button class="btn-modal btn-modal-secondary flex-1" @click="showOptionsModal = false">ยกเลิก</button>
-            <button class="btn-modal btn-modal-primary flex-1" @click="confirmSelection">ใส่ตะกร้า</button>
+            <button class="btn btn-secondary flex-1" @click="showOptionsModal = false">ยกเลิก</button>
+            <button class="btn btn-primary flex-1" @click="confirmSelection">ใส่ตะกร้า</button>
           </div>
         </div>
       </div>
@@ -517,7 +400,6 @@
       :cart="cart"
       :total="cartTotal"
       :discount="discountAmount"
-      :freeModifiers="selectedModifiers"
       @close="showPaymentModal = false"
       @success="onPaymentSuccess"
     />
@@ -1157,22 +1039,10 @@ const onPaymentSuccess = async () => {
     }
   });
 
-  // Deduct stock for modifiers locally
-  if (selectedModifiers.value && selectedModifiers.value.length > 0) {
-    selectedModifiers.value.forEach(mod => {
-      const currentMod = store.modifiers.find(m => m.id === mod.id);
-      if (currentMod && currentMod.total_servings !== null) {
-        currentMod.total_servings = Math.max(0, currentMod.total_servings - 1);
-      }
-    });
-  }
-
   cart.value = new Map();
   clearDiscount();
   cartExpanded.value = false;
   showPaymentModal.value = false;
-  useModifiers.value = false;
-  selectedModifiers.value = [];
 
   // Clear menu/stock cache and fetch fresh values from the server in the background
   store.clearMenuCache();
@@ -1233,81 +1103,8 @@ const getIconClass = (categoryId) => {
   return iconMap[String(categoryId)] || 'fa-solid fa-drumstick-bite text-primary';
 };
 
-// Free Modifiers Logic & State
-const useModifiers = ref(false);
-const selectedModifiers = ref([]);
-const activePresets = computed(() => (store.modifierPresets || []).filter(p => p.active));
-const allModifiers = computed(() => (store.modifiers || []).filter(m => m.active));
-
-const modifierCategories = [
-  { key: 'sauce_small', label: 'ซอส (ซองเล็ก)' },
-  { key: 'sauce_large', label: 'ซอส (ถุงใหญ่)' },
-  { key: 'dipping', label: 'น้ำจิ้ม' },
-  { key: 'powder', label: 'ผงปรุงรส' }
-];
-
-const getModifiersByCategory = (category) => {
-  return allModifiers.value.filter(m => m.category === category);
-};
-
-const formatModifierStockShort = (item) => {
-  if (!item) return '';
-  if (item.category === 'sauce_small') {
-    return `${item.total_servings}ซ.`;
-  }
-  const servingsPerBag = item.servings_per_bag || 50;
-  const bags = Math.floor(item.total_servings / servingsPerBag);
-  const servings = item.total_servings % servingsPerBag;
-  
-  let text = '';
-  if (bags > 0) text += `${bags}ถ.`;
-  if (servings > 0 || bags === 0) {
-    if (text) text += ' ';
-    text += `${servings}ร.`;
-  }
-  return text;
-};
-
-const toggleModifierSelection = (mod) => {
-  const idx = selectedModifiers.value.findIndex(m => m.id === mod.id);
-  if (idx > -1) {
-    selectedModifiers.value.splice(idx, 1);
-  } else {
-    selectedModifiers.value.push({ id: mod.id, name: mod.name });
-  }
-};
-
-const isModifierSelected = (mod) => {
-  return selectedModifiers.value.some(m => m.id === mod.id);
-};
-
-const applyPreset = (preset) => {
-  selectedModifiers.value = [];
-  preset.modifier_ids.forEach(id => {
-    const mod = allModifiers.value.find(m => m.id === Number(id));
-    if (mod && mod.total_servings > 0) {
-      selectedModifiers.value.push({ id: mod.id, name: mod.name });
-    }
-  });
-};
-
-const onModifiersToggleChange = () => {
-  if (!useModifiers.value) {
-    selectedModifiers.value = [];
-  }
-};
-
-const loadModifiersAndPresets = async () => {
-  try {
-    await store.fetchModifiers(false);
-  } catch (e) {
-    console.error('Failed to load modifiers/presets:', e);
-  }
-};
-
 onMounted(() => {
   loadMenuData();
-  loadModifiersAndPresets();
 });
 
 onUnmounted(() => {
@@ -1465,178 +1262,6 @@ onUnmounted(() => {
   pointer-events: none;
   z-index: 1;
 }
-
-/* --- Cart Bar --- */
-.cart-bar {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width);
-  padding: var(--space-md) var(--space-lg);
-  background: rgba(139, 3, 19, 0.96);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-top: 2px solid var(--accent);
-  z-index: 50;
-  animation: slideUp 0.3s ease;
-}
-
-.cart-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  width: 100% !important; /* Ensure it expands to full width to push payment button right */
-}
-
-.cart-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.cart-count {
-  font-size: var(--font-sm);
-  color: rgba(255, 247, 223, 0.85);
-}
-
-.cart-total {
-  font-size: var(--font-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--accent);
-}
-
-.cart-pay-btn {
-  padding: var(--space-md) var(--space-2xl);
-  background: var(--accent);
-  color: var(--primary-dark);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-md);
-  box-shadow: 0 0 15px rgba(255, 171, 43, 0.3);
-}
-
-.cart-pay-btn:active {
-  transform: scale(0.96);
-  box-shadow: 0 0 25px rgba(255, 171, 43, 0.5);
-}
-
-/* --- Cart Detail Panel --- */
-.cart-detail-panel {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--cart-bar-height, 60px) + 8px);
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: var(--max-width);
-  max-height: 45vh; /* Increased max height slightly */
-  background: var(--bg-secondary);
-  border: 2px solid var(--primary-light) !important;
-  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12) !important;
-  display: flex !important; /* Enforce flex layout */
-  flex-direction: column !important; /* Stack children vertically */
-  overflow-y: auto;
-  z-index: 49;
-  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-/* Enforce absolute hiding when the hidden class is present on mobile */
-.cart-detail-panel.hidden {
-  display: none !important;
-}
-
-.cart-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px !important; /* Increased header padding for spaciousness */
-  border-bottom: 2px dashed rgba(139, 3, 19, 0.15) !important; /* Diner-style dashed border */
-  position: sticky;
-  top: 0;
-  background: rgba(255, 247, 223, 0.98) !important; /* Standout warm background */
-  z-index: 1;
-}
-
-.cart-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px !important; /* Massive breathing room for items */
-  border-bottom: 1px solid rgba(139, 3, 19, 0.08);
-  background: rgba(255, 255, 255, 0.4) !important; /* Standout background */
-}
-
-.cart-item-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.cart-item-name {
-  font-size: var(--font-base) !important; /* 16px - Highly readable and bold! */
-  font-weight: var(--font-weight-bold) !important;
-  color: var(--text-primary) !important;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cart-item-price {
-  font-size: var(--font-xs) !important;
-  color: var(--text-secondary) !important;
-  font-weight: 500;
-}
-
-.cart-item-qty {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.qty-btn {
-  width: 38px; /* Enlarged touch target from 30px for easy pressing! */
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-size: var(--font-lg); /* Enlarged font-size to match the circle size! */
-  font-weight: var(--font-weight-bold);
-  transition: var(--transition-base);
-}
-
-.qty-btn:active {
-  transform: scale(0.9);
-  background: var(--card-bg-active);
-}
-
-.qty-btn.minus {
-  color: var(--danger-light);
-}
-
-.qty-value {
-  min-width: 24px;
-  text-align: center;
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-base);
-}
-
-.cart-item-subtotal {
-  font-weight: var(--font-weight-bold);
-  color: var(--primary);
-  font-size: var(--font-sm);
-  min-width: 60px;
-  text-align: right;
-}
-
-
 
 /* --- Empty States --- */
 .empty-state {
@@ -1907,18 +1532,6 @@ input:checked + .slider-toggle:before {
 }
 .pill-btn.active .stock-badge {
   opacity: 0.9;
-}
-
-.preset-btn {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  transition: all 0.2s ease;
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-}
-.preset-btn:hover {
-  background: rgba(139, 3, 19, 0.05);
-  border-color: var(--primary);
 }
 
 /* --- Bun Direct Cooking Button Styles --- */

@@ -538,7 +538,7 @@ router.get('/', async (req, res) => {
 
     const orders = await db.prepare(sql).all(params);
 
-    if (orders.length > 0) {
+    if (orders.length > 0 && req.query.include_items !== 'false') {
       try {
         const orderIds = orders.map(o => o.id);
         const placeholders = orderIds.map(() => '?').join(',');

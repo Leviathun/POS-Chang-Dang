@@ -53,10 +53,15 @@ router.get('/:table/:id', async (req, res) => {
       return res.redirect(dataUrl);
     }
 
+    const etag = `"img-${table}-${itemId}-${req.query.v || imageVersion(dataUrl)}"`;
+    res.set('ETag', etag);
+    res.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
     const buf = Buffer.from(match[2], 'base64');
     res.set('Content-Type', match[1]);
-    res.set('Cache-Control', 'public, max-age=31536000, immutable');
-    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     return res.send(buf);
   } catch (err) {
     console.error('Image serve error:', err);
